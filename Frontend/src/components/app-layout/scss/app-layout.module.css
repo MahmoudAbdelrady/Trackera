@@ -1,0 +1,90 @@
+.app_layout {
+  width: 100vw;
+  height: 100vh;
+}
+.app_layout .header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  height: 60px;
+  background-color: #fff;
+  padding: 0px 16px;
+  border-bottom: 1px solid #e5e7eb;
+}
+.app_layout .header .site_name {
+  color: #2563eb;
+}
+.app_layout .header .actions {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 20px;
+}
+.app_layout .header .actions .action_buttons .action_icn {
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+}
+.app_layout .header .actions .action_buttons .action_icn:hover {
+  background-color: #f3f4f6;
+}
+.app_layout .header .actions .user_profile {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  gap: 5px;
+  transition: 0.3s;
+  background-color: #f9fafb;
+  border-radius: 12px;
+  width: -moz-fit-content;
+  width: fit-content;
+  cursor: pointer;
+}
+.app_layout .header .actions .user_profile:hover {
+  background-color: #f3f4f6;
+}
+.app_layout .header .actions .user_profile .user_name {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.app_layout .body_container {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  width: 100%;
+  height: calc(100% - 60px);
+}
+@media (max-width: 768px) {
+  .app_layout .body_container {
+    flex-direction: column-reverse;
+  }
+}
+.app_layout .body_container .sidebar_container {
+  width: 250px;
+  height: 100%;
+  border-right: 1px solid #e5e7eb;
+}
+@media (max-width: 768px) {
+  .app_layout .body_container .sidebar_container {
+    position: fixed;
+    bottom: 0;
+    border-right: none;
+    border-top: 1px solid #e5e7eb;
+    width: 100%;
+    height: -moz-fit-content;
+    height: fit-content;
+  }
+}
+.app_layout .body_container .content {
+  width: calc(100% - 250px);
+  height: 100%;
+}
+@media (max-width: 768px) {
+  .app_layout .body_container .content {
+    width: 100%;
+  }
+}/*# sourceMappingURL=app-layout.module.css.map */

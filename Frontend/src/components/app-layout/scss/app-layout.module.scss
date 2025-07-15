@@ -1,0 +1,77 @@
+@use "../../../utils/styles/colors" as *;
+@use "../../../utils/styles/mixins" as *;
+
+.app_layout {
+  width: 100vw;
+  height: 100vh;
+  .header {
+    @include between;
+    width: 100%;
+    height: 60px;
+    background-color: #fff;
+    padding: 0px 16px;
+    border-bottom: 1px solid $borderColor;
+    .site_name {
+      color: $mainColor;
+    }
+    .actions {
+      @include center;
+      gap: 20px;
+      .action_buttons {
+        .action_icn {
+          cursor: pointer;
+          padding: 6px;
+          border-radius: 50%;
+          width: 40px;
+          height: 40px;
+          &:hover {
+            background-color: $hoverColor;
+          }
+        }
+      }
+      .user_profile {
+        @include around;
+        gap: 5px;
+        transition: $mainTransition;
+        background-color: #f9fafb;
+        border-radius: 12px;
+        width: fit-content;
+        cursor: pointer;
+        &:hover {
+          background-color: $hoverColor;
+        }
+        .user_name {
+          @include between;
+        }
+      }
+    }
+  }
+  .body_container {
+    @include start;
+    width: 100%;
+    height: calc(100% - 60px);
+    @media (max-width: 768px) {
+      flex-direction: column-reverse;
+    }
+    .sidebar_container {
+      width: 250px;
+      height: 100%;
+      border-right: 1px solid $borderColor;
+      @media (max-width: 768px) {
+        position: fixed;
+        bottom: 0;
+        border-right: none;
+        border-top: 1px solid $borderColor;
+        width: 100%;
+        height: fit-content;
+      }
+    }
+    .content {
+      width: calc(100% - 250px);
+      height: 100%;
+      @media (max-width: 768px) {
+        width: 100%;
+      }
+    }
+  }
+}
