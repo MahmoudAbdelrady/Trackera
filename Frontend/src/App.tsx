@@ -1,0 +1,52 @@
+import { RouterProvider, createBrowserRouter } from "react-router-dom";
+import { GuestRoute, PrivateRoute } from "./routes";
+import { Login, SignUp, Home, Tasks, Settings } from "./pages";
+
+const router = createBrowserRouter([
+  {
+    path: "/login",
+    element: (
+      <GuestRoute>
+        <Login />
+      </GuestRoute>
+    ),
+  },
+  {
+    path: "/sign-up",
+    element: (
+      <GuestRoute>
+        <SignUp />
+      </GuestRoute>
+    ),
+  },
+  {
+    path: "/",
+    element: (
+      <PrivateRoute>
+        <Home />
+      </PrivateRoute>
+    ),
+  },
+  {
+    path: "/tasks",
+    element: (
+      <PrivateRoute>
+        <Tasks />
+      </PrivateRoute>
+    ),
+  },
+  {
+    path: "/settings",
+    element: (
+      <PrivateRoute>
+        <Settings />
+      </PrivateRoute>
+    ),
+  },
+]);
+
+const App = () => {
+  return <RouterProvider router={router} />;
+};
+
+export default App;
