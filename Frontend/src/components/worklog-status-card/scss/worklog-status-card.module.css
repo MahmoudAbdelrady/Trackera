@@ -1,1 +1,84 @@
-/*# sourceMappingURL=worklog-status-card.module.css.map */
+.worklog_status_card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  align-items: flex-start;
+  flex: 1;
+  padding: 20px;
+  border-radius: 8px;
+  height: 115px;
+}
+@media (min-width: 768px) and (max-width: 860px) {
+  .worklog_status_card {
+    height: 140px;
+  }
+}
+@media (max-width: 768px) {
+  .worklog_status_card {
+    width: 100%;
+  }
+}
+.worklog_status_card.main {
+  background-color: rgba(37, 99, 235, 0.1);
+}
+.worklog_status_card.main .card_info .card_label {
+  color: #2563eb;
+}
+.worklog_status_card.main .card_info .card_sub_label {
+  color: #2563eb;
+}
+.worklog_status_card.main .card_icon {
+  background-color: rgba(37, 99, 235, 0.2);
+  color: #2563eb;
+}
+.worklog_status_card.success {
+  background-color: rgba(22, 163, 74, 0.1);
+}
+.worklog_status_card.success .card_info .card_label {
+  color: #16a34a;
+}
+.worklog_status_card.success .card_info .card_sub_label {
+  color: #16a34a;
+}
+.worklog_status_card.success .card_icon {
+  background-color: rgba(22, 163, 74, 0.2);
+  color: #16a34a;
+}
+.worklog_status_card.info {
+  background-color: rgba(217, 119, 6, 0.1);
+}
+.worklog_status_card.info .card_info .card_label {
+  color: #d97706;
+}
+.worklog_status_card.info .card_info .card_sub_label {
+  color: #d97706;
+}
+.worklog_status_card.info .card_icon {
+  background-color: rgba(217, 119, 6, 0.2);
+  color: #d97706;
+}
+.worklog_status_card .card_info {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  flex-direction: column;
+  gap: 8px;
+}
+.worklog_status_card .card_info .card_label {
+  font-size: 15px;
+  font-weight: 500;
+}
+.worklog_status_card .card_info .card_value {
+  font-size: 25px;
+  font-weight: bold;
+}
+.worklog_status_card .card_info .card_sub_label {
+  font-size: 13px;
+}
+.worklog_status_card .card_icon {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 12px;
+  border-radius: 50%;
+}/*# sourceMappingURL=worklog-status-card.module.css.map */

@@ -6,14 +6,15 @@ export interface WorklogStatusCardProps {
   cardSubLabel?: string;
   cardValue: string;
   cardIcon: React.ReactNode;
-  cardColor: string;
+  cardColorTheme: string;
 }
 
 const WorklogStatusCard = (props: WorklogStatusCardProps) => {
   return (
     <div
-      className={classes.worklog_status_card}
-      style={{ backgroundColor: props.cardColor }}
+      className={`${classes.worklog_status_card} ${
+        classes[props.cardColorTheme]
+      }`}
     >
       <div className={classes.card_info}>
         <span className={classes.card_label}>{props.cardLabel}</span>

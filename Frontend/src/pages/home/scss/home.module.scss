@@ -1,2 +1,29 @@
 @use "../../../utils/styles/colors" as *;
 @use "../../../utils/styles/mixins" as *;
+
+.worklog_status_cards_container {
+  @include center;
+  gap: 15px;
+  @media (max-width: 768px) {
+    flex-direction: column;
+  }
+}
+
+.worklogs_content {
+  .search_filters {
+    margin-top: 20px;
+  }
+  .worklogs_container {
+    .worklogs_actions {
+      @include end;
+      margin: 20px 0;
+      .log_button {
+        color: #fff;
+        padding: 20px;
+        &.add {
+          background-color: $mainColor;
+        }
+      }
+    }
+  }
+}

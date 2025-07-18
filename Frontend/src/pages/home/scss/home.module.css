@@ -1,1 +1,28 @@
-/*# sourceMappingURL=home.module.css.map */
+.worklog_status_cards_container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 15px;
+}
+@media (max-width: 768px) {
+  .worklog_status_cards_container {
+    flex-direction: column;
+  }
+}
+
+.worklogs_content .search_filters {
+  margin-top: 20px;
+}
+.worklogs_content .worklogs_container .worklogs_actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  margin: 20px 0;
+}
+.worklogs_content .worklogs_container .worklogs_actions .log_button {
+  color: #fff;
+  padding: 20px;
+}
+.worklogs_content .worklogs_container .worklogs_actions .log_button.add {
+  background-color: #2563eb;
+}/*# sourceMappingURL=home.module.css.map */
