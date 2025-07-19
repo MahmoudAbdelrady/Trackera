@@ -1,6 +1,6 @@
 import { RouterProvider, createBrowserRouter } from "react-router-dom";
 import { GuestRoute, PrivateRoute } from "./routes";
-import { Login, SignUp, Home, Tasks, Settings } from "./pages";
+import { Login, SignUp, Home, Tasks, Settings, Test } from "./pages";
 
 const router = createBrowserRouter([
   {
@@ -40,6 +40,14 @@ const router = createBrowserRouter([
     element: (
       <PrivateRoute>
         <Settings />
+      </PrivateRoute>
+    ),
+  },
+  {
+    path: "/test",
+    element: (
+      <PrivateRoute>
+        <Test />
       </PrivateRoute>
     ),
   },

@@ -1,5 +1,6 @@
 import AppLayout from "./app-layout/AppLayout";
 import Sidebar from "./sidebar/Sidebar";
-import WorklogStatusCard from "./worklog-status-card/WorklogStatusCard";
+import WorklogStatusCard from "./worklogs/worklog-status-card/WorklogStatusCard";
+import SearchFilter from "./worklogs/search-filter/SearchFilter";
 
-export { AppLayout, Sidebar, WorklogStatusCard };
+export { AppLayout, Sidebar, WorklogStatusCard, SearchFilter };

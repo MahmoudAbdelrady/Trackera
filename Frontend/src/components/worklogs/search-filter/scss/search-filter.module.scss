@@ -1,0 +1,54 @@
+@use "../../../../utils/styles/colors" as *;
+@use "../../../../utils/styles/mixins" as *;
+
+.search_filters_container {
+  margin-top: 20px;
+  .search_filters_fields_grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 15px;
+    align-items: center;
+    .search_filter_input {
+      @include start;
+      .filter_input_box {
+        @include center;
+        margin-left: 10px;
+        gap: 5px;
+        .filter_dropdown {
+          @include center;
+          cursor: pointer;
+          border: 1px solid $borderColor;
+          border-radius: 6px;
+          padding: 5px 10px;
+          transition: $mainTransition;
+          &:hover,
+          &:focus,
+          &:active {
+            border-color: $mainColor;
+          }
+        }
+        .filter_range_inputs {
+          @include center;
+          gap: 5px;
+          flex-wrap: wrap;
+        }
+      }
+    }
+  }
+  .search_filters_actions {
+    @include end;
+    margin: 25px 0 5px;
+    gap: 10px;
+    .filter_button {
+      color: #fff;
+      padding: 20px;
+      &.search {
+        background-color: $mainColor;
+      }
+      &.clear {
+        color: #000;
+        background-color: $mainColorLight;
+      }
+    }
+  }
+}

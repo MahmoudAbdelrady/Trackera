@@ -1,0 +1,59 @@
+.search_filters_container {
+  margin-top: 20px;
+}
+.search_filters_container .search_filters_fields_grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 15px;
+  align-items: center;
+}
+.search_filters_container .search_filters_fields_grid .search_filter_input {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+}
+.search_filters_container .search_filters_fields_grid .search_filter_input .filter_input_box {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-left: 10px;
+  gap: 5px;
+}
+.search_filters_container .search_filters_fields_grid .search_filter_input .filter_input_box .filter_dropdown {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 5px 10px;
+  transition: 0.3s;
+}
+.search_filters_container .search_filters_fields_grid .search_filter_input .filter_input_box .filter_dropdown:hover, .search_filters_container .search_filters_fields_grid .search_filter_input .filter_input_box .filter_dropdown:focus, .search_filters_container .search_filters_fields_grid .search_filter_input .filter_input_box .filter_dropdown:active {
+  border-color: #2563eb;
+}
+.search_filters_container .search_filters_fields_grid .search_filter_input .filter_input_box .filter_range_inputs {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+.search_filters_container .search_filters_actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  margin: 25px 0 5px;
+  gap: 10px;
+}
+.search_filters_container .search_filters_actions .filter_button {
+  color: #fff;
+  padding: 20px;
+}
+.search_filters_container .search_filters_actions .filter_button.search {
+  background-color: #2563eb;
+}
+.search_filters_container .search_filters_actions .filter_button.clear {
+  color: #000;
+  background-color: #eff6ff;
+}/*# sourceMappingURL=search-filter.module.css.map */

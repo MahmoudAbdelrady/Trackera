@@ -4,6 +4,10 @@
 .app_layout {
   width: 100vw;
   height: 100vh;
+  @media (max-width: 768px) {
+    min-height: 100vh;
+    height: auto;
+  }
   .header {
     @include between;
     width: 100%;
@@ -11,6 +15,11 @@
     background-color: #fff;
     padding: 0px 16px;
     border-bottom: 1px solid $borderColor;
+    @media (max-width: 768px) {
+      position: sticky;
+      top: 0;
+      z-index: 9999;
+    }
     .site_name {
       color: $mainColor;
     }
@@ -56,14 +65,16 @@
     .sidebar_container {
       width: 250px;
       height: 100%;
+      margin-bottom: auto;
       border-right: 1px solid $borderColor;
       @media (max-width: 768px) {
-        position: fixed;
+        position: sticky;
         bottom: 0;
         border-right: none;
         border-top: 1px solid $borderColor;
         width: 100%;
         height: fit-content;
+        z-index: 99999;
       }
     }
     .content {

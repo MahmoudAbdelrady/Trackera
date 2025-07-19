@@ -2,6 +2,12 @@
   width: 100vw;
   height: 100vh;
 }
+@media (max-width: 768px) {
+  .app_layout {
+    min-height: 100vh;
+    height: auto;
+  }
+}
 .app_layout .header {
   display: flex;
   justify-content: space-between;
@@ -11,6 +17,13 @@
   background-color: #fff;
   padding: 0px 16px;
   border-bottom: 1px solid #e5e7eb;
+}
+@media (max-width: 768px) {
+  .app_layout .header {
+    position: sticky;
+    top: 0;
+    z-index: 9999;
+  }
 }
 .app_layout .header .site_name {
   color: #2563eb;
@@ -66,17 +79,19 @@
 .app_layout .body_container .sidebar_container {
   width: 250px;
   height: 100%;
+  margin-bottom: auto;
   border-right: 1px solid #e5e7eb;
 }
 @media (max-width: 768px) {
   .app_layout .body_container .sidebar_container {
-    position: fixed;
+    position: sticky;
     bottom: 0;
     border-right: none;
     border-top: 1px solid #e5e7eb;
     width: 100%;
     height: -moz-fit-content;
     height: fit-content;
+    z-index: 99999;
   }
 }
 .app_layout .body_container .content {

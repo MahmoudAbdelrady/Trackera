@@ -11,6 +11,9 @@ importers:
       antd:
         specifier: ^5.26.5
         version: 5.26.5(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+      dayjs:
+        specifier: ^1.11.13
+        version: 1.11.13
       formik:
         specifier: ^2.4.6
         version: 2.4.6(react@19.1.0)
