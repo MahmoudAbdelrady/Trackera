@@ -25,8 +25,10 @@ import {
 import { useState } from "react";
 import Dragger from "antd/es/upload/Dragger";
 import dayjs from "dayjs";
+import { Link } from "react-router-dom";
 
 interface Worklog {
+  logId: number;
   logName: string;
   totalHours: number;
   date: string;
@@ -58,6 +60,8 @@ const statusMetadata: Record<WorkLogStatusType, LogMeta> = {
 
 const Home = () => {
   const [addWorkLogVisible, setAddWorkLogVisible] = useState(false);
+  const [editWorkLogVisible, setEditWorkLogVisible] = useState(false);
+  const [deleteWorkLogVisible, setDeleteWorkLogVisible] = useState(false);
   const workLogStatusCards = [
     {
       cardLabel: "Total Logged Hours",
@@ -82,6 +86,7 @@ const Home = () => {
 
   const worklogs: Worklog[] = [
     {
+      logId: 1,
       logName: "Frontend Development",
       totalHours: 10,
       date: "2023-10-01",
@@ -89,6 +94,7 @@ const Home = () => {
       status: "SYNCED",
     },
     {
+      logId: 2,
       logName: "Backend Development",
       totalHours: 7.45,
       date: "2023-10-01",
@@ -96,6 +102,7 @@ const Home = () => {
       status: "PARTIALLY",
     },
     {
+      logId: 3,
       logName: "Bug Fixing",
       totalHours: 6.45,
       date: "2023-10-01",
@@ -103,6 +110,7 @@ const Home = () => {
       status: "UNSYNCED",
     },
     {
+      logId: 4,
       logName: "Reviewing",
       totalHours: 2.45,
       date: "2023-10-01",
@@ -167,19 +175,21 @@ const Home = () => {
           )}
           <Tooltip title="Edit">
             <SquarePen
-              onClick={() => {}}
+              onClick={() => setEditWorkLogVisible(true)}
               className={`${classes.log_action_btn} ${classes.edit}`}
             />
           </Tooltip>
           <Tooltip title="View">
-            <Eye
-              onClick={() => {}}
+            <Link
+              to={`/worklog-details/${record.logId}`}
               className={`${classes.log_action_btn} ${classes.view}`}
-            />
+            >
+              <Eye />
+            </Link>
           </Tooltip>
           <Tooltip title="Delete">
             <Trash
-              onClick={() => {}}
+              onClick={() => setDeleteWorkLogVisible(true)}
               className={`${classes.log_action_btn} ${classes.delete}`}
             />
           </Tooltip>
@@ -208,10 +218,10 @@ const Home = () => {
         okText="Add"
         onOk={() => setAddWorkLogVisible(false)}
         onCancel={() => setAddWorkLogVisible(false)}
-        className={classes.add_worklog_modal}
+        className={classes.worklog_modal}
       >
         <h2 className={classes.header}>Add Worklog</h2>
-        <form className={classes.add_worklog_form}>
+        <form className={classes.worklog_form}>
           <div className={classes.form_group}>
             <span className={classes.label}>Log Name:</span>
             <Input
@@ -245,6 +255,35 @@ const Home = () => {
             <Switch />
           </div>
         </form>
+      </Modal>
+      <Modal
+        open={editWorkLogVisible}
+        centered
+        okText="Save"
+        onOk={() => {}}
+        onCancel={() => setEditWorkLogVisible(false)}
+        className={classes.worklog_modal}
+      >
+        <h2 className={classes.header}>Edit Worklog</h2>
+      </Modal>
+      <Modal
+        open={deleteWorkLogVisible}
+        centered
+        okText="Delete"
+        onOk={() => {}}
+        onCancel={() => setDeleteWorkLogVisible(false)}
+        okButtonProps={{ danger: true }}
+        className={classes.worklog_modal}
+      >
+        <h2 className={classes.header}>Delete Worklog</h2>
+        <p className={classes.delete_message}>
+          Are you sure you want to delete this worklog? This action cannot be
+          undone.
+        </p>
+        <div className={classes.switch_option}>
+          <span className={classes.label}>Also unsync from Jira:</span>
+          <Switch />
+        </div>
       </Modal>
       <AppLayout>
         <div className={classes.worklog_status_cards_container}>

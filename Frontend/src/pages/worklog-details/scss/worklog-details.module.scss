@@ -1,0 +1,89 @@
+@use "../../../utils/styles/colors" as *;
+@use "../../../utils/styles/mixins" as *;
+
+.back_button_container {
+  width: 100%;
+  .back_button {
+    @include start;
+    width: fit-content;
+    color: $mainColor;
+    gap: 6px;
+    &:hover {
+      color: adjust-color($color: $mainColor, $lightness: -15%);
+    }
+  }
+}
+
+.worklog_details_info {
+  @include between;
+  background-color: #fff;
+  margin-top: 20px;
+  padding: 15px 20px;
+  border-radius: 8px;
+  border: 1px solid $borderColor;
+  @media (max-width: 600px) {
+    @include start-rev;
+    flex-direction: column;
+  }
+  .info {
+    @include center;
+    gap: 20px;
+    @media (max-width: 600px) {
+      @include start-rev;
+      flex-direction: column;
+      margin-top: 15px;
+    }
+    .info_box {
+      @include center;
+      gap: 6px;
+      color: #777777;
+      font-size: 12px;
+      .info_icon {
+        width: 20px;
+        height: 20px;
+      }
+      .info_label {
+        &.evaluation,
+        &.status {
+          padding: 5px 10px;
+          border-radius: 12px;
+          background-color: $mainColor;
+          width: fit-content;
+          font-weight: 500;
+        }
+        &.evaluation {
+          &.excellent {
+            background-color: $mainColorLight2;
+            color: $mainColor;
+          }
+          &.good {
+            background-color: $greenColorLight;
+            color: $darkGreenColor;
+          }
+          &.moderate {
+            background-color: $orangeColorLight;
+            color: $orangeColor;
+          }
+          &.poor {
+            background-color: $redColorLight;
+            color: $darkRedColor;
+          }
+        }
+        &.status {
+          &.synced {
+            background-color: $greenColorLight;
+            color: $darkGreenColor;
+          }
+          &.partially {
+            background-color: $orangeColorLight;
+            color: $orangeColor;
+          }
+          &.unsynced {
+            background-color: $redColorLight;
+            color: $darkRedColor;
+          }
+        }
+      }
+    }
+  }
+}

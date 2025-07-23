@@ -1,0 +1,97 @@
+.back_button_container {
+  width: 100%;
+}
+.back_button_container .back_button {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  width: -moz-fit-content;
+  width: fit-content;
+  color: #2563eb;
+  gap: 6px;
+}
+.back_button_container .back_button:hover {
+  color: rgb(16.4285714286, 67.3571428571, 179.0714285714);
+}
+
+.worklog_details_info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #fff;
+  margin-top: 20px;
+  padding: 15px 20px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+@media (max-width: 600px) {
+  .worklog_details_info {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+.worklog_details_info .info {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 20px;
+}
+@media (max-width: 600px) {
+  .worklog_details_info .info {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    flex-direction: column;
+    margin-top: 15px;
+  }
+}
+.worklog_details_info .info .info_box {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  color: #777777;
+  font-size: 12px;
+}
+.worklog_details_info .info .info_box .info_icon {
+  width: 20px;
+  height: 20px;
+}
+.worklog_details_info .info .info_box .info_label.evaluation, .worklog_details_info .info .info_box .info_label.status {
+  padding: 5px 10px;
+  border-radius: 12px;
+  background-color: #2563eb;
+  width: -moz-fit-content;
+  width: fit-content;
+  font-weight: 500;
+}
+.worklog_details_info .info .info_box .info_label.evaluation.excellent {
+  background-color: #e4f0ff;
+  color: #2563eb;
+}
+.worklog_details_info .info .info_box .info_label.evaluation.good {
+  background-color: #dcfce7;
+  color: #166534;
+}
+.worklog_details_info .info .info_box .info_label.evaluation.moderate {
+  background-color: #fef0e1;
+  color: #d97706;
+}
+.worklog_details_info .info .info_box .info_label.evaluation.poor {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+.worklog_details_info .info .info_box .info_label.status.synced {
+  background-color: #dcfce7;
+  color: #166534;
+}
+.worklog_details_info .info .info_box .info_label.status.partially {
+  background-color: #fef0e1;
+  color: #d97706;
+}
+.worklog_details_info .info .info_box .info_label.status.unsynced {
+  background-color: #fee2e2;
+  color: #991b1b;
+}/*# sourceMappingURL=worklog-details.module.css.map */

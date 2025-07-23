@@ -1,6 +1,14 @@
 import { RouterProvider, createBrowserRouter } from "react-router-dom";
 import { GuestRoute, PrivateRoute } from "./routes";
-import { Login, SignUp, Home, Tasks, Settings, Test } from "./pages";
+import {
+  Login,
+  SignUp,
+  Home,
+  Tasks,
+  Settings,
+  Test,
+  WorklogDetails,
+} from "./pages";
 
 const router = createBrowserRouter([
   {
@@ -24,6 +32,14 @@ const router = createBrowserRouter([
     element: (
       <PrivateRoute>
         <Home />
+      </PrivateRoute>
+    ),
+  },
+  {
+    path: "/worklog-details/:worklogId",
+    element: (
+      <PrivateRoute>
+        <WorklogDetails />
       </PrivateRoute>
     ),
   },

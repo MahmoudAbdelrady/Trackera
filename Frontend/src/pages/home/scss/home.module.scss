@@ -71,6 +71,8 @@
         @include start;
         gap: 15px;
         .log_action_btn {
+          @include center;
+          color: #000;
           cursor: pointer;
           &.sync {
             color: $mainColor;
@@ -87,8 +89,20 @@
   }
 }
 
-.add_worklog_modal {
-  .add_worklog_form {
+.worklog_modal {
+  .header {
+    font-size: 20px;
+  }
+  .delete_message {
+    font-size: 15px;
+    margin-top: 15px;
+  }
+  .switch_option {
+    @include start;
+    gap: 10px;
+    margin-top: 10px;
+  }
+  .worklog_form {
     @include start-rev;
     flex-direction: column;
     gap: 20px;
