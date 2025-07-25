@@ -26,24 +26,12 @@ import { useState } from "react";
 import Dragger from "antd/es/upload/Dragger";
 import dayjs from "dayjs";
 import { Link } from "react-router-dom";
-
-interface Worklog {
-  logId: number;
-  logName: string;
-  totalHours: number;
-  date: string;
-  evaluation: WorkLogEvaluationType;
-  status: WorkLogStatusType;
-}
-
-type WorkLogEvaluationType = "EXCELLENT" | "GOOD" | "MODERATE" | "POOR";
-
-type WorkLogStatusType = "SYNCED" | "PARTIALLY" | "UNSYNCED";
-
-interface LogMeta {
-  label: string;
-  className: string;
-}
+import type {
+  LogMeta,
+  Worklog,
+  WorkLogEvaluationType,
+  WorkLogStatusType,
+} from "../../utils/types";
 
 const evaluationMetadata: Record<WorkLogEvaluationType, LogMeta> = {
   EXCELLENT: { label: "Excellent", className: "excellent" },
