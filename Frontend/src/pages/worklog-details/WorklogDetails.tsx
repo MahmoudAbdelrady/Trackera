@@ -16,7 +16,6 @@ import worklogTableClasses from "../../components/worklogs/worklog-table/scss/wo
 import { Switch, Tooltip, type TableProps } from "antd";
 import {
   statusMetadata,
-  type Worklog,
   type WorklogDetails,
   type WorkLogStatusType,
   type WorklogTask,
@@ -33,7 +32,9 @@ const WorklogDetails = () => {
   );
   const [deleteDetailVisible, setDeleteDetailVisible] =
     useState<boolean>(false);
-  const [selectedWorklogTasks, setSelectedWorklogTasks] = useState<number[]>(
+
+  const [selectedLogDetails, setSelectedLogDetails] = useState<string[]>([]);
+  const [selectedWorklogTasks, setSelectedWorklogTasks] = useState<string[]>(
     []
   );
 
@@ -99,7 +100,7 @@ const WorklogDetails = () => {
     },
   ];
 
-  const tableColumns: TableProps<WorklogDetails>["columns"] = [
+  const logDetailsColumns: TableProps<WorklogDetails>["columns"] = [
     {
       title: "Task Name",
       dataIndex: "taskName",
@@ -262,10 +263,9 @@ const WorklogDetails = () => {
     },
   ];
 
-  const taskLogsRowSelection: TableProps<WorklogTask>["rowSelection"] = {
-    onChange: (_, selectedRows: WorklogTask[]) => {
-      setSelectedWorklogTasks(selectedRows.map((row) => row.id));
-    },
+  const viewTaskModalCloseHandler = () => {
+    setViewDetailTask(null);
+    setSelectedWorklogTasks([]);
   };
 
   return (
@@ -289,20 +289,21 @@ const WorklogDetails = () => {
           centered: true,
           footer: null,
           width: "80%",
-          onCancel: () => setViewDetailTask(null),
+          onCancel: viewTaskModalCloseHandler,
         }}
       >
-        <WorklogTable
-          columns={
-            taskLogsColumns as TableProps<
-              WorklogTask | WorklogDetails | Worklog
-            >["columns"]
-          }
-          dataSource={worklogTasks}
-          rowSelection={{
-            ...(taskLogsRowSelection as TableProps<
-              WorklogTask | WorklogDetails | Worklog
-            >["rowSelection"]),
+        <WorklogTable<WorklogTask>
+          properties={{
+            columns: taskLogsColumns,
+            dataSource: worklogTasks,
+            rowSelection: {
+              selectedRowKeys: selectedWorklogTasks,
+              onChange: (_, selectedRows: WorklogTask[]) => {
+                setSelectedWorklogTasks(
+                  selectedRows.map((row) => row.id.toString())
+                );
+              },
+            },
           }}
           actionButtons={[
             {
@@ -375,16 +376,29 @@ const WorklogDetails = () => {
           </div>
         </div>
         <div className={classes.worklog_details_content}>
-          <WorklogTable
-            columns={
-              tableColumns as TableProps<
-                WorklogDetails | Worklog | WorklogTask
-              >["columns"]
-            }
-            dataSource={worklogDetails}
+          <WorklogTable<WorklogDetails>
+            properties={{
+              columns: logDetailsColumns,
+              dataSource: worklogDetails,
+              rowSelection: {
+                selectedRowKeys: selectedLogDetails,
+                onChange: (_, selectedRows: WorklogDetails[]) => {
+                  setSelectedLogDetails(
+                    selectedRows.map((row) => row.id.toString())
+                  );
+                },
+              },
+            }}
             actionButtons={[
               {
-                label: "Sync to Jira",
+                label: "Sync selected to Jira",
+                icon: <CalendarSync />,
+                onClick: () => {},
+                disabled: selectedLogDetails.length === 0,
+                customClasses: ["sync_selected"],
+              },
+              {
+                label: "Sync all to Jira",
                 icon: <CalendarSync />,
                 onClick: () => {},
               },

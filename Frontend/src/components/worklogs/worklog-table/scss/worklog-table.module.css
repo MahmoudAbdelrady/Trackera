@@ -3,6 +3,15 @@
   justify-content: flex-end;
   align-items: center;
   margin: 20px 0;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+@media (max-width: 768px) {
+  .worklog_table_container .table_actions {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
 }
 .worklog_table_container .table_actions .log_button {
   color: #fff;
@@ -12,8 +21,15 @@
 .worklog_table_container .table_actions .log_button.unsync {
   background-color: #d97706;
 }
+.worklog_table_container .table_actions .log_button.sync_selected {
+  background-color: rgb(179.7, 213.1666666667, 255);
+}
+.worklog_table_container .table_actions .log_button.sync_selected:not(:disabled) {
+  color: #000;
+}
 .worklog_table_container .table_actions .log_button:disabled {
   background-color: #ddd;
+  color: #aaa;
 }
 .worklog_table_container .table_actions .log_button:not(:disabled):hover, .worklog_table_container .table_actions .log_button:not(:disabled):active, .worklog_table_container .table_actions .log_button:not(:disabled):focus {
   color: #fff;
@@ -22,6 +38,10 @@
 }
 .worklog_table_container .table_actions .log_button:not(:disabled):hover.unsync, .worklog_table_container .table_actions .log_button:not(:disabled):active.unsync, .worklog_table_container .table_actions .log_button:not(:disabled):focus.unsync {
   background-color: rgb(195.3, 107.1, 5.4);
+}
+.worklog_table_container .table_actions .log_button:not(:disabled):hover.sync_selected, .worklog_table_container .table_actions .log_button:not(:disabled):active.sync_selected, .worklog_table_container .table_actions .log_button:not(:disabled):focus.sync_selected {
+  background-color: rgb(131.4, 186.3333333333, 255);
+  color: #000;
 }
 .worklog_table_container .table_details .worklogs_table {
   border: 1px solid #e5e7eb;

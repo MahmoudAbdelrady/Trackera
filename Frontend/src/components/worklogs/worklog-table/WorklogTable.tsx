@@ -1,8 +1,15 @@
 import { Button, Table } from "antd";
-import type { WorklogTableProps } from "../../../utils/types";
+import type {
+  Worklog,
+  WorklogDetails,
+  WorklogTableProps,
+  WorklogTask,
+} from "../../../utils/types";
 import classes from "./scss/worklog-table.module.css";
 
-const WorklogTable = (props: WorklogTableProps) => {
+const WorklogTable = <T extends Worklog | WorklogDetails | WorklogTask>(
+  props: WorklogTableProps<T>
+) => {
   return (
     <div className={classes.worklog_table_container}>
       <div className={classes.table_actions}>
@@ -22,9 +29,7 @@ const WorklogTable = (props: WorklogTableProps) => {
       </div>
       <div className={classes.table_details}>
         <Table
-          columns={props.columns}
-          dataSource={props.dataSource}
-          rowSelection={props.rowSelection}
+          {...props.properties}
           scroll={{ x: 768 }}
           rowKey={(record) => record.id?.toString()}
           className={classes.worklogs_table}

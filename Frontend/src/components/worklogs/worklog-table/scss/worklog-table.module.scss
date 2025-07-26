@@ -6,6 +6,11 @@
   .table_actions {
     @include end;
     margin: 20px 0;
+    gap: 10px;
+    flex-wrap: wrap;
+    @media (max-width: 768px) {
+      @include center;
+    }
     .log_button {
       color: #fff;
       padding: 20px;
@@ -13,8 +18,18 @@
       &.unsync {
         background-color: $orangeColor;
       }
+      &.sync_selected {
+        background-color: color.scale(
+          $color: $mainColorLight2,
+          $lightness: -10%
+        );
+        &:not(:disabled) {
+          color: #000;
+        }
+      }
       &:disabled {
         background-color: #ddd;
+        color: #aaa;
       }
       &:not(:disabled) {
         &:hover,
@@ -28,6 +43,13 @@
               $color: $orangeColor,
               $lightness: -10%
             );
+          }
+          &.sync_selected {
+            background-color: color.scale(
+              $color: $mainColorLight2,
+              $lightness: -20%
+            );
+            color: #000;
           }
         }
       }

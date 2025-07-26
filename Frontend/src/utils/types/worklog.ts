@@ -55,12 +55,8 @@ interface WorklogTableActionButtonProps {
   onClick: () => void;
 }
 
-interface WorklogTableProps {
-  columns: TableProps<Worklog | WorklogDetails | WorklogTask>["columns"];
-  dataSource: Worklog[] | WorklogDetails[] | WorklogTask[];
-  rowSelection?: TableProps<
-    Worklog | WorklogDetails | WorklogTask
-  >["rowSelection"];
+interface WorklogTableProps<T = Worklog | WorklogDetails | WorklogTask> {
+  properties: TableProps<T>;
   actionButtons: WorklogTableActionButtonProps[];
 }
 

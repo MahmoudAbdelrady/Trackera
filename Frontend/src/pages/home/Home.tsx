@@ -27,10 +27,8 @@ import {
   evaluationMetadata,
   statusMetadata,
   type Worklog,
-  type WorklogDetails,
   type WorkLogEvaluationType,
   type WorkLogStatusType,
-  type WorklogTask,
 } from "../../utils/types";
 import { getPaddedItem } from "../../utils/helpers";
 import worklogTableClasses from "../../components/worklogs/worklog-table/scss/worklog-table.module.css";
@@ -287,13 +285,11 @@ const Home = () => {
         <div className={classes.worklogs_content}>
           <SearchFilter />
           <div className={classes.worklogs_container}>
-            <WorklogTable
-              columns={
-                tableColumns as TableProps<
-                  Worklog | WorklogDetails | WorklogTask
-                >["columns"]
-              }
-              dataSource={worklogs}
+            <WorklogTable<Worklog>
+              properties={{
+                columns: tableColumns,
+                dataSource: worklogs,
+              }}
               actionButtons={[
                 {
                   label: "Add Worklog",
