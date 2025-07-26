@@ -1,0 +1,137 @@
+@use "../../../../utils/styles/colors" as *;
+@use "../../../../utils/styles/mixins" as *;
+@use "sass:color";
+
+.worklog_table_container {
+  .table_actions {
+    @include end;
+    margin: 20px 0;
+    gap: 10px;
+    flex-wrap: wrap;
+    @media (max-width: 768px) {
+      @include center;
+    }
+    .log_button {
+      color: #fff;
+      padding: 20px;
+      background-color: $mainColor;
+      &.unsync {
+        background-color: $orangeColor;
+      }
+      &.sync_selected {
+        background-color: color.scale(
+          $color: $mainColorLight2,
+          $lightness: -10%
+        );
+        &:not(:disabled) {
+          color: #000;
+        }
+      }
+      &:disabled {
+        background-color: #ddd;
+        color: #aaa;
+      }
+      &:not(:disabled) {
+        &:hover,
+        &:active,
+        &:focus {
+          color: #fff;
+          background-color: color.scale($color: $mainColor, $lightness: -10%);
+          border-color: transparent;
+          &.unsync {
+            background-color: color.scale(
+              $color: $orangeColor,
+              $lightness: -10%
+            );
+          }
+          &.sync_selected {
+            background-color: color.scale(
+              $color: $mainColorLight2,
+              $lightness: -20%
+            );
+            color: #000;
+          }
+        }
+      }
+    }
+  }
+  .table_details {
+    .worklogs_table {
+      border: 1px solid $borderColor;
+      border-radius: 6px;
+    }
+    .task_link {
+      position: relative;
+      color: $mainColor;
+      &:hover {
+        text-decoration: underline;
+      }
+      .link_icon {
+        position: absolute;
+        right: -18px;
+        top: -8px;
+        width: 15px;
+        height: 15px;
+        color: $mainColor;
+      }
+    }
+    .evaluation_item,
+    .status_item {
+      padding: 5px 10px;
+      border-radius: 12px;
+      background-color: $mainColor;
+      width: fit-content;
+      font-weight: 500;
+    }
+    .evaluation_item {
+      &.excellent {
+        background-color: $mainColorLight2;
+        color: $mainColor;
+      }
+      &.good {
+        background-color: $greenColorLight;
+        color: $darkGreenColor;
+      }
+      &.moderate {
+        background-color: $orangeColorLight;
+        color: $orangeColor;
+      }
+      &.poor {
+        background-color: $redColorLight;
+        color: $darkRedColor;
+      }
+    }
+    .status_item {
+      &.synced {
+        background-color: $greenColorLight;
+        color: $darkGreenColor;
+      }
+      &.partially {
+        background-color: $orangeColorLight;
+        color: $orangeColor;
+      }
+      &.unsynced {
+        background-color: $redColorLight;
+        color: $darkRedColor;
+      }
+    }
+    .actions_container {
+      @include start;
+      gap: 15px;
+      .log_action_btn {
+        @include center;
+        color: #000;
+        cursor: pointer;
+        &.sync {
+          color: $mainColor;
+        }
+        &.unsync {
+          color: $orangeColor;
+        }
+        &.delete {
+          color: $redColor;
+        }
+      }
+    }
+  }
+}

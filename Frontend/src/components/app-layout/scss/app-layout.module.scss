@@ -18,7 +18,7 @@
     @media (max-width: 768px) {
       position: sticky;
       top: 0;
-      z-index: 9999;
+      z-index: 999;
     }
     .site_name {
       color: $mainColor;
@@ -74,7 +74,7 @@
         border-top: 1px solid $borderColor;
         width: 100%;
         height: fit-content;
-        z-index: 99999;
+        z-index: 999;
       }
     }
     .content {

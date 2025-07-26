@@ -22,7 +22,7 @@
   .app_layout .header {
     position: sticky;
     top: 0;
-    z-index: 9999;
+    z-index: 999;
   }
 }
 .app_layout .header .site_name {
@@ -91,7 +91,7 @@
     width: 100%;
     height: -moz-fit-content;
     height: fit-content;
-    z-index: 99999;
+    z-index: 999;
   }
 }
 .app_layout .body_container .content {
