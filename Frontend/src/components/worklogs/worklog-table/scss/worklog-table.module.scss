@@ -13,14 +13,22 @@
       &.unsync {
         background-color: $orangeColor;
       }
-      &:hover,
-      &:active,
-      &:focus {
-        color: #fff;
-        background-color: color.scale($color: $mainColor, $lightness: -10%);
-        border-color: transparent;
-        &.unsync {
-          background-color: color.scale($color: $orangeColor, $lightness: -10%);
+      &:disabled {
+        background-color: #ddd;
+      }
+      &:not(:disabled) {
+        &:hover,
+        &:active,
+        &:focus {
+          color: #fff;
+          background-color: color.scale($color: $mainColor, $lightness: -10%);
+          border-color: transparent;
+          &.unsync {
+            background-color: color.scale(
+              $color: $orangeColor,
+              $lightness: -10%
+            );
+          }
         }
       }
     }

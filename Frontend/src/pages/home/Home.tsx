@@ -30,6 +30,7 @@ import {
   type WorklogDetails,
   type WorkLogEvaluationType,
   type WorkLogStatusType,
+  type WorklogTask,
 } from "../../utils/types";
 import { getPaddedItem } from "../../utils/helpers";
 import worklogTableClasses from "../../components/worklogs/worklog-table/scss/worklog-table.module.css";
@@ -63,7 +64,7 @@ const Home = () => {
 
   const worklogs: Worklog[] = [
     {
-      logId: 1,
+      id: 1,
       logName: "Frontend Development",
       totalHours: 10,
       date: "2023-10-01",
@@ -71,7 +72,7 @@ const Home = () => {
       status: "SYNCED",
     },
     {
-      logId: 2,
+      id: 2,
       logName: "Backend Development",
       totalHours: 7.45,
       date: "2023-10-01",
@@ -79,7 +80,7 @@ const Home = () => {
       status: "PARTIALLY",
     },
     {
-      logId: 3,
+      id: 3,
       logName: "Bug Fixing",
       totalHours: 6.45,
       date: "2023-10-01",
@@ -87,7 +88,7 @@ const Home = () => {
       status: "UNSYNCED",
     },
     {
-      logId: 4,
+      id: 4,
       logName: "Reviewing",
       totalHours: 2.45,
       date: "2023-10-01",
@@ -168,7 +169,7 @@ const Home = () => {
           </Tooltip>
           <Tooltip title="View">
             <Link
-              to={`/worklog-details/${record.logId}`}
+              to={`/worklog-details/${record.id}`}
               className={`${worklogTableClasses.log_action_btn} ${worklogTableClasses.view}`}
             >
               <Eye />
@@ -288,7 +289,9 @@ const Home = () => {
           <div className={classes.worklogs_container}>
             <WorklogTable
               columns={
-                tableColumns as TableProps<Worklog | WorklogDetails>["columns"]
+                tableColumns as TableProps<
+                  Worklog | WorklogDetails | WorklogTask
+                >["columns"]
               }
               dataSource={worklogs}
               actionButtons={[

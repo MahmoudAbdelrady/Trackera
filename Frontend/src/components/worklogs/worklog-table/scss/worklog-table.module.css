@@ -12,12 +12,15 @@
 .worklog_table_container .table_actions .log_button.unsync {
   background-color: #d97706;
 }
-.worklog_table_container .table_actions .log_button:hover, .worklog_table_container .table_actions .log_button:active, .worklog_table_container .table_actions .log_button:focus {
+.worklog_table_container .table_actions .log_button:disabled {
+  background-color: #ddd;
+}
+.worklog_table_container .table_actions .log_button:not(:disabled):hover, .worklog_table_container .table_actions .log_button:not(:disabled):active, .worklog_table_container .table_actions .log_button:not(:disabled):focus {
   color: #fff;
   background-color: rgb(20.5714285714, 84.3428571429, 224.2285714286);
   border-color: transparent;
 }
-.worklog_table_container .table_actions .log_button:hover.unsync, .worklog_table_container .table_actions .log_button:active.unsync, .worklog_table_container .table_actions .log_button:focus.unsync {
+.worklog_table_container .table_actions .log_button:not(:disabled):hover.unsync, .worklog_table_container .table_actions .log_button:not(:disabled):active.unsync, .worklog_table_container .table_actions .log_button:not(:disabled):focus.unsync {
   background-color: rgb(195.3, 107.1, 5.4);
 }
 .worklog_table_container .table_details .worklogs_table {

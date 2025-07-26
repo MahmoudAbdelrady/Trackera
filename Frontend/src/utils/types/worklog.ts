@@ -5,7 +5,7 @@ type WorkLogEvaluationType = "EXCELLENT" | "GOOD" | "MODERATE" | "POOR";
 type WorkLogStatusType = "SYNCED" | "PARTIALLY" | "UNSYNCED";
 
 interface Worklog {
-  logId: number;
+  id: number;
   logName: string;
   totalHours: number;
   date: string;
@@ -14,10 +14,18 @@ interface Worklog {
 }
 
 interface WorklogDetails {
-  detailId: number;
+  id: number;
   taskName: string;
   taskUrl: string;
   totalHours: number;
+  status: WorkLogStatusType;
+}
+
+interface WorklogTask {
+  id: number;
+  fromTime: string;
+  toTime: string;
+  description: string;
   status: WorkLogStatusType;
 }
 
@@ -43,12 +51,16 @@ interface WorklogTableActionButtonProps {
   label: string;
   icon: React.ReactNode;
   customClasses?: string[];
+  disabled?: boolean;
   onClick: () => void;
 }
 
 interface WorklogTableProps {
-  columns: TableProps<Worklog | WorklogDetails>["columns"];
-  dataSource: Worklog[] | WorklogDetails[];
+  columns: TableProps<Worklog | WorklogDetails | WorklogTask>["columns"];
+  dataSource: Worklog[] | WorklogDetails[] | WorklogTask[];
+  rowSelection?: TableProps<
+    Worklog | WorklogDetails | WorklogTask
+  >["rowSelection"];
   actionButtons: WorklogTableActionButtonProps[];
 }
 
@@ -63,6 +75,7 @@ export type {
   WorkLogStatusType,
   Worklog,
   WorklogDetails,
+  WorklogTask,
   LogMeta,
   WorklogTableActionButtonProps,
   WorklogTableProps,

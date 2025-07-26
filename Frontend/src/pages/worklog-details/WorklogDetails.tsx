@@ -19,6 +19,7 @@ import {
   type Worklog,
   type WorklogDetails,
   type WorkLogStatusType,
+  type WorklogTask,
 } from "../../utils/types";
 import { useState } from "react";
 import { Link } from "react-router-dom";
@@ -26,37 +27,74 @@ import { getPaddedItem } from "../../utils/helpers";
 import worklogModalClasses from "../../components/worklogs/workklog-modal/scss/worklog-modal.module.css";
 
 const WorklogDetails = () => {
-  const [editDetailVisible, setEditDetailVisible] = useState(false);
-  const [viewDetailVisible, setViewDetailVisible] = useState(false);
-  const [deleteDetailVisible, setDeleteDetailVisible] = useState(false);
+  const [editDetailVisible, setEditDetailVisible] = useState<boolean>(false);
+  const [viewDetailTask, setViewDetailTask] = useState<WorklogDetails | null>(
+    null
+  );
+  const [deleteDetailVisible, setDeleteDetailVisible] =
+    useState<boolean>(false);
+  const [selectedWorklogTasks, setSelectedWorklogTasks] = useState<number[]>(
+    []
+  );
 
   const worklogDetails: WorklogDetails[] = [
     {
-      detailId: 1,
+      id: 1,
       taskName: "SAL-1234",
       taskUrl: "https://jira.example.com/browse/SAL-1234",
       totalHours: 5,
       status: "SYNCED",
     },
     {
-      detailId: 2,
+      id: 2,
       taskName: "SAL-5678",
       taskUrl: "https://jira.example.com/browse/SAL-5678",
       totalHours: 7.45,
       status: "SYNCED",
     },
     {
-      detailId: 3,
+      id: 3,
       taskName: "SAL-9012",
       taskUrl: "https://jira.example.com/browse/SAL-9012",
       totalHours: 6.45,
       status: "UNSYNCED",
     },
     {
-      detailId: 4,
+      id: 4,
       taskName: "SAL-5486",
       taskUrl: "https://jira.example.com/browse/SAL-5486",
       totalHours: 2.45,
+      status: "UNSYNCED",
+    },
+  ];
+
+  const worklogTasks: WorklogTask[] = [
+    {
+      id: 1,
+      fromTime: "13:00",
+      toTime: "15:00",
+      description: "Worked on feature X",
+      status: "SYNCED",
+    },
+    {
+      id: 2,
+      fromTime: "15:30",
+      toTime: "17:00",
+      description: "Fixed bug Y",
+      status: "SYNCED",
+    },
+    {
+      id: 3,
+      fromTime: "09:00",
+      toTime: "11:00",
+      description: "Reviewed PR Z",
+      status: "UNSYNCED",
+    },
+    {
+      id: 4,
+      fromTime: "11:30",
+      toTime: "12:30",
+      description: "Team meeting",
       status: "UNSYNCED",
     },
   ];
@@ -101,12 +139,10 @@ const WorklogDetails = () => {
           meta.className
         );
       },
-      filters: Object.entries(statusMetadata)
-        .filter(([key]) => key != "PARTIALLY")
-        .map(([key, value]) => ({
-          text: value.label,
-          value: key,
-        })),
+      filters: Object.entries(statusMetadata).map(([key, value]) => ({
+        text: value.label,
+        value: key,
+      })),
       onFilter: (value, record) => record.status === value,
     },
     {
@@ -138,7 +174,7 @@ const WorklogDetails = () => {
           <Tooltip title="View">
             <Eye
               className={`${worklogTableClasses.log_action_btn} ${worklogTableClasses.view}`}
-              onClick={() => setViewDetailVisible(true)}
+              onClick={() => setViewDetailTask(record)}
             />
           </Tooltip>
           <Tooltip title="Delete">
@@ -151,6 +187,86 @@ const WorklogDetails = () => {
       ),
     },
   ];
+
+  const taskLogsColumns: TableProps<WorklogTask>["columns"] = [
+    {
+      title: "From Time",
+      dataIndex: "fromTime",
+      key: "fromTime",
+    },
+    {
+      title: "To Time",
+      dataIndex: "toTime",
+      key: "toTime",
+    },
+    {
+      title: "Description",
+      dataIndex: "description",
+      key: "description",
+    },
+    {
+      title: "Status",
+      dataIndex: "status",
+      key: "status",
+      render: (_, { status }) => {
+        const meta = statusMetadata[status as WorkLogStatusType];
+        return getPaddedItem(
+          worklogTableClasses,
+          "status_item",
+          meta.label,
+          meta.className
+        );
+      },
+      filters: Object.entries(statusMetadata)
+        .filter(([key]) => key != "PARTIALLY")
+        .map(([key, value]) => ({
+          text: value.label,
+          value: key,
+        })),
+      onFilter: (value, record) => record.status === value,
+    },
+    {
+      title: "Actions",
+      key: "actions",
+      render: (_, record) => (
+        <div className={worklogTableClasses.actions_container}>
+          {record.status === "SYNCED" ? (
+            <Tooltip title="Unsync from Jira">
+              <CalendarX2
+                onClick={() => {}}
+                className={`${worklogTableClasses.log_action_btn} ${worklogTableClasses.unsync}`}
+              />
+            </Tooltip>
+          ) : (
+            <Tooltip title="Sync to Jira">
+              <CalendarSync
+                onClick={() => {}}
+                className={`${worklogTableClasses.log_action_btn} ${worklogTableClasses.sync}`}
+              />
+            </Tooltip>
+          )}
+          <Tooltip title="Edit">
+            <SquarePen
+              onClick={() => {}}
+              className={`${worklogTableClasses.log_action_btn} ${worklogTableClasses.edit}`}
+            />
+          </Tooltip>
+          <Tooltip title="Delete">
+            <Trash
+              onClick={() => {}}
+              className={`${worklogTableClasses.log_action_btn} ${worklogTableClasses.delete}`}
+            />
+          </Tooltip>
+        </div>
+      ),
+    },
+  ];
+
+  const taskLogsRowSelection: TableProps<WorklogTask>["rowSelection"] = {
+    onChange: (_, selectedRows: WorklogTask[]) => {
+      setSelectedWorklogTasks(selectedRows.map((row) => row.id));
+    },
+  };
 
   return (
     <>
@@ -167,15 +283,36 @@ const WorklogDetails = () => {
         <span>To Be Implemented</span>
       </WorklogModal>
       <WorklogModal
-        title="Task Log Details"
+        title={`${viewDetailTask?.taskName} Task Logs`}
         properties={{
-          open: viewDetailVisible,
+          open: !!viewDetailTask,
           centered: true,
           footer: null,
-          onCancel: () => setViewDetailVisible(false),
+          width: "80%",
+          onCancel: () => setViewDetailTask(null),
         }}
       >
-        <span>To Be Implemented</span>
+        <WorklogTable
+          columns={
+            taskLogsColumns as TableProps<
+              WorklogTask | WorklogDetails | Worklog
+            >["columns"]
+          }
+          dataSource={worklogTasks}
+          rowSelection={{
+            ...(taskLogsRowSelection as TableProps<
+              WorklogTask | WorklogDetails | Worklog
+            >["rowSelection"]),
+          }}
+          actionButtons={[
+            {
+              label: "Sync to Jira",
+              icon: <CalendarSync />,
+              onClick: () => {},
+              disabled: selectedWorklogTasks.length === 0,
+            },
+          ]}
+        />
       </WorklogModal>
       <WorklogModal
         title="Delete Task Log"
@@ -240,7 +377,9 @@ const WorklogDetails = () => {
         <div className={classes.worklog_details_content}>
           <WorklogTable
             columns={
-              tableColumns as TableProps<WorklogDetails | Worklog>["columns"]
+              tableColumns as TableProps<
+                WorklogDetails | Worklog | WorklogTask
+              >["columns"]
             }
             dataSource={worklogDetails}
             actionButtons={[

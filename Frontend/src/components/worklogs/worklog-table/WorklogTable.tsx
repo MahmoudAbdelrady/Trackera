@@ -10,6 +10,7 @@ const WorklogTable = (props: WorklogTableProps) => {
           <Button
             key={index}
             icon={button.icon}
+            disabled={button.disabled}
             className={`${classes.log_button} ${button.customClasses
               ?.map((className) => classes[className])
               .join(" ")}`}
@@ -23,7 +24,9 @@ const WorklogTable = (props: WorklogTableProps) => {
         <Table
           columns={props.columns}
           dataSource={props.dataSource}
+          rowSelection={props.rowSelection}
           scroll={{ x: 768 }}
+          rowKey={(record) => record.id?.toString()}
           className={classes.worklogs_table}
         />
       </div>
