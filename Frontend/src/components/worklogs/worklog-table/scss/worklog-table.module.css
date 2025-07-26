@@ -1,0 +1,100 @@
+.worklog_table_container .table_actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  margin: 20px 0;
+}
+.worklog_table_container .table_actions .log_button {
+  color: #fff;
+  padding: 20px;
+  background-color: #2563eb;
+}
+.worklog_table_container .table_actions .log_button.unsync {
+  background-color: #d97706;
+}
+.worklog_table_container .table_actions .log_button:hover, .worklog_table_container .table_actions .log_button:active, .worklog_table_container .table_actions .log_button:focus {
+  color: #fff;
+  background-color: rgb(20.5714285714, 84.3428571429, 224.2285714286);
+  border-color: transparent;
+}
+.worklog_table_container .table_actions .log_button:hover.unsync, .worklog_table_container .table_actions .log_button:active.unsync, .worklog_table_container .table_actions .log_button:focus.unsync {
+  background-color: rgb(195.3, 107.1, 5.4);
+}
+.worklog_table_container .table_details .worklogs_table {
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+}
+.worklog_table_container .table_details .task_link {
+  position: relative;
+  color: #2563eb;
+}
+.worklog_table_container .table_details .task_link:hover {
+  text-decoration: underline;
+}
+.worklog_table_container .table_details .task_link .link_icon {
+  position: absolute;
+  right: -18px;
+  top: -8px;
+  width: 15px;
+  height: 15px;
+  color: #2563eb;
+}
+.worklog_table_container .table_details .evaluation_item,
+.worklog_table_container .table_details .status_item {
+  padding: 5px 10px;
+  border-radius: 12px;
+  background-color: #2563eb;
+  width: -moz-fit-content;
+  width: fit-content;
+  font-weight: 500;
+}
+.worklog_table_container .table_details .evaluation_item.excellent {
+  background-color: #e4f0ff;
+  color: #2563eb;
+}
+.worklog_table_container .table_details .evaluation_item.good {
+  background-color: #dcfce7;
+  color: #166534;
+}
+.worklog_table_container .table_details .evaluation_item.moderate {
+  background-color: #fef0e1;
+  color: #d97706;
+}
+.worklog_table_container .table_details .evaluation_item.poor {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+.worklog_table_container .table_details .status_item.synced {
+  background-color: #dcfce7;
+  color: #166534;
+}
+.worklog_table_container .table_details .status_item.partially {
+  background-color: #fef0e1;
+  color: #d97706;
+}
+.worklog_table_container .table_details .status_item.unsynced {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+.worklog_table_container .table_details .actions_container {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 15px;
+}
+.worklog_table_container .table_details .actions_container .log_action_btn {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: #000;
+  cursor: pointer;
+}
+.worklog_table_container .table_details .actions_container .log_action_btn.sync {
+  color: #2563eb;
+}
+.worklog_table_container .table_details .actions_container .log_action_btn.unsync {
+  color: #d97706;
+}
+.worklog_table_container .table_details .actions_container .log_action_btn.delete {
+  color: #dc2626;
+}/*# sourceMappingURL=worklog-table.module.css.map */

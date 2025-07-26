@@ -10,41 +10,30 @@ import {
   CalendarX2,
   Inbox,
 } from "lucide-react";
-import { AppLayout, SearchFilter, WorklogStatusCard } from "../../components";
-import classes from "./scss/home.module.css";
 import {
-  Button,
-  DatePicker,
-  Input,
-  Modal,
-  Switch,
-  Table,
-  Tooltip,
-  type TableProps,
-} from "antd";
+  AppLayout,
+  SearchFilter,
+  WorklogModal,
+  WorklogStatusCard,
+  WorklogTable,
+} from "../../components";
+import classes from "./scss/home.module.css";
+import { DatePicker, Input, Switch, Tooltip, type TableProps } from "antd";
 import { useState } from "react";
 import Dragger from "antd/es/upload/Dragger";
 import dayjs from "dayjs";
 import { Link } from "react-router-dom";
-import type {
-  LogMeta,
-  Worklog,
-  WorkLogEvaluationType,
-  WorkLogStatusType,
+import {
+  evaluationMetadata,
+  statusMetadata,
+  type Worklog,
+  type WorklogDetails,
+  type WorkLogEvaluationType,
+  type WorkLogStatusType,
 } from "../../utils/types";
-
-const evaluationMetadata: Record<WorkLogEvaluationType, LogMeta> = {
-  EXCELLENT: { label: "Excellent", className: "excellent" },
-  GOOD: { label: "Good", className: "good" },
-  MODERATE: { label: "Moderate", className: "moderate" },
-  POOR: { label: "Poor", className: "poor" },
-};
-
-const statusMetadata: Record<WorkLogStatusType, LogMeta> = {
-  SYNCED: { label: "Synced", className: "synced" },
-  PARTIALLY: { label: "Partially", className: "partially" },
-  UNSYNCED: { label: "Unsynced", className: "unsynced" },
-};
+import { getPaddedItem } from "../../utils/helpers";
+import worklogTableClasses from "../../components/worklogs/worklog-table/scss/worklog-table.module.css";
+import worklogModalClasses from "../../components/worklogs/workklog-modal/scss/worklog-modal.module.css";
 
 const Home = () => {
   const [addWorkLogVisible, setAddWorkLogVisible] = useState(false);
@@ -129,7 +118,12 @@ const Home = () => {
       key: "evaluation",
       render: (_, { evaluation }) => {
         const meta = evaluationMetadata[evaluation as WorkLogEvaluationType];
-        return getPaddedItem("evaluation_item", meta.label, meta.className);
+        return getPaddedItem(
+          worklogTableClasses,
+          "evaluation_item",
+          meta.label,
+          meta.className
+        );
       },
     },
     {
@@ -138,39 +132,44 @@ const Home = () => {
       key: "status",
       render: (_, { status }) => {
         const meta = statusMetadata[status as WorkLogStatusType];
-        return getPaddedItem("status_item", meta.label, meta.className);
+        return getPaddedItem(
+          worklogTableClasses,
+          "status_item",
+          meta.label,
+          meta.className
+        );
       },
     },
     {
       title: "Actions",
       key: "actions",
       render: (_, record) => (
-        <div className={classes.actions_container}>
+        <div className={worklogTableClasses.actions_container}>
           {record.status === "SYNCED" ? (
             <Tooltip title="Unsync from Jira">
               <CalendarX2
                 onClick={() => {}}
-                className={`${classes.log_action_btn} ${classes.unsync}`}
+                className={`${worklogTableClasses.log_action_btn} ${worklogTableClasses.unsync}`}
               />
             </Tooltip>
           ) : (
             <Tooltip title="Sync to Jira">
               <CalendarSync
                 onClick={() => {}}
-                className={`${classes.log_action_btn} ${classes.sync}`}
+                className={`${worklogTableClasses.log_action_btn} ${worklogTableClasses.sync}`}
               />
             </Tooltip>
           )}
           <Tooltip title="Edit">
             <SquarePen
               onClick={() => setEditWorkLogVisible(true)}
-              className={`${classes.log_action_btn} ${classes.edit}`}
+              className={`${worklogTableClasses.log_action_btn} ${worklogTableClasses.edit}`}
             />
           </Tooltip>
           <Tooltip title="View">
             <Link
               to={`/worklog-details/${record.logId}`}
-              className={`${classes.log_action_btn} ${classes.view}`}
+              className={`${worklogTableClasses.log_action_btn} ${worklogTableClasses.view}`}
             >
               <Eye />
             </Link>
@@ -178,7 +177,7 @@ const Home = () => {
           <Tooltip title="Delete">
             <Trash
               onClick={() => setDeleteWorkLogVisible(true)}
-              className={`${classes.log_action_btn} ${classes.delete}`}
+              className={`${worklogTableClasses.log_action_btn} ${worklogTableClasses.delete}`}
             />
           </Tooltip>
         </div>
@@ -186,32 +185,21 @@ const Home = () => {
     },
   ];
 
-  const getPaddedItem = (
-    className: string,
-    itemLabel: string,
-    metaClassName: string
-  ) => {
-    return (
-      <div className={`${classes[className]} ${classes[metaClassName]}`}>
-        {itemLabel}
-      </div>
-    );
-  };
-
   return (
     <>
-      <Modal
-        open={addWorkLogVisible}
-        centered
-        okText="Add"
-        onOk={() => setAddWorkLogVisible(false)}
-        onCancel={() => setAddWorkLogVisible(false)}
-        className={classes.worklog_modal}
+      <WorklogModal
+        title="Add Worklog"
+        properties={{
+          open: addWorkLogVisible,
+          centered: true,
+          okText: "Add",
+          onOk: () => setAddWorkLogVisible(false),
+          onCancel: () => setAddWorkLogVisible(false),
+        }}
       >
-        <h2 className={classes.header}>Add Worklog</h2>
-        <form className={classes.worklog_form}>
-          <div className={classes.form_group}>
-            <span className={classes.label}>Log Name:</span>
+        <form className={worklogModalClasses.worklog_form}>
+          <div className={worklogModalClasses.form_group}>
+            <span className={worklogModalClasses.label}>Log Name:</span>
             <Input
               placeholder="Enter log name"
               style={{ width: "70%", marginRight: "10px" }}
@@ -220,59 +208,68 @@ const Home = () => {
               <Info size={22} cursor={"pointer"} />
             </Tooltip>
           </div>
-          <div className={classes.form_group}>
-            <span className={classes.label}>Log date:</span>
+          <div className={worklogModalClasses.form_group}>
+            <span className={worklogModalClasses.label}>Log date:</span>
             <DatePicker placeholder="Select log date" defaultValue={dayjs()} />
           </div>
-          <div className={`${classes.form_group} ${classes.upload_group}`}>
-            <span className={classes.label}>Upload log file:</span>
-            <Dragger className={classes.upload_box}>
-              <div className={classes.upload_icon_box}>
-                <Inbox className={classes.upload_icon} />
+          <div
+            className={`${worklogModalClasses.form_group} ${worklogModalClasses.upload_group}`}
+          >
+            <span className={worklogModalClasses.label}>Upload log file:</span>
+            <Dragger className={worklogModalClasses.upload_box}>
+              <div className={worklogModalClasses.upload_icon_box}>
+                <Inbox className={worklogModalClasses.upload_icon} />
               </div>
-              <span className={classes.upload_title}>
+              <span className={worklogModalClasses.upload_title}>
                 Click or drag worklog file to this area to upload
               </span>
-              <p className={classes.upload_subtitle}>
+              <p className={worklogModalClasses.upload_subtitle}>
                 Supported formats: .xlsx
               </p>
             </Dragger>
           </div>
-          <div className={classes.form_group}>
-            <span className={classes.label}>Sync to Jira after upload:</span>
+          <div className={worklogModalClasses.form_group}>
+            <span className={worklogModalClasses.label}>
+              Sync to Jira after upload:
+            </span>
             <Switch />
           </div>
         </form>
-      </Modal>
-      <Modal
-        open={editWorkLogVisible}
-        centered
-        okText="Save"
-        onOk={() => {}}
-        onCancel={() => setEditWorkLogVisible(false)}
-        className={classes.worklog_modal}
+      </WorklogModal>
+      <WorklogModal
+        title="Edit Worklog"
+        properties={{
+          open: editWorkLogVisible,
+          centered: true,
+          okText: "Save",
+          onOk: () => {},
+          onCancel: () => setEditWorkLogVisible(false),
+        }}
       >
-        <h2 className={classes.header}>Edit Worklog</h2>
-      </Modal>
-      <Modal
-        open={deleteWorkLogVisible}
-        centered
-        okText="Delete"
-        onOk={() => {}}
-        onCancel={() => setDeleteWorkLogVisible(false)}
-        okButtonProps={{ danger: true }}
-        className={classes.worklog_modal}
+        <span>To Be Implemented</span>
+      </WorklogModal>
+      <WorklogModal
+        title="Delete Worklog"
+        properties={{
+          open: deleteWorkLogVisible,
+          centered: true,
+          okText: "Delete",
+          okButtonProps: { danger: true },
+          onOk: () => {},
+          onCancel: () => setDeleteWorkLogVisible(false),
+        }}
       >
-        <h2 className={classes.header}>Delete Worklog</h2>
-        <p className={classes.delete_message}>
+        <p className={worklogModalClasses.delete_message}>
           Are you sure you want to delete this worklog? This action cannot be
           undone.
         </p>
-        <div className={classes.switch_option}>
-          <span className={classes.label}>Also unsync from Jira:</span>
+        <div className={worklogModalClasses.switch_option}>
+          <span className={worklogModalClasses.label}>
+            Also unsync from Jira:
+          </span>
           <Switch />
         </div>
-      </Modal>
+      </WorklogModal>
       <AppLayout>
         <div className={classes.worklog_status_cards_container}>
           {workLogStatusCards.map((card, index) => (
@@ -289,23 +286,19 @@ const Home = () => {
         <div className={classes.worklogs_content}>
           <SearchFilter />
           <div className={classes.worklogs_container}>
-            <div className={classes.worklogs_actions}>
-              <Button
-                icon={<ClipboardPlus />}
-                className={`${classes.log_button} ${classes.add}`}
-                onClick={() => setAddWorkLogVisible(true)}
-              >
-                Add Worklog
-              </Button>
-            </div>
-            <div className={classes.worklogs_data}>
-              <Table
-                columns={tableColumns}
-                dataSource={worklogs}
-                scroll={{ x: 768 }}
-                className={classes.worklogs_table}
-              />
-            </div>
+            <WorklogTable
+              columns={
+                tableColumns as TableProps<Worklog | WorklogDetails>["columns"]
+              }
+              dataSource={worklogs}
+              actionButtons={[
+                {
+                  label: "Add Worklog",
+                  icon: <ClipboardPlus />,
+                  onClick: () => setAddWorkLogVisible(true),
+                },
+              ]}
+            />
           </div>
         </div>
       </AppLayout>

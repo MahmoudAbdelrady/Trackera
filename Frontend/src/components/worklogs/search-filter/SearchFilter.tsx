@@ -83,7 +83,7 @@ const SearchFilter = () => {
   return (
     <div className={classes.search_filters_container}>
       <Collapse
-        expandIconPosition="right"
+        expandIconPosition="end"
         items={[
           {
             key: "1",

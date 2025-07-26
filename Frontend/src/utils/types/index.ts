@@ -4,7 +4,12 @@ import type {
   Worklog,
   WorklogDetails,
   LogMeta,
+  WorklogTableActionButtonProps,
+  WorklogTableProps,
+  WorklogModalProps,
 } from "./worklog";
+
+import { evaluationMetadata, statusMetadata } from "./worklog";
 
 export type {
   WorkLogEvaluationType,
@@ -12,4 +17,9 @@ export type {
   Worklog,
   WorklogDetails,
   LogMeta,
+  WorklogTableActionButtonProps,
+  WorklogTableProps,
+  WorklogModalProps,
 };
+
+export { evaluationMetadata, statusMetadata };

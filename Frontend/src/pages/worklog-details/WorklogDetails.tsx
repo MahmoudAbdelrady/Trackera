@@ -10,22 +10,20 @@ import {
   Target,
   Trash,
 } from "lucide-react";
-import { AppLayout } from "../../components";
+import { AppLayout, WorklogModal, WorklogTable } from "../../components";
 import classes from "./scss/worklog-details.module.css";
-import { Button, Modal, Switch, Table, Tooltip, type TableProps } from "antd";
-import type {
-  LogMeta,
-  WorklogDetails,
-  WorkLogStatusType,
+import worklogTableClasses from "../../components/worklogs/worklog-table/scss/worklog-table.module.css";
+import { Switch, Tooltip, type TableProps } from "antd";
+import {
+  statusMetadata,
+  type Worklog,
+  type WorklogDetails,
+  type WorkLogStatusType,
 } from "../../utils/types";
 import { useState } from "react";
 import { Link } from "react-router-dom";
-
-const statusMetadata: Record<WorkLogStatusType, LogMeta> = {
-  SYNCED: { label: "Synced", className: "synced" },
-  PARTIALLY: { label: "Partially", className: "partially" },
-  UNSYNCED: { label: "Unsynced", className: "unsynced" },
-};
+import { getPaddedItem } from "../../utils/helpers";
+import worklogModalClasses from "../../components/worklogs/workklog-modal/scss/worklog-modal.module.css";
 
 const WorklogDetails = () => {
   const [editDetailVisible, setEditDetailVisible] = useState(false);
@@ -69,9 +67,13 @@ const WorklogDetails = () => {
       dataIndex: "taskName",
       key: "taskName",
       render: (_, record) => (
-        <Link to={record.taskUrl} className={classes.task_link} target="_blank">
+        <Link
+          to={record.taskUrl}
+          className={worklogTableClasses.task_link}
+          target="_blank"
+        >
           {record.taskName}
-          <ExternalLink className={classes.link_icon} />
+          <ExternalLink className={worklogTableClasses.link_icon} />
         </Link>
       ),
       filters: worklogDetails.map((detail) => ({
@@ -92,7 +94,12 @@ const WorklogDetails = () => {
       key: "status",
       render: (_, { status }) => {
         const meta = statusMetadata[status as WorkLogStatusType];
-        return getPaddedItem("status_item", meta.label, meta.className);
+        return getPaddedItem(
+          worklogTableClasses,
+          "status_item",
+          meta.label,
+          meta.className
+        );
       },
       filters: Object.entries(statusMetadata)
         .filter(([key]) => key != "PARTIALLY")
@@ -106,38 +113,38 @@ const WorklogDetails = () => {
       title: "Actions",
       key: "actions",
       render: (_, record) => (
-        <div className={classes.actions_container}>
+        <div className={worklogTableClasses.actions_container}>
           {record.status === "SYNCED" ? (
             <Tooltip title="Unsync from Jira">
               <CalendarX2
                 onClick={() => {}}
-                className={`${classes.log_action_btn} ${classes.unsync}`}
+                className={`${worklogTableClasses.log_action_btn} ${worklogTableClasses.unsync}`}
               />
             </Tooltip>
           ) : (
             <Tooltip title="Sync to Jira">
               <CalendarSync
                 onClick={() => {}}
-                className={`${classes.log_action_btn} ${classes.sync}`}
+                className={`${worklogTableClasses.log_action_btn} ${worklogTableClasses.sync}`}
               />
             </Tooltip>
           )}
           <Tooltip title="Edit">
             <SquarePen
               onClick={() => setEditDetailVisible(true)}
-              className={`${classes.log_action_btn} ${classes.edit}`}
+              className={`${worklogTableClasses.log_action_btn} ${worklogTableClasses.edit}`}
             />
           </Tooltip>
           <Tooltip title="View">
             <Eye
-              className={`${classes.log_action_btn} ${classes.view}`}
+              className={`${worklogTableClasses.log_action_btn} ${worklogTableClasses.view}`}
               onClick={() => setViewDetailVisible(true)}
             />
           </Tooltip>
           <Tooltip title="Delete">
             <Trash
               onClick={() => setDeleteDetailVisible(true)}
-              className={`${classes.log_action_btn} ${classes.delete}`}
+              className={`${worklogTableClasses.log_action_btn} ${worklogTableClasses.delete}`}
             />
           </Tooltip>
         </div>
@@ -145,61 +152,53 @@ const WorklogDetails = () => {
     },
   ];
 
-  const getPaddedItem = (
-    className: string,
-    itemLabel: string,
-    metaClassName: string
-  ) => {
-    return (
-      <div className={`${classes[className]} ${classes[metaClassName]}`}>
-        {itemLabel}
-      </div>
-    );
-  };
-
   return (
     <>
-      <Modal
-        open={editDetailVisible}
-        centered
-        okText="Delete"
-        onOk={() => {}}
-        onCancel={() => setEditDetailVisible(false)}
-        okButtonProps={{ danger: true }}
-        className={classes.worklog_modal}
+      <WorklogModal
+        title="Edit Task Log"
+        properties={{
+          open: editDetailVisible,
+          centered: true,
+          okText: "Save",
+          onOk: () => {},
+          onCancel: () => setEditDetailVisible(false),
+        }}
       >
-        <h2 className={classes.header}>Edit Task Log</h2>
-      </Modal>
-      <Modal
-        open={viewDetailVisible}
-        centered
-        okText="Delete"
-        onOk={() => {}}
-        onCancel={() => setViewDetailVisible(false)}
-        okButtonProps={{ danger: true }}
-        className={classes.worklog_modal}
+        <span>To Be Implemented</span>
+      </WorklogModal>
+      <WorklogModal
+        title="Task Log Details"
+        properties={{
+          open: viewDetailVisible,
+          centered: true,
+          footer: null,
+          onCancel: () => setViewDetailVisible(false),
+        }}
       >
-        <h2 className={classes.header}>Task Log Details</h2>
-      </Modal>
-      <Modal
-        open={deleteDetailVisible}
-        centered
-        okText="Delete"
-        onOk={() => {}}
-        onCancel={() => setDeleteDetailVisible(false)}
-        okButtonProps={{ danger: true }}
-        className={classes.worklog_modal}
+        <span>To Be Implemented</span>
+      </WorklogModal>
+      <WorklogModal
+        title="Delete Task Log"
+        properties={{
+          open: deleteDetailVisible,
+          centered: true,
+          okText: "Delete",
+          onOk: () => {},
+          onCancel: () => setDeleteDetailVisible(false),
+          okButtonProps: { danger: true },
+        }}
       >
-        <h2 className={classes.header}>Delete Task Log</h2>
-        <p className={classes.delete_message}>
+        <p className={worklogModalClasses.delete_message}>
           Are you sure you want to delete this task log? This action cannot be
           undone.
         </p>
-        <div className={classes.switch_option}>
-          <span className={classes.label}>Also unsync from Jira:</span>
+        <div className={worklogModalClasses.switch_option}>
+          <span className={worklogModalClasses.label}>
+            Also unsync from Jira:
+          </span>
           <Switch />
         </div>
-      </Modal>
+      </WorklogModal>
       <AppLayout>
         <div className={classes.worklog_details_info}>
           <h3 className={classes.title}>Test Worklog</h3>
@@ -239,23 +238,19 @@ const WorklogDetails = () => {
           </div>
         </div>
         <div className={classes.worklog_details_content}>
-          <div className={classes.details_actions}>
-            <Button
-              icon={<CalendarSync />}
-              className={`${classes.log_button} ${classes.sync}`}
-              onClick={() => {}}
-            >
-              Sync to Jira
-            </Button>
-          </div>
-          <div className={classes.details_data}>
-            <Table
-              columns={tableColumns}
-              dataSource={worklogDetails}
-              scroll={{ x: 768 }}
-              className={classes.worklogs_table}
-            />
-          </div>
+          <WorklogTable
+            columns={
+              tableColumns as TableProps<WorklogDetails | Worklog>["columns"]
+            }
+            dataSource={worklogDetails}
+            actionButtons={[
+              {
+                label: "Sync to Jira",
+                icon: <CalendarSync />,
+                onClick: () => {},
+              },
+            ]}
+          />
         </div>
       </AppLayout>
     </>
