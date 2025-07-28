@@ -13,7 +13,7 @@ interface Worklog {
   status: WorkLogStatusType;
 }
 
-interface WorklogDetails {
+interface WorklogEntry {
   id: number;
   taskName: string;
   taskUrl: string;
@@ -55,7 +55,7 @@ interface WorklogTableActionButtonProps {
   onClick: () => void;
 }
 
-interface WorklogTableProps<T = Worklog | WorklogDetails | WorklogTask> {
+interface WorklogTableProps<T = Worklog | WorklogEntry | WorklogTask> {
   properties: TableProps<T>;
   actionButtons: WorklogTableActionButtonProps[];
 }
@@ -70,7 +70,7 @@ export type {
   WorkLogEvaluationType,
   WorkLogStatusType,
   Worklog,
-  WorklogDetails,
+  WorklogEntry,
   WorklogTask,
   LogMeta,
   WorklogTableActionButtonProps,

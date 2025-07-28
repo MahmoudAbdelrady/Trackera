@@ -1,21 +1,51 @@
-.test_container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  flex-direction: column-reverse;
+@use "../../../utils/styles/colors" as *;
+@use "../../../utils/styles/mixins" as *;
+@use "sass:color";
+
+.input_group {
+  @include start-col;
+  flex-direction: column;
   width: 100%;
-  min-height: 100vh;
+  .input_label {
+    font-size: 14px;
+    position: relative;
+    margin-bottom: 5px;
+    &::after {
+      content: "*";
+      color: $redColor;
+      position: absolute;
+      right: -10px;
+      top: -5px;
+      font-size: 15px;
+    }
+  }
+  .input_field {
+    padding: 10px 12px;
+  }
+  .input_icon {
+    color: $lightGray2;
+    width: 20px;
+    height: 20px;
+    margin-right: 5px;
+  }
 }
-.downbar {
-  position: sticky;
-  bottom: 0;
-  z-index: 99999;
-  height: 60px;
+
+.forget_password_box {
   width: 100%;
-  text-align: center;
-  background-color: #f1f1f1;
+  @include end;
+  .forget_password_link {
+    color: $mainColor;
+    font-size: 14px;
+    text-decoration: none;
+    width: fit-content;
+    &:hover {
+      color: color.scale($color: $mainColor, $lightness: -20%);
+      text-decoration: underline;
+    }
+  }
 }
-.content {
-  padding: 20px;
-  background-color: #fff;
+
+.submit_button {
+  width: 100%;
+  padding: 18px;
 }

@@ -1,8 +1,10 @@
+import type { AuthLayoutProps } from "./auth";
+
 import type {
   WorkLogEvaluationType,
   WorkLogStatusType,
   Worklog,
-  WorklogDetails,
+  WorklogEntry,
   WorklogTask,
   LogMeta,
   WorklogTableActionButtonProps,
@@ -13,10 +15,11 @@ import type {
 import { evaluationMetadata, statusMetadata } from "./worklog";
 
 export type {
+  AuthLayoutProps,
   WorkLogEvaluationType,
   WorkLogStatusType,
   Worklog,
-  WorklogDetails,
+  WorklogEntry,
   WorklogTask,
   LogMeta,
   WorklogTableActionButtonProps,

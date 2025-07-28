@@ -1,23 +1,53 @@
-.test_container {
+.input_group {
   display: flex;
   justify-content: center;
+  align-items: flex-start;
+  flex-direction: column;
+  flex-direction: column;
+  width: 100%;
+}
+.input_group .input_label {
+  font-size: 14px;
+  position: relative;
+  margin-bottom: 5px;
+}
+.input_group .input_label::after {
+  content: "*";
+  color: #dc2626;
+  position: absolute;
+  right: -10px;
+  top: -5px;
+  font-size: 15px;
+}
+.input_group .input_field {
+  padding: 10px 12px;
+}
+.input_group .input_icon {
+  color: #9ca3af;
+  width: 20px;
+  height: 20px;
+  margin-right: 5px;
+}
+
+.forget_password_box {
+  width: 100%;
+  display: flex;
+  justify-content: flex-end;
   align-items: center;
-  flex-direction: column-reverse;
-  width: 100%;
-  min-height: 100vh;
+}
+.forget_password_box .forget_password_link {
+  color: #2563eb;
+  font-size: 14px;
+  text-decoration: none;
+  width: -moz-fit-content;
+  width: fit-content;
+}
+.forget_password_box .forget_password_link:hover {
+  color: rgb(18.2857142857, 74.9714285714, 199.3142857143);
+  text-decoration: underline;
 }
 
-.downbar {
-  position: sticky;
-  bottom: 0;
-  z-index: 99999;
-  height: 60px;
+.submit_button {
   width: 100%;
-  text-align: center;
-  background-color: #f1f1f1;
-}
-
-.content {
-  padding: 20px;
-  background-color: #fff;
+  padding: 18px;
 }/*# sourceMappingURL=test.module.css.map */

@@ -1,0 +1,41 @@
+@use "../../../../utils/styles/colors" as *;
+@use "../../../../utils/styles/mixins" as *;
+
+.auth_footer_container {
+  margin-top: 20px;
+  .separator {
+    @include center;
+    position: relative;
+    .separator_text {
+      background-color: #fff;
+      color: $subtitleColor;
+      padding: 0 10px;
+      z-index: 1;
+      position: relative;
+      font-size: 15px;
+    }
+    &::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      border-bottom: 1px solid $darkBorderColor;
+      z-index: 0;
+    }
+  }
+  .auth_buttons {
+    margin-top: 10px;
+    @include center;
+    width: 100%;
+    .auth_btn {
+      width: 100%;
+      padding: 20px 15px;
+    }
+  }
+}
+img {
+  width: 20px;
+  height: 20px;
+}

@@ -16,11 +16,16 @@ $darkRedColor: #991b1b;
 $redColorLight: #fee2e2;
 $backgroundColor: #f9fafb;
 $lightGray: #f9fafb;
+$lightGray2: #9ca3af;
 $hoverColor: #f3f4f6;
 $borderColor: #e5e7eb;
+$darkBorderColor: #c9cacc;
+$subtitleColor: #5c5c5c;
 
 // transitions
 $mainTransition: 0.3s;
 
 // box shadows
 $mainBoxShadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+$authBoxShadow: 0 10px 15px -3px rgb(0 0 0 / 0.1),
+  0 4px 6px -4px rgb(0 0 0 / 0.1);

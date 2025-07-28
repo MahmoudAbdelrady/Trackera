@@ -1,0 +1,49 @@
+@use "../../../../utils/styles/colors" as *;
+@use "../../../../utils/styles/mixins" as *;
+
+.auth_layout {
+  @include center;
+  flex-direction: column;
+  width: 100vw;
+  height: 100vh;
+  .header {
+    @include center;
+    flex-direction: column;
+    h3 {
+      color: $mainColor;
+      font-size: 24px;
+    }
+    p {
+      color: $subtitleColor;
+      font-size: 14px;
+      margin-top: 5px;
+    }
+  }
+  .auth_fields_container {
+    margin-top: 10px;
+    background-color: #fff;
+    border-radius: 6px;
+    padding: 35px 25px;
+    box-shadow: $authBoxShadow;
+    width: 450px;
+    .auth_title {
+      @include center;
+      flex-direction: column;
+      margin-bottom: 25px;
+      h3 {
+        font-size: 20px;
+      }
+      p {
+        color: $subtitleColor;
+        font-size: 14px;
+        margin-top: 5px;
+      }
+    }
+    .auth_form {
+      @include start-col;
+      flex-direction: column;
+      width: 100%;
+      gap: 20px;
+    }
+  }
+}

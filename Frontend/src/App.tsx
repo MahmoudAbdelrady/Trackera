@@ -8,6 +8,8 @@ import {
   Settings,
   Test,
   WorklogDetails,
+  ForgetPassword,
+  ChangePassword,
 } from "./pages";
 
 const router = createBrowserRouter([
@@ -24,6 +26,22 @@ const router = createBrowserRouter([
     element: (
       <GuestRoute>
         <SignUp />
+      </GuestRoute>
+    ),
+  },
+  {
+    path: "/forget-password",
+    element: (
+      <GuestRoute>
+        <ForgetPassword />
+      </GuestRoute>
+    ),
+  },
+  {
+    path: "/change-password",
+    element: (
+      <GuestRoute>
+        <ChangePassword />
       </GuestRoute>
     ),
   },
