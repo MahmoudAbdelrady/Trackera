@@ -1,4 +1,4 @@
-import { AuthFooter } from "../../";
+import { Button } from "antd";
 import type { AuthLayoutProps } from "../../../utils/types";
 import classes from "./scss/auth-layout.module.css";
 
@@ -11,13 +11,26 @@ const AuthLayout = (props: AuthLayoutProps) => {
       </div>
       <div className={classes.auth_fields_container}>
         <div className={classes.auth_title}>
-          <h3>Sign in to Trackera</h3>
-          <p>Enter your credentials to access your account</p>
+          <h3>{props.title}</h3>
+          <p>{props.description}</p>
         </div>
-        <form className={classes.auth_form}>{props.children}</form>
-        <div className={classes.auth_footer}>
-          <AuthFooter />
-        </div>
+        <form className={classes.auth_form}>
+          <div className={classes.input_groups}>{props.children}</div>
+          <div className={classes.submit_button_container}>
+            <Button
+              htmlType="submit"
+              type="primary"
+              disabled={props.isSubmitBtnDisabled || props.isSubmitBtnLoading}
+              loading={props.isSubmitBtnLoading}
+              className={classes.submit_button}
+            >
+              {props.submitButtonText}
+            </Button>
+          </div>
+        </form>
+        {props.footer && (
+          <div className={classes.auth_footer}>{props.footer}</div>
+        )}
       </div>
     </div>
   );

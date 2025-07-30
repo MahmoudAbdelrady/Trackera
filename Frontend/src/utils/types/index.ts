@@ -1,4 +1,8 @@
-import type { AuthLayoutProps } from "./auth";
+import type {
+  AuthLayoutProps,
+  AuthFooterProps,
+  AuthFooterOAuthBtn,
+} from "./auth";
 
 import type {
   WorkLogEvaluationType,
@@ -25,6 +29,8 @@ export type {
   WorklogTableActionButtonProps,
   WorklogTableProps,
   WorklogModalProps,
+  AuthFooterProps,
+  AuthFooterOAuthBtn,
 };
 
 export { evaluationMetadata, statusMetadata };

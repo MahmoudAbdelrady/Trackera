@@ -1,3 +1,16 @@
+.composite_input_group {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 20px;
+  width: 100%;
+}
+@media (max-width: 480px) {
+  .composite_input_group {
+    flex-direction: column;
+  }
+}
+
 .input_group {
   display: flex;
   justify-content: center;
@@ -27,22 +40,4 @@
   width: 20px;
   height: 20px;
   margin-right: 5px;
-}
-
-.forget_password_box {
-  width: 100%;
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-}
-.forget_password_box .forget_password_link {
-  color: #2563eb;
-  font-size: 14px;
-  text-decoration: none;
-  width: -moz-fit-content;
-  width: fit-content;
-}
-.forget_password_box .forget_password_link:hover {
-  color: rgb(18.2857142857, 74.9714285714, 199.3142857143);
-  text-decoration: underline;
-}/*# sourceMappingURL=test.module.css.map */
+}/*# sourceMappingURL=auth.module.css.map */

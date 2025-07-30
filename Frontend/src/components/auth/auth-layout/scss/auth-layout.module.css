@@ -6,6 +6,12 @@
   width: 100vw;
   height: 100vh;
 }
+@media (max-width: 577px) or (max-height: 620px) {
+  .auth_layout {
+    margin: 20px 0;
+    height: auto;
+  }
+}
 .auth_layout .header {
   display: flex;
   justify-content: center;
@@ -22,12 +28,18 @@
   margin-top: 5px;
 }
 .auth_layout .auth_fields_container {
-  margin-top: 10px;
+  margin-top: 30px;
   background-color: #fff;
   border-radius: 6px;
   padding: 35px 25px;
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
   width: 450px;
+  max-width: 100%;
+}
+@media (max-width: 480px) {
+  .auth_layout .auth_fields_container {
+    width: calc(100% - 60px);
+  }
 }
 .auth_layout .auth_fields_container .auth_title {
   display: flex;
@@ -47,9 +59,28 @@
 .auth_layout .auth_fields_container .auth_form {
   display: flex;
   justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  width: 100%;
+  gap: 20px;
+}
+.auth_layout .auth_fields_container .auth_form .input_groups {
+  display: flex;
+  justify-content: center;
   align-items: flex-start;
   flex-direction: column;
   flex-direction: column;
   width: 100%;
   gap: 20px;
+}
+.auth_layout .auth_fields_container .auth_form .submit_button_container {
+  width: 100%;
+}
+.auth_layout .auth_fields_container .auth_form .submit_button_container .submit_button {
+  width: 100%;
+  padding: 18px;
+  background-color: #2563eb;
+}
+.auth_layout .auth_fields_container .auth_form .submit_button_container .submit_button:hover {
+  background-color: rgb(20.5714285714, 84.3428571429, 224.2285714286);
 }/*# sourceMappingURL=auth-layout.module.css.map */

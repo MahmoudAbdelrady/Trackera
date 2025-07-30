@@ -1,7 +1,7 @@
-import Login from "./auth/Login";
-import SignUp from "./auth/SignUp";
-import ForgetPassword from "./auth/ForgetPassword";
-import ChangePassword from "./auth/ChangePassword";
+import Login from "./auth/login/Login";
+import SignUp from "./auth/sign-up/SignUp";
+import ForgotPassword from "./auth/forgot-password/ForgotPassword";
+import ChangePassword from "./auth/change-password/ChangePassword";
 import Home from "./home/Home";
 import WorklogDetails from "./worklog-details/WorklogDetails";
 import Tasks from "./tasks/Tasks";
@@ -11,7 +11,7 @@ import Test from "./test/Test";
 export {
   Login,
   SignUp,
-  ForgetPassword,
+  ForgotPassword,
   ChangePassword,
   Home,
   WorklogDetails,

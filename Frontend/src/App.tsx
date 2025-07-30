@@ -8,7 +8,7 @@ import {
   Settings,
   Test,
   WorklogDetails,
-  ForgetPassword,
+  ForgotPassword,
   ChangePassword,
 } from "./pages";
 
@@ -30,10 +30,10 @@ const router = createBrowserRouter([
     ),
   },
   {
-    path: "/forget-password",
+    path: "/forgot-password",
     element: (
       <GuestRoute>
-        <ForgetPassword />
+        <ForgotPassword />
       </GuestRoute>
     ),
   },

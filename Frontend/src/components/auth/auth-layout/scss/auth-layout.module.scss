@@ -1,11 +1,16 @@
 @use "../../../../utils/styles/colors" as *;
 @use "../../../../utils/styles/mixins" as *;
+@use "sass:color";
 
 .auth_layout {
   @include center;
   flex-direction: column;
   width: 100vw;
   height: 100vh;
+  @media (max-width: 577px) or (max-height: 620px) {
+    margin: 20px 0;
+    height: auto;
+  }
   .header {
     @include center;
     flex-direction: column;
@@ -20,12 +25,16 @@
     }
   }
   .auth_fields_container {
-    margin-top: 10px;
+    margin-top: 30px;
     background-color: #fff;
     border-radius: 6px;
     padding: 35px 25px;
     box-shadow: $authBoxShadow;
     width: 450px;
+    max-width: 100%;
+    @media (max-width: 480px) {
+      width: calc(100% - 60px);
+    }
     .auth_title {
       @include center;
       flex-direction: column;
@@ -40,10 +49,27 @@
       }
     }
     .auth_form {
-      @include start-col;
+      @include center;
       flex-direction: column;
       width: 100%;
       gap: 20px;
+      .input_groups {
+        @include start-col;
+        flex-direction: column;
+        width: 100%;
+        gap: 20px;
+      }
+      .submit_button_container {
+        width: 100%;
+        .submit_button {
+          width: 100%;
+          padding: 18px;
+          background-color: $mainColor;
+          &:hover {
+            background-color: color.scale($color: $mainColor, $lightness: -10%);
+          }
+        }
+      }
     }
   }
 }

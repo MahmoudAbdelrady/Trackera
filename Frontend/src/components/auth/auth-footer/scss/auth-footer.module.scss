@@ -26,16 +26,35 @@
     }
   }
   .auth_buttons {
-    margin-top: 10px;
+    margin-top: 20px;
     @include center;
     width: 100%;
     .auth_btn {
       width: 100%;
       padding: 20px 15px;
+      .icon_container {
+        @include center;
+        img {
+          width: 20px;
+          height: 20px;
+        }
+      }
     }
   }
-}
-img {
-  width: 20px;
-  height: 20px;
+  .auth_redirection {
+    @include center;
+    margin-top: 25px;
+    font-size: 14px;
+    p {
+      color: $subtitleColor;
+      a {
+        color: $mainColor;
+        font-weight: 500;
+        margin-left: 5px;
+        &:hover {
+          text-decoration: underline;
+        }
+      }
+    }
+  }
 }
