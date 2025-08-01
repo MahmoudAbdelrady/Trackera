@@ -1,10 +1,35 @@
 import { AuthLayout } from "../../../components";
 import { Input } from "antd";
-import { Lock } from "lucide-react";
+import { Check, Lock } from "lucide-react";
 import authClasses from "../scss/auth.module.css";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import classes from "./scss/change-password.module.css";
 
 const ChangePassword = () => {
-  return (
+  const [isPasswordChanged, setIsPasswordChanged] = useState(true);
+  const navigate = useNavigate();
+
+  return isPasswordChanged ? (
+    <AuthLayout
+      title="Password Updated"
+      description="Your password has been successfully updated"
+      submitButtonText="Back to Sign In"
+      onSubmit={(e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        navigate("/login");
+      }}
+    >
+      <div className={classes.change_password_content}>
+        <div className={classes.check_icon_container}>
+          <Check className={classes.check_icon} />
+        </div>
+        <p className={classes.description}>
+          You can now sign in with your new password
+        </p>
+      </div>
+    </AuthLayout>
+  ) : (
     <AuthLayout
       title="Change your password"
       description="Enter your new password"

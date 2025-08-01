@@ -1,6 +1,5 @@
 @use "../../../../utils/styles/colors" as *;
 @use "../../../../utils/styles/mixins" as *;
-@use "sass:color";
 
 .auth_layout {
   @include center;
@@ -66,7 +65,7 @@
           padding: 18px;
           background-color: $mainColor;
           &:hover {
-            background-color: color.scale($color: $mainColor, $lightness: -10%);
+            background-color: scale-color($mainColor, -10%);
           }
         }
       }

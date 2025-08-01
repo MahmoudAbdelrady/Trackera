@@ -14,7 +14,7 @@ const AuthLayout = (props: AuthLayoutProps) => {
           <h3>{props.title}</h3>
           <p>{props.description}</p>
         </div>
-        <form className={classes.auth_form}>
+        <form className={classes.auth_form} onSubmit={props.onSubmit}>
           <div className={classes.input_groups}>{props.children}</div>
           <div className={classes.submit_button_container}>
             <Button

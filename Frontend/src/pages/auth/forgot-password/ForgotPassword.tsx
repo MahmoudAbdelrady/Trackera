@@ -16,14 +16,17 @@ const ForgotPassword = () => {
       title="Check your email"
       description="We have sent a password reset link to your email"
       submitButtonText="Back to Sign In"
-      onSubmit={() => navigate("/login")}
+      onSubmit={(e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        navigate("/login");
+      }}
     >
       <div className={classes.forgot_password_content}>
-        <div className={classes.check_icon}>
-          <Check />
+        <div className={classes.check_icon_container}>
+          <Check className={classes.check_icon} />
         </div>
         <p className={classes.description}>
-          A password reset link has been sent to <strong>{userEmail}</strong>.
+          A password reset link has been sent to <strong>{userEmail}</strong>,
           Please check your inbox.
         </p>
       </div>
