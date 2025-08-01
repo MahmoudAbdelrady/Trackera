@@ -85,3 +85,8 @@
     }
   }
 }
+
+.profile_item {
+  @include start;
+  gap: 5px;
+}

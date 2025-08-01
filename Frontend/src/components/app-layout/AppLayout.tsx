@@ -1,24 +1,35 @@
-import { ChevronDown, Moon } from "lucide-react";
+import { ChevronDown, LogOut, Moon } from "lucide-react";
 import classes from "./scss/app-layout.module.css";
-import { Avatar } from "antd";
+import { Avatar, Dropdown, type MenuProps } from "antd";
 import { Sidebar } from "..";
 
 const AppLayout = ({ children }: { children: React.ReactNode }) => {
+  const userProfileItems: MenuProps["items"] = [
+    {
+      label: (
+        <div className={classes.profile_item}>
+          <LogOut />
+          <span className={classes.profile_item_label}>Logout</span>
+        </div>
+      ),
+      key: "logout",
+      onClick: () => {},
+    },
+  ];
   return (
     <div className={classes.app_layout}>
       <div className={classes.header}>
         <h3 className={classes.site_name}>Trackera</h3>
         <div className={classes.actions}>
-          <div className={classes.action_buttons}>
-            <Moon className={classes.action_icn} />
-          </div>
-          <div className={classes.user_profile}>
-            <Avatar style={{ backgroundColor: "blue" }}>T</Avatar>
-            <div className={classes.user_name}>
-              <span>Tester</span>
-              <ChevronDown />
+          <Dropdown trigger={["click"]} menu={{ items: userProfileItems }}>
+            <div className={classes.user_profile}>
+              <Avatar style={{ backgroundColor: "blue" }}>T</Avatar>
+              <div className={classes.user_name}>
+                <span>Tester</span>
+                <ChevronDown />
+              </div>
             </div>
-          </div>
+          </Dropdown>
         </div>
       </div>
       <div className={classes.body_container}>
