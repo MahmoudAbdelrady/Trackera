@@ -1,4 +1,4 @@
-import { ChevronDown, LogOut, Moon } from "lucide-react";
+import { ChevronDown, LogOut } from "lucide-react";
 import classes from "./scss/app-layout.module.css";
 import { Avatar, Dropdown, type MenuProps } from "antd";
 import { Sidebar } from "..";
