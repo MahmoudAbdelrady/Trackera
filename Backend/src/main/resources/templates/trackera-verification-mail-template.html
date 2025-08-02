@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Trackera</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", Segoe UI Symbol, "Noto Color Emoji";
+      }
+      .trackera-header {
+        display: flex;
+        justify-content: flex-start;
+        align-items: center;
+        background-color: #2563eb;
+        color: #fff;
+        padding: 15px;
+        font-size: 20px;
+        font-weight: bold;
+      }
+      .trackera-content {
+        padding: 15px;
+        .content-header {
+          display: flex;
+          justify-content: center;
+          align-items: flex-start;
+          flex-direction: column;
+          p {
+            margin-top: 15px;
+            color: #5c5c5c;
+          }
+        }
+        .content-actions {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          margin: 10px 0;
+          .action-btn {
+            padding: 15px;
+            font-weight: 500;
+            background-color: #2563eb;
+            border-radius: 12px;
+            color: #fff;
+            transition: 0.3s;
+            cursor: pointer;
+          }
+          .action-btn:hover {
+            background-color: #1a5bea;
+          }
+        }
+        .content-footer {
+            color: #5c5c5c;
+        }
+      }
+      .trackera-footer {
+        border-top: 1px solid #e5e7eb;
+        text-align: center;
+        padding: 20px;
+        background-color: #ddd;
+      }
+    </style>
+</head>
+<body>
+<div class="trackera-header">
+  <h1>Trackera</h1>
+</div>
+<div class="trackera-content">
+  <div class="content-header">
+    <h2 th:text="${emailType}"></h2>
+    <p th:text="${emailTypeDesc}"></p>
+  </div>
+  <div class="content-actions">
+    <a th:href="${verificationLink}" th:text="${linkLabel}" target="_blank" class="action-btn"></a>
+  </div>
+  <div class="content-footer">
+    <p>If you didn't request this, please ignore the email</p>
+  </div>
+</div>
+<div class="trackera-footer">
+  <p>Trackera - All rights reserved.</p>
+</div>
+</body>
+</html>
