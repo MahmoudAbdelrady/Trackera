@@ -1,5 +1,6 @@
 package com.mdevs.trackera.config;
 
+import com.mdevs.trackera.entity.User;
 import lombok.Getter;
 import org.modelmapper.ModelMapper;
 import org.modelmapper.convention.MatchingStrategies;
@@ -66,5 +67,9 @@ public class AppConfig {
 
     public static String getFrontendUrl() {
         return applicationContext.getEnvironment().getProperty("trackera.frontend.url");
+    }
+
+    public static User getCurrentUser() {
+        return null;
     }
 }

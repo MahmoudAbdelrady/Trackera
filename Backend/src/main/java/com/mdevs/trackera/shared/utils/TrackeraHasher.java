@@ -24,13 +24,25 @@ public class TrackeraHasher {
     private final static String ENCRYPTION_ALGORITHM = "AES";
 
     private SecretKey getAesKey() {
-        return new SecretKeySpec(encryptionSecretKey.getBytes(StandardCharsets.UTF_8), "AES");
+        return new SecretKeySpec(Base64.getDecoder().decode(encryptionSecretKey), "AES");
     }
 
-    public String hash(String text) {
+    public String hash(String text, boolean isUrl) {
         try {
             byte[] encryptedData = encrypt(text);
-            return Base64.getEncoder().withoutPadding().encodeToString(hashByteData(encryptedData));
+            Base64.Encoder encoder = isUrl ? Base64.getUrlEncoder() : Base64.getEncoder();
+            return encoder.withoutPadding().encodeToString(hashByteData(encryptedData));
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public boolean isMatch(String text, String hash, boolean isUrl) {
+        try {
+            byte[] encryptedData = encrypt(text);
+            byte[] expectedHash = isUrl ? Base64.getUrlDecoder().decode(hash) : Base64.getDecoder().decode(hash);
+            byte[] actualHash = hashByteData(encryptedData);
+            return MessageDigest.isEqual(expectedHash, actualHash);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

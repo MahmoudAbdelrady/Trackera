@@ -25,6 +25,7 @@ public class TrackeraTableNamingStrategy extends PhysicalNamingStrategyStandardI
             return singular;
         }
 
+        singular = singular.toLowerCase();
         if (singular.endsWith("s")) {
             return singular;
         }

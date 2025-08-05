@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -37,8 +38,8 @@ public class SecurityTokenService {
         }
         Long userId = Long.parseLong(tokenPayload.get("userId"));
         SecurityToken.Type securityRequestType = SecurityToken.Type.valueOf(tokenPayload.get("type"));
-        SecurityToken securityRequestToken = securityTokenRepository.findByUserIdAndType(userId, securityRequestType);
-        if (securityRequestToken == null || !securityRequestToken.getToken().equals(token)) {
+        SecurityToken securityRequestToken = securityTokenRepository.findByUserIdAndTypeAndCreatedAtGreaterThanEqual(userId, securityRequestType, LocalDateTime.now().minusMinutes(MAX_SECURITY_TOKEN_MINUTES));
+        if (securityRequestToken == null || !trackeraHasher.isMatch(token, securityRequestToken.getToken(), true)) {
             throw new UnauthorizedException("Url is expired or invalid");
         }
         return securityRequestToken;
@@ -46,7 +47,7 @@ public class SecurityTokenService {
 
     @Transactional
     public void createAndSendSecurityToken(User user, SecurityToken.Type type, String additionalInfo, Map<String, String> extraParameters, String pageUrl, String emailSubject, String templateName) {
-        if (securityTokenRepository.existsByUserAndType(user, type)) {
+        if (securityTokenRepository.existsByUserAndTypeAndCreatedAtGreaterThanEqual(user, type, LocalDateTime.now().minusMinutes(MAX_SECURITY_TOKEN_MINUTES))) {
             throw new BusinessException(type.getLabel() + " request has already been made recently. Please check your email or try again later.");
         }
 
@@ -54,10 +55,12 @@ public class SecurityTokenService {
         if (!StringUtils.isEmpty(additionalInfo)) {
             securityToken.setAdditionalInfo(additionalInfo);
         }
+        String actualToken = securityToken.getToken();
+        securityToken.setToken(trackeraHasher.hash(actualToken, true));
         securityToken = securityTokenRepository.save(securityToken);
 
         Map<String, String> templateParameters = new HashMap<>();
-        templateParameters.put("verificationLink", AppConfig.getFrontendUrl() + (pageUrl != null ? pageUrl : "/security-verification") + "?token=" + securityToken.getToken());
+        templateParameters.put("verificationLink", AppConfig.getFrontendUrl() + (pageUrl != null ? pageUrl : "/security-verification") + "?token=" + actualToken);
         if (extraParameters != null && !extraParameters.isEmpty()) {
             templateParameters.putAll(extraParameters);
         }

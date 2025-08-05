@@ -12,10 +12,10 @@ import java.util.List;
 
 @Repository
 public interface SecurityTokenRepository extends BaseRepository<SecurityToken> {
-    boolean existsByUserAndType(User user, SecurityToken.Type type);
+    boolean existsByUserAndTypeAndCreatedAtGreaterThanEqual(User user, SecurityToken.Type type, LocalDateTime timeOut);
 
-    @Query("SELECT s FROM SecurityToken s WHERE s.user.id = :userId AND s.type = :type")
-    SecurityToken findByUserIdAndType(@Param("userId") Long userId, @Param("type") SecurityToken.Type type);
+    @Query("SELECT s FROM SecurityToken s WHERE s.user.id = :userId AND s.type = :type AND s.createdAt >= :timeOut")
+    SecurityToken findByUserIdAndTypeAndCreatedAtGreaterThanEqual(@Param("userId") Long userId, @Param("type") SecurityToken.Type type, @Param("timeOut") LocalDateTime timeOut);
 
     @Query("SELECT s FROM SecurityToken s WHERE s.createdAt <= :timeOut AND s.id > :maxId ORDER BY s.id")
     List<SecurityToken> findSecurityRequestTokenWithCreationDateLessThanEqual(@Param("timeOut") LocalDateTime timeOut, @Param("maxId") Long maxId, Pageable pageable);
