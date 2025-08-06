@@ -28,7 +28,7 @@ public class SecurityTokenCleanUpJob {
         this.selfRef = securityTokenCleanUpJob;
     }
 
-    @Scheduled(cron = "* * * * * ?")
+    @Scheduled(cron = "0 0 0 ? * *")
     public void cleanUpExpiredTokens() {
         long maxId = 0;
         int pageSize = 100;

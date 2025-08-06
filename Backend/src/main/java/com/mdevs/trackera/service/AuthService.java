@@ -10,7 +10,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.ui.ModelMap;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -60,9 +59,6 @@ public class AuthService {
 
         String message = "";
         if (securityToken.getType().equals(SecurityToken.Type.ACCOUNT_ACTIVATION)) {
-            if (user.isOAuth() || user.isVerified()) {
-                throw new BusinessException("This account is already activated.");
-            }
             user.setVerified(true);
             userRepository.save(user);
             message = "Account activated successfully.";

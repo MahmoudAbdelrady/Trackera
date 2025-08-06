@@ -1,6 +1,5 @@
 package com.mdevs.trackera.shared.utils;
 
-import com.mdevs.trackera.entity.SecurityToken;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -48,10 +47,12 @@ public class TrackeraHasher {
         }
     }
 
-    public String hashForSecurityToken(Long userId, SecurityToken.Type type) {
+    public String hashForSecurityToken(Long secTokenId) {
         try {
-            String payload = String.join(":", userId.toString(), type.name(), UUID.randomUUID().toString());
+            byte[] encryptedId = encrypt(secTokenId.toString());
+            String encodedId = Base64.getUrlEncoder().withoutPadding().encodeToString(encryptedId);
 
+            String payload = String.join(":", encodedId, UUID.randomUUID().toString());
             byte[] encryptedPayloadBytes = encrypt(payload);
             String encodedPayload = Base64.getUrlEncoder().withoutPadding().encodeToString(encryptedPayloadBytes);
 
@@ -79,13 +80,10 @@ public class TrackeraHasher {
 
             String decryptedPayload = decrypt(encryptedPayload);
             String[] payloadParts = decryptedPayload.split(":");
-            if (payloadParts.length != 3)
+            if (payloadParts.length != 2)
                 return Collections.emptyMap();
 
-            return Map.of(
-                    "userId", payloadParts[0],
-                    "type", payloadParts[1]
-            );
+            return Map.of("tokenId", decrypt(Base64.getUrlDecoder().decode(payloadParts[0])));
         } catch (Exception e) {
             return Collections.emptyMap();
         }

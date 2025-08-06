@@ -36,10 +36,9 @@ public class SecurityTokenService {
         if (tokenPayload == null || tokenPayload.isEmpty()) {
             throw new UnauthorizedException("Url is expired or invalid");
         }
-        Long userId = Long.parseLong(tokenPayload.get("userId"));
-        SecurityToken.Type securityRequestType = SecurityToken.Type.valueOf(tokenPayload.get("type"));
-        SecurityToken securityRequestToken = securityTokenRepository.findByUserIdAndTypeAndCreatedAtGreaterThanEqual(userId, securityRequestType, LocalDateTime.now().minusMinutes(MAX_SECURITY_TOKEN_MINUTES));
-        if (securityRequestToken == null || !trackeraHasher.isMatch(token, securityRequestToken.getToken(), true)) {
+        Long tokenId = Long.parseLong(tokenPayload.get("tokenId"));
+        SecurityToken securityRequestToken = securityTokenRepository.findOne(tokenId);
+        if (securityRequestToken == null || securityRequestToken.getCreatedAt().isBefore(LocalDateTime.now().minusMinutes(MAX_SECURITY_TOKEN_MINUTES))) {
             throw new UnauthorizedException("Url is expired or invalid");
         }
         return securityRequestToken;
@@ -55,12 +54,11 @@ public class SecurityTokenService {
         if (!StringUtils.isEmpty(additionalInfo)) {
             securityToken.setAdditionalInfo(additionalInfo);
         }
-        String actualToken = securityToken.getToken();
-        securityToken.setToken(trackeraHasher.hash(actualToken, true));
-        securityToken = securityTokenRepository.save(securityToken);
+        securityTokenRepository.save(securityToken);
+        String token = trackeraHasher.hashForSecurityToken(securityToken.getId());
 
         Map<String, String> templateParameters = new HashMap<>();
-        templateParameters.put("verificationLink", AppConfig.getFrontendUrl() + (pageUrl != null ? pageUrl : "/security-verification") + "?token=" + actualToken);
+        templateParameters.put("verificationLink", AppConfig.getFrontendUrl() + (pageUrl != null ? pageUrl : "/security-verification") + "?token=" + token);
         if (extraParameters != null && !extraParameters.isEmpty()) {
             templateParameters.putAll(extraParameters);
         }

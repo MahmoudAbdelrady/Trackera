@@ -1,7 +1,5 @@
 package com.mdevs.trackera.entity;
 
-import com.mdevs.trackera.config.AppConfig;
-import com.mdevs.trackera.shared.utils.TrackeraHasher;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -34,15 +32,11 @@ public class SecurityToken extends BaseEntity {
     @Column(nullable = false)
     private Type type;
 
-    @Column(nullable = false, unique = true)
-    private String token;
-
     @Lob
     private String additionalInfo;
 
     public SecurityToken(User user, Type type) {
         this.user = user;
         this.type = type;
-        this.token = AppConfig.getApplicationContext().getBean(TrackeraHasher.class).hashForSecurityToken(user.getId(), type);
     }
 }
