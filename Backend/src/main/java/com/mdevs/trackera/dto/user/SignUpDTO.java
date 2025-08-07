@@ -14,7 +14,7 @@ public class SignUpDTO {
     private String firstname;
 
     @NotBlank(message = "Last name is required")
-    @Pattern(regexp = "^(?=.{2,120}$)[A-Za-z]+(?: [A-Za-z]+)*$", message = "Last name must be between 2 and 120 characters long and can contain spaces")
+    @Pattern(regexp = "^(?=.{2,120}$)[A-Za-z]+(?: [A-Za-z]+)*$", message = "Last name must be between 2 and 120 characters long and contain only letters and spaces")
     private String lastname;
 
     @NotBlank(message = "Email is required")
