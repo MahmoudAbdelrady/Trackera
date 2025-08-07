@@ -1,7 +1,7 @@
 .composite_input_group {
   display: flex;
   justify-content: flex-start;
-  align-items: center;
+  align-items: flex-start;
   gap: 20px;
   width: 100%;
 }
@@ -9,35 +9,4 @@
   .composite_input_group {
     flex-direction: column;
   }
-}
-
-.input_group {
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
-  flex-direction: column;
-  flex-direction: column;
-  width: 100%;
-}
-.input_group .input_label {
-  font-size: 14px;
-  position: relative;
-  margin-bottom: 5px;
-}
-.input_group .input_label::after {
-  content: "*";
-  color: #dc2626;
-  position: absolute;
-  right: -10px;
-  top: -5px;
-  font-size: 15px;
-}
-.input_group .input_field {
-  padding: 10px 12px;
-}
-.input_group .input_icon {
-  color: #9ca3af;
-  width: 20px;
-  height: 20px;
-  margin-right: 5px;
 }/*# sourceMappingURL=auth.module.css.map */

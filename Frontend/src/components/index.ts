@@ -6,6 +6,7 @@ import WorklogStatusCard from "./worklogs/worklog-status-card/WorklogStatusCard"
 import SearchFilter from "./worklogs/search-filter/SearchFilter";
 import WorklogTable from "./worklogs/worklog-table/WorklogTable";
 import WorklogModal from "./worklogs/workklog-modal/WorklogModal";
+import InputField from "./input-field/InputField";
 
 export {
   AuthLayout,
@@ -16,4 +17,5 @@ export {
   SearchFilter,
   WorklogTable,
   WorklogModal,
+  InputField,
 };

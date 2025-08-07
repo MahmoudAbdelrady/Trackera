@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import classes from "./scss/auth-footer.module.css";
 import { Button } from "antd";
-import type { AuthFooterProps } from "../../../utils/types";
+import type { AuthFooterProps } from "../../../shared/types";
 
 const AuthFooter = (props: AuthFooterProps) => {
   return (

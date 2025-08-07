@@ -19,10 +19,10 @@ import {
   type WorklogEntry,
   type WorkLogStatusType,
   type WorklogTask,
-} from "../../utils/types";
+} from "../../shared/types";
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { getPaddedItem } from "../../utils/helpers";
+import { getPaddedItem } from "../../utils";
 import worklogModalClasses from "../../components/worklogs/workklog-modal/scss/worklog-modal.module.css";
 
 const WorklogDetails = () => {

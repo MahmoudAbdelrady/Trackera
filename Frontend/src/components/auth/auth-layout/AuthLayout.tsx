@@ -1,5 +1,5 @@
 import { Button } from "antd";
-import type { AuthLayoutProps } from "../../../utils/types";
+import type { AuthLayoutProps } from "../../../shared/types";
 import classes from "./scss/auth-layout.module.css";
 
 const AuthLayout = (props: AuthLayoutProps) => {

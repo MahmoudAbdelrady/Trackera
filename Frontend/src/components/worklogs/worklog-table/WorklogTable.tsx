@@ -4,7 +4,7 @@ import type {
   WorklogDetails,
   WorklogTableProps,
   WorklogTask,
-} from "../../../utils/types";
+} from "../../../shared/types";
 import classes from "./scss/worklog-table.module.css";
 
 const WorklogTable = <T extends Worklog | WorklogDetails | WorklogTask>(

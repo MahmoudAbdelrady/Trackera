@@ -1,3 +1,5 @@
+import type { InputFieldProps } from "./global";
+
 import type {
   AuthLayoutProps,
   AuthFooterProps,
@@ -19,6 +21,7 @@ import type {
 import { evaluationMetadata, statusMetadata } from "./worklog";
 
 export type {
+  InputFieldProps,
   AuthLayoutProps,
   WorkLogEvaluationType,
   WorkLogStatusType,

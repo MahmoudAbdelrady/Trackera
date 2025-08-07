@@ -29,8 +29,8 @@ import {
   type Worklog,
   type WorkLogEvaluationType,
   type WorkLogStatusType,
-} from "../../utils/types";
-import { getPaddedItem } from "../../utils/helpers";
+} from "../../shared/types";
+import { getPaddedItem } from "../../utils";
 import worklogTableClasses from "../../components/worklogs/worklog-table/scss/worklog-table.module.css";
 import worklogModalClasses from "../../components/worklogs/workklog-modal/scss/worklog-modal.module.css";
 

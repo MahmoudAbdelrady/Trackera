@@ -11,6 +11,7 @@ import {
   ForgotPassword,
   ChangePassword,
 } from "./pages";
+import { Toaster } from "react-hot-toast";
 
 const router = createBrowserRouter([
   {
@@ -88,7 +89,12 @@ const router = createBrowserRouter([
 ]);
 
 const App = () => {
-  return <RouterProvider router={router} />;
+  return (
+    <>
+      <Toaster />
+      <RouterProvider router={router} />
+    </>
+  );
 };
 
 export default App;
