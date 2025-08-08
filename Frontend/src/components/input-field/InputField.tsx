@@ -14,6 +14,13 @@ const InputField = (props: InputFieldProps) => {
     disabled: props.disabled,
     type: props.type,
   };
+
+  const handlePreventPasswordCopyPaste = (
+    event: React.ClipboardEvent<HTMLInputElement>
+  ) => {
+    event.preventDefault();
+  };
+
   return (
     <div className={classes.input_group}>
       <div className={classes.input_label}>{props.label}</div>
@@ -23,7 +30,12 @@ const InputField = (props: InputFieldProps) => {
         help={props.error ? props.error : ""}
       >
         {props.type === "password" ? (
-          <Input.Password {...fieldProps} />
+          <Input.Password
+            {...fieldProps}
+            onCut={handlePreventPasswordCopyPaste}
+            onCopy={handlePreventPasswordCopyPaste}
+            onPaste={handlePreventPasswordCopyPaste}
+          />
         ) : (
           <Input {...fieldProps} />
         )}

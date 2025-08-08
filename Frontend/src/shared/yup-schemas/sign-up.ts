@@ -13,7 +13,14 @@ const signUpSchema = object({
       new RegExp("^(?=.{2,120}$)[A-Za-z]+(?: [A-Za-z]+)*$"),
       "Last name must be between 2 and 120 characters long and contain only letters and spaces"
     ),
-  email: string().required("Email is required").email("Invalid email format"),
+  email: string()
+    .required("Email is required")
+    .matches(
+      new RegExp(
+        "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9-]+(?:\\.[a-zA-Z0-9-]+)*\\.[a-zA-Z]{2,}$"
+      ),
+      "Invalid email format"
+    ),
   password: string()
     .required("Password is required")
     .matches(

@@ -1,21 +1,54 @@
 import { AuthFooter, AuthLayout, InputField } from "../../../components";
 import authClasses from "../scss/auth.module.css";
 import inputFieldClasses from "../../../components/input-field/scss/input-field.module.css";
-import { Lock, Mail, User } from "lucide-react";
+import { Check, Lock, Mail, User } from "lucide-react";
 import { useFormik } from "formik";
 import { signUpSchema } from "../../../shared/yup-schemas";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import requestInstance from "../../../shared/api/request-instance";
+import { showErrorToast } from "../../../utils/toast-handler/show-toast";
+
+interface SignUpFormFields {
+  firstname: string;
+  lastname: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+}
 
 const SignUp = () => {
+  const [signedUp, setSignedUp] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
   const signUpFormik = useFormik({
-    initialValues: Object.keys(signUpSchema.fields).reduce((acc, key) => {
+    initialValues: (
+      Object.keys(signUpSchema.fields) as (keyof SignUpFormFields)[]
+    ).reduce((acc, key) => {
       acc[key] = "";
       return acc;
-    }, {} as Record<string, string>),
+    }, {} as SignUpFormFields),
     validationSchema: signUpSchema,
     onSubmit: (values) => {
-      console.log("Form submitted with values:", values);
+      handleSignUp(values);
     },
   });
+
+  const handleSignUp = async (values: SignUpFormFields) => {
+    setIsLoading(true);
+    try {
+      await requestInstance.post("/auth/signup", values);
+      setSignedUp(true);
+    } catch (error: any) {
+      showErrorToast(error);
+      signUpFormik.setValues({
+        ...signUpFormik.values,
+        password: "",
+        confirmPassword: "",
+      });
+    }
+    setIsLoading(false);
+  };
 
   return (
     <AuthLayout
@@ -23,8 +56,19 @@ const SignUp = () => {
       description="Sign up to get started with Trackera"
       submitButtonText="Create Account"
       onSubmit={signUpFormik.handleSubmit}
-      isSubmitBtnDisabled={!signUpFormik.isValid || signUpFormik.isSubmitting}
-      isSubmitBtnLoading={signUpFormik.isSubmitting}
+      isSubmitBtnDisabled={
+        !signUpFormik.isValid || !signUpFormik.dirty || isLoading
+      }
+      isSubmitBtnLoading={isLoading}
+      showResponseContent={signedUp}
+      responseContent={{
+        title: "Account Created",
+        description: "Your account has been successfully created",
+        message: "Please check your email for verification instructions.",
+        icon: <Check className={authClasses.response_icon} />,
+        buttonText: "Go to Login",
+        onClick: () => navigate("/login"),
+      }}
       footer={
         <AuthFooter
           oAuthButtons={[

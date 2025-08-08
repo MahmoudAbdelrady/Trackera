@@ -6,7 +6,18 @@ interface AuthLayoutProps {
   isSubmitBtnDisabled?: boolean;
   children: React.ReactNode;
   onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
+  showResponseContent?: boolean;
+  responseContent?: AuthResponseContent;
   footer?: React.ReactNode;
+}
+
+interface AuthResponseContent {
+  title: string;
+  description: string;
+  message: string;
+  icon: React.ReactNode;
+  buttonText: string;
+  onClick: () => void;
 }
 
 interface AuthFooterProps {
