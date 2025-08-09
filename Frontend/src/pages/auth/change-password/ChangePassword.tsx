@@ -1,57 +1,168 @@
-import { AuthLayout } from "../../../components";
-import { Input } from "antd";
-import { Check, Lock } from "lucide-react";
-import authClasses from "../scss/auth.module.css";
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import classes from "./scss/change-password.module.css";
+import {
+  AuthForm,
+  AuthLayout,
+  AuthResult,
+  InputField,
+  LoadingSpinner,
+} from "../../../components";
+import { Lock } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import inputFieldClasses from "../../../components/input-field/scss/input-field.module.css";
+import { useFormik } from "formik";
+import { resetPasswordSchema } from "../../../shared/yup-schemas";
+import requestInstance from "../../../shared/api/request-instance";
+import type { AuthResultFields } from "../../../shared/types";
+import { showErrorToast } from "../../../utils/toast-handler/show-toast";
+
+interface ChangePasswordFormFields {
+  newPassword: string;
+  confirmNewPassword: string;
+}
 
 const ChangePassword = () => {
-  const [isPasswordChanged, setIsPasswordChanged] = useState(true);
+  const [isVerifying, setIsVerifying] = useState<boolean>(true);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [showAuthResult, setShowAuthResult] = useState<boolean>(false);
+  const [passwordChangeResult, setPasswordChangeResult] =
+    useState<AuthResultFields>({});
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const token = searchParams.get("token");
 
-  return isPasswordChanged ? (
-    <AuthLayout
-      title="Password Updated"
-      description="Your password has been successfully updated"
-      submitButtonText="Back to Sign In"
-      onSubmit={(e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
-        navigate("/login");
-      }}
-    >
-      <div className={classes.change_password_content}>
-        <div className={classes.check_icon_container}>
-          <Check className={classes.check_icon} />
-        </div>
-        <p className={classes.description}>
-          You can now sign in with your new password
-        </p>
-      </div>
-    </AuthLayout>
+  const changePasswordFormik = useFormik({
+    initialValues: (
+      Object.keys(
+        resetPasswordSchema.fields
+      ) as (keyof ChangePasswordFormFields)[]
+    ).reduce((acc, key) => {
+      acc[key] = "";
+      return acc;
+    }, {} as ChangePasswordFormFields),
+    validationSchema: resetPasswordSchema,
+    onSubmit: async (values) => {
+      setIsLoading(true);
+      try {
+        const response = await requestInstance.post(
+          `/auth/change-password?token=${token}`,
+          {
+            ...values,
+            token,
+          }
+        );
+        setPasswordChangeResult({
+          title: response.data.data.title,
+          description: response.data.data.desc,
+        });
+        setShowAuthResult(true);
+      } catch (error: any) {
+        console.log("Error:", error);
+        if (error.response?.status === 403) {
+          setPasswordChangeResult({
+            title: error.response?.data?.message,
+            isError: true,
+          });
+          setShowAuthResult(true);
+        } else {
+          showErrorToast(error);
+          changePasswordFormik.resetForm();
+        }
+      }
+      setIsLoading(false);
+    },
+  });
+
+  useEffect(() => {
+    if (!token) {
+      setPasswordChangeResult({
+        title: "Url is expired or invalid",
+        isError: true,
+      });
+      setShowAuthResult(true);
+    } else {
+      const validateToken = async () => {
+        try {
+          await requestInstance.post(`/auth/validate-token?token=${token}`);
+        } catch (error: any) {
+          setPasswordChangeResult({
+            title: error.response?.data?.message,
+            isError: true,
+          });
+          setShowAuthResult(true);
+        }
+      };
+
+      validateToken();
+    }
+    setIsVerifying(false);
+  }, [token]);
+
+  return isVerifying ? (
+    <LoadingSpinner />
   ) : (
-    <AuthLayout
-      title="Change your password"
-      description="Enter your new password"
-      submitButtonText="Change Password"
-      onSubmit={() => {}}
-    >
-      <div className={authClasses.input_group}>
-        <div className={authClasses.input_label}>New Password</div>
-        <Input.Password
-          prefix={<Lock className={authClasses.input_icon} />}
-          placeholder="Enter your new password"
-          className={authClasses.input_field}
+    <AuthLayout>
+      {showAuthResult ? (
+        <AuthResult
+          title={passwordChangeResult.title}
+          description={passwordChangeResult.description}
+          message={
+            passwordChangeResult.isError
+              ? ""
+              : "You can now sign in with your new password"
+          }
+          buttonText="Back to Sign In"
+          isError={passwordChangeResult.isError}
+          onClick={() => navigate("/login")}
         />
-      </div>
-      <div className={authClasses.input_group}>
-        <div className={authClasses.input_label}>Confirm New Password</div>
-        <Input.Password
-          prefix={<Lock className={authClasses.input_icon} />}
-          placeholder="Confirm your new password"
-          className={authClasses.input_field}
-        />
-      </div>
+      ) : (
+        <AuthForm
+          title="Change your password"
+          description="Enter your new password"
+          submitButtonText="Change Password"
+          onSubmit={changePasswordFormik.handleSubmit}
+          isSubmitBtnDisabled={
+            !changePasswordFormik.isValid ||
+            !changePasswordFormik.dirty ||
+            isLoading
+          }
+          isSubmitBtnLoading={isLoading}
+        >
+          <InputField
+            label="New Password"
+            icon={<Lock className={inputFieldClasses.input_icon} />}
+            placeholder="Enter your new password"
+            name="newPassword"
+            value={changePasswordFormik.values.newPassword}
+            onChange={changePasswordFormik.handleChange}
+            onBlur={changePasswordFormik.handleBlur}
+            type="password"
+            disabled={isLoading}
+            error={
+              changePasswordFormik.touched.newPassword &&
+              changePasswordFormik.errors.newPassword
+                ? changePasswordFormik.errors.newPassword
+                : undefined
+            }
+          />
+          <InputField
+            label="Confirm New Password"
+            icon={<Lock className={inputFieldClasses.input_icon} />}
+            placeholder="Confirm your new password"
+            name="confirmNewPassword"
+            value={changePasswordFormik.values.confirmNewPassword}
+            onChange={changePasswordFormik.handleChange}
+            onBlur={changePasswordFormik.handleBlur}
+            type="password"
+            disabled={isLoading}
+            error={
+              changePasswordFormik.touched.confirmNewPassword &&
+              changePasswordFormik.errors.confirmNewPassword
+                ? changePasswordFormik.errors.confirmNewPassword
+                : undefined
+            }
+          />
+        </AuthForm>
+      )}
     </AuthLayout>
   );
 };

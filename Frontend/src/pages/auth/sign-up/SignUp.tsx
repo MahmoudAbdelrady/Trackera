@@ -25,7 +25,7 @@ interface SignUpFormFields {
 }
 
 const SignUp = () => {
-  const [signedUp, setSignedUp] = useState(false);
+  const [showAuthResult, setShowAuthResult] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const signUpFormik = useFormik({
@@ -36,35 +36,31 @@ const SignUp = () => {
       return acc;
     }, {} as SignUpFormFields),
     validationSchema: signUpSchema,
-    onSubmit: (values) => {
-      handleSignUp(values);
+    onSubmit: async (values) => {
+      setIsLoading(true);
+      try {
+        await requestInstance.post("/auth/signup", values);
+        setShowAuthResult(true);
+      } catch (error: any) {
+        if (error.response?.data.message === "Validation Error") {
+          signUpFormik.setErrors(getFormikErrors(error.response.data.data));
+        } else {
+          showErrorToast(error);
+        }
+
+        signUpFormik.setValues({
+          ...signUpFormik.values,
+          password: "",
+          confirmPassword: "",
+        });
+      }
+      setIsLoading(false);
     },
   });
 
-  const handleSignUp = async (values: SignUpFormFields) => {
-    setIsLoading(true);
-    try {
-      await requestInstance.post("/auth/signup", values);
-      setSignedUp(true);
-    } catch (error: any) {
-      if (error.response?.data.message === "Validation Error") {
-        signUpFormik.setErrors(getFormikErrors(error.response.data.data));
-      } else {
-        showErrorToast(error);
-      }
-
-      signUpFormik.setValues({
-        ...signUpFormik.values,
-        password: "",
-        confirmPassword: "",
-      });
-    }
-    setIsLoading(false);
-  };
-
   return (
     <AuthLayout>
-      {signedUp ? (
+      {showAuthResult ? (
         <AuthResult
           title="Account Created"
           description="Your account has been successfully created"

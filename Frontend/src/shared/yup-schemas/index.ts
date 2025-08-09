@@ -1,3 +1,5 @@
 import signUpSchema from "./sign-up";
+import emailSchema from "./email";
+import resetPasswordSchema from "./reset-password";
 
-export { signUpSchema };
+export { signUpSchema, emailSchema, resetPasswordSchema };

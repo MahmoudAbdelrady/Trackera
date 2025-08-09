@@ -3,6 +3,7 @@ import type { InputFieldProps } from "./global";
 import type {
   AuthLayoutProps,
   AuthFormProps,
+  AuthResultFields,
   AuthResultProps,
   AuthFooterProps,
   AuthFooterOAuthBtn,
@@ -26,6 +27,7 @@ export type {
   InputFieldProps,
   AuthLayoutProps,
   AuthFormProps,
+  AuthResultFields,
   AuthResultProps,
   WorkLogEvaluationType,
   WorkLogStatusType,

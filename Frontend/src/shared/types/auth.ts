@@ -13,11 +13,14 @@ interface AuthFormProps {
   footer?: React.ReactNode;
 }
 
-interface AuthResultProps {
-  title: string;
+interface AuthResultFields {
+  title?: string;
   description?: string;
-  message: string;
   isError?: boolean;
+}
+
+interface AuthResultProps extends AuthResultFields {
+  message: string;
   buttonText: string;
   onClick: () => void;
 }
@@ -38,6 +41,7 @@ interface AuthFooterOAuthBtn {
 export type {
   AuthLayoutProps,
   AuthFormProps,
+  AuthResultFields,
   AuthResultProps,
   AuthFooterProps,
   AuthFooterOAuthBtn,

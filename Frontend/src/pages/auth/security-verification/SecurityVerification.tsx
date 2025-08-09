@@ -2,12 +2,7 @@ import { AuthLayout, AuthResult, LoadingSpinner } from "../../../components";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import requestInstance from "../../../shared/api/request-instance";
-
-interface SecurityVerificationResult {
-  title?: string;
-  description?: string;
-  isError?: boolean;
-}
+import type { AuthResultFields } from "../../../shared/types";
 
 const SecurityVerification = () => {
   const verificationTypeMessage: Record<string, string> = {
@@ -22,11 +17,14 @@ const SecurityVerification = () => {
   const token = searchParams.get("token");
 
   const [verificationResult, setVerificationResult] =
-    useState<SecurityVerificationResult>({});
+    useState<AuthResultFields>({});
 
   useEffect(() => {
     if (!token) {
-      navigate("/login");
+      setVerificationResult({
+        title: "Url is expired or invalid",
+        isError: true,
+      });
     } else {
       const processToken = async () => {
         try {
@@ -43,11 +41,11 @@ const SecurityVerification = () => {
             isError: true,
           });
         }
-        setIsVerifying(false);
       };
 
       processToken();
     }
+    setIsVerifying(false);
   }, [navigate, token]);
 
   return isVerifying ? (
