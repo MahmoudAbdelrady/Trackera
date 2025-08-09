@@ -45,10 +45,17 @@ public class SecurityTokenService {
     }
 
     @Transactional
-    public void createAndSendSecurityToken(User user, SecurityToken.Type type, String additionalInfo, Map<String, String> extraParameters, String pageUrl, String emailSubject, String templateName) {
+    public void createAndSendSecurityToken(User user, SecurityToken.Type type, String additionalInfo, Map<String, String> extraParameters, String pageUrl, String templateName) {
+        boolean notValid = false;
         if (securityTokenRepository.existsByUserAndTypeAndCreatedAtGreaterThanEqual(user, type, LocalDateTime.now().minusMinutes(MAX_SECURITY_TOKEN_MINUTES))) {
-            throw new BusinessException(type.getLabel() + " request has already been made recently. Please check your email or try again later.");
+            if (!type.equals(SecurityToken.Type.PASSWORD_RESET)) {
+                throw new BusinessException(type.getLabel() + " request has already been made recently. Please check your email or try again later.");
+            }
+            notValid = true;
         }
+
+        if (notValid)
+            return;
 
         SecurityToken securityToken = new SecurityToken(user, type);
         if (!StringUtils.isEmpty(additionalInfo)) {
@@ -58,13 +65,14 @@ public class SecurityTokenService {
         String token = trackeraHasher.hashForSecurityToken(securityToken.getId());
 
         Map<String, String> templateParameters = new HashMap<>();
+        templateParameters.put("emailType", type.getLabel());
         templateParameters.put("verificationLink", AppConfig.getFrontendUrl() + (pageUrl != null ? pageUrl : "/security-verification") + "?token=" + token);
         if (extraParameters != null && !extraParameters.isEmpty()) {
             templateParameters.putAll(extraParameters);
         }
         TrackeraEmailTarget.builder()
                 .targetEmail(user.getEmail())
-                .subject(emailSubject)
+                .subject(type.getLabel())
                 .templateName(templateName)
                 .parameters(templateParameters)
                 .build().send();

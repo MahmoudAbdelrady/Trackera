@@ -1,6 +1,7 @@
 package com.mdevs.trackera.controller;
 
-import com.mdevs.trackera.dto.user.SignUpDTO;
+import com.mdevs.trackera.dto.auth.PasswordDTO;
+import com.mdevs.trackera.dto.auth.SignUpDTO;
 import com.mdevs.trackera.service.AuthService;
 import com.mdevs.trackera.shared.utils.response.ResponseMaker;
 import jakarta.validation.Valid;
@@ -32,7 +33,23 @@ public class AuthController {
         try {
             return new ResponseEntity<>(ResponseMaker.makeResponse(null, authService.processToken(token)), HttpStatus.OK);
         } catch (ObjectOptimisticLockingFailureException ex) {
-            return new ResponseEntity<>(ResponseMaker.makeResponse(null, Map.of("title", "Token validated successfully")), HttpStatus.OK); // Handle optimistic locking failure with idempotent response
+            return new ResponseEntity<>(ResponseMaker.makeResponse(null, Map.of("title", "Token validated successfully")), HttpStatus.OK); // @TODO --> Remove in production
         }
+    }
+
+    @PostMapping("/validate-token")
+    public ResponseEntity<?> validateToken(@RequestParam String token) {
+        authService.validateToken(token);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/send-reset-password")
+    public ResponseEntity<?> SendResetPassword(@RequestBody Map<String, String> body) {
+        return new ResponseEntity<>(ResponseMaker.makeResponse(null, authService.sendResetPassword(body.get("email"))), HttpStatus.OK);
+    }
+
+    @PostMapping("/change-password")
+    public ResponseEntity<?> ChangePassword(@RequestParam String token, @RequestBody @Valid PasswordDTO passwordDTO) {
+        return new ResponseEntity<>(ResponseMaker.makeResponse(null, authService.changePassword(token, passwordDTO)), HttpStatus.OK);
     }
 }

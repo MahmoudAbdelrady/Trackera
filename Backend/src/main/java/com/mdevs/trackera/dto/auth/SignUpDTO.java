@@ -1,4 +1,4 @@
-package com.mdevs.trackera.dto.user;
+package com.mdevs.trackera.dto.auth;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
