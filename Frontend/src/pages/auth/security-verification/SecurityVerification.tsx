@@ -1,9 +1,13 @@
-import { Check, X } from "lucide-react";
-import { AuthLayout, LoadingSpinner } from "../../../components";
-import authClasses from "../scss/auth.module.css";
+import { AuthLayout, AuthResult, LoadingSpinner } from "../../../components";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import requestInstance from "../../../shared/api/request-instance";
+
+interface SecurityVerificationResult {
+  title?: string;
+  description?: string;
+  isError?: boolean;
+}
 
 const SecurityVerification = () => {
   const verificationTypeMessage: Record<string, string> = {
@@ -17,11 +21,8 @@ const SecurityVerification = () => {
   const [searchParams] = useSearchParams();
   const token = searchParams.get("token");
 
-  const [verificationTitle, setVerificationTitle] = useState<string>("");
-  const [verificationDesc, setVerificationDesc] = useState<string>("");
-  const [verificationIcon, setVerificationIcon] = useState<React.ReactNode>(
-    <Check className={authClasses.response_icon} />
-  );
+  const [verificationResult, setVerificationResult] =
+    useState<SecurityVerificationResult>({});
 
   useEffect(() => {
     if (!token) {
@@ -32,16 +33,15 @@ const SecurityVerification = () => {
           const response = await requestInstance.post(
             `/auth/process-token?token=${token}`
           );
-          setVerificationTitle(response.data.data.title);
-          setVerificationDesc(response.data.data.description);
+          setVerificationResult({
+            title: response.data.data.title,
+            description: response.data.data.desc,
+          });
         } catch (error: any) {
-          setVerificationTitle(error.response?.data?.message);
-          setVerificationIcon(
-            <X
-              className={`${authClasses.response_icon} ${authClasses.error}`}
-            />
-          );
-          console.log("Error processing token:", error);
+          setVerificationResult({
+            title: error.response?.data?.message,
+            isError: true,
+          });
         }
         setIsVerifying(false);
       };
@@ -53,24 +53,15 @@ const SecurityVerification = () => {
   return isVerifying ? (
     <LoadingSpinner />
   ) : (
-    <AuthLayout
-      title=""
-      description=""
-      submitButtonText=""
-      onSubmit={() => {}}
-      isSubmitBtnDisabled={false}
-      isSubmitBtnLoading={false}
-      showResponseContent={true}
-      responseContent={{
-        title: verificationTitle,
-        description: verificationDesc,
-        message: verificationTypeMessage[verificationTitle],
-        icon: verificationIcon,
-        buttonText: "Go to Login",
-        onClick: () => navigate("/login"),
-      }}
-    >
-      <></>
+    <AuthLayout>
+      <AuthResult
+        title={verificationResult.title!}
+        description={verificationResult.description}
+        message={verificationTypeMessage[verificationResult.title!]}
+        buttonText="Go to Login"
+        isError={verificationResult.isError}
+        onClick={() => navigate("/login")}
+      />
     </AuthLayout>
   );
 };

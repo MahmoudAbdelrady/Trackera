@@ -1,21 +1,23 @@
 interface AuthLayoutProps {
+  children: React.ReactNode;
+}
+
+interface AuthFormProps {
   title: string;
   description: string;
+  children: React.ReactNode;
   submitButtonText: string;
+  onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
   isSubmitBtnLoading?: boolean;
   isSubmitBtnDisabled?: boolean;
-  children: React.ReactNode;
-  onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
-  showResponseContent?: boolean;
-  responseContent?: AuthResponseContent;
   footer?: React.ReactNode;
 }
 
-interface AuthResponseContent {
+interface AuthResultProps {
   title: string;
-  description: string;
+  description?: string;
   message: string;
-  icon: React.ReactNode;
+  isError?: boolean;
   buttonText: string;
   onClick: () => void;
 }
@@ -33,4 +35,10 @@ interface AuthFooterOAuthBtn {
   onClick: () => void;
 }
 
-export type { AuthLayoutProps, AuthFooterProps, AuthFooterOAuthBtn };
+export type {
+  AuthLayoutProps,
+  AuthFormProps,
+  AuthResultProps,
+  AuthFooterProps,
+  AuthFooterOAuthBtn,
+};

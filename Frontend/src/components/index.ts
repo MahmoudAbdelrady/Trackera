@@ -8,6 +8,8 @@ import WorklogTable from "./worklogs/worklog-table/WorklogTable";
 import WorklogModal from "./worklogs/workklog-modal/WorklogModal";
 import InputField from "./input-field/InputField";
 import LoadingSpinner from "./loading-spinner/LoadingSpinner";
+import AuthForm from "./auth/auth-form/AuthForm";
+import AuthResult from "./auth/auth-result/AuthResult";
 
 export {
   AuthLayout,
@@ -20,4 +22,6 @@ export {
   WorklogModal,
   InputField,
   LoadingSpinner,
+  AuthForm,
+  AuthResult,
 };
