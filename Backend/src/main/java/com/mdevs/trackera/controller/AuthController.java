@@ -26,6 +26,6 @@ public class AuthController {
 
     @PostMapping("/process-token")
     public ResponseEntity<?> ProcessToken(@RequestParam String token) {
-        return new ResponseEntity<>(ResponseMaker.makeResponse(authService.processToken(token), null), HttpStatus.OK);
+        return new ResponseEntity<>(ResponseMaker.makeResponse(null, authService.processToken(token)), HttpStatus.OK);
     }
 }

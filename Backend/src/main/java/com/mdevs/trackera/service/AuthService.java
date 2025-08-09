@@ -53,7 +53,7 @@ public class AuthService {
     }
 
     @Transactional
-    public String processToken(String token) {
+    public Map<String, String> processToken(String token) {
         SecurityToken securityToken = securityTokenService.getSecurityToken(token);
         User user = securityToken.getUser();
 
@@ -61,9 +61,13 @@ public class AuthService {
         if (securityToken.getType().equals(SecurityToken.Type.ACCOUNT_ACTIVATION)) {
             user.setVerified(true);
             userRepository.save(user);
-            message = "Account activated successfully.";
+            message = "Your account has been successfully activated";
         }
         securityTokenService.deleteSecurityToken(securityToken);
-        return message;
+
+        return Map.of(
+                "title", securityToken.getType().getLabel(),
+                "desc", message
+        );
     }
 }

@@ -13,10 +13,9 @@ import lombok.Setter;
 public class SecurityToken extends BaseEntity {
     @Getter
     public enum Type {
-        CHANGE_EMAIL("Change Email"),
+        ACCOUNT_ACTIVATION("Account Activation"),
         CHANGE_PASSWORD("Change Password"),
-        PASSWORD_RESET("Password Reset"),
-        ACCOUNT_ACTIVATION("Account Activation");
+        PASSWORD_RESET("Password Reset");
 
         private final String label;
 
