@@ -3,6 +3,7 @@ import { GuestRoute, PrivateRoute } from "./routes";
 import {
   Login,
   SignUp,
+  SecurityVerification,
   Home,
   Tasks,
   Settings,
@@ -45,6 +46,10 @@ const router = createBrowserRouter([
         <ChangePassword />
       </GuestRoute>
     ),
+  },
+  {
+    path: "/security-verification",
+    element: <SecurityVerification />,
   },
   {
     path: "/",

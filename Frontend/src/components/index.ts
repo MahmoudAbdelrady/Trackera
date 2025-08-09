@@ -7,6 +7,7 @@ import SearchFilter from "./worklogs/search-filter/SearchFilter";
 import WorklogTable from "./worklogs/worklog-table/WorklogTable";
 import WorklogModal from "./worklogs/workklog-modal/WorklogModal";
 import InputField from "./input-field/InputField";
+import LoadingSpinner from "./loading-spinner/LoadingSpinner";
 
 export {
   AuthLayout,
@@ -18,4 +19,5 @@ export {
   WorklogTable,
   WorklogModal,
   InputField,
+  LoadingSpinner,
 };

@@ -8,6 +8,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import requestInstance from "../../../shared/api/request-instance";
 import { showErrorToast } from "../../../utils/toast-handler/show-toast";
+import { getFormikErrors } from "../../../utils";
 
 interface SignUpFormFields {
   firstname: string;
@@ -40,7 +41,12 @@ const SignUp = () => {
       await requestInstance.post("/auth/signup", values);
       setSignedUp(true);
     } catch (error: any) {
-      showErrorToast(error);
+      if (error.response?.data.message === "Validation Error") {
+        signUpFormik.setErrors(getFormikErrors(error.response.data.data));
+      } else {
+        showErrorToast(error);
+      }
+
       signUpFormik.setValues({
         ...signUpFormik.values,
         password: "",
