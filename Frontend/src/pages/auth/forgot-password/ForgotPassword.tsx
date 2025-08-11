@@ -42,8 +42,7 @@ const ForgotPassword = () => {
           values
         );
         setPasswordResetResult({
-          title: response.data.data.title,
-          description: response.data.data.desc,
+          description: response.data.message,
         });
         setShowAuthResult(true);
       } catch (error) {
@@ -58,7 +57,7 @@ const ForgotPassword = () => {
     <AuthLayout>
       {showAuthResult ? (
         <AuthResult
-          title={passwordResetResult.title}
+          title="Password Reset"
           message={passwordResetResult.description!}
           buttonText="Back to Sign In"
           onClick={() => navigate("/login")}

@@ -25,8 +25,8 @@ interface SignUpFormFields {
 }
 
 const SignUp = () => {
-  const [showAuthResult, setShowAuthResult] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [showAuthResult, setShowAuthResult] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const navigate = useNavigate();
   const signUpFormik = useFormik({
     initialValues: (

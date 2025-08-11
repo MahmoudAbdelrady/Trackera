@@ -51,15 +51,14 @@ const ChangePassword = () => {
           }
         );
         setPasswordChangeResult({
-          title: response.data.data.title,
-          description: response.data.data.desc,
+          description: response.data.message,
         });
         setShowAuthResult(true);
       } catch (error: any) {
         console.log("Error:", error);
         if (error.response?.status === 403) {
           setPasswordChangeResult({
-            title: error.response?.data?.message,
+            description: error.response?.data?.message,
             isError: true,
           });
           setShowAuthResult(true);
@@ -75,7 +74,7 @@ const ChangePassword = () => {
   useEffect(() => {
     if (!token) {
       setPasswordChangeResult({
-        title: "Url is expired or invalid",
+        description: "Url is expired or invalid",
         isError: true,
       });
       setShowAuthResult(true);
@@ -85,7 +84,7 @@ const ChangePassword = () => {
           await requestInstance.post(`/auth/validate-token?token=${token}`);
         } catch (error: any) {
           setPasswordChangeResult({
-            title: error.response?.data?.message,
+            description: error.response?.data?.message,
             isError: true,
           });
           setShowAuthResult(true);
@@ -103,11 +102,15 @@ const ChangePassword = () => {
     <AuthLayout>
       {showAuthResult ? (
         <AuthResult
-          title={passwordChangeResult.title}
-          description={passwordChangeResult.description}
+          title="Password Change"
+          description={
+            passwordChangeResult.isError
+              ? "Error occurred while changing password"
+              : passwordChangeResult.description!
+          }
           message={
             passwordChangeResult.isError
-              ? ""
+              ? passwordChangeResult.description!
               : "You can now sign in with your new password"
           }
           buttonText="Back to Sign In"
