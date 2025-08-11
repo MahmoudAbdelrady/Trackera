@@ -1,9 +1,11 @@
 package com.mdevs.trackera.controller;
 
+import com.mdevs.trackera.dto.auth.LoginDTO;
 import com.mdevs.trackera.dto.auth.PasswordDTO;
 import com.mdevs.trackera.dto.auth.SignUpDTO;
 import com.mdevs.trackera.service.AuthService;
 import com.mdevs.trackera.shared.utils.response.ResponseMaker;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -28,6 +30,13 @@ public class AuthController {
         return new ResponseEntity<>(ResponseMaker.makeResponse(authService.signUp(signUpDTO), null), HttpStatus.CREATED);
     }
 
+    @PostMapping("/login")
+    public ResponseEntity<?> login(@RequestBody @Valid LoginDTO loginDTO, HttpServletResponse httpServletResponse) {
+        Map<String, Object> result = authService.login(loginDTO, httpServletResponse);
+        boolean isError = result.containsKey("isError");
+        return new ResponseEntity<>(isError ? ResponseMaker.makeResponse(result.get("message").toString(), null) : result, isError ? HttpStatus.FORBIDDEN : HttpStatus.OK);
+    }
+
     @PostMapping("/process-token")
     public ResponseEntity<?> ProcessToken(@RequestParam String token) {
         try {
@@ -45,11 +54,11 @@ public class AuthController {
 
     @PostMapping("/send-reset-password")
     public ResponseEntity<?> SendResetPassword(@RequestBody Map<String, String> body) {
-        return new ResponseEntity<>(ResponseMaker.makeResponse(null, authService.sendResetPassword(body.get("email"))), HttpStatus.OK);
+        return new ResponseEntity<>(ResponseMaker.makeResponse(authService.sendResetPassword(body.get("email")), null), HttpStatus.OK);
     }
 
     @PostMapping("/change-password")
     public ResponseEntity<?> ChangePassword(@RequestParam String token, @RequestBody @Valid PasswordDTO passwordDTO) {
-        return new ResponseEntity<>(ResponseMaker.makeResponse(null, authService.changePassword(token, passwordDTO)), HttpStatus.OK);
+        return new ResponseEntity<>(ResponseMaker.makeResponse(authService.changePassword(token, passwordDTO), null), HttpStatus.OK);
     }
 }

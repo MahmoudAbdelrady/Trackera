@@ -77,8 +77,4 @@ public class SecurityTokenService {
                 .parameters(templateParameters)
                 .build().send();
     }
-
-    public void deleteSecurityToken(SecurityToken securityToken) {
-        securityTokenRepository.delete(securityToken);
-    }
 }

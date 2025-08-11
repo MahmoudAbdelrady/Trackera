@@ -13,5 +13,6 @@ import lombok.Setter;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class AuthResultDTO {
     private String title;
+
     private String desc;
 }
