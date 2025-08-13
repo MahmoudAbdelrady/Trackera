@@ -1,6 +1,8 @@
-package com.mdevs.trackera.config;
+package com.mdevs.trackera.config.general;
 
+import com.mdevs.trackera.dto.auth.LoggedUserDTO;
 import com.mdevs.trackera.entity.User;
+import com.mdevs.trackera.repository.UserRepository;
 import lombok.Getter;
 import org.modelmapper.ModelMapper;
 import org.modelmapper.convention.MatchingStrategies;
@@ -11,6 +13,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
@@ -18,7 +21,6 @@ import java.util.Properties;
 
 @Configuration
 public class AppConfig {
-
     @Getter
     private static ApplicationContext applicationContext;
 
@@ -70,6 +72,7 @@ public class AppConfig {
     }
 
     public static User getCurrentUser() {
-        return null;
+        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        return (principal instanceof LoggedUserDTO) ? applicationContext.getBean(UserRepository.class).findByEmail(((LoggedUserDTO) principal).getEmail()) : null;
     }
 }

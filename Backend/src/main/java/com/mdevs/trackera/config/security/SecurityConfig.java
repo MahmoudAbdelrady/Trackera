@@ -1,6 +1,6 @@
 package com.mdevs.trackera.config.security;
 
-import com.mdevs.trackera.config.AppConfig;
+import com.mdevs.trackera.config.general.AppConfig;
 import com.mdevs.trackera.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;

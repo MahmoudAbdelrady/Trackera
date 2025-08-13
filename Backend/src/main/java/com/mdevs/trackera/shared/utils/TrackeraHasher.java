@@ -68,7 +68,7 @@ public class TrackeraHasher {
     public Map<String, String> parseSecurityToken(String token) {
         String[] parts = token.split("\\.");
         if (parts.length != 2)
-            return Collections.emptyMap();
+            return Map.of();
 
         try {
             byte[] encryptedPayload = Base64.getUrlDecoder().decode(parts[0]);
@@ -76,16 +76,16 @@ public class TrackeraHasher {
 
             byte[] expectedHmac = hashByteData(encryptedPayload);
             if (!MessageDigest.isEqual(signatureBytes, expectedHmac))
-                return Collections.emptyMap();
+                return Map.of();
 
             String decryptedPayload = decrypt(encryptedPayload);
             String[] payloadParts = decryptedPayload.split(":");
             if (payloadParts.length != 2)
-                return Collections.emptyMap();
+                return Map.of();
 
             return Map.of("tokenId", decrypt(Base64.getUrlDecoder().decode(payloadParts[0])));
         } catch (Exception e) {
-            return Collections.emptyMap();
+            return Map.of();
         }
     }
 

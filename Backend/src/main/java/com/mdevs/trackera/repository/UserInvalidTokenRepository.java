@@ -14,6 +14,6 @@ public interface UserInvalidTokenRepository extends BaseRepository<UserInvalidTo
     @Query("SELECT t FROM UserInvalidToken t WHERE t.expiryDate <= :now AND t.id > :maxId ORDER BY t.id")
     List<UserInvalidToken> findAllByExpiryDateOrderById(@Param("now") Date now, @Param("maxId") Long maxId, Pageable pageable);
 
-    @Query("SELECT t FROM UserInvalidToken t WHERE t.user.email = :email AND t.type = :tokenType AND t.id > :maxId ORDER BY t.id")
-    List<UserInvalidToken> findAllByUserAndTokenTypeOrderById(@Param("email") String email, @Param("tokenType") UserInvalidToken.Type type, @Param("maxId") Long maxId, Pageable pageable);
+    @Query("SELECT t FROM UserInvalidToken t WHERE t.user.email = :email AND t.isAccessToken = :isAccessToken AND t.id > :maxId ORDER BY t.id")
+    List<UserInvalidToken> findAllByUserAndTokenTypeOrderById(@Param("email") String email, @Param("isAccessToken") boolean isAccessToken, @Param("maxId") Long maxId, Pageable pageable);
 }

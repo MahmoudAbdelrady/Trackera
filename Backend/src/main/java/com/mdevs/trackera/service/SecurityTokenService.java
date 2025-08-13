@@ -1,11 +1,11 @@
 package com.mdevs.trackera.service;
 
-import com.mdevs.trackera.config.AppConfig;
+import com.mdevs.trackera.config.general.AppConfig;
 import com.mdevs.trackera.entity.SecurityToken;
 import com.mdevs.trackera.entity.User;
 import com.mdevs.trackera.repository.SecurityTokenRepository;
-import com.mdevs.trackera.shared.exception.BusinessException;
-import com.mdevs.trackera.shared.exception.UnauthorizedException;
+import com.mdevs.trackera.shared.exceptions.BusinessException;
+import com.mdevs.trackera.shared.exceptions.UnauthorizedException;
 import com.mdevs.trackera.shared.utils.TrackeraHasher;
 import com.mdevs.trackera.shared.utils.mail.TrackeraEmailTarget;
 import org.apache.commons.lang3.StringUtils;

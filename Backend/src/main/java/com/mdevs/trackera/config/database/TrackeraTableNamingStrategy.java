@@ -6,7 +6,6 @@ import org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl;
 import org.hibernate.engine.jdbc.env.spi.JdbcEnvironment;
 
 public class TrackeraTableNamingStrategy extends PhysicalNamingStrategyStandardImpl {
-
     @Override
     public Identifier toPhysicalTableName(Identifier logicalName, JdbcEnvironment context) {
         if (logicalName == null) {

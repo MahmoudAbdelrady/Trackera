@@ -1,6 +1,6 @@
 package com.mdevs.trackera.shared.utils.mail;
 
-import com.mdevs.trackera.config.AppConfig;
+import com.mdevs.trackera.config.general.AppConfig;
 import lombok.Builder;
 import org.thymeleaf.context.Context;
 import org.thymeleaf.spring6.SpringTemplateEngine;

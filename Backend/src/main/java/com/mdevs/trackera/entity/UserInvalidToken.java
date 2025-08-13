@@ -1,9 +1,11 @@
 package com.mdevs.trackera.entity;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.ColumnDefault;
 
 import java.util.Date;
 
@@ -12,12 +14,8 @@ import java.util.Date;
 @Getter
 @Setter
 @NoArgsConstructor
+@AllArgsConstructor
 public class UserInvalidToken extends BaseEntity {
-    public enum Type {
-        ACCESS,
-        REFRESH
-    }
-
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     private User user;
 
@@ -28,7 +26,7 @@ public class UserInvalidToken extends BaseEntity {
     @Column(nullable = false, columnDefinition = "TIMESTAMP(0)")
     private Date expiryDate;
 
-    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private Type type;
+    @ColumnDefault("1")
+    private boolean isAccessToken = true;
 }

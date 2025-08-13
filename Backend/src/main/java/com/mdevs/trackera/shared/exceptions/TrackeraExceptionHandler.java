@@ -1,6 +1,6 @@
-package com.mdevs.trackera.shared.exception;
+package com.mdevs.trackera.shared.exceptions;
 
-import com.mdevs.trackera.config.AppConfig;
+import com.mdevs.trackera.config.general.AppConfig;
 import com.mdevs.trackera.shared.utils.response.ResponseMaker;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

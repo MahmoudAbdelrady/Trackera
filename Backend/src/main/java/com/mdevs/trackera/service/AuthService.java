@@ -6,17 +6,23 @@ import com.mdevs.trackera.dto.auth.PasswordDTO;
 import com.mdevs.trackera.dto.auth.SignUpDTO;
 import com.mdevs.trackera.entity.SecurityToken;
 import com.mdevs.trackera.entity.User;
+import com.mdevs.trackera.entity.UserInvalidToken;
 import com.mdevs.trackera.repository.SecurityTokenRepository;
+import com.mdevs.trackera.repository.UserInvalidTokenRepository;
 import com.mdevs.trackera.repository.UserRepository;
-import com.mdevs.trackera.shared.exception.BusinessException;
-import com.mdevs.trackera.shared.exception.UnauthorizedException;
+import com.mdevs.trackera.shared.exceptions.BusinessException;
+import com.mdevs.trackera.shared.exceptions.UnauthorizedException;
 import com.mdevs.trackera.shared.utils.JwtUtil;
+import com.mdevs.trackera.shared.utils.TrackeraHasher;
+import io.jsonwebtoken.Claims;
 import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.apache.commons.lang3.StringUtils;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -27,10 +33,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 @Service
 public class AuthService {
@@ -42,13 +45,19 @@ public class AuthService {
 
     private final SecurityTokenRepository securityTokenRepository;
 
+    private final UserInvalidTokenRepository userInvalidTokenRepository;
+
     private final JwtUtil jwtUtil;
+
+    private final TrackeraHasher trackeraHasher;
 
     private final ModelMapper modelMapper;
 
     private final PasswordEncoder passwordEncoder;
 
     private final static String EMAIL_REGEX = "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9-]+(?:\\.[a-zA-Z0-9-]+)*\\.[a-zA-Z]{2,}$";
+
+    private final static String REFRESH_TOKEN_COOKIE_NAME = "refreshToken";
 
     @Value("${trackera.environment}")
     private String trackeraEnv;
@@ -57,12 +66,14 @@ public class AuthService {
     private String cookieMaxAge;
 
     @Autowired
-    public AuthService(UserRepository userRepository, AuthenticationManager authenticationManager, SecurityTokenService securityTokenService, SecurityTokenRepository securityTokenRepository, JwtUtil jwtUtil, ModelMapper modelMapper, PasswordEncoder passwordEncoder) {
+    public AuthService(UserRepository userRepository, AuthenticationManager authenticationManager, SecurityTokenService securityTokenService, SecurityTokenRepository securityTokenRepository, UserInvalidTokenRepository userInvalidTokenRepository, JwtUtil jwtUtil, TrackeraHasher trackeraHasher, ModelMapper modelMapper, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.authenticationManager = authenticationManager;
         this.securityTokenService = securityTokenService;
         this.securityTokenRepository = securityTokenRepository;
+        this.userInvalidTokenRepository = userInvalidTokenRepository;
         this.jwtUtil = jwtUtil;
+        this.trackeraHasher = trackeraHasher;
         this.modelMapper = modelMapper;
         this.passwordEncoder = passwordEncoder;
     }
@@ -89,7 +100,7 @@ public class AuthService {
     @Transactional
     public Map<String, Object> login(LoginDTO loginDTO, HttpServletResponse httpResponse) {
         try {
-            UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(loginDTO.getEmail(), loginDTO.getPassword(), Collections.emptyList());
+            UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(loginDTO.getEmail(), loginDTO.getPassword(), List.of());
             Authentication authentication = authenticationManager.authenticate(authToken);
             User loggedUser = (User) authentication.getPrincipal();
 
@@ -112,7 +123,7 @@ public class AuthService {
                 String accessToken = jwtUtil.generateToken(loggedUser.getEmail(), true);
                 String refreshToken = jwtUtil.generateToken(loggedUser.getEmail(), false);
 
-                httpResponse.addCookie(createTrackeraCookie("refreshToken", refreshToken, true));
+                httpResponse.addCookie(createTrackeraCookie(REFRESH_TOKEN_COOKIE_NAME, refreshToken, true, Integer.parseInt(cookieMaxAge)));
                 result.put("token", accessToken);
             }
 
@@ -122,13 +133,41 @@ public class AuthService {
         }
     }
 
-    private Cookie createTrackeraCookie(String name, String value, boolean isHttpOnly) {
+    @Transactional
+    public void logout(HttpServletRequest httpRequest, HttpServletResponse httpResponse) {
+        String accessToken = httpRequest.getHeader(HttpHeaders.AUTHORIZATION).substring(7);
+        String refreshToken = Arrays.stream(httpRequest.getCookies()).filter(cookie -> cookie.getName().equals(REFRESH_TOKEN_COOKIE_NAME)).map(Cookie::getValue).findFirst().orElse("");
+        saveInvalidToken(accessToken, true);
+        saveInvalidToken(refreshToken, false);
+
+        httpResponse.addCookie(createTrackeraCookie(REFRESH_TOKEN_COOKIE_NAME, null, true, 0));
+    }
+
+    private Cookie createTrackeraCookie(String name, String value, boolean isHttpOnly, int cookieMaxAge) {
         Cookie trackeraCookie = new Cookie(name, value);
         trackeraCookie.setHttpOnly(isHttpOnly);
         trackeraCookie.setSecure(trackeraEnv.equals("prod"));
         trackeraCookie.setPath(isHttpOnly ? "/trackera/auth" : "/");
-        trackeraCookie.setMaxAge(Integer.parseInt(cookieMaxAge));
+        trackeraCookie.setMaxAge(cookieMaxAge);
         return trackeraCookie;
+    }
+
+    public void saveInvalidToken(String token, boolean isAccessToken) {
+        Claims accessTokenClaims = jwtUtil.getTokenPayload(token, isAccessToken);
+        User user = userRepository.findByEmail(accessTokenClaims.get("email", String.class));
+        Date accessTokenClaimsExpiration = accessTokenClaims.getExpiration();
+        UserInvalidToken invalidAccessToken = new UserInvalidToken(user, trackeraHasher.hash(token, false), accessTokenClaimsExpiration, isAccessToken);
+        userInvalidTokenRepository.save(invalidAccessToken);
+    }
+
+    public Map<String, Object> refreshJwt(String refreshToken) {
+        Claims accessTokenClaims = jwtUtil.getTokenPayload(refreshToken, false);
+        String userEmail = accessTokenClaims.get("email", String.class);
+        if (jwtUtil.isTokenInvalid(userEmail, refreshToken, false)) {
+            throw new SecurityException("Invalid or expired refresh token");
+        }
+        String newAccessToken = jwtUtil.generateToken(userEmail, true);
+        return Map.of("token", newAccessToken);
     }
 
     @Transactional

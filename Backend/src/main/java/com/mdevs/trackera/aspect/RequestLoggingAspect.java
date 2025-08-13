@@ -1,6 +1,6 @@
 package com.mdevs.trackera.aspect;
 
-import com.mdevs.trackera.config.AppConfig;
+import com.mdevs.trackera.config.general.AppConfig;
 import jakarta.servlet.http.HttpServletRequest;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;

@@ -59,13 +59,13 @@ public class JwtUtil {
         }
     }
 
-    public boolean isTokenInvalid(String userEmail, String token, UserInvalidToken.Type tokenType) {
+    public boolean isTokenInvalid(String userEmail, String token, boolean isAccessToken) {
         long maxId = 0;
         PageRequest pageRequest = PageRequest.of(0, 100);
         List<UserInvalidToken> userInvalidTokens;
         boolean isInvalid = false;
         do {
-            userInvalidTokens = userInvalidTokenRepository.findAllByUserAndTokenTypeOrderById(userEmail, tokenType, maxId, pageRequest);
+            userInvalidTokens = userInvalidTokenRepository.findAllByUserAndTokenTypeOrderById(userEmail, isAccessToken, maxId, pageRequest);
             if (!userInvalidTokens.isEmpty()) {
                 isInvalid = userInvalidTokens.stream().anyMatch(it -> trackeraHasher.isMatch(token, it.getToken(), false));
                 maxId = userInvalidTokens.getLast().getId();
