@@ -5,7 +5,7 @@ import {
   InputField,
 } from "../../../components";
 import { Lock, Mail } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useFormik } from "formik";
 import { loginSchema } from "../../../shared/yup-schemas";
 import { useState } from "react";
@@ -13,6 +13,8 @@ import { getFormikErrors } from "../../../utils";
 import { showErrorToast } from "../../../utils/toast-handler/show-toast";
 import inputFieldClasses from "../../../components/input-field/scss/input-field.module.css";
 import classes from "./scss/login.module.css";
+import { useAuthStore } from "../../../state/store";
+import requestInstance from "../../../shared/api/request-instance";
 
 interface LoginFormFields {
   email: string;
@@ -21,6 +23,8 @@ interface LoginFormFields {
 
 const Login = () => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const authStore = useAuthStore();
+  const navigate = useNavigate();
   const loginFormik = useFormik({
     initialValues: (
       Object.keys(loginSchema.fields) as (keyof LoginFormFields)[]
@@ -32,7 +36,12 @@ const Login = () => {
     onSubmit: async (values) => {
       setIsLoading(true);
       try {
-        console.log("Login values:", values);
+        const response = await requestInstance.post("/auth/login", {
+          email: values.email,
+          password: values.password,
+        });
+        authStore.setToken(response.data.token);
+        navigate("/");
       } catch (error: any) {
         if (error.response?.data.message === "Validation Error") {
           loginFormik.setErrors(getFormikErrors(error.response.data.data));
@@ -52,7 +61,7 @@ const Login = () => {
         title="Sign in to Trackera"
         description="Enter your credentials to access your account"
         submitButtonText="Login"
-        onSubmit={() => {}}
+        onSubmit={loginFormik.handleSubmit}
         isSubmitBtnDisabled={
           !loginFormik.isValid || !loginFormik.dirty || isLoading
         }
