@@ -10,7 +10,7 @@ import org.hibernate.annotations.ColumnDefault;
 import java.util.Date;
 
 @Entity
-@Table(indexes = {@Index(columnList = "USER_ID, TYPE"), @Index(columnList = "TYPE"), @Index(columnList = "EXPIRY_DATE")})
+@Table(indexes = {@Index(columnList = "IS_ACCESS_TOKEN, USER_ID"), @Index(columnList = "EXPIRY_DATE")})
 @Getter
 @Setter
 @NoArgsConstructor
