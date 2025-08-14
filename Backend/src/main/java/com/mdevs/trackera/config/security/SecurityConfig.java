@@ -1,6 +1,7 @@
 package com.mdevs.trackera.config.security;
 
 import com.mdevs.trackera.config.general.AppConfig;
+import com.mdevs.trackera.filter.JwtFilter;
 import com.mdevs.trackera.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -13,6 +14,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 
 import java.util.List;
@@ -30,7 +32,7 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) {
+    public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity, JwtFilter jwtFilter) {
         try {
             httpSecurity
                     .csrf(AbstractHttpConfigurer::disable)
@@ -42,7 +44,7 @@ public class SecurityConfig {
                         corsConfiguration.setAllowCredentials(true);
                         return corsConfiguration;
                     }))
-                    .authorizeHttpRequests(auth -> auth.anyRequest().permitAll());
+                    .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
             return httpSecurity.build();
         } catch (Exception e) {
