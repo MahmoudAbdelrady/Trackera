@@ -136,10 +136,11 @@ public class AuthService {
     @Transactional
     public void logout(HttpServletRequest httpRequest, HttpServletResponse httpResponse) {
         String accessToken = httpRequest.getHeader(HttpHeaders.AUTHORIZATION).substring(7);
-        String refreshToken = Arrays.stream(httpRequest.getCookies()).filter(cookie -> cookie.getName().equals(REFRESH_TOKEN_COOKIE_NAME)).map(Cookie::getValue).findFirst().orElse("");
+        String refreshToken = httpRequest.getCookies() != null ? Arrays.stream(httpRequest.getCookies()).filter(cookie -> cookie.getName().equals(REFRESH_TOKEN_COOKIE_NAME)).map(Cookie::getValue).findFirst().orElse(null) : null;
         saveInvalidToken(accessToken, true);
-        saveInvalidToken(refreshToken, false);
-
+        if (!StringUtils.isEmpty(refreshToken)) {
+            saveInvalidToken(refreshToken, false);
+        }
         httpResponse.addCookie(createTrackeraCookie(REFRESH_TOKEN_COOKIE_NAME, null, true, 0));
     }
 
