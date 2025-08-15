@@ -20,7 +20,7 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
     setIsLoading(true);
     try {
       const response = await requestInstance.post("/auth/logout");
-      authStore.removeToken();
+      authStore.logout();
       showSuccessToast(response.data.message);
       navigate("/login");
     } catch (error: any) {

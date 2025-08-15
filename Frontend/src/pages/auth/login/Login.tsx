@@ -40,7 +40,7 @@ const Login = () => {
           email: values.email,
           password: values.password,
         });
-        authStore.setToken(response.data.token);
+        authStore.login(response.data.token);
         navigate("/");
       } catch (error: any) {
         if (error.response?.data.message === "Validation Error") {
