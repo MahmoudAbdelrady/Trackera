@@ -25,26 +25,6 @@
   border-bottom: 1px solid #c9cacc;
   z-index: 0;
 }
-.auth_footer_container .auth_buttons {
-  margin-top: 20px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  width: 100%;
-}
-.auth_footer_container .auth_buttons .auth_btn {
-  width: 100%;
-  padding: 20px 15px;
-}
-.auth_footer_container .auth_buttons .auth_btn .icon_container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-.auth_footer_container .auth_buttons .auth_btn .icon_container img {
-  width: 20px;
-  height: 20px;
-}
 .auth_footer_container .auth_redirection {
   display: flex;
   justify-content: center;

@@ -68,13 +68,7 @@ const Login = () => {
         isSubmitBtnLoading={isLoading}
         footer={
           <AuthFooter
-            oAuthButtons={[
-              {
-                label: "Continue with Google",
-                icon: <img src="./Assets/google_logo.webp" alt="Google Icon" />,
-                onClick: () => {},
-              },
-            ]}
+            hasOAuthBtns={true}
             footerText="Don't have an account?"
             footerLink="/sign-up"
             footerLinkText="Sign up"

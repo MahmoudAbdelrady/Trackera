@@ -10,6 +10,7 @@ import InputField from "./input-field/InputField";
 import LoadingSpinner from "./loading-spinner/LoadingSpinner";
 import AuthForm from "./auth/auth-form/AuthForm";
 import AuthResult from "./auth/auth-result/AuthResult";
+import OAuthBtns from "./auth/oauth-btns/OAuthBtns";
 
 export {
   AuthLayout,
@@ -24,4 +25,5 @@ export {
   LoadingSpinner,
   AuthForm,
   AuthResult,
+  OAuthBtns,
 };

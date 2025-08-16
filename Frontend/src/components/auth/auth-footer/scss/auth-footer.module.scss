@@ -1,5 +1,5 @@
-@use "../../../../utils/styles/colors" as *;
-@use "../../../../utils/styles/mixins" as *;
+@use "../../../../shared/styles/colors" as *;
+@use "../../../../shared/styles/mixins" as *;
 
 .auth_footer_container {
   margin-top: 20px;
@@ -23,22 +23,6 @@
       transform: translateY(-50%);
       border-bottom: 1px solid $darkBorderColor;
       z-index: 0;
-    }
-  }
-  .auth_buttons {
-    margin-top: 20px;
-    @include center;
-    width: 100%;
-    .auth_btn {
-      width: 100%;
-      padding: 20px 15px;
-      .icon_container {
-        @include center;
-        img {
-          width: 20px;
-          height: 20px;
-        }
-      }
     }
   }
   .auth_redirection {

@@ -14,6 +14,7 @@ import {
 } from "./pages";
 import { Toaster } from "react-hot-toast";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { GoogleOAuthProvider } from "@react-oauth/google";
 
 const router = createBrowserRouter([
   {
@@ -106,10 +107,14 @@ const queryClient = new QueryClient({
 
 const App = () => {
   return (
-    <QueryClientProvider client={queryClient}>
-      <Toaster />
-      <RouterProvider router={router} />
-    </QueryClientProvider>
+    <GoogleOAuthProvider
+      clientId={import.meta.env.VITE_TRACKERA_GOOGLE_CLIENT_ID}
+    >
+      <QueryClientProvider client={queryClient}>
+        <Toaster />
+        <RouterProvider router={router} />
+      </QueryClientProvider>
+    </GoogleOAuthProvider>
   );
 };
 

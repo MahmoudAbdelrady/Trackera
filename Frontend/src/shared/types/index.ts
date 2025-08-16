@@ -6,7 +6,7 @@ import type {
   AuthResultFields,
   AuthResultProps,
   AuthFooterProps,
-  AuthFooterOAuthBtn,
+  OAuthBtnProps,
 } from "./auth";
 
 import type {
@@ -39,7 +39,7 @@ export type {
   WorklogTableProps,
   WorklogModalProps,
   AuthFooterProps,
-  AuthFooterOAuthBtn,
+  OAuthBtnProps,
 };
 
 export { evaluationMetadata, statusMetadata };

@@ -26,15 +26,16 @@ interface AuthResultProps extends AuthResultFields {
 }
 
 interface AuthFooterProps {
-  oAuthButtons?: AuthFooterOAuthBtn[];
+  hasOAuthBtns?: boolean;
   footerText: string;
   footerLink: string;
   footerLinkText: string;
 }
 
-interface AuthFooterOAuthBtn {
+interface OAuthBtnProps {
   label: string;
   icon: React.ReactNode;
+  provider: string;
   onClick: () => void;
 }
 
@@ -44,5 +45,5 @@ export type {
   AuthResultFields,
   AuthResultProps,
   AuthFooterProps,
-  AuthFooterOAuthBtn,
+  OAuthBtnProps,
 };
