@@ -1,17 +1,17 @@
 package com.mdevs.trackera.service;
 
-import com.mdevs.trackera.dto.auth.AuthResultDTO;
-import com.mdevs.trackera.dto.auth.LoginDTO;
-import com.mdevs.trackera.dto.auth.PasswordDTO;
-import com.mdevs.trackera.dto.auth.SignUpDTO;
+import com.mdevs.trackera.dto.auth.*;
 import com.mdevs.trackera.entity.SecurityToken;
 import com.mdevs.trackera.entity.User;
 import com.mdevs.trackera.entity.UserInvalidToken;
+import com.mdevs.trackera.entity.UserOAuthProvider;
 import com.mdevs.trackera.repository.SecurityTokenRepository;
 import com.mdevs.trackera.repository.UserInvalidTokenRepository;
+import com.mdevs.trackera.repository.UserOAuthProviderRepository;
 import com.mdevs.trackera.repository.UserRepository;
 import com.mdevs.trackera.shared.exceptions.BusinessException;
 import com.mdevs.trackera.shared.exceptions.UnauthorizedException;
+import com.mdevs.trackera.shared.oauth_provider.OAuthProviderFactory;
 import com.mdevs.trackera.shared.utils.JwtUtil;
 import com.mdevs.trackera.shared.utils.TrackeraHasher;
 import io.jsonwebtoken.Claims;
@@ -27,7 +27,6 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -43,9 +42,13 @@ public class AuthService {
 
     private final SecurityTokenService securityTokenService;
 
+    private final OAuthProviderFactory oAuthProviderFactory;
+
     private final SecurityTokenRepository securityTokenRepository;
 
     private final UserInvalidTokenRepository userInvalidTokenRepository;
+
+    private final UserOAuthProviderRepository userOAuthProviderRepository;
 
     private final JwtUtil jwtUtil;
 
@@ -66,12 +69,14 @@ public class AuthService {
     private String cookieMaxAge;
 
     @Autowired
-    public AuthService(UserRepository userRepository, AuthenticationManager authenticationManager, SecurityTokenService securityTokenService, SecurityTokenRepository securityTokenRepository, UserInvalidTokenRepository userInvalidTokenRepository, JwtUtil jwtUtil, TrackeraHasher trackeraHasher, ModelMapper modelMapper, PasswordEncoder passwordEncoder) {
+    public AuthService(UserRepository userRepository, AuthenticationManager authenticationManager, SecurityTokenService securityTokenService, OAuthProviderFactory oAuthProviderFactory, SecurityTokenRepository securityTokenRepository, UserInvalidTokenRepository userInvalidTokenRepository, UserOAuthProviderRepository userOAuthProviderRepository, JwtUtil jwtUtil, TrackeraHasher trackeraHasher, ModelMapper modelMapper, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.authenticationManager = authenticationManager;
         this.securityTokenService = securityTokenService;
+        this.oAuthProviderFactory = oAuthProviderFactory;
         this.securityTokenRepository = securityTokenRepository;
         this.userInvalidTokenRepository = userInvalidTokenRepository;
+        this.userOAuthProviderRepository = userOAuthProviderRepository;
         this.jwtUtil = jwtUtil;
         this.trackeraHasher = trackeraHasher;
         this.modelMapper = modelMapper;
@@ -119,18 +124,45 @@ public class AuthService {
                 result.put("isError", true);
                 result.put("message", message);
             } else {
-                SecurityContextHolder.getContext().setAuthentication(authentication);
-                String accessToken = jwtUtil.generateToken(loggedUser.getEmail(), true);
-                String refreshToken = jwtUtil.generateToken(loggedUser.getEmail(), false);
-
-                httpResponse.addCookie(createTrackeraCookie(REFRESH_TOKEN_COOKIE_NAME, refreshToken, true, Integer.parseInt(cookieMaxAge)));
-                result.put("token", accessToken);
+                result = generateLoginInfo(loggedUser, httpResponse);
             }
 
             return result;
         } catch (AuthenticationException e) {
             throw new SecurityException("Invalid credentials");
         }
+    }
+
+    @Transactional
+    public Map<String, Object> oAuth(OAuthRequestDTO oAuthRequestDTO, HttpServletResponse httpResponse) {
+        OAuthUserInfoDTO oAuthUserInfo = oAuthProviderFactory.getOAuthUserInfoDTO(oAuthRequestDTO);
+        User authenticatedUser = userRepository.findByEmail(oAuthUserInfo.getEmail());
+        if (authenticatedUser == null) {
+            authenticatedUser = new User();
+            authenticatedUser.setEmail(oAuthUserInfo.getEmail());
+            authenticatedUser.setFirstname(oAuthUserInfo.getFirstname());
+            authenticatedUser.setLastname(oAuthUserInfo.getLastname());
+            authenticatedUser.setVerified(true);
+            userRepository.save(authenticatedUser);
+
+            UserOAuthProvider userOAuthProvider = new UserOAuthProvider(authenticatedUser, oAuthUserInfo.getProvider());
+            userOAuthProviderRepository.save(userOAuthProvider);
+        } else {
+            if (!authenticatedUser.isOAuth()) {
+                throw new BusinessException("Password login required for this account");
+            }
+            if (!userOAuthProviderRepository.existsByUserAndProvider(authenticatedUser, oAuthUserInfo.getProvider())) {
+                throw new BusinessException("This account is not linked with the requested login provider");
+            }
+        }
+        return generateLoginInfo(authenticatedUser, httpResponse);
+    }
+
+    private Map<String, Object> generateLoginInfo(User user, HttpServletResponse httpResponse) {
+        String accessToken = jwtUtil.generateToken(user.getEmail(), true);
+        String refreshToken = jwtUtil.generateToken(user.getEmail(), false);
+        httpResponse.addCookie(createTrackeraCookie(REFRESH_TOKEN_COOKIE_NAME, refreshToken, true, Integer.parseInt(cookieMaxAge)));
+        return Map.of("token", accessToken);
     }
 
     @Transactional
@@ -165,7 +197,7 @@ public class AuthService {
         Claims accessTokenClaims = jwtUtil.getTokenPayload(refreshToken, false);
         String userEmail = accessTokenClaims.get("email", String.class);
         if (jwtUtil.isTokenInvalid(userEmail, refreshToken, false)) {
-            throw new SecurityException("Invalid or expired refresh token");
+            throw new SecurityException("Login has expired. Please sign in again.");
         }
         String newAccessToken = jwtUtil.generateToken(userEmail, true);
         return Map.of("token", newAccessToken);
@@ -197,7 +229,7 @@ public class AuthService {
     public String sendResetPassword(String email) {
         validateUserEmail(email);
         User user = userRepository.findByEmail(email);
-        if (user != null) {
+        if (user != null && user.canChangePassword()) {
             Map<String, String> templateParameters = new HashMap<>();
             templateParameters.put("emailTypeDesc", "Please click the link below to reset your password.");
             templateParameters.put("linkLabel", "Reset my password");

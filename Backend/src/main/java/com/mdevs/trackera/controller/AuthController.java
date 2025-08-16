@@ -1,6 +1,7 @@
 package com.mdevs.trackera.controller;
 
 import com.mdevs.trackera.dto.auth.LoginDTO;
+import com.mdevs.trackera.dto.auth.OAuthRequestDTO;
 import com.mdevs.trackera.dto.auth.PasswordDTO;
 import com.mdevs.trackera.dto.auth.SignUpDTO;
 import com.mdevs.trackera.service.AuthService;
@@ -39,6 +40,12 @@ public class AuthController {
         Map<String, Object> result = authService.login(loginDTO, httpServletResponse);
         boolean isError = result.containsKey("isError");
         return new ResponseEntity<>(isError ? ResponseMaker.makeResponse(result.get("message").toString(), null) : result, isError ? HttpStatus.FORBIDDEN : HttpStatus.OK);
+    }
+
+    @PublicAPI
+    @PostMapping("/oauth")
+    public ResponseEntity<?> OAuth(@RequestBody @Valid OAuthRequestDTO oAuthRequestDTO, HttpServletResponse httpServletResponse) {
+        return new ResponseEntity<>(authService.oAuth(oAuthRequestDTO, httpServletResponse), HttpStatus.OK);
     }
 
     @PostMapping("/logout")
