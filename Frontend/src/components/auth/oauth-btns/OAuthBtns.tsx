@@ -2,7 +2,7 @@ import { Button } from "antd";
 import type { OAuthBtnProps } from "../../../shared/types";
 import { useGoogleLogin, useGoogleOneTapLogin } from "@react-oauth/google";
 import { showErrorToast } from "../../../utils/toast-handler/show-toast";
-import requestInstance from "../../../shared/api/request-instance";
+import requestInstance from "../../../shared/axios/request-instance";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "../../../state/store";
 import classes from "./scss/oauth-btns.module.css";

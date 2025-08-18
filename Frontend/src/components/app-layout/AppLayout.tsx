@@ -8,10 +8,12 @@ import {
   showErrorToast,
   showSuccessToast,
 } from "../../utils/toast-handler/show-toast";
-import requestInstance from "../../shared/api/request-instance";
+import requestInstance from "../../shared/axios/request-instance";
 import { useNavigate } from "react-router-dom";
+import { userQueries } from "../../state/queries";
 
 const AppLayout = ({ children }: { children: React.ReactNode }) => {
+  const { data: userData } = userQueries.useMeQuery();
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const authStore = useAuthStore();
   const navigate = useNavigate();
@@ -53,7 +55,7 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
             <div className={classes.user_profile}>
               <Avatar style={{ backgroundColor: "blue" }}>T</Avatar>
               <div className={classes.user_name}>
-                <span>Tester</span>
+                <span>{userData?.firstname}</span>
                 <ChevronDown />
               </div>
             </div>

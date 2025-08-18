@@ -14,7 +14,7 @@ import { showErrorToast } from "../../../utils/toast-handler/show-toast";
 import inputFieldClasses from "../../../components/input-field/scss/input-field.module.css";
 import classes from "./scss/login.module.css";
 import { useAuthStore } from "../../../state/store";
-import requestInstance from "../../../shared/api/request-instance";
+import requestInstance from "../../../shared/axios/request-instance";
 
 interface LoginFormFields {
   email: string;

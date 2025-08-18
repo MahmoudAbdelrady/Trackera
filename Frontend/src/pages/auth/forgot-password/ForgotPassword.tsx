@@ -12,7 +12,7 @@ import inputFieldClasses from "../../../components/input-field/scss/input-field.
 import { useFormik } from "formik";
 import { emailSchema } from "../../../shared/yup-schemas";
 import { showErrorToast } from "../../../utils/toast-handler/show-toast";
-import requestInstance from "../../../shared/api/request-instance";
+import requestInstance from "../../../shared/axios/request-instance";
 import type { AuthResultFields } from "../../../shared/types";
 
 interface ForgotPasswordFormFields {

@@ -1,7 +1,7 @@
 import { AuthLayout, AuthResult, LoadingSpinner } from "../../../components";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useEffect, useState } from "react";
-import requestInstance from "../../../shared/api/request-instance";
+import requestInstance from "../../../shared/axios/request-instance";
 import type { AuthResultFields } from "../../../shared/types";
 
 const SecurityVerification = () => {
