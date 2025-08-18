@@ -1,7 +1,7 @@
 package com.mdevs.trackera.filter;
 
 import com.mdevs.trackera.config.security.ApiConfig;
-import com.mdevs.trackera.dto.auth.LoggedUserDTO;
+import com.mdevs.trackera.dto.auth.AuthFilterUserDTO;
 import com.mdevs.trackera.shared.annotations.PublicAPI;
 import com.mdevs.trackera.shared.utils.JwtUtil;
 import io.jsonwebtoken.Claims;
@@ -57,8 +57,8 @@ public class JwtFilter extends OncePerRequestFilter {
             return;
         }
 
-        LoggedUserDTO loggedUserDTO = new LoggedUserDTO(email);
-        Authentication authentication = new UsernamePasswordAuthenticationToken(loggedUserDTO, null, List.of());
+        AuthFilterUserDTO authFilterUserDTO = new AuthFilterUserDTO(email);
+        Authentication authentication = new UsernamePasswordAuthenticationToken(authFilterUserDTO, null, List.of());
         SecurityContextHolder.getContext().setAuthentication(authentication);
         filterChain.doFilter(request, response);
     }

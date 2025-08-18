@@ -142,6 +142,7 @@ public class AuthService {
             authenticatedUser.setEmail(oAuthUserInfo.getEmail());
             authenticatedUser.setFirstname(oAuthUserInfo.getFirstname());
             authenticatedUser.setLastname(oAuthUserInfo.getLastname());
+            authenticatedUser.setProfilePicture(oAuthUserInfo.getProfilePicture());
             authenticatedUser.setVerified(true);
             userRepository.save(authenticatedUser);
 
@@ -234,6 +235,12 @@ public class AuthService {
             templateParameters.put("emailTypeDesc", "Please click the link below to reset your password.");
             templateParameters.put("linkLabel", "Reset my password");
             securityTokenService.createAndSendSecurityToken(user, SecurityToken.Type.PASSWORD_RESET, null, templateParameters, "/change-password", "trackera-verification-mail-template");
+        } else {
+            // simulate delay to prevent email enumeration attacks
+            try {
+                Thread.sleep(1500);
+            } catch (InterruptedException ignored) {
+            }
         }
         return "If the email exists, a password reset link has been sent to your email.";
     }

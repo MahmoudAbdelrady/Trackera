@@ -9,12 +9,6 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class LoggedUserDTO {
-    private String firstname;
-
-    private String lastname;
-
-    private String profilePicture;
-
-    private String avatarColor;
+public class AuthFilterUserDTO {
+    private String email;
 }

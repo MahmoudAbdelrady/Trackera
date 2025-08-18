@@ -21,7 +21,6 @@ import java.util.List;
 @Audited
 @Entity
 @Table(indexes = {@Index(columnList = "EMAIL")})
-@NoArgsConstructor
 @Getter
 @Setter
 public class User extends BaseEntity implements UserDetails {
@@ -36,6 +35,11 @@ public class User extends BaseEntity implements UserDetails {
 
     private String password;
 
+    private String profilePicture;
+
+    @Column(nullable = false)
+    private String avatarColor;
+
     @Column(nullable = false)
     @ColumnDefault("0")
     private boolean isVerified = false;
@@ -43,6 +47,10 @@ public class User extends BaseEntity implements UserDetails {
     @Formula("EXISTS (SELECT 1 FROM USEROAUTHPROVIDERS uap WHERE uap.USER_ID = ID)")
     @NotAudited
     private boolean isOAuth;
+
+    public User() {
+        this.avatarColor = String.format("#%06x", (int) (Math.random() * 0xffffff));
+    }
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {

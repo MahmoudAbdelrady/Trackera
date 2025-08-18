@@ -1,6 +1,6 @@
 package com.mdevs.trackera.config.general;
 
-import com.mdevs.trackera.dto.auth.LoggedUserDTO;
+import com.mdevs.trackera.dto.auth.AuthFilterUserDTO;
 import com.mdevs.trackera.entity.User;
 import com.mdevs.trackera.repository.UserRepository;
 import lombok.Getter;
@@ -73,6 +73,6 @@ public class AppConfig {
 
     public static User getCurrentUser() {
         Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        return (principal instanceof LoggedUserDTO) ? applicationContext.getBean(UserRepository.class).findByEmail(((LoggedUserDTO) principal).getEmail()) : null;
+        return (principal instanceof AuthFilterUserDTO) ? applicationContext.getBean(UserRepository.class).findByEmail(((AuthFilterUserDTO) principal).getEmail()) : null;
     }
 }
