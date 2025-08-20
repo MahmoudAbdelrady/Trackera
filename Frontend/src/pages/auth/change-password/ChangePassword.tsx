@@ -13,7 +13,7 @@ import { useFormik } from "formik";
 import { resetPasswordSchema } from "../../../shared/yup-schemas";
 import requestInstance from "../../../shared/axios/request-instance";
 import type { AuthResultFields } from "../../../shared/types";
-import { showErrorToast } from "../../../utils/toast-handler/show-toast";
+import { showErrorToast } from "../../../utils/toast-handler/showToast";
 
 interface ChangePasswordFormFields {
   newPassword: string;

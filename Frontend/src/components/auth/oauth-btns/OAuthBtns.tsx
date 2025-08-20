@@ -1,7 +1,7 @@
 import { Button } from "antd";
 import type { OAuthBtnProps } from "../../../shared/types";
 import { useGoogleLogin, useGoogleOneTapLogin } from "@react-oauth/google";
-import { showErrorToast } from "../../../utils/toast-handler/show-toast";
+import { showErrorToast } from "../../../utils/toast-handler/showToast";
 import requestInstance from "../../../shared/axios/request-instance";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "../../../state/store";
@@ -32,7 +32,7 @@ const OAuthBtns = () => {
   };
 
   useGoogleOneTapLogin({
-    auto_select: true,
+    auto_select: false,
     cancel_on_tap_outside: false,
     onSuccess: async (tokenResponse: any) =>
       oAuthHandler(tokenResponse.credential, "GOOGLE"),

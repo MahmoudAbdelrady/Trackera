@@ -13,11 +13,9 @@ import {
   ChangePassword,
 } from "./pages";
 import { Toaster } from "react-hot-toast";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { GoogleOAuthProvider } from "@react-oauth/google";
-import { userQueries } from "./state/queries";
-import { LoadingSpinner } from "./components";
-import { showErrorToast } from "./utils/toast-handler/show-toast";
+import queryClient from "./state/queries";
 
 const router = createBrowserRouter([
   {
@@ -98,31 +96,17 @@ const router = createBrowserRouter([
   },
 ]);
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 0,
-      refetchOnMount: "always",
-      refetchOnWindowFocus: "always",
-    },
-  },
-});
-
 const App = () => {
-  const meQuery = userQueries.useMeQuery();
-  if (meQuery.isLoading) return <LoadingSpinner />;
-  else if (meQuery.isError) showErrorToast(meQuery.error);
-  else
-    return (
-      <GoogleOAuthProvider
-        clientId={import.meta.env.VITE_TRACKERA_GOOGLE_CLIENT_ID}
-      >
-        <QueryClientProvider client={queryClient}>
-          <Toaster />
-          <RouterProvider router={router} />
-        </QueryClientProvider>
-      </GoogleOAuthProvider>
-    );
+  return (
+    <GoogleOAuthProvider
+      clientId={import.meta.env.VITE_TRACKERA_GOOGLE_CLIENT_ID}
+    >
+      <QueryClientProvider client={queryClient}>
+        <Toaster />
+        <RouterProvider router={router} />
+      </QueryClientProvider>
+    </GoogleOAuthProvider>
+  );
 };
 
 export default App;

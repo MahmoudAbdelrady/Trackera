@@ -1,5 +1,5 @@
 import toast from "react-hot-toast";
-import { formateToastResponse } from "./format-toast-response";
+import { formateToastResponse } from "./formatToastResponse";
 
 export const showSuccessToast = (response: any) => {
   toast.success(formateToastResponse(response));

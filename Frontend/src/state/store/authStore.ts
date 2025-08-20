@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import queryClient from "../queries";
 
 interface AuthState {
   token: string | null;
@@ -17,6 +18,7 @@ const useAuthStore = create<AuthState>((set) => ({
   logout: () => {
     localStorage.removeItem("token");
     set({ token: null, isAuthenticated: false });
+    queryClient.removeQueries({ queryKey: ["me"] });
   },
 }));
 

@@ -13,7 +13,7 @@ import { signUpSchema } from "../../../shared/yup-schemas";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import requestInstance from "../../../shared/axios/request-instance";
-import { showErrorToast } from "../../../utils/toast-handler/show-toast";
+import { showErrorToast } from "../../../utils/toast-handler/showToast";
 import { getFormikErrors } from "../../../utils";
 
 interface SignUpFormFields {

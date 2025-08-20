@@ -1,4 +1,5 @@
-import getPaddedItem from "./get-padded-item";
-import getFormikErrors from "./get-formik-errors";
+import getPaddedItem from "./getPaddedItem";
+import getFormikErrors from "./getFormikErrors";
+import getContrastColor from "./getContrastColor";
 
-export { getPaddedItem, getFormikErrors };
+export { getPaddedItem, getFormikErrors, getContrastColor };

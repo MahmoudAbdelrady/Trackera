@@ -7,10 +7,11 @@ import { useAuthStore } from "../../state/store";
 import {
   showErrorToast,
   showSuccessToast,
-} from "../../utils/toast-handler/show-toast";
+} from "../../utils/toast-handler/showToast";
 import requestInstance from "../../shared/axios/request-instance";
 import { useNavigate } from "react-router-dom";
 import { userQueries } from "../../state/queries";
+import { getContrastColor } from "../../utils";
 
 const AppLayout = ({ children }: { children: React.ReactNode }) => {
   const { data: userData } = userQueries.useMeQuery();
@@ -53,7 +54,20 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
         <div className={classes.actions}>
           <Dropdown trigger={["click"]} menu={{ items: userProfileItems }}>
             <div className={classes.user_profile}>
-              <Avatar style={{ backgroundColor: "blue" }}>T</Avatar>
+              {userData?.profilePicture ? (
+                <Avatar src={userData?.profilePicture} />
+              ) : (
+                <Avatar
+                  style={{
+                    backgroundColor: userData?.avatarColor,
+                    color: getContrastColor(userData?.avatarColor),
+                    fontSize: "18px",
+                    userSelect: "none",
+                  }}
+                >
+                  {userData?.firstname.charAt(0).toUpperCase()}
+                </Avatar>
+              )}
               <div className={classes.user_name}>
                 <span>{userData?.firstname}</span>
                 <ChevronDown />
