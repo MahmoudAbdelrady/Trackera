@@ -6,11 +6,14 @@ import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
 import com.google.api.client.googleapis.auth.oauth2.GoogleTokenResponse;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.json.gson.GsonFactory;
+import com.mdevs.trackera.config.general.AppConfig;
 import com.mdevs.trackera.dto.auth.OAuthUserInfoDTO;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 @Component
 public class GoogleOAuthServiceProvider extends OAuthServiceProvider {
@@ -20,6 +23,8 @@ public class GoogleOAuthServiceProvider extends OAuthServiceProvider {
     @Value("${trackera.oauth2.google.client-secret}")
     private String CLIENT_SECRET;
 
+    private final static Logger LOGGER = Logger.getLogger(GoogleOAuthServiceProvider.class.getName());
+
     @Override
     public OAuthUserInfoDTO authenticate(String tokenCode) {
         try {
@@ -28,6 +33,7 @@ public class GoogleOAuthServiceProvider extends OAuthServiceProvider {
             GoogleIdToken.Payload payload = tokenVerifier.verify(tokenResponse.getIdToken()).getPayload();
             return new OAuthUserInfoDTO(payload.getEmail(), (String) payload.get("given_name"), (String) payload.get("family_name"), (String) payload.get("picture"), OAuthProvider.GOOGLE);
         } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Error while authenticating with Google: " + e.getMessage(), e);
             throw new SecurityException("Error while authenticating with Google");
         }
     }
@@ -36,6 +42,7 @@ public class GoogleOAuthServiceProvider extends OAuthServiceProvider {
         try {
             return new GoogleAuthorizationCodeTokenRequest(GoogleNetHttpTransport.newTrustedTransport(), GsonFactory.getDefaultInstance(), CLIENT_ID, CLIENT_SECRET, tokenCode, "postmessage").execute();
         } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Error while getting Google token response: " + e.getMessage(), e);
             throw new RuntimeException(e.getMessage());
         }
     }
