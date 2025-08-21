@@ -12,7 +12,7 @@ const refreshJwtInterceptor = async (error: any) => {
     originalRequest._retry = true;
     try {
       const response = await requestInstance.post("/auth/refresh-jwt");
-      useAuthStore.getState().login(response.data.data.token);
+      useAuthStore.getState().login(response.data.token);
       return requestInstance(originalRequest);
     } catch (refreshError: any) {
       useAuthStore.getState().logout();

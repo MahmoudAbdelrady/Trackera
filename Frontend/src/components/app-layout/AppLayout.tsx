@@ -24,7 +24,7 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
     try {
       const response = await requestInstance.post("/auth/logout");
       authStore.logout();
-      showSuccessToast(response.data.message);
+      showSuccessToast(response.data);
       navigate("/login");
     } catch (error: any) {
       showErrorToast(error);

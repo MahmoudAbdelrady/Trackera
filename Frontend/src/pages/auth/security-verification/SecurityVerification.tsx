@@ -32,8 +32,8 @@ const SecurityVerification = () => {
             `/auth/process-token?token=${token}`
           );
           setVerificationResult({
-            title: response.data.data.title,
-            description: response.data.data.desc,
+            title: response.data.title,
+            description: response.data.desc,
           });
         } catch (error: any) {
           setVerificationResult({

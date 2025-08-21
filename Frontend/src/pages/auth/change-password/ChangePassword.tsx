@@ -51,7 +51,7 @@ const ChangePassword = () => {
           }
         );
         setPasswordChangeResult({
-          description: response.data.message,
+          description: response.data,
         });
         setShowAuthResult(true);
       } catch (error: any) {
