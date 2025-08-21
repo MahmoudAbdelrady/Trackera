@@ -69,6 +69,7 @@ const Login = () => {
         footer={
           <AuthFooter
             hasOAuthBtns={true}
+            isOAuthBtnsDisabled={isLoading}
             footerText="Don't have an account?"
             footerLink="/sign-up"
             footerLinkText="Sign up"

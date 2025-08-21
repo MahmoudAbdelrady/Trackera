@@ -1,13 +1,13 @@
 import { Button } from "antd";
 import type { OAuthBtnProps } from "../../../shared/types";
-import { useGoogleLogin, useGoogleOneTapLogin } from "@react-oauth/google";
+import { useGoogleLogin } from "@react-oauth/google";
 import { showErrorToast } from "../../../utils/toast-handler/showToast";
 import requestInstance from "../../../shared/axios/request-instance";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "../../../state/store";
 import classes from "./scss/oauth-btns.module.css";
 
-const OAuthBtns = () => {
+const OAuthBtns = ({ disabled }: { disabled?: boolean }) => {
   const authStore = useAuthStore();
   const navigate = useNavigate();
 
@@ -31,14 +31,6 @@ const OAuthBtns = () => {
     }
   };
 
-  useGoogleOneTapLogin({
-    auto_select: false,
-    cancel_on_tap_outside: false,
-    onSuccess: async (tokenResponse: any) =>
-      oAuthHandler(tokenResponse.credential, "GOOGLE"),
-    onError: () => showErrorToast("Google One Tap login failed"),
-  });
-
   const oAuthButtons: OAuthBtnProps[] = [
     {
       label: "Continue with Google",
@@ -56,6 +48,7 @@ const OAuthBtns = () => {
           className={classes.auth_btn}
           onClick={btn.onClick}
           icon={<div className={classes.icon_container}>{btn.icon}</div>}
+          disabled={disabled}
         >
           {btn.label}
         </Button>

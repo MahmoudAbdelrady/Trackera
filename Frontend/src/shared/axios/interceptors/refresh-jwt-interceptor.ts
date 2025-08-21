@@ -2,7 +2,7 @@ import { useAuthStore } from "../../../state/store";
 import requestInstance from "../request-instance";
 
 const refreshJwtInterceptor = async (error: any) => {
-  const filteredAPIs = ["/auth/refresh-jwt", "/auth/login"];
+  const filteredAPIs = ["/auth/refresh-jwt", "/auth/login", "/auth/oauth"];
   const originalRequest = error.config;
   if (
     error.response.status === 401 &&

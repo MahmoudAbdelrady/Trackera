@@ -81,6 +81,7 @@ const SignUp = () => {
           footer={
             <AuthFooter
               hasOAuthBtns={true}
+              isOAuthBtnsDisabled={isLoading}
               footerText="Already have an account?"
               footerLink="/login"
               footerLinkText="Sign in"

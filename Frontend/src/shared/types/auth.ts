@@ -27,6 +27,7 @@ interface AuthResultProps extends AuthResultFields {
 
 interface AuthFooterProps {
   hasOAuthBtns?: boolean;
+  isOAuthBtnsDisabled?: boolean;
   footerText: string;
   footerLink: string;
   footerLinkText: string;

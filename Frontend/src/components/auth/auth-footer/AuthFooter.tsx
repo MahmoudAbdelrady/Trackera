@@ -11,7 +11,7 @@ const AuthFooter = (props: AuthFooterProps) => {
           <div className={classes.separator}>
             <span className={classes.separator_text}>or</span>
           </div>
-          <OAuthBtns />
+          <OAuthBtns disabled={props.isOAuthBtnsDisabled} />
         </>
       )}
       <div className={classes.auth_redirection}>
