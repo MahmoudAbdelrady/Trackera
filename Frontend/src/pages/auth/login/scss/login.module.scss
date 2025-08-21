@@ -1,0 +1,17 @@
+@use "../../../../utils/styles/colors" as *;
+@use "../../../../utils/styles/mixins" as *;
+
+.forget_password_box {
+  width: 100%;
+  @include end;
+  .forget_password_link {
+    color: $mainColor;
+    font-size: 14px;
+    text-decoration: none;
+    width: fit-content;
+    &:hover {
+      color: scale-color($mainColor, -20%);
+      text-decoration: underline;
+    }
+  }
+}

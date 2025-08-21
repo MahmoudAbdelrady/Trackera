@@ -29,15 +29,16 @@ import {
   type Worklog,
   type WorkLogEvaluationType,
   type WorkLogStatusType,
-} from "../../utils/types";
-import { getPaddedItem } from "../../utils/helpers";
+} from "../../shared/types";
+import { getPaddedItem } from "../../utils";
 import worklogTableClasses from "../../components/worklogs/worklog-table/scss/worklog-table.module.css";
 import worklogModalClasses from "../../components/worklogs/workklog-modal/scss/worklog-modal.module.css";
 
 const Home = () => {
-  const [addWorkLogVisible, setAddWorkLogVisible] = useState(false);
-  const [editWorkLogVisible, setEditWorkLogVisible] = useState(false);
-  const [deleteWorkLogVisible, setDeleteWorkLogVisible] = useState(false);
+  const [addWorkLogVisible, setAddWorkLogVisible] = useState<boolean>(false);
+  const [editWorkLogVisible, setEditWorkLogVisible] = useState<boolean>(false);
+  const [deleteWorkLogVisible, setDeleteWorkLogVisible] =
+    useState<boolean>(false);
   const workLogStatusCards = [
     {
       cardLabel: "Total Logged Hours",

@@ -1,0 +1,19 @@
+@use "../../../../shared/styles/colors" as *;
+@use "../../../../shared/styles/mixins" as *;
+
+.auth_buttons {
+  margin-top: 20px;
+  @include center;
+  width: 100%;
+  .auth_btn {
+    width: 100%;
+    padding: 20px 15px;
+    .icon_container {
+      @include center;
+      img {
+        width: 20px;
+        height: 20px;
+      }
+    }
+  }
+}

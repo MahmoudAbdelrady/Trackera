@@ -1,0 +1,32 @@
+@use "../../../../shared/styles/colors" as *;
+@use "../../../../shared/styles/mixins" as *;
+
+.auth_layout {
+  @include center;
+  flex-direction: column;
+  width: 100vw;
+  height: 100vh;
+  @media (max-width: 577px) or (max-height: 620px) {
+    margin: 20px 0;
+    height: auto;
+  }
+  .header {
+    @include center;
+    flex-direction: column;
+    h3 {
+      color: $mainColor;
+      font-size: 24px;
+    }
+    p {
+      color: $subtitleColor;
+      font-size: 14px;
+      margin-top: 5px;
+    }
+  }
+  .layout_content {
+    @include center;
+    flex-direction: column;
+    width: 100%;
+    margin-top: 30px;
+  }
+}

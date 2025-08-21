@@ -3,12 +3,19 @@ import { GuestRoute, PrivateRoute } from "./routes";
 import {
   Login,
   SignUp,
+  SecurityVerification,
   Home,
   Tasks,
   Settings,
   Test,
   WorklogDetails,
+  ForgotPassword,
+  ChangePassword,
 } from "./pages";
+import { Toaster } from "react-hot-toast";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { GoogleOAuthProvider } from "@react-oauth/google";
+import queryClient from "./state/queries";
 
 const router = createBrowserRouter([
   {
@@ -26,6 +33,26 @@ const router = createBrowserRouter([
         <SignUp />
       </GuestRoute>
     ),
+  },
+  {
+    path: "/forgot-password",
+    element: (
+      <GuestRoute>
+        <ForgotPassword />
+      </GuestRoute>
+    ),
+  },
+  {
+    path: "/change-password",
+    element: (
+      <GuestRoute>
+        <ChangePassword />
+      </GuestRoute>
+    ),
+  },
+  {
+    path: "/security-verification",
+    element: <SecurityVerification />,
   },
   {
     path: "/",
@@ -70,7 +97,16 @@ const router = createBrowserRouter([
 ]);
 
 const App = () => {
-  return <RouterProvider router={router} />;
+  return (
+    <GoogleOAuthProvider
+      clientId={import.meta.env.VITE_TRACKERA_GOOGLE_CLIENT_ID}
+    >
+      <QueryClientProvider client={queryClient}>
+        <Toaster />
+        <RouterProvider router={router} />
+      </QueryClientProvider>
+    </GoogleOAuthProvider>
+  );
 };
 
 export default App;

@@ -1,0 +1,66 @@
+@use "../../../../shared/styles/colors" as *;
+@use "../../../../shared/styles/mixins" as *;
+
+.auth_result_container {
+  background-color: #fff;
+  border-radius: 6px;
+  padding: 35px 25px;
+  box-shadow: $authBoxShadow;
+  width: 450px;
+  max-width: 100%;
+  @media (max-width: 480px) {
+    width: calc(100% - 60px);
+  }
+  .ar_header {
+    @include center;
+    flex-direction: column;
+    margin-bottom: 25px;
+    h3 {
+      font-size: 20px;
+    }
+    p {
+      color: $subtitleColor;
+      font-size: 14px;
+      margin-top: 5px;
+    }
+  }
+  .ar_content {
+    @include center;
+    flex-direction: column;
+    width: 100%;
+    .ar_icon_container {
+      @include center;
+      background-color: $greenColorLight2;
+      color: $greenColor;
+      width: 65px;
+      height: 65px;
+      border-radius: 50%;
+      &.error {
+        background-color: $redColorLight;
+        color: $redColor;
+      }
+      .ar_icon {
+        width: 30px;
+        height: 30px;
+      }
+    }
+    .ar_message {
+      margin: 20px 0 10px;
+      color: $subtitleColor;
+      text-align: center;
+    }
+    .ar_button {
+      width: 100%;
+      padding: 18px;
+      background-color: $mainColor;
+      margin-top: 15px;
+      &:hover {
+        background-color: scale-color($mainColor, -10%);
+      }
+      &:disabled {
+        background-color: #ddd;
+        color: #aaa;
+      }
+    }
+  }
+}

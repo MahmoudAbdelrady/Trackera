@@ -16,18 +16,18 @@ import worklogTableClasses from "../../components/worklogs/worklog-table/scss/wo
 import { Switch, Tooltip, type TableProps } from "antd";
 import {
   statusMetadata,
-  type WorklogDetails,
+  type WorklogEntry,
   type WorkLogStatusType,
   type WorklogTask,
-} from "../../utils/types";
+} from "../../shared/types";
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { getPaddedItem } from "../../utils/helpers";
+import { getPaddedItem } from "../../utils";
 import worklogModalClasses from "../../components/worklogs/workklog-modal/scss/worklog-modal.module.css";
 
 const WorklogDetails = () => {
   const [editDetailVisible, setEditDetailVisible] = useState<boolean>(false);
-  const [viewDetailTask, setViewDetailTask] = useState<WorklogDetails | null>(
+  const [viewDetailTask, setViewDetailTask] = useState<WorklogEntry | null>(
     null
   );
   const [deleteDetailVisible, setDeleteDetailVisible] =
@@ -38,7 +38,7 @@ const WorklogDetails = () => {
     []
   );
 
-  const worklogDetails: WorklogDetails[] = [
+  const worklogDetails: WorklogEntry[] = [
     {
       id: 1,
       taskName: "SAL-1234",
@@ -100,7 +100,7 @@ const WorklogDetails = () => {
     },
   ];
 
-  const logDetailsColumns: TableProps<WorklogDetails>["columns"] = [
+  const logDetailsColumns: TableProps<WorklogEntry>["columns"] = [
     {
       title: "Task Name",
       dataIndex: "taskName",
@@ -376,13 +376,13 @@ const WorklogDetails = () => {
           </div>
         </div>
         <div className={classes.worklog_details_content}>
-          <WorklogTable<WorklogDetails>
+          <WorklogTable<WorklogEntry>
             properties={{
               columns: logDetailsColumns,
               dataSource: worklogDetails,
               rowSelection: {
                 selectedRowKeys: selectedLogDetails,
-                onChange: (_, selectedRows: WorklogDetails[]) => {
+                onChange: (_, selectedRows: WorklogEntry[]) => {
                   setSelectedLogDetails(
                     selectedRows.map((row) => row.id.toString())
                   );

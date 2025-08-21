@@ -2,12 +2,6 @@
   width: 100vw;
   height: 100vh;
 }
-@media (max-width: 768px) {
-  .app_layout {
-    min-height: 100vh;
-    height: auto;
-  }
-}
 .app_layout .header {
   display: flex;
   justify-content: space-between;
@@ -98,10 +92,18 @@
   width: calc(100% - 250px);
   height: 100%;
   padding: 20px;
+  overflow-y: auto;
 }
 @media (max-width: 768px) {
   .app_layout .body_container .content {
     width: 100%;
     padding: 10px;
   }
+}
+
+.profile_item {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 5px;
 }/*# sourceMappingURL=app-layout.module.css.map */
