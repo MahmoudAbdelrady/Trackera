@@ -1,12 +1,9 @@
 package com.mdevs.trackera.controller;
 
-import com.mdevs.trackera.dto.auth.LoginDTO;
-import com.mdevs.trackera.dto.auth.OAuthRequestDTO;
-import com.mdevs.trackera.dto.auth.PasswordDTO;
-import com.mdevs.trackera.dto.auth.SignUpDTO;
+import com.mdevs.trackera.dto.auth.*;
 import com.mdevs.trackera.service.AuthService;
 import com.mdevs.trackera.shared.annotations.PublicAPI;
-import com.mdevs.trackera.shared.utils.response.ResponseMaker;
+import com.mdevs.trackera.shared.exceptions.ExceptionResponseMaker;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -31,15 +28,14 @@ public class AuthController {
     @PublicAPI
     @PostMapping("/signup")
     public ResponseEntity<?> SignUp(@RequestBody @Valid SignUpDTO signUpDTO) {
-        return new ResponseEntity<>(ResponseMaker.makeResponse(authService.signUp(signUpDTO), null), HttpStatus.CREATED);
+        return new ResponseEntity<>(authService.signUp(signUpDTO), HttpStatus.CREATED);
     }
 
     @PublicAPI
     @PostMapping("/login")
     public ResponseEntity<?> Login(@RequestBody @Valid LoginDTO loginDTO, HttpServletResponse httpServletResponse) {
         Map<String, Object> result = authService.login(loginDTO, httpServletResponse);
-        boolean isError = result.containsKey("isError");
-        return new ResponseEntity<>(isError ? ResponseMaker.makeResponse(result.get("message").toString(), null) : result, isError ? HttpStatus.FORBIDDEN : HttpStatus.OK);
+        return result.containsKey("isError") ? ExceptionResponseMaker.makeResponse(result.get("message").toString(), HttpStatus.FORBIDDEN) : new ResponseEntity<>(result, HttpStatus.OK);
     }
 
     @PublicAPI
@@ -51,22 +47,22 @@ public class AuthController {
     @PostMapping("/logout")
     public ResponseEntity<?> Logout(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse) {
         authService.logout(httpServletRequest, httpServletResponse);
-        return new ResponseEntity<>(ResponseMaker.makeResponse("Logged out successfully", null), HttpStatus.OK);
+        return new ResponseEntity<>("Logged out successfully", HttpStatus.OK);
     }
 
     @PublicAPI
     @PostMapping("/refresh-jwt")
     public ResponseEntity<?> RefreshJwt(@CookieValue(value = "refreshToken") String refreshToken) {
-        return new ResponseEntity<>(ResponseMaker.makeResponse(null, authService.refreshJwt(refreshToken)), HttpStatus.OK);
+        return new ResponseEntity<>(authService.refreshJwt(refreshToken), HttpStatus.OK);
     }
 
     @PublicAPI
     @PostMapping("/process-token")
     public ResponseEntity<?> ProcessSecurityToken(@RequestParam String token) {
         try {
-            return new ResponseEntity<>(ResponseMaker.makeResponse(null, authService.processToken(token)), HttpStatus.OK);
+            return new ResponseEntity<>(authService.processToken(token), HttpStatus.OK);
         } catch (ObjectOptimisticLockingFailureException ex) {
-            return new ResponseEntity<>(ResponseMaker.makeResponse(null, Map.of("title", "Token validated successfully")), HttpStatus.OK); // @TODO --> Remove in production
+            return new ResponseEntity<>(new AuthResultDTO("Token validated successfully", null), HttpStatus.OK); // @TODO --> Remove in production
         }
     }
 
@@ -80,12 +76,12 @@ public class AuthController {
     @PublicAPI
     @PostMapping("/send-reset-password")
     public ResponseEntity<?> SendResetPassword(@RequestBody Map<String, String> body) {
-        return new ResponseEntity<>(ResponseMaker.makeResponse(authService.sendResetPassword(body.get("email")), null), HttpStatus.OK);
+        return new ResponseEntity<>(authService.sendResetPassword(body.get("email")), HttpStatus.OK);
     }
 
     @PublicAPI
     @PostMapping("/change-password")
     public ResponseEntity<?> ChangePassword(@RequestParam String token, @RequestBody @Valid PasswordDTO passwordDTO) {
-        return new ResponseEntity<>(ResponseMaker.makeResponse(authService.changePassword(token, passwordDTO), null), HttpStatus.OK);
+        return new ResponseEntity<>(authService.changePassword(token, passwordDTO), HttpStatus.OK);
     }
 }

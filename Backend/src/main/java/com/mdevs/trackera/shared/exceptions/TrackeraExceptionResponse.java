@@ -1,5 +1,6 @@
-package com.mdevs.trackera.shared.utils.response;
+package com.mdevs.trackera.shared.exceptions;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -9,7 +10,9 @@ import lombok.Setter;
 @AllArgsConstructor
 @Getter
 @Setter
-public class TrackeraResponse {
+@JsonInclude(JsonInclude.Include.NON_NULL)
+public class TrackeraExceptionResponse {
     private String message;
+
     private Object data;
 }

@@ -1,4 +1,4 @@
-package com.mdevs.trackera.shared.exceptions;
+package com.mdevs.trackera.shared.exceptions.types;
 
 public class UnauthorizedException extends RuntimeException {
     public UnauthorizedException(String message) {
