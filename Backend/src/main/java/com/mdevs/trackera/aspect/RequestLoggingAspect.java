@@ -19,7 +19,6 @@ import java.util.List;
 @Aspect
 @Component
 public class RequestLoggingAspect {
-
     private static final Logger REQUEST_LOGGER = LoggerFactory.getLogger(RequestLoggingAspect.class);
 
     @Around("within(@org.springframework.web.bind.annotation.RestController *)")
