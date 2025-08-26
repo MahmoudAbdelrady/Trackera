@@ -8,9 +8,13 @@ import com.mdevs.trackera.repository.WorkLogRepository;
 import com.mdevs.trackera.shared.FileValidator;
 import com.mdevs.trackera.shared.exceptions.types.BusinessException;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -40,6 +44,10 @@ public class WorkLogService {
 
     private final static DateTimeFormatter WORKLOG_NAME_DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd");
 
+    private final static int MAX_WORKLOG_ROWS = 300;
+
+    private final static Logger LOGGER = LoggerFactory.getLogger(WorkLogService.class);
+
     @Autowired
     public WorkLogService(WorkLogRepository workLogRepository, WorkLogDetailRepository workLogDetailRepository) {
         this.workLogRepository = workLogRepository;
@@ -47,41 +55,66 @@ public class WorkLogService {
     }
 
     @Transactional
-    public String addWorkLog(NewWorkLogDTO newWorkLogDTO, MultipartFile worklogFile) {
+    public Map<String, Object> addWorkLog(NewWorkLogDTO newWorkLogDTO, MultipartFile worklogFile) {
         validateWorkLog(newWorkLogDTO, worklogFile);
         List<WorkLogDetail> allWorkLogDetails = new ArrayList<>();
+        List<Map<String, Object>> rowErrors = new ArrayList<>();
         double totalTime = 0;
         try (InputStream inputStream = worklogFile.getInputStream()) {
             XSSFWorkbook workBook = new XSSFWorkbook(inputStream);
             XSSFSheet sheet = workBook.getSheetAt(0);
+            if ((sheet.getLastRowNum() + 1) > MAX_WORKLOG_ROWS) {
+                throw new BusinessException("The uploaded file contains more than the allowed limit of 300 rows.");
+            }
             for (Row row : sheet) {
-                if (row.getRowNum() == 0 || row.getCell(0) == null || StringUtils.isEmpty(row.getCell(0).getStringCellValue()))
+                String taskName;
+                LocalTime fromHour;
+                LocalTime toHour;
+                double taskLogDuration;
+                String taskDescription;
+                try {
+                    taskName = getCellValue(row.getCell(0), String.class);
+                    fromHour = getCellValue(row.getCell(1), LocalTime.class);
+                    toHour = getCellValue(row.getCell(2), LocalTime.class);
+                    taskLogDuration = parseDuration(getCellValue(row.getCell(3), String.class));
+                    taskDescription = getCellValue(row.getCell(4), String.class);
+                } catch (Exception e) {
+                    LOGGER.error("Error parsing row {}", row.getRowNum() + 1, e);
+                    Map<String, Object> error = new HashMap<>();
+                    error.put("row", row.getRowNum() + 1);
+                    error.put("error", e.getMessage());
+                    rowErrors.add(error);
                     continue;
-
-                String taskName = row.getCell(0).getStringCellValue();
-                String fromHour = PERIOD_TIME_FORMAT.format(row.getCell(1).getDateCellValue());
-                String toHour = PERIOD_TIME_FORMAT.format(row.getCell(2).getDateCellValue());
-                double taskLogDuration = parseDuration(row.getCell(3).getStringCellValue().trim());
-                String taskDescription = row.getCell(4).getStringCellValue();
+                }
 
                 totalTime += taskLogDuration;
 
                 WorkLogDetail workLogDetail = new WorkLogDetail();
                 workLogDetail.setTaskName(taskName);
                 workLogDetail.setTaskUrl(null); // @TODO --> Should be based on the user's selected project
-                workLogDetail.setStartTime(LocalTime.parse(fromHour, WORKLOG_DETAIL_DURATION_FORMATTER));
-                workLogDetail.setEndTime(LocalTime.parse(toHour, WORKLOG_DETAIL_DURATION_FORMATTER));
+                workLogDetail.setStartTime(fromHour);
+                workLogDetail.setEndTime(toHour);
                 workLogDetail.setDuration(taskLogDuration);
                 workLogDetail.setDescription(taskDescription);
+                workLogDetail.setStatus(WorkLog.Status.NOT_SYNCED);
                 allWorkLogDetails.add(workLogDetail);
             }
         } catch (Exception ex) {
+            LOGGER.error("Error processing worklog file", ex);
             throw new RuntimeException(ex);
         }
 
-        WorkLog workLog = saveWorkLog(newWorkLogDTO, totalTime);
-        saveWorkLogDetails(allWorkLogDetails, workLog);
-        return "Worklog uploaded successfully";
+        Map<String, Object> result = new HashMap<>();
+        if (!rowErrors.isEmpty()) {
+            result.put("isError", true);
+            result.put("message", "There were some errors in the uploaded file.");
+            result.put("errors", rowErrors);
+        } else {
+            WorkLog workLog = saveWorkLog(newWorkLogDTO, totalTime);
+            saveWorkLogDetails(allWorkLogDetails, workLog);
+            result.put("message", "Worklog uploaded successfully");
+        }
+        return result;
     }
 
     private void validateWorkLog(NewWorkLogDTO newWorkLogDTO, MultipartFile worklogFile) {
@@ -90,6 +123,39 @@ public class WorkLogService {
         }
         FileValidator.validate(worklogFile);
     }
+
+    private <T> T getCellValue(Cell cell, Class<T> expectedType) {
+        if (cell == null) {
+            throw new IllegalArgumentException("Cell is empty");
+        }
+
+        int cellIdx = cell.getColumnIndex() + 1;
+        try {
+            Object result;
+
+            if (expectedType == String.class) {
+                String cellValue = cell.getCellType() == CellType.STRING ? cell.getStringCellValue() : cell.toString();
+                if (StringUtils.isEmpty(cellValue)) {
+                    throw new IllegalArgumentException("Cell value at index [" + cellIdx + "] is empty");
+                }
+                result = cellValue;
+            } else if (expectedType == LocalTime.class) {
+                if (cell.getDateCellValue() == null) {
+                    throw new IllegalArgumentException("Date/Time cell value at index [" + cellIdx + "] is empty");
+                }
+                String formatted = PERIOD_TIME_FORMAT.format(cell.getDateCellValue());
+                result = LocalTime.parse(formatted, WORKLOG_DETAIL_DURATION_FORMATTER);
+            } else {
+                throw new IllegalArgumentException("Cell value type at index [" + cellIdx + "] is not supported");
+            }
+
+            return expectedType.cast(result);
+
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Invalid " + expectedType.getSimpleName() + " value in cell at index [" + cellIdx + "]", e);
+        }
+    }
+
 
     private double parseDuration(String duration) {
         Matcher matcher = DURATION_PATTERN.matcher(duration);
@@ -110,6 +176,8 @@ public class WorkLogService {
     public WorkLog saveWorkLog(NewWorkLogDTO newWorkLogDTO, double totalTime) {
         WorkLog workLog = new WorkLog();
         workLog.setTotalHours(totalTime);
+        workLog.setWorkDate(newWorkLogDTO.getLogDate());
+        workLog.setStatus(WorkLog.Status.NOT_SYNCED);
         if (!StringUtils.isEmpty(newWorkLogDTO.getLogName())) {
             workLog.setName(newWorkLogDTO.getLogName());
         } else {
@@ -119,7 +187,6 @@ public class WorkLogService {
             String formattedDate = WORKLOG_NAME_DATE_FORMATTER.format(now);
             workLog.setName("Worklog - " + dayName + formattedDate);
         }
-
 
         return workLogRepository.save(workLog);
     }

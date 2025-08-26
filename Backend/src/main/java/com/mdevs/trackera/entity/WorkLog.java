@@ -65,4 +65,8 @@ public class WorkLog extends BaseEntity {
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
     private Status status;
+
+    public Evaluation getEvaluation() {
+        return Evaluation.fromTotalHours(totalHours);
+    }
 }
