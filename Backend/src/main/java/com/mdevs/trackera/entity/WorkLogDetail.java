@@ -14,19 +14,15 @@ import java.time.LocalTime;
 @Setter
 @NoArgsConstructor
 public class WorkLogDetail extends BaseEntity {
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    private WorkLog workLog;
-
     @Column(nullable = false)
     private String taskName;
 
-    @Column(nullable = false)
     private String taskUrl;
 
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "TIME(0)")
     private LocalTime startTime;
 
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "TIME(0)")
     private LocalTime endTime;
 
     @Column(nullable = false)
@@ -39,4 +35,7 @@ public class WorkLogDetail extends BaseEntity {
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
     private WorkLog.Status status;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    private WorkLog workLog;
 }

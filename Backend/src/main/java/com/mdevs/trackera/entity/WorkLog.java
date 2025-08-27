@@ -66,6 +66,9 @@ public class WorkLog extends BaseEntity {
     @Enumerated(EnumType.STRING)
     private Status status;
 
+    @ManyToOne(fetch =  FetchType.LAZY, optional = false)
+    private User user;
+
     public Evaluation getEvaluation() {
         return Evaluation.fromTotalHours(totalHours);
     }

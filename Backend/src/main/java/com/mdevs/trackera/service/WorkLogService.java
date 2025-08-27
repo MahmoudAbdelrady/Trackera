@@ -1,11 +1,12 @@
 package com.mdevs.trackera.service;
 
+import com.mdevs.trackera.config.general.AppConfig;
 import com.mdevs.trackera.dto.worklog.NewWorkLogDTO;
 import com.mdevs.trackera.entity.WorkLog;
 import com.mdevs.trackera.entity.WorkLogDetail;
 import com.mdevs.trackera.repository.WorkLogDetailRepository;
 import com.mdevs.trackera.repository.WorkLogRepository;
-import com.mdevs.trackera.shared.FileValidator;
+import com.mdevs.trackera.shared.FileHandler;
 import com.mdevs.trackera.shared.exceptions.types.BusinessException;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.poi.ss.usermodel.Cell;
@@ -23,7 +24,6 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.InputStream;
 import java.text.SimpleDateFormat;
 import java.time.DayOfWeek;
-import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -36,13 +36,15 @@ public class WorkLogService {
 
     private final WorkLogDetailRepository workLogDetailRepository;
 
-    private final static SimpleDateFormat PERIOD_TIME_FORMAT = new SimpleDateFormat("hh:mm a");
+    private final static SimpleDateFormat PERIOD_TIME_FORMAT = new SimpleDateFormat("HH:mm a");
 
     private final static Pattern DURATION_PATTERN = Pattern.compile("(?:(\\d+)h)?\\s*(?:(\\d+)m)?");
 
-    private final static DateTimeFormatter WORKLOG_DETAIL_DURATION_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");
+    private final static DateTimeFormatter WORKLOG_DETAIL_DURATION_FORMATTER = DateTimeFormatter.ofPattern("HH:mm a");
 
     private final static DateTimeFormatter WORKLOG_NAME_DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd");
+
+    private final static int MAX_WORKLOG_FILE_EMPTY_ROWS_COUNT = 10;
 
     private final static int MAX_WORKLOG_ROWS = 300;
 
@@ -66,7 +68,18 @@ public class WorkLogService {
             if ((sheet.getLastRowNum() + 1) > MAX_WORKLOG_ROWS) {
                 throw new BusinessException("The uploaded file contains more than the allowed limit of 300 rows.");
             }
+            int emptyRowCnt = 0;
             for (Row row : sheet) {
+                if (row.getRowNum() == 0)
+                    continue;
+                if (isRowEmpty(row)) {
+                    emptyRowCnt++;
+                    if (emptyRowCnt >= MAX_WORKLOG_FILE_EMPTY_ROWS_COUNT) {
+                        break;
+                    }
+                    continue;
+                }
+                emptyRowCnt = 0;
                 String taskName;
                 LocalTime fromHour;
                 LocalTime toHour;
@@ -82,7 +95,7 @@ public class WorkLogService {
                     LOGGER.error("Error parsing row {}", row.getRowNum() + 1, e);
                     Map<String, Object> error = new HashMap<>();
                     error.put("row", row.getRowNum() + 1);
-                    error.put("error", e.getMessage());
+                    error.put("error", e.getCause().getMessage());
                     rowErrors.add(error);
                     continue;
                 }
@@ -110,7 +123,7 @@ public class WorkLogService {
             result.put("message", "There were some errors in the uploaded file.");
             result.put("errors", rowErrors);
         } else {
-            WorkLog workLog = saveWorkLog(newWorkLogDTO, totalTime);
+            WorkLog workLog = saveWorkLog(newWorkLogDTO, totalTime / 60.0);
             saveWorkLogDetails(allWorkLogDetails, workLog);
             result.put("message", "Worklog uploaded successfully");
         }
@@ -119,9 +132,24 @@ public class WorkLogService {
 
     private void validateWorkLog(NewWorkLogDTO newWorkLogDTO, MultipartFile worklogFile) {
         if (workLogRepository.existsByWorkDate(newWorkLogDTO.getLogDate())) {
-            throw new BusinessException("Work log for the date " + newWorkLogDTO.getLogDate() + " already exists.");
+            throw new BusinessException("WorkLog for the date " + newWorkLogDTO.getLogDate() + " already exists.");
         }
-        FileValidator.validate(worklogFile);
+        FileHandler.validate(worklogFile);
+    }
+
+    private boolean isRowEmpty(Row row) {
+        if (row == null) return true;
+        for (int c = row.getFirstCellNum(); c < row.getLastCellNum(); c++) {
+            Cell cell = row.getCell(c);
+            if (cell != null && cell.getCellType() != CellType.BLANK) {
+                if (cell.getCellType() == CellType.STRING && !cell.getStringCellValue().trim().isEmpty()) {
+                    return false;
+                } else if (cell.getCellType() != CellType.STRING) {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 
     private <T> T getCellValue(Cell cell, Class<T> expectedType) {
@@ -156,7 +184,6 @@ public class WorkLogService {
         }
     }
 
-
     private double parseDuration(String duration) {
         Matcher matcher = DURATION_PATTERN.matcher(duration);
         int hours = 0, minutes = 0;
@@ -174,26 +201,34 @@ public class WorkLogService {
     }
 
     public WorkLog saveWorkLog(NewWorkLogDTO newWorkLogDTO, double totalTime) {
-        WorkLog workLog = new WorkLog();
-        workLog.setTotalHours(totalTime);
-        workLog.setWorkDate(newWorkLogDTO.getLogDate());
-        workLog.setStatus(WorkLog.Status.NOT_SYNCED);
-        if (!StringUtils.isEmpty(newWorkLogDTO.getLogName())) {
-            workLog.setName(newWorkLogDTO.getLogName());
-        } else {
-            LocalDate now = LocalDate.now();
-            DayOfWeek dayOfWeek = now.getDayOfWeek();
-            String dayName = dayOfWeek.name().substring(0, 1).toUpperCase() + dayOfWeek.name().substring(1).toLowerCase();
-            String formattedDate = WORKLOG_NAME_DATE_FORMATTER.format(now);
-            workLog.setName("Worklog - " + dayName + formattedDate);
-        }
+        try {
+            WorkLog workLog = new WorkLog();
+            workLog.setUser(AppConfig.getCurrentUser());
+            workLog.setTotalHours(totalTime);
+            workLog.setWorkDate(newWorkLogDTO.getLogDate());
+            workLog.setStatus(WorkLog.Status.NOT_SYNCED);
+            if (!StringUtils.isEmpty(newWorkLogDTO.getLogName())) {
+                workLog.setName(newWorkLogDTO.getLogName());
+            } else {
+                DayOfWeek dayOfWeek = newWorkLogDTO.getLogDate().getDayOfWeek();
+                String dayName = dayOfWeek.name().substring(0, 1).toUpperCase() + dayOfWeek.name().substring(1).toLowerCase();
+                String formattedDate = WORKLOG_NAME_DATE_FORMATTER.format(newWorkLogDTO.getLogDate());
+                workLog.setName("Worklog - " + dayName + formattedDate);
+            }
 
-        return workLogRepository.save(workLog);
+            return workLogRepository.save(workLog);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public void saveWorkLogDetails(List<WorkLogDetail> allWorkLogDetails, WorkLog workLog) {
-        allWorkLogDetails.forEach(logDetail -> logDetail.setWorkLog(workLog));
-        workLogDetailRepository.saveAll(allWorkLogDetails);
+        try {
+            allWorkLogDetails.forEach(logDetail -> logDetail.setWorkLog(workLog));
+            workLogDetailRepository.saveAll(allWorkLogDetails);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private String formatMinutes(int totalMinutes) {
