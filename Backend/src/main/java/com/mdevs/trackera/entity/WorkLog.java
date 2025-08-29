@@ -6,8 +6,11 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.apache.commons.math3.dfp.DfpField;
 import org.hibernate.envers.Audited;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 
 @Entity
@@ -27,12 +30,12 @@ public class WorkLog extends BaseEntity {
 
         private final String label;
 
-        public static Evaluation fromTotalHours(Double totalHours) {
-            if (totalHours >= 8) {
+        public static Evaluation fromTotalHours(BigDecimal totalHours) {
+            if (totalHours.compareTo(BigDecimal.valueOf(8)) >= 0) {
                 return EXCELLENT;
-            } else if (totalHours >= 7.5) {
+            } else if (totalHours.compareTo(BigDecimal.valueOf(7.5)) >= 0) {
                 return GOOD;
-            } else if (totalHours >= 7) {
+            } else if (totalHours.compareTo(BigDecimal.valueOf(7)) >= 0) {
                 return MODERATE;
             } else {
                 return POOR;
@@ -53,8 +56,8 @@ public class WorkLog extends BaseEntity {
     @Column(nullable = false)
     private String name;
 
-    @Column(nullable = false)
-    private Double totalHours;
+    @Column(nullable = false, precision = 10, scale = 2)
+    private BigDecimal totalHours;
 
     @Column(nullable = false)
     private LocalDate workDate;
@@ -71,5 +74,9 @@ public class WorkLog extends BaseEntity {
 
     public Evaluation getEvaluation() {
         return Evaluation.fromTotalHours(totalHours);
+    }
+
+    public void setTotalHours(BigDecimal totalHours) {
+        this.totalHours = totalHours.setScale(2, RoundingMode.HALF_UP);
     }
 }

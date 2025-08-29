@@ -1,5 +1,6 @@
 package com.mdevs.trackera.shared;
 
+import com.mdevs.trackera.shared.exceptions.types.BusinessException;
 import com.mdevs.trackera.shared.utils.TrackeraDateUtil;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVRecord;
@@ -32,7 +33,7 @@ public class FileHandler {
 
     private final static Logger LOGGER = LoggerFactory.getLogger(FileHandler.class);
 
-    private final static long FILE_MAX_SIZE = 5L * 1024 * 1024; // 5 MB
+    private final static int MAX_WORKLOG_ROWS = 300;
 
     public static List<List<String>> validateAndParse(MultipartFile workLogFile) {
         String mimeType;
@@ -47,10 +48,6 @@ public class FileHandler {
             LOGGER.error("Invalid MIME type detected for file {}, Detected mime type: {}", workLogFile.getOriginalFilename(), mimeType);
             throw new IllegalArgumentException("The uploaded file type is not supported. Allowed types are excel and csv files only.");
         }
-
-        if (workLogFile.getSize() > FILE_MAX_SIZE) {
-            throw new IllegalArgumentException("File size exceeds the allowed limit of " + (FILE_MAX_SIZE / 1024 / 1024) + " MB");
-        }
         return parseWorklogFile(workLogFile);
     }
 
@@ -63,12 +60,13 @@ public class FileHandler {
             return fileName.toLowerCase().endsWith(".xlsx") ? parseExcel(inputStream) : parseCsv(inputStream);
         } catch (Exception ex) {
             LOGGER.error("Error parsing worklog file", ex);
-            throw new RuntimeException(ex);
+            throw new RuntimeException(ex.getMessage());
         }
     }
 
     private static List<List<String>> parseExcel(InputStream inputStream) throws IOException {
         List<List<String>> rows = new ArrayList<>();
+        int parsedRows = 0;
 
         try (Workbook workbook = new XSSFWorkbook(inputStream)) {
             for (Row row : workbook.getSheetAt(0)) {
@@ -77,6 +75,8 @@ public class FileHandler {
                     columns.add(getCellValueAsString(cell));
                 }
                 rows.add(columns);
+                parsedRows++;
+                validateFileRowsLimit(parsedRows);
             }
         }
         return rows;
@@ -95,6 +95,7 @@ public class FileHandler {
 
     private static List<List<String>> parseCsv(InputStream inputStream) throws IOException {
         List<List<String>> rows = new ArrayList<>();
+        int parsedRows = 0;
 
         try (Reader reader = new InputStreamReader(inputStream)) {
             Iterable<CSVRecord> records = CSVFormat.DEFAULT.parse(reader);
@@ -102,6 +103,8 @@ public class FileHandler {
                 List<String> columns = new ArrayList<>();
                 record.forEach(r -> columns.add(normalizeCsvCell(r)));
                 rows.add(columns);
+                parsedRows++;
+                validateFileRowsLimit(parsedRows);
             }
         }
         return rows;
@@ -123,5 +126,11 @@ public class FileHandler {
         }
 
         return cell;
+    }
+
+    private static void validateFileRowsLimit(int parsedRows) {
+        if (parsedRows > MAX_WORKLOG_ROWS) {
+            throw new BusinessException("The uploaded file contains more than the allowed limit of " + MAX_WORKLOG_ROWS + " rows.");
+        }
     }
 }
