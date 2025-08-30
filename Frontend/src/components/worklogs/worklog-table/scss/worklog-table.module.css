@@ -64,6 +64,7 @@
 }
 .worklog_table_container .table_details .evaluation_item,
 .worklog_table_container .table_details .status_item {
+  text-align: center;
   padding: 5px 10px;
   border-radius: 12px;
   background-color: #2563eb;
@@ -95,7 +96,7 @@
   background-color: #fef0e1;
   color: #d97706;
 }
-.worklog_table_container .table_details .status_item.unsynced {
+.worklog_table_container .table_details .status_item.not_synced {
   background-color: #fee2e2;
   color: #991b1b;
 }

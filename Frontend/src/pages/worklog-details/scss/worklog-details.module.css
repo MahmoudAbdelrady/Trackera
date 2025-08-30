@@ -74,7 +74,7 @@
   background-color: #fef0e1;
   color: #d97706;
 }
-.worklog_details_info .info .info_box .info_label.status.unsynced {
+.worklog_details_info .info .info_box .info_label.status.not_synced {
   background-color: #fee2e2;
   color: #991b1b;
 }

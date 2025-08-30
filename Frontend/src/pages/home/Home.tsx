@@ -8,9 +8,9 @@ import {
   ClipboardPlus,
   CalendarSync,
   CalendarX2,
-  Inbox,
 } from "lucide-react";
 import {
+  AddWorkLogModal,
   AppLayout,
   SearchFilter,
   WorklogModal,
@@ -18,27 +18,32 @@ import {
   WorklogTable,
 } from "../../components";
 import classes from "./scss/home.module.css";
-import { DatePicker, Input, Switch, Tooltip, type TableProps } from "antd";
-import { useState } from "react";
-import Dragger from "antd/es/upload/Dragger";
-import dayjs from "dayjs";
+import { Switch, Tooltip, type TableProps } from "antd";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   evaluationMetadata,
   statusMetadata,
+  type PaginatedResponse,
   type Worklog,
   type WorkLogEvaluationType,
   type WorkLogStatusType,
 } from "../../shared/types";
-import { getPaddedItem } from "../../utils";
+import { createPaginationConfig, getPaddedItem } from "../../utils";
 import worklogTableClasses from "../../components/worklogs/worklog-table/scss/worklog-table.module.css";
 import worklogModalClasses from "../../components/worklogs/workklog-modal/scss/worklog-modal.module.css";
+import requestInstance from "../../shared/axios/request-instance";
+import { showErrorToast } from "../../utils/toast-handler/showToast";
 
 const Home = () => {
   const [addWorkLogVisible, setAddWorkLogVisible] = useState<boolean>(false);
   const [editWorkLogVisible, setEditWorkLogVisible] = useState<boolean>(false);
   const [deleteWorkLogVisible, setDeleteWorkLogVisible] =
     useState<boolean>(false);
+  const [isFetchingWorkLogs, setIsFetchingWorkLogs] = useState<boolean>(true);
+  const [fetchWorkLog, setFetchWorkLog] = useState<boolean>(true);
+  const [workLogsResponse, setWorkLogsResponse] =
+    useState<PaginatedResponse<Worklog> | null>(null);
   const workLogStatusCards = [
     {
       cardLabel: "Total Logged Hours",
@@ -61,46 +66,64 @@ const Home = () => {
     },
   ];
 
-  const worklogs: Worklog[] = [
-    {
-      id: 1,
-      logName: "Frontend Development",
-      totalHours: 10,
-      date: "2023-10-01",
-      evaluation: "EXCELLENT",
-      status: "SYNCED",
-    },
-    {
-      id: 2,
-      logName: "Backend Development",
-      totalHours: 7.45,
-      date: "2023-10-01",
-      evaluation: "GOOD",
-      status: "PARTIALLY",
-    },
-    {
-      id: 3,
-      logName: "Bug Fixing",
-      totalHours: 6.45,
-      date: "2023-10-01",
-      evaluation: "MODERATE",
-      status: "UNSYNCED",
-    },
-    {
-      id: 4,
-      logName: "Reviewing",
-      totalHours: 2.45,
-      date: "2023-10-01",
-      evaluation: "POOR",
-      status: "UNSYNCED",
-    },
-  ];
+  useEffect(() => {
+    if (fetchWorkLog) {
+      fetchWorkLogs();
+      setFetchWorkLog(false);
+    }
+  }, [fetchWorkLog]);
+
+  const fetchWorkLogs = async (pageNum: number = 0, pageSize: number = 10) => {
+    setIsFetchingWorkLogs(true);
+    try {
+      const response = await requestInstance.get(
+        `/worklog/all?page=${pageNum}&size=${pageSize}`
+      );
+      setWorkLogsResponse(response.data);
+    } catch (error) {
+      showErrorToast(error);
+    }
+    setIsFetchingWorkLogs(false);
+  };
+  //   {
+  //     id: 1,
+  //     logName: "Frontend Development",
+  //     totalHours: 10,
+  //     date: "2023-10-01",
+  //     evaluation: "EXCELLENT",
+  //     status: "SYNCED",
+  //   },
+  //   {
+  //     id: 2,
+  //     logName: "Backend Development",
+  //     totalHours: 7.45,
+  //     date: "2023-10-01",
+  //     evaluation: "GOOD",
+  //     status: "PARTIALLY",
+  //   },
+  //   {
+  //     id: 3,
+  //     logName: "Bug Fixing",
+  //     totalHours: 6.45,
+  //     date: "2023-10-01",
+  //     evaluation: "MODERATE",
+  //     status: "UNSYNCED",
+  //   },
+  //   {
+  //     id: 4,
+  //     logName: "Reviewing",
+  //     totalHours: 2.45,
+  //     date: "2023-10-01",
+  //     evaluation: "POOR",
+  //     status: "UNSYNCED",
+  //   },
+  // ];
 
   const tableColumns: TableProps<Worklog>["columns"] = [
     {
       title: "Log Name",
-      dataIndex: "logName",
-      key: "logName",
+      dataIndex: "name",
+      key: "name",
     },
     {
       title: "Total Hours",
@@ -109,8 +132,8 @@ const Home = () => {
     },
     {
       title: "Date",
-      dataIndex: "date",
-      key: "date",
+      dataIndex: "workDate",
+      key: "workDate",
     },
     {
       title: "Evaluation",
@@ -187,55 +210,11 @@ const Home = () => {
 
   return (
     <>
-      <WorklogModal
-        title="Add Worklog"
-        properties={{
-          open: addWorkLogVisible,
-          centered: true,
-          okText: "Add",
-          onOk: () => setAddWorkLogVisible(false),
-          onCancel: () => setAddWorkLogVisible(false),
-        }}
-      >
-        <form className={worklogModalClasses.worklog_form}>
-          <div className={worklogModalClasses.form_group}>
-            <span className={worklogModalClasses.label}>Log Name:</span>
-            <Input
-              placeholder="Enter log name"
-              style={{ width: "70%", marginRight: "10px" }}
-            />
-            <Tooltip title="If not provided, the log name will be auto-generated based on the upload date and weekday.">
-              <Info size={22} cursor={"pointer"} />
-            </Tooltip>
-          </div>
-          <div className={worklogModalClasses.form_group}>
-            <span className={worklogModalClasses.label}>Log date:</span>
-            <DatePicker placeholder="Select log date" defaultValue={dayjs()} />
-          </div>
-          <div
-            className={`${worklogModalClasses.form_group} ${worklogModalClasses.upload_group}`}
-          >
-            <span className={worklogModalClasses.label}>Upload log file:</span>
-            <Dragger className={worklogModalClasses.upload_box}>
-              <div className={worklogModalClasses.upload_icon_box}>
-                <Inbox className={worklogModalClasses.upload_icon} />
-              </div>
-              <span className={worklogModalClasses.upload_title}>
-                Click or drag worklog file to this area to upload
-              </span>
-              <p className={worklogModalClasses.upload_subtitle}>
-                Supported formats: .xlsx
-              </p>
-            </Dragger>
-          </div>
-          <div className={worklogModalClasses.form_group}>
-            <span className={worklogModalClasses.label}>
-              Sync to Jira after upload:
-            </span>
-            <Switch />
-          </div>
-        </form>
-      </WorklogModal>
+      <AddWorkLogModal
+        isOpen={addWorkLogVisible}
+        setIsOpen={setAddWorkLogVisible}
+        setFetchWorkLog={setFetchWorkLog}
+      />
       <WorklogModal
         title="Edit Worklog"
         properties={{
@@ -289,7 +268,18 @@ const Home = () => {
             <WorklogTable<Worklog>
               properties={{
                 columns: tableColumns,
-                dataSource: worklogs,
+                dataSource: workLogsResponse?.content || [],
+                loading: isFetchingWorkLogs,
+                locale: {
+                  emptyText: isFetchingWorkLogs
+                    ? "Loading..."
+                    : "No worklogs found",
+                },
+                pagination: createPaginationConfig(
+                  workLogsResponse,
+                  fetchWorkLogs,
+                  "worklogs"
+                ),
               }}
               actionButtons={[
                 {

@@ -11,4 +11,14 @@ interface InputFieldProps {
   disabled?: boolean;
 }
 
-export type { InputFieldProps };
+interface PaginatedResponse<T> {
+  content: T[];
+  page: {
+    size: number;
+    number: number;
+    totalElements: number;
+    totalPages: number;
+  };
+}
+
+export type { InputFieldProps, PaginatedResponse };

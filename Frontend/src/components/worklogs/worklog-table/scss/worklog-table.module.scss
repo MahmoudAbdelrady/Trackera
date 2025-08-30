@@ -1,5 +1,5 @@
-@use "../../../../utils/styles/colors" as *;
-@use "../../../../utils/styles/mixins" as *;
+@use "../../../../shared/styles/colors" as *;
+@use "../../../../shared/styles/mixins" as *;
 
 .worklog_table_container {
   .table_actions {
@@ -67,6 +67,7 @@
     }
     .evaluation_item,
     .status_item {
+      text-align: center;
       padding: 5px 10px;
       border-radius: 12px;
       background-color: $mainColor;
@@ -100,7 +101,7 @@
         background-color: $orangeColorLight;
         color: $orangeColor;
       }
-      &.unsynced {
+      &.not_synced {
         background-color: $redColorLight;
         color: $darkRedColor;
       }

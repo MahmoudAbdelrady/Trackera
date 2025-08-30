@@ -1,24 +1,77 @@
 import dayjs from "dayjs";
-import { WorklogModal } from "../../components";
 import { useFormik } from "formik";
-import { addWorkLog } from "../../shared/yup-schemas";
-import worklogModalClasses from "../../components/worklogs/workklog-modal/scss/worklog-modal.module.css";
-import { DatePicker, Form, Input, Switch, Tooltip } from "antd";
+import { addWorkLog } from "../../../../shared/yup-schemas";
+import worklogModalClasses from "../../workklog-modal/scss/worklog-modal.module.css";
+import {
+  Collapse,
+  DatePicker,
+  Form,
+  Input,
+  Switch,
+  Tooltip,
+  type TableProps,
+  type UploadFile,
+} from "antd";
 import { Inbox, Info } from "lucide-react";
 import Dragger from "antd/es/upload/Dragger";
+import { WorklogModal, WorklogTable } from "../../../";
+import { useState } from "react";
+import {
+  showErrorToast,
+  showSuccessToast,
+} from "../../../../utils/toast-handler/showToast";
+import requestInstance from "../../../../shared/axios/request-instance";
+import type { WorklogError } from "../../../../shared/types";
 
-const Test = () => {
+const AddWorkLogModal = ({
+  isOpen,
+  setIsOpen,
+  setFetchWorkLog,
+}: {
+  isOpen: boolean;
+  setIsOpen: (isOpen: boolean) => void;
+  setFetchWorkLog: (fetch: boolean) => void;
+}) => {
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [fileList, setFileList] = useState<UploadFile[]>([]);
+  const [worklogFileErrors, setWorklogFileErrors] = useState<WorklogError[]>(
+    []
+  );
+
+  const getInitialValues = () => ({
+    logName: "",
+    logDate: dayjs().hour() < 12 ? dayjs().subtract(1, "day") : dayjs(),
+    logFile: null,
+    syncToJira: false,
+  });
+
   const addWorkLogFormik = useFormik({
-    initialValues: {
-      logName: "",
-      logDate: dayjs().hour() < 12 ? dayjs().subtract(1, "day") : dayjs(),
-      logFile: null,
-      syncToJira: false,
-    },
+    initialValues: getInitialValues(),
     validationSchema: addWorkLog,
     onSubmit: async (values) => {
-      console.log("Form is valid");
-      console.log("Form values:", values);
+      setIsLoading(true);
+      try {
+        const { logFile, ...worklogValues } = values;
+        const formData = new FormData();
+        formData.append(
+          "worklog",
+          new Blob([JSON.stringify(worklogValues)], {
+            type: "application/json",
+          })
+        );
+        formData.append("file", values.logFile! as Blob);
+        const response = await requestInstance.post("/worklog/add", formData);
+        showSuccessToast(response.data);
+        handleModalClose();
+        setFetchWorkLog(true);
+      } catch (error: any) {
+        if (error.response?.data.isError) {
+          setWorklogFileErrors(error.response?.data.errors);
+        } else {
+          showErrorToast(error);
+        }
+      }
+      setIsLoading(false);
     },
   });
 
@@ -34,19 +87,49 @@ const Test = () => {
     }
   };
 
+  const worklogFileErrorsColumns: TableProps<WorklogError>["columns"] = [
+    {
+      title: "Row Number",
+      dataIndex: "row",
+      key: "row",
+    },
+    {
+      title: "Error",
+      dataIndex: "error",
+      key: "error",
+    },
+  ];
+
+  const handleModalClose = () => {
+    addWorkLogFormik.resetForm({ values: getInitialValues() });
+    setFileList([]);
+    setWorklogFileErrors([]);
+    setIsOpen(false);
+  };
+
   return (
     <WorklogModal
       title="Add Worklog"
       properties={{
-        open: true,
+        open: isOpen,
         centered: true,
+        closable: !isLoading,
+        keyboard: !isLoading,
+        maskClosable: !isLoading,
         okText: "Add",
+        okButtonProps: {
+          loading: isLoading,
+          disabled:
+            !addWorkLogFormik.isValid || !addWorkLogFormik.dirty || isLoading,
+        },
+        cancelButtonProps: {
+          disabled: isLoading,
+        },
         onOk: () => {
           addWorkLogFormik.submitForm();
         },
-        onCancel: () => {
-          console.log("Modal closed");
-        },
+        onCancel: handleModalClose,
+        width: worklogFileErrors.length > 0 ? 900 : 520,
       }}
     >
       <form className={worklogModalClasses.worklog_form}>
@@ -69,7 +152,12 @@ const Test = () => {
             <span className={worklogModalClasses.label}>Log Name:</span>
             <Input
               placeholder="Enter log name"
+              name="logName"
+              value={addWorkLogFormik.values.logName}
+              onChange={addWorkLogFormik.handleChange}
+              onBlur={addWorkLogFormik.handleBlur}
               style={{ width: "70%", marginRight: "10px" }}
+              disabled={isLoading}
             />
           </Form.Item>
           <Tooltip title="If not provided, the log name will be auto-generated based on the upload date and weekday.">
@@ -101,6 +189,7 @@ const Test = () => {
                 addWorkLogFormik.setFieldValue("logDate", date)
               }
               onBlur={() => addWorkLogFormik.setFieldTouched("logDate", true)}
+              disabled={isLoading}
             />
           </Form.Item>
         </div>
@@ -129,15 +218,19 @@ const Test = () => {
               multiple={false}
               maxCount={1}
               accept=".xlsx,.csv"
+              fileList={fileList}
               beforeUpload={(file) => {
                 handleFileUpload(file);
+                setFileList([file]);
                 return false; // prevent auto upload
               }}
               onDrop={handleFileDrop}
               onRemove={() => {
                 handleFileUpload(null);
+                setFileList([]);
                 return true; // allow removal
               }}
+              disabled={isLoading}
             >
               <div className={worklogModalClasses.upload_icon_box}>
                 <Inbox className={worklogModalClasses.upload_icon} />
@@ -155,11 +248,38 @@ const Test = () => {
           <span className={worklogModalClasses.label}>
             Sync to Jira after upload:
           </span>
-          <Switch />
+          <Switch
+            disabled={isLoading}
+            value={addWorkLogFormik.values.syncToJira}
+            onChange={addWorkLogFormik.handleChange}
+          />
         </div>
       </form>
+
+      {worklogFileErrors.length > 0 && (
+        <div className={worklogModalClasses.file_errors_container}>
+          <Collapse
+            items={[
+              {
+                key: "1",
+                label: "File Errors",
+                children: (
+                  <WorklogTable
+                    properties={{
+                      columns: worklogFileErrorsColumns,
+                      dataSource: worklogFileErrors,
+                      pagination: { pageSize: 5 },
+                    }}
+                    actionButtons={[]}
+                  />
+                ),
+              },
+            ]}
+          />
+        </div>
+      )}
     </WorklogModal>
   );
 };
 
-export default Test;
+export default AddWorkLogModal;

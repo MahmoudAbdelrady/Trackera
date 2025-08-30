@@ -11,6 +11,7 @@ import LoadingSpinner from "./loading-spinner/LoadingSpinner";
 import AuthForm from "./auth/auth-form/AuthForm";
 import AuthResult from "./auth/auth-result/AuthResult";
 import OAuthBtns from "./auth/oauth-btns/OAuthBtns";
+import AddWorkLogModal from "./worklogs/modals/add-worklog/AddWorkLogModal";
 
 export {
   AuthLayout,
@@ -26,4 +27,5 @@ export {
   AuthForm,
   AuthResult,
   OAuthBtns,
+  AddWorkLogModal,
 };

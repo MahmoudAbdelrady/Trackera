@@ -1,4 +1,4 @@
-import type { InputFieldProps } from "./global";
+import type { InputFieldProps, PaginatedResponse } from "./global";
 
 import type {
   AuthLayoutProps,
@@ -15,6 +15,7 @@ import type {
   Worklog,
   WorklogEntry,
   WorklogTask,
+  WorklogError,
   LogMeta,
   WorklogTableActionButtonProps,
   WorklogTableProps,
@@ -25,6 +26,7 @@ import { evaluationMetadata, statusMetadata } from "./worklog";
 
 export type {
   InputFieldProps,
+  PaginatedResponse,
   AuthLayoutProps,
   AuthFormProps,
   AuthResultFields,
@@ -34,6 +36,7 @@ export type {
   Worklog,
   WorklogEntry,
   WorklogTask,
+  WorklogError,
   LogMeta,
   WorklogTableActionButtonProps,
   WorklogTableProps,

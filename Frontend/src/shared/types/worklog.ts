@@ -2,13 +2,13 @@ import type { ModalProps, TableProps } from "antd";
 
 type WorkLogEvaluationType = "EXCELLENT" | "GOOD" | "MODERATE" | "POOR";
 
-type WorkLogStatusType = "SYNCED" | "PARTIALLY" | "UNSYNCED";
+type WorkLogStatusType = "SYNCED" | "PARTIALLY" | "NOT_SYNCED";
 
 interface Worklog {
   id: number;
-  logName: string;
-  totalHours: number;
-  date: string;
+  name: string;
+  totalHours: string;
+  workDate: string;
   evaluation: WorkLogEvaluationType;
   status: WorkLogStatusType;
 }
@@ -29,6 +29,11 @@ interface WorklogTask {
   status: WorkLogStatusType;
 }
 
+interface WorklogError {
+  row: number;
+  error: string;
+}
+
 interface LogMeta {
   label: string;
   className: string;
@@ -44,7 +49,7 @@ const evaluationMetadata: Record<WorkLogEvaluationType, LogMeta> = {
 const statusMetadata: Record<WorkLogStatusType, LogMeta> = {
   SYNCED: { label: "Synced", className: "synced" },
   PARTIALLY: { label: "Partially", className: "partially" },
-  UNSYNCED: { label: "Unsynced", className: "unsynced" },
+  NOT_SYNCED: { label: "Not Synced", className: "not_synced" },
 };
 
 interface WorklogTableActionButtonProps {
@@ -55,7 +60,9 @@ interface WorklogTableActionButtonProps {
   onClick: () => void;
 }
 
-interface WorklogTableProps<T = Worklog | WorklogEntry | WorklogTask> {
+interface WorklogTableProps<
+  T = Worklog | WorklogEntry | WorklogTask | WorklogError
+> {
   properties: TableProps<T>;
   actionButtons: WorklogTableActionButtonProps[];
 }
@@ -72,6 +79,7 @@ export type {
   Worklog,
   WorklogEntry,
   WorklogTask,
+  WorklogError,
   LogMeta,
   WorklogTableActionButtonProps,
   WorklogTableProps,

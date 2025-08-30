@@ -55,4 +55,7 @@
 .worklog_modal .worklog_form .form_group .upload_box .upload_subtitle {
   font-size: 12px;
   color: #5c5c5c;
+}
+.worklog_modal .file_errors_container {
+  margin-top: 20px;
 }/*# sourceMappingURL=worklog-modal.module.css.map */
