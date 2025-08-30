@@ -32,8 +32,6 @@ public class WorkLogService {
 
     private final static Pattern DURATION_PATTERN = Pattern.compile("(?:(\\d+)h)?\\s*(?:(\\d+)m)?");
 
-    private final static int MAX_WORKLOG_FILE_EMPTY_ROWS_COUNT = 10;
-
     private final static Logger LOGGER = LoggerFactory.getLogger(WorkLogService.class);
 
     @Autowired
@@ -47,23 +45,14 @@ public class WorkLogService {
         List<WorkLogDetail> allWorkLogDetails = new ArrayList<>();
         List<Map<String, Object>> rowErrors = new ArrayList<>();
         double totalTime = 0;
-        int emptyRowCnt = 0;
 
         List<List<String>> parsedData = processWorkLogFile(newWorkLogDTO, worklogFile);
         if (parsedData.isEmpty() || parsedData.size() == 1) {
-            throw new BusinessException("The uploaded file is empty or does not contain any valid data.");
+            throw new IllegalArgumentException("The uploaded file is empty or does not contain any valid data.");
         }
 
         for (int i = 1; i < parsedData.size(); i++) {
             List<String> row = parsedData.get(i);
-            if (isRowEmpty(row)) {
-                emptyRowCnt++;
-                if (emptyRowCnt >= MAX_WORKLOG_FILE_EMPTY_ROWS_COUNT) {
-                    break;
-                }
-                continue;
-            }
-            emptyRowCnt = 0;
             String taskName;
             LocalTime fromHour;
             LocalTime toHour;
@@ -94,7 +83,7 @@ public class WorkLogService {
             workLogDetail.setTaskUrl(null); // @TODO --> Should be based on the user's selected project
             workLogDetail.setStartTime(fromHour);
             workLogDetail.setEndTime(toHour);
-            workLogDetail.setDuration(taskLogDuration);
+            workLogDetail.setDuration(BigDecimal.valueOf(taskLogDuration));
             workLogDetail.setDescription(taskDescription);
             workLogDetail.setStatus(WorkLog.Status.NOT_SYNCED);
             allWorkLogDetails.add(workLogDetail);
@@ -125,10 +114,6 @@ public class WorkLogService {
         }
     }
 
-    private boolean isRowEmpty(List<String> row) {
-        return row == null || row.isEmpty() || row.stream().allMatch(StringUtils::isEmpty);
-    }
-
     private <T> T getCellValue(String cell, int idx, Class<T> expectedType) {
         int cellPosition = idx + 1;
         Object result;
@@ -139,7 +124,7 @@ public class WorkLogService {
             result = cell;
         } else if (expectedType == LocalTime.class) {
             try {
-                result = LocalTime.parse(cell, TrackeraDateUtil.getTime12HourFormatter());
+                result = LocalTime.parse(cell, TrackeraDateUtil.getDateTime12hFormatter());
             } catch (Exception e) {
                 throw new IllegalArgumentException("Invalid time format in cell at position [" + cellPosition + "]. Expected format is hh:mm AM/PM", e);
             }
@@ -180,7 +165,7 @@ public class WorkLogService {
             } else {
                 DayOfWeek dayOfWeek = newWorkLogDTO.getLogDate().getDayOfWeek();
                 String dayName = dayOfWeek.name().substring(0, 1).toUpperCase() + dayOfWeek.name().substring(1).toLowerCase();
-                String formattedDate = TrackeraDateUtil.getDateCompactFormatter().format(newWorkLogDTO.getLogDate());
+                String formattedDate = TrackeraDateUtil.getCompactedDateFormatter().format(newWorkLogDTO.getLogDate());
                 workLog.setName("Worklog - " + dayName + formattedDate);
             }
 

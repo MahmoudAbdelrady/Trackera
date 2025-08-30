@@ -4,21 +4,21 @@ import java.text.SimpleDateFormat;
 import java.time.format.DateTimeFormatter;
 
 public class TrackeraDateUtil {
-    private final static SimpleDateFormat TIME_12_HOUR_FORMAT = new SimpleDateFormat("hh:mm a");
+    private final static SimpleDateFormat SIMPLE_12H_FORMAT = new SimpleDateFormat("hh:mm a");
 
-    private final static DateTimeFormatter TIME_12_HOUR_FORMATTER = DateTimeFormatter.ofPattern("hh:mm a");
+    private final static DateTimeFormatter DATE_TIME_12H_FORMATTER = DateTimeFormatter.ofPattern("hh:mm a");
 
-    private final static DateTimeFormatter DATE_COMPACT_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd");
+    private final static DateTimeFormatter COMPACTED_DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd");
 
-    public static SimpleDateFormat getTime12HourFormat() {
-        return TIME_12_HOUR_FORMAT;
+    public static SimpleDateFormat getSimple12hFormat() {
+        return SIMPLE_12H_FORMAT;
     }
 
-    public static DateTimeFormatter getTime12HourFormatter() {
-        return TIME_12_HOUR_FORMATTER;
+    public static DateTimeFormatter getDateTime12hFormatter() {
+        return DATE_TIME_12H_FORMATTER;
     }
 
-    public static DateTimeFormatter getDateCompactFormatter() {
-        return DATE_COMPACT_FORMATTER;
+    public static DateTimeFormatter getCompactedDateFormatter() {
+        return COMPACTED_DATE_FORMATTER;
     }
 }

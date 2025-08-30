@@ -57,7 +57,8 @@ public class FileHandler {
             if (StringUtils.isEmpty(fileName)) {
                 throw new IllegalArgumentException("File name is missing.");
             }
-            return fileName.toLowerCase().endsWith(".xlsx") ? parseExcel(inputStream) : parseCsv(inputStream);
+            List<List<String>> parsedData = fileName.toLowerCase().endsWith(".xlsx") ? parseExcel(inputStream) : parseCsv(inputStream);
+            return parsedData.stream().filter(row -> !isRowEmpty(row)).toList();
         } catch (Exception ex) {
             LOGGER.error("Error parsing worklog file", ex);
             throw new RuntimeException(ex.getMessage());
@@ -69,7 +70,8 @@ public class FileHandler {
         int parsedRows = 0;
 
         try (Workbook workbook = new XSSFWorkbook(inputStream)) {
-            for (Row row : workbook.getSheetAt(0)) {
+            Sheet sheet = workbook.getSheetAt(0);
+            for (Row row : sheet) {
                 List<String> columns = new ArrayList<>();
                 for (Cell cell : row) {
                     columns.add(getCellValueAsString(cell));
@@ -82,11 +84,15 @@ public class FileHandler {
         return rows;
     }
 
+    private static boolean isRowEmpty(List<String> row) {
+        return row == null || row.isEmpty() || row.stream().allMatch(StringUtils::isEmpty);
+    }
+
     private static String getCellValueAsString(Cell cell) {
         return switch (cell.getCellType()) {
             case STRING -> cell.getStringCellValue();
             case NUMERIC ->
-                    DateUtil.isCellDateFormatted(cell) ? TrackeraDateUtil.getTime12HourFormat().format(cell.getDateCellValue()) : String.valueOf(cell.getNumericCellValue());
+                    DateUtil.isCellDateFormatted(cell) ? TrackeraDateUtil.getSimple12hFormat().format(cell.getDateCellValue()) : String.valueOf(cell.getNumericCellValue());
             case BOOLEAN -> String.valueOf(cell.getBooleanCellValue());
             case FORMULA -> cell.getCellFormula();
             default -> "";
