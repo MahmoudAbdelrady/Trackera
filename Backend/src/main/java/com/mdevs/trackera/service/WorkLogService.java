@@ -25,6 +25,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.DayOfWeek;
+import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.*;
 import java.util.regex.Matcher;
@@ -50,7 +51,7 @@ public class WorkLogService {
     }
 
     public Page<WorkLogInfoDTO> getAllWorklogs(Pageable pageable) {
-        Page<WorkLog> workLogList = workLogRepository.findAll(pageable);
+        Page<WorkLog> workLogList = workLogRepository.findAllOrderByWorkDateDesc(pageable);
         List<WorkLogInfoDTO> workLogInfoDTOList = workLogList.getContent().stream().map(workLog -> {
             WorkLogInfoDTO workLogInfoDTO = modelMapper.map(workLog, WorkLogInfoDTO.class);
             workLogInfoDTO.setTotalHours(formatTotalHours(workLog.getTotalHours()));
@@ -124,6 +125,9 @@ public class WorkLogService {
     private List<List<String>> processWorkLogFile(NewWorkLogDTO newWorkLogDTO, MultipartFile worklogFile) {
         if (workLogRepository.existsByWorkDate(newWorkLogDTO.getLogDate())) {
             throw new BusinessException("WorkLog for the date " + newWorkLogDTO.getLogDate() + " already exists.");
+        }
+        if (newWorkLogDTO.getLogDate().isAfter(LocalDate.now())) {
+            throw new BusinessException("WorkLog date cannot be in the future.");
         }
         try {
             return FileHandler.validateAndParse(worklogFile);

@@ -31,7 +31,6 @@ public class WorkLogController {
     @PostMapping("/add")
     public ResponseEntity<?> AddWorkLog(@RequestPart(name = "worklog") @Valid NewWorkLogDTO newWorkLogDTO, @RequestPart MultipartFile file) {
         Map<String, Object> result = workLogService.addWorkLog(newWorkLogDTO, file);
-        return result.containsKey("isError") ? ExceptionResponseMaker.makeResponse(result.get("message").toString(), result.get("errors"), HttpStatus.BAD_REQUEST)
-                : new ResponseEntity<>(result.get("message"), HttpStatus.CREATED);
+        return result.containsKey("isError") ? new ResponseEntity<>(result, HttpStatus.BAD_REQUEST) : new ResponseEntity<>(result.get("message"), HttpStatus.CREATED);
     }
 }
