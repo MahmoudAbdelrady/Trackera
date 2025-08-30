@@ -2,6 +2,7 @@ package com.mdevs.trackera.service;
 
 import com.mdevs.trackera.config.general.AppConfig;
 import com.mdevs.trackera.dto.worklog.NewWorkLogDTO;
+import com.mdevs.trackera.dto.worklog.WorkLogInfoDTO;
 import com.mdevs.trackera.entity.WorkLog;
 import com.mdevs.trackera.entity.WorkLogDetail;
 import com.mdevs.trackera.repository.WorkLogDetailRepository;
@@ -10,14 +11,19 @@ import com.mdevs.trackera.shared.FileHandler;
 import com.mdevs.trackera.shared.exceptions.types.BusinessException;
 import com.mdevs.trackera.shared.utils.TrackeraDateUtil;
 import org.apache.commons.lang3.StringUtils;
+import org.modelmapper.ModelMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.DayOfWeek;
 import java.time.LocalTime;
 import java.util.*;
@@ -30,14 +36,27 @@ public class WorkLogService {
 
     private final WorkLogDetailRepository workLogDetailRepository;
 
+    private final ModelMapper modelMapper;
+
     private final static Pattern DURATION_PATTERN = Pattern.compile("(?:(\\d+)h)?\\s*(?:(\\d+)m)?");
 
     private final static Logger LOGGER = LoggerFactory.getLogger(WorkLogService.class);
 
     @Autowired
-    public WorkLogService(WorkLogRepository workLogRepository, WorkLogDetailRepository workLogDetailRepository) {
+    public WorkLogService(WorkLogRepository workLogRepository, WorkLogDetailRepository workLogDetailRepository, ModelMapper modelMapper) {
         this.workLogRepository = workLogRepository;
         this.workLogDetailRepository = workLogDetailRepository;
+        this.modelMapper = modelMapper;
+    }
+
+    public Page<WorkLogInfoDTO> getAllWorklogs(Pageable pageable) {
+        Page<WorkLog> workLogList = workLogRepository.findAll(pageable);
+        List<WorkLogInfoDTO> workLogInfoDTOList = workLogList.getContent().stream().map(workLog -> {
+            WorkLogInfoDTO workLogInfoDTO = modelMapper.map(workLog, WorkLogInfoDTO.class);
+            workLogInfoDTO.setTotalHours(formatTotalHours(workLog.getTotalHours()));
+            return workLogInfoDTO;
+        }).toList();
+        return new PageImpl<>(workLogInfoDTOList, pageable, workLogList.getTotalElements());
     }
 
     @Transactional
@@ -186,7 +205,21 @@ public class WorkLogService {
         }
     }
 
-    private String formatMinutes(int totalMinutes) {
+    private String formatTotalHours(BigDecimal totalHours) {
+        int hours = totalHours.intValue();
+        BigDecimal fractionalPart = totalHours.subtract(BigDecimal.valueOf(hours));
+
+        int minutes = fractionalPart.multiply(BigDecimal.valueOf(60)).setScale(0, RoundingMode.HALF_UP).intValue();
+
+        if (minutes == 60) {
+            hours += 1;
+            minutes = 0;
+        }
+
+        return minutes == 0 ? String.format("%dh", hours) : String.format("%dh %dm", hours, minutes);
+    }
+
+    private String formatDuration(int totalMinutes) {
         int hours = totalMinutes / 60;
         int minutes = totalMinutes % 60;
         StringJoiner joiner = new StringJoiner(" ");
