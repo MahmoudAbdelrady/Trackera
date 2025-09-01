@@ -1,3 +1,4 @@
+import dayjs from "dayjs";
 import { boolean, mixed, object, string } from "yup";
 
 const ALLOWED_FILE_TYPES = [
@@ -10,7 +11,7 @@ const ALLOWED_FILE_TYPES = [
 
 const addWorkLog = object({
   logName: string().trim(),
-  logDate: string().trim().required("Log date is required"),
+  logDate: mixed<dayjs.Dayjs>().required("Log date is required"),
   logFile: mixed<File>()
     .required("Log file is required")
     .test("fileSize", "File size must be less than 5MB", (value) => {

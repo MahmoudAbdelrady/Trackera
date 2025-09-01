@@ -5,13 +5,14 @@ import Sidebar from "./sidebar/Sidebar";
 import WorklogStatusCard from "./worklogs/worklog-status-card/WorklogStatusCard";
 import SearchFilter from "./worklogs/search-filter/SearchFilter";
 import WorklogTable from "./worklogs/worklog-table/WorklogTable";
-import WorklogModal from "./worklogs/workklog-modal/WorklogModal";
+import WorklogModal from "./worklogs/modals/worklog-modal/WorklogModal";
 import InputField from "./input-field/InputField";
 import LoadingSpinner from "./loading-spinner/LoadingSpinner";
 import AuthForm from "./auth/auth-form/AuthForm";
 import AuthResult from "./auth/auth-result/AuthResult";
 import OAuthBtns from "./auth/oauth-btns/OAuthBtns";
-import AddWorkLogModal from "./worklogs/modals/add-worklog/AddWorkLogModal";
+import ManageWorkLogModal from "./worklogs/modals/manage-worklog-modal/ManageWorkLogModal";
+import CollapsibleSection from "./collapsible-section/CollapsibleSection";
 
 export {
   AuthLayout,
@@ -27,5 +28,6 @@ export {
   AuthForm,
   AuthResult,
   OAuthBtns,
-  AddWorkLogModal,
+  ManageWorkLogModal,
+  CollapsibleSection,
 };

@@ -10,7 +10,7 @@ import {
   CalendarX2,
 } from "lucide-react";
 import {
-  AddWorkLogModal,
+  ManageWorkLogModal,
   AppLayout,
   SearchFilter,
   WorklogModal,
@@ -31,7 +31,7 @@ import {
 } from "../../shared/types";
 import { createPaginationConfig, getPaddedItem } from "../../utils";
 import worklogTableClasses from "../../components/worklogs/worklog-table/scss/worklog-table.module.css";
-import worklogModalClasses from "../../components/worklogs/workklog-modal/scss/worklog-modal.module.css";
+import worklogModalClasses from "../../components/worklogs/modals/worklog-modal/scss/worklog-modal.module.css";
 import requestInstance from "../../shared/axios/request-instance";
 import { showErrorToast } from "../../utils/toast-handler/showToast";
 
@@ -210,7 +210,7 @@ const Home = () => {
 
   return (
     <>
-      <AddWorkLogModal
+      <ManageWorkLogModal
         isOpen={addWorkLogVisible}
         setIsOpen={setAddWorkLogVisible}
         setFetchWorkLog={setFetchWorkLog}

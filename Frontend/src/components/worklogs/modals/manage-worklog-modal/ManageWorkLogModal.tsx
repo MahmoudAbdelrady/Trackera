@@ -1,9 +1,8 @@
 import dayjs from "dayjs";
 import { useFormik } from "formik";
-import { addWorkLog } from "../../../../shared/yup-schemas";
-import worklogModalClasses from "../../workklog-modal/scss/worklog-modal.module.css";
+import { manageWorkLog } from "../../../../shared/yup-schemas";
+import worklogModalClasses from "../worklog-modal/scss/worklog-modal.module.css";
 import {
-  Collapse,
   DatePicker,
   Form,
   Input,
@@ -14,7 +13,7 @@ import {
 } from "antd";
 import { Inbox, Info } from "lucide-react";
 import Dragger from "antd/es/upload/Dragger";
-import { WorklogModal, WorklogTable } from "../../../";
+import { CollapsibleSection, WorklogModal, WorklogTable } from "../../..";
 import { useState } from "react";
 import {
   showErrorToast,
@@ -22,8 +21,9 @@ import {
 } from "../../../../utils/toast-handler/showToast";
 import requestInstance from "../../../../shared/axios/request-instance";
 import type { WorklogError } from "../../../../shared/types";
+import { getFormikFieldError, getFormikFieldStatus } from "../../../../utils";
 
-const AddWorkLogModal = ({
+const ManageWorkLogModal = ({
   isOpen,
   setIsOpen,
   setFetchWorkLog,
@@ -45,9 +45,9 @@ const AddWorkLogModal = ({
     syncToJira: false,
   });
 
-  const addWorkLogFormik = useFormik({
+  const manageWorkLogFormik = useFormik({
     initialValues: getInitialValues(),
-    validationSchema: addWorkLog,
+    validationSchema: manageWorkLog,
     onSubmit: async (values) => {
       setIsLoading(true);
       try {
@@ -76,7 +76,7 @@ const AddWorkLogModal = ({
   });
 
   const handleFileUpload = (file: File | null) => {
-    addWorkLogFormik.setFieldValue("logFile", file);
+    manageWorkLogFormik.setFieldValue("logFile", file);
   };
 
   const handleFileDrop = (event: React.DragEvent<HTMLDivElement>) => {
@@ -101,7 +101,7 @@ const AddWorkLogModal = ({
   ];
 
   const handleModalClose = () => {
-    addWorkLogFormik.resetForm({ values: getInitialValues() });
+    manageWorkLogFormik.resetForm({ values: getInitialValues() });
     setFileList([]);
     setWorklogFileErrors([]);
     setIsOpen(false);
@@ -120,13 +120,15 @@ const AddWorkLogModal = ({
         okButtonProps: {
           loading: isLoading,
           disabled:
-            !addWorkLogFormik.isValid || !addWorkLogFormik.dirty || isLoading,
+            !manageWorkLogFormik.isValid ||
+            !manageWorkLogFormik.dirty ||
+            isLoading,
         },
         cancelButtonProps: {
           disabled: isLoading,
         },
         onOk: () => {
-          addWorkLogFormik.submitForm();
+          manageWorkLogFormik.submitForm();
         },
         onCancel: handleModalClose,
         width: worklogFileErrors.length > 0 ? 900 : 520,
@@ -136,26 +138,19 @@ const AddWorkLogModal = ({
         <div className={worklogModalClasses.form_group}>
           <Form.Item
             style={{ marginBottom: 0, width: "100%" }}
-            validateStatus={
-              addWorkLogFormik.touched.logName &&
-              addWorkLogFormik.errors.logName
-                ? "error"
-                : ""
-            }
-            help={
-              addWorkLogFormik.touched.logName &&
-              addWorkLogFormik.errors.logName
-                ? addWorkLogFormik.errors.logName
-                : ""
-            }
+            validateStatus={getFormikFieldStatus(
+              manageWorkLogFormik,
+              "logName"
+            )}
+            help={getFormikFieldError(manageWorkLogFormik, "logName")}
           >
             <span className={worklogModalClasses.label}>Log Name:</span>
             <Input
               placeholder="Enter log name"
               name="logName"
-              value={addWorkLogFormik.values.logName}
-              onChange={addWorkLogFormik.handleChange}
-              onBlur={addWorkLogFormik.handleBlur}
+              value={manageWorkLogFormik.values.logName}
+              onChange={manageWorkLogFormik.handleChange}
+              onBlur={manageWorkLogFormik.handleBlur}
               style={{ width: "70%", marginRight: "10px" }}
               disabled={isLoading}
             />
@@ -167,28 +162,23 @@ const AddWorkLogModal = ({
         <div className={worklogModalClasses.form_group}>
           <Form.Item
             style={{ marginBottom: 0, width: "100%" }}
-            validateStatus={
-              addWorkLogFormik.touched.logDate &&
-              addWorkLogFormik.errors.logDate
-                ? "error"
-                : ""
-            }
-            help={
-              addWorkLogFormik.touched.logDate &&
-              addWorkLogFormik.errors.logDate
-                ? (addWorkLogFormik.errors.logDate as string)
-                : ""
-            }
+            validateStatus={getFormikFieldStatus(
+              manageWorkLogFormik,
+              "logDate"
+            )}
+            help={getFormikFieldError(manageWorkLogFormik, "logDate") as string}
           >
             <span className={worklogModalClasses.label}>Log date:</span>
             <DatePicker
               name="logDate"
-              value={addWorkLogFormik.values.logDate}
+              value={manageWorkLogFormik.values.logDate}
               placeholder="Select log date"
               onChange={(date) =>
-                addWorkLogFormik.setFieldValue("logDate", date)
+                manageWorkLogFormik.setFieldValue("logDate", date)
               }
-              onBlur={() => addWorkLogFormik.setFieldTouched("logDate", true)}
+              onBlur={() =>
+                manageWorkLogFormik.setFieldTouched("logDate", true)
+              }
               disabled={isLoading}
             />
           </Form.Item>
@@ -198,18 +188,11 @@ const AddWorkLogModal = ({
         >
           <Form.Item
             style={{ marginBottom: 0, width: "100%" }}
-            validateStatus={
-              addWorkLogFormik.touched.logFile &&
-              addWorkLogFormik.errors.logFile
-                ? "error"
-                : ""
-            }
-            help={
-              addWorkLogFormik.touched.logFile &&
-              addWorkLogFormik.errors.logFile
-                ? addWorkLogFormik.errors.logFile
-                : ""
-            }
+            validateStatus={getFormikFieldStatus(
+              manageWorkLogFormik,
+              "logFile"
+            )}
+            help={getFormikFieldError(manageWorkLogFormik, "logFile")}
           >
             <span className={worklogModalClasses.label}>Upload log file:</span>
             <Dragger
@@ -250,36 +233,31 @@ const AddWorkLogModal = ({
           </span>
           <Switch
             disabled={isLoading}
-            value={addWorkLogFormik.values.syncToJira}
-            onChange={addWorkLogFormik.handleChange}
+            value={manageWorkLogFormik.values.syncToJira}
+            onChange={manageWorkLogFormik.handleChange}
           />
         </div>
       </form>
 
       {worklogFileErrors.length > 0 && (
         <div className={worklogModalClasses.file_errors_container}>
-          <Collapse
-            items={[
-              {
-                key: "1",
-                label: "File Errors",
-                children: (
-                  <WorklogTable
-                    properties={{
-                      columns: worklogFileErrorsColumns,
-                      dataSource: worklogFileErrors,
-                      pagination: { pageSize: 5 },
-                    }}
-                    actionButtons={[]}
-                  />
-                ),
-              },
-            ]}
-          />
+          <CollapsibleSection
+            title="Uploaded File Errors"
+            icon={<Info color="#dc2626" />}
+          >
+            <WorklogTable
+              properties={{
+                columns: worklogFileErrorsColumns,
+                dataSource: worklogFileErrors,
+                pagination: { pageSize: 5 },
+              }}
+              actionButtons={[]}
+            />
+          </CollapsibleSection>
         </div>
       )}
     </WorklogModal>
   );
 };
 
-export default AddWorkLogModal;
+export default ManageWorkLogModal;

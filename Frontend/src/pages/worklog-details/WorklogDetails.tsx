@@ -23,7 +23,7 @@ import {
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { getPaddedItem } from "../../utils";
-import worklogModalClasses from "../../components/worklogs/workklog-modal/scss/worklog-modal.module.css";
+import worklogModalClasses from "../../components/worklogs/modals/worklog-modal/scss/worklog-modal.module.css";
 
 const WorklogDetails = () => {
   const [editDetailVisible, setEditDetailVisible] = useState<boolean>(false);

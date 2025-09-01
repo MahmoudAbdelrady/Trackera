@@ -1,3 +1,3 @@
-import addWorkLog from "./add-worklog";
+import manageWorkLog from "./manage-worklog";
 
-export { addWorkLog };
+export { manageWorkLog };

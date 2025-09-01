@@ -1,8 +1,8 @@
 import dayjs from "dayjs";
 import { WorklogModal } from "../../components";
 import { useFormik } from "formik";
-import { addWorkLog } from "../../shared/yup-schemas";
-import worklogModalClasses from "../../components/worklogs/workklog-modal/scss/worklog-modal.module.css";
+import { manageWorkLog } from "../../shared/yup-schemas";
+import worklogModalClasses from "../../components/worklogs/modals/worklog-modal/scss/worklog-modal.module.css";
 import { DatePicker, Form, Input, Switch, Tooltip } from "antd";
 import { Inbox, Info } from "lucide-react";
 import Dragger from "antd/es/upload/Dragger";
@@ -15,7 +15,7 @@ const Test = () => {
       logFile: null,
       syncToJira: false,
     },
-    validationSchema: addWorkLog,
+    validationSchema: manageWorkLog,
     onSubmit: async (values) => {
       console.log("Form is valid");
       console.log("Form values:", values);
