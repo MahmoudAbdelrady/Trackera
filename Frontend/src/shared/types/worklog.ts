@@ -60,9 +60,7 @@ interface WorklogTableActionButtonProps {
   onClick: () => void;
 }
 
-interface WorklogTableProps<
-  T = Worklog | WorklogEntry | WorklogTask | WorklogError
-> {
+interface WorklogTableProps<T = Worklog | WorklogEntry | WorklogTask | WorklogError> {
   properties: TableProps<T>;
   actionButtons: WorklogTableActionButtonProps[];
 }
@@ -71,6 +69,14 @@ interface WorklogModalProps {
   title: string;
   properties: ModalProps;
   children: React.ReactNode;
+}
+
+interface ManageWorkLogModalProps {
+  isOpen: boolean;
+  setIsOpen: (isOpen: boolean) => void;
+  setFetchWorkLog: (fetch: boolean) => void;
+  selectedWorkLog?: Worklog;
+  setSelectedWorkLog?: (worklog: Worklog | undefined) => void;
 }
 
 export type {
@@ -84,6 +90,7 @@ export type {
   WorklogTableActionButtonProps,
   WorklogTableProps,
   WorklogModalProps,
+  ManageWorkLogModalProps,
 };
 
 export { evaluationMetadata, statusMetadata };

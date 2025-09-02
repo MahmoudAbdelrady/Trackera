@@ -9,7 +9,7 @@ const ALLOWED_FILE_TYPES = [
   "application/vnd.google-apps.spreadsheet",
 ];
 
-const addWorkLog = object({
+const manageWorkLog = object({
   logName: string().trim(),
   logDate: mixed<dayjs.Dayjs>().required("Log date is required"),
   logFile: mixed<File>()
@@ -19,11 +19,8 @@ const addWorkLog = object({
     })
     .test("fileType", "Invalid file type", (value) => {
       return !value || ALLOWED_FILE_TYPES.includes(value.type);
-    })
-    .test("fileName", "File name is too long", (value) => {
-      return !value || value.name.length <= 255;
     }),
   syncToJira: boolean(),
 });
 
-export default addWorkLog;
+export default manageWorkLog;

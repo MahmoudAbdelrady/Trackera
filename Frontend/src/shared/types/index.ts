@@ -20,6 +20,7 @@ import type {
   WorklogTableActionButtonProps,
   WorklogTableProps,
   WorklogModalProps,
+  ManageWorkLogModalProps,
 } from "./worklog";
 
 import { evaluationMetadata, statusMetadata } from "./worklog";
@@ -41,6 +42,7 @@ export type {
   WorklogTableActionButtonProps,
   WorklogTableProps,
   WorklogModalProps,
+  ManageWorkLogModalProps,
   AuthFooterProps,
   OAuthBtnProps,
 };
