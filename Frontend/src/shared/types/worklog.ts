@@ -72,7 +72,6 @@ interface WorklogModalProps {
 }
 
 interface ManageWorkLogModalProps {
-  isOpen: boolean;
   setIsOpen: (isOpen: boolean) => void;
   setFetchWorkLog: (fetch: boolean) => void;
   selectedWorkLog?: Worklog;

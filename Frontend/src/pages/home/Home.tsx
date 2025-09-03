@@ -171,13 +171,14 @@ const Home = () => {
 
   return (
     <>
-      <ManageWorkLogModal
-        isOpen={manageWorkLogVisible}
-        setIsOpen={setManageWorkLogVisible}
-        setFetchWorkLog={setFetchWorkLog}
-        selectedWorkLog={selectedWorkLog}
-        setSelectedWorkLog={setSelectedWorkLog}
-      />
+      {manageWorkLogVisible && (
+        <ManageWorkLogModal
+          setIsOpen={setManageWorkLogVisible}
+          setFetchWorkLog={setFetchWorkLog}
+          selectedWorkLog={selectedWorkLog}
+          setSelectedWorkLog={setSelectedWorkLog}
+        />
+      )}
       <WorklogModal
         title="Delete Worklog"
         properties={{

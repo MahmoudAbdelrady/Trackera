@@ -10,17 +10,24 @@ const ALLOWED_FILE_TYPES = [
 ];
 
 const manageWorkLog = object({
+  mode: string().oneOf(["add", "edit"]).required(),
   logName: string().trim(),
   logDate: mixed<dayjs.Dayjs>().required("Log date is required"),
-  logFile: mixed<File>()
-    .required("Log file is required")
-    .test("fileSize", "File size must be less than 5MB", (value) => {
-      return !value || value.size <= 5 * 1024 * 1024; // 5MB
-    })
-    .test("fileType", "Invalid file type", (value) => {
-      return !value || ALLOWED_FILE_TYPES.includes(value.type);
-    }),
-  syncToJira: boolean(),
+  reEvaluate: boolean().default(false),
+  logFile: mixed<File>().when(["mode", "reEvaluate"], {
+    is: (mode: string, reEvaluate: boolean) => mode === "add" || (mode === "edit" && reEvaluate === true),
+    then: (schema) =>
+      schema
+        .required("Log file is required")
+        .test("fileSize", "File size must be less than 5MB", (value?: File) => {
+          return !value || value.size <= 5 * 1024 * 1024;
+        })
+        .test("fileType", "Invalid file type", (value?: File) => {
+          return !value || ALLOWED_FILE_TYPES.includes(value.type);
+        }),
+    otherwise: (schema) => schema.nullable(),
+  }),
+  syncToJira: boolean().default(false),
 });
 
 export default manageWorkLog;
