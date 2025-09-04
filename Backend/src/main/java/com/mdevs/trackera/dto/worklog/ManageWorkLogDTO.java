@@ -8,7 +8,7 @@ import java.time.LocalDate;
 
 @Getter
 @Setter
-public class NewWorkLogDTO {
+public class ManageWorkLogDTO {
     private String logName;
 
     @NotNull(message = "Log date is required")

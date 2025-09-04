@@ -1,8 +1,7 @@
 package com.mdevs.trackera.controller;
 
-import com.mdevs.trackera.dto.worklog.NewWorkLogDTO;
+import com.mdevs.trackera.dto.worklog.ManageWorkLogDTO;
 import com.mdevs.trackera.service.WorkLogService;
-import com.mdevs.trackera.shared.exceptions.ExceptionResponseMaker;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
@@ -23,14 +22,20 @@ public class WorkLogController {
         this.workLogService = workLogService;
     }
 
-    @GetMapping("/all")
+    @GetMapping
     public ResponseEntity<?> GetAllWorkLogs(Pageable pageable) {
         return new ResponseEntity<>(workLogService.getAllWorklogs(pageable), HttpStatus.OK);
     }
 
-    @PostMapping("/add")
-    public ResponseEntity<?> AddWorkLog(@RequestPart(name = "worklog") @Valid NewWorkLogDTO newWorkLogDTO, @RequestPart MultipartFile file) {
-        Map<String, Object> result = workLogService.addWorkLog(newWorkLogDTO, file);
+    @PostMapping
+    public ResponseEntity<?> AddWorkLog(@RequestPart(name = "worklogInfo") @Valid ManageWorkLogDTO manageWorkLogDTO, @RequestPart MultipartFile file) {
+        Map<String, Object> result = workLogService.addWorkLog(manageWorkLogDTO, file);
         return result.containsKey("isError") ? new ResponseEntity<>(result, HttpStatus.BAD_REQUEST) : new ResponseEntity<>(result.get("message"), HttpStatus.CREATED);
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<?> UpdateWorkLog(@PathVariable Long id, @RequestPart(name = "worklogInfo") @Valid ManageWorkLogDTO manageWorkLogDTO, @RequestPart(required = false) MultipartFile file) {
+        Map<String, Object> result = workLogService.updateWorkLog(id, manageWorkLogDTO, file);
+        return result.containsKey("isError") ? new ResponseEntity<>(result, HttpStatus.BAD_REQUEST) : new ResponseEntity<>(result.get("message"), HttpStatus.OK);
     }
 }

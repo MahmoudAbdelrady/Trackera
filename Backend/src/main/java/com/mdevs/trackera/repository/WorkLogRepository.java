@@ -4,13 +4,15 @@ import com.mdevs.trackera.entity.WorkLog;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
 
 @Repository
 public interface WorkLogRepository extends BaseRepository<WorkLog> {
-    boolean existsByWorkDate(LocalDate workDate);
+    @Query("SELECT COUNT(w) > 0 FROM WorkLog w WHERE w.workDate = :workDate AND (:workLogId IS NULL OR w.id != :workLogId)")
+    boolean existsByWorkDateAndWorkLogNot(@Param("workDate") LocalDate workDate, @Param("workLogId") Long workLogId);
 
     @Query("SELECT w FROM WorkLog w ORDER BY w.workDate DESC")
     Page<WorkLog> findAllOrderByWorkDateDesc(Pageable pageable);

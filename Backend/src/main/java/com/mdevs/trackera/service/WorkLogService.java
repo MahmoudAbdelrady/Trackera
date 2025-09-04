@@ -1,7 +1,7 @@
 package com.mdevs.trackera.service;
 
 import com.mdevs.trackera.config.general.AppConfig;
-import com.mdevs.trackera.dto.worklog.NewWorkLogDTO;
+import com.mdevs.trackera.dto.worklog.ManageWorkLogDTO;
 import com.mdevs.trackera.dto.worklog.WorkLogInfoDTO;
 import com.mdevs.trackera.entity.WorkLog;
 import com.mdevs.trackera.entity.WorkLogDetail;
@@ -54,23 +54,75 @@ public class WorkLogService {
         Page<WorkLog> workLogList = workLogRepository.findAllOrderByWorkDateDesc(pageable);
         List<WorkLogInfoDTO> workLogInfoDTOList = workLogList.getContent().stream().map(workLog -> {
             WorkLogInfoDTO workLogInfoDTO = modelMapper.map(workLog, WorkLogInfoDTO.class);
-            workLogInfoDTO.setTotalHours(formatTotalHours(workLog.getTotalHours()));
+            workLogInfoDTO.setTotalHours(formatDuration(workLog.getTotalHours()));
             return workLogInfoDTO;
         }).toList();
         return new PageImpl<>(workLogInfoDTOList, pageable, workLogList.getTotalElements());
     }
 
     @Transactional
-    public Map<String, Object> addWorkLog(NewWorkLogDTO newWorkLogDTO, MultipartFile worklogFile) {
-        List<WorkLogDetail> allWorkLogDetails = new ArrayList<>();
-        List<Map<String, Object>> rowErrors = new ArrayList<>();
-        double totalTime = 0;
+    public Map<String, Object> addWorkLog(ManageWorkLogDTO manageWorkLogDTO, MultipartFile worklogFile) {
+        validateWorkLog(manageWorkLogDTO, null);
 
-        List<List<String>> parsedData = processWorkLogFile(newWorkLogDTO, worklogFile);
+        Map<String, Object> processResult = processWorkLogFile(worklogFile);
+        if (processResult.containsKey("isError")) {
+            return processResult;
+        }
+        WorkLog workLog = saveWorkLog(manageWorkLogDTO, Double.parseDouble(processResult.get("totalTime").toString()) / 60.0);
+        saveWorkLogDetails((List<WorkLogDetail>) processResult.get("workLogDetails"), workLog);
+        return Map.of("message", "Worklog uploaded successfully");
+    }
+
+    @Transactional
+    public Map<String, Object> updateWorkLog(Long id, ManageWorkLogDTO manageWorkLogDTO, MultipartFile worklogFile) {
+        WorkLog workLog = workLogRepository.findOne(id);
+        if (workLog == null) {
+            throw new BusinessException("WorkLog with ID " + id + " doesn't exist");
+        }
+        validateWorkLog(manageWorkLogDTO, id);
+
+        if (worklogFile != null) {
+            Map<String, Object> processResult = processWorkLogFile(worklogFile);
+            if (processResult.containsKey("isError")) {
+                return processResult;
+            }
+            workLog.setTotalHours(BigDecimal.valueOf(Double.parseDouble(processResult.get("totalTime").toString()) / 60.0));
+            workLogDetailRepository.deleteAllByWorkLog(workLog);
+            saveWorkLogDetails((List<WorkLogDetail>) processResult.get("workLogDetails"), workLog);
+        }
+
+        if (!StringUtils.isEmpty(manageWorkLogDTO.getLogName())) {
+            workLog.setName(manageWorkLogDTO.getLogName());
+        }
+        workLog.setWorkDate(manageWorkLogDTO.getLogDate());
+        workLogRepository.save(workLog);
+        return Map.of("message", "Worklog updated successfully");
+    }
+
+    private void validateWorkLog(ManageWorkLogDTO manageWorkLogDTO, Long existingWorkLogId) {
+        if (workLogRepository.existsByWorkDateAndWorkLogNot(manageWorkLogDTO.getLogDate(), existingWorkLogId)) {
+            throw new BusinessException("WorkLog for the date " + manageWorkLogDTO.getLogDate() + " already exists.");
+        }
+        if (manageWorkLogDTO.getLogDate().isAfter(LocalDate.now())) {
+            throw new BusinessException("WorkLog date cannot be in the future.");
+        }
+    }
+
+    private Map<String, Object> processWorkLogFile(MultipartFile worklogFile) {
+        List<List<String>> parsedData;
+        try {
+            parsedData = FileHandler.validateAndParse(worklogFile);
+        } catch (Exception ex) {
+            LOGGER.error("Error processing worklog file", ex);
+            throw new RuntimeException(ex.getMessage());
+        }
         if (parsedData.isEmpty() || parsedData.size() == 1) {
             throw new IllegalArgumentException("The uploaded file is empty or does not contain any valid data.");
         }
 
+        List<WorkLogDetail> allWorkLogDetails = new ArrayList<>();
+        List<Map<String, Object>> rowErrors = new ArrayList<>();
+        double totalTime = 0;
         for (int i = 1; i < parsedData.size(); i++) {
             List<String> row = parsedData.get(i);
             String taskName;
@@ -115,26 +167,10 @@ public class WorkLogService {
             result.put("message", "There were some errors in the uploaded file.");
             result.put("errors", rowErrors);
         } else {
-            WorkLog workLog = saveWorkLog(newWorkLogDTO, totalTime / 60.0);
-            saveWorkLogDetails(allWorkLogDetails, workLog);
-            result.put("message", "Worklog uploaded successfully");
+            result.put("totalTime", totalTime);
+            result.put("workLogDetails", allWorkLogDetails);
         }
         return result;
-    }
-
-    private List<List<String>> processWorkLogFile(NewWorkLogDTO newWorkLogDTO, MultipartFile worklogFile) {
-        if (workLogRepository.existsByWorkDate(newWorkLogDTO.getLogDate())) {
-            throw new BusinessException("WorkLog for the date " + newWorkLogDTO.getLogDate() + " already exists.");
-        }
-        if (newWorkLogDTO.getLogDate().isAfter(LocalDate.now())) {
-            throw new BusinessException("WorkLog date cannot be in the future.");
-        }
-        try {
-            return FileHandler.validateAndParse(worklogFile);
-        } catch (Exception ex) {
-            LOGGER.error("Error processing worklog file", ex);
-            throw new RuntimeException(ex.getMessage());
-        }
     }
 
     private <T> T getCellValue(String cell, int idx, Class<T> expectedType) {
@@ -176,19 +212,19 @@ public class WorkLogService {
         return (hours * 60) + minutes;
     }
 
-    public WorkLog saveWorkLog(NewWorkLogDTO newWorkLogDTO, double totalTime) {
+    public WorkLog saveWorkLog(ManageWorkLogDTO manageWorkLogDTO, double totalTime) {
         try {
             WorkLog workLog = new WorkLog();
             workLog.setUser(AppConfig.getCurrentUser());
             workLog.setTotalHours(BigDecimal.valueOf(totalTime));
-            workLog.setWorkDate(newWorkLogDTO.getLogDate());
+            workLog.setWorkDate(manageWorkLogDTO.getLogDate());
             workLog.setStatus(WorkLog.Status.NOT_SYNCED);
-            if (!StringUtils.isEmpty(newWorkLogDTO.getLogName())) {
-                workLog.setName(newWorkLogDTO.getLogName());
+            if (!StringUtils.isEmpty(manageWorkLogDTO.getLogName())) {
+                workLog.setName(manageWorkLogDTO.getLogName());
             } else {
-                DayOfWeek dayOfWeek = newWorkLogDTO.getLogDate().getDayOfWeek();
+                DayOfWeek dayOfWeek = manageWorkLogDTO.getLogDate().getDayOfWeek();
                 String dayName = dayOfWeek.name().substring(0, 1).toUpperCase() + dayOfWeek.name().substring(1).toLowerCase();
-                String formattedDate = TrackeraDateUtil.getCompactedDateFormatter().format(newWorkLogDTO.getLogDate());
+                String formattedDate = TrackeraDateUtil.getCompactedDateFormatter().format(manageWorkLogDTO.getLogDate());
                 workLog.setName("Worklog - " + dayName + formattedDate);
             }
 
@@ -209,7 +245,7 @@ public class WorkLogService {
         }
     }
 
-    private String formatTotalHours(BigDecimal totalHours) {
+    private String formatDuration(BigDecimal totalHours) {
         int hours = totalHours.intValue();
         BigDecimal fractionalPart = totalHours.subtract(BigDecimal.valueOf(hours));
 
@@ -221,18 +257,5 @@ public class WorkLogService {
         }
 
         return minutes == 0 ? String.format("%dh", hours) : String.format("%dh %dm", hours, minutes);
-    }
-
-    private String formatDuration(int totalMinutes) {
-        int hours = totalMinutes / 60;
-        int minutes = totalMinutes % 60;
-        StringJoiner joiner = new StringJoiner(" ");
-        if (hours > 0) {
-            joiner.add(hours + "h");
-        }
-        if (minutes > 0) {
-            joiner.add(minutes + "m");
-        }
-        return joiner.toString();
     }
 }
