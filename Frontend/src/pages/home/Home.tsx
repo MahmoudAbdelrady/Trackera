@@ -4,14 +4,7 @@ import classes from "./scss/home.module.css";
 import { Switch, Tooltip, type TableProps } from "antd";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import {
-  evaluationMetadata,
-  statusMetadata,
-  type PaginatedResponse,
-  type Worklog,
-  type WorkLogEvaluationType,
-  type WorkLogStatusType,
-} from "../../shared/types";
+import { evaluationMetadata, statusMetadata, type PaginatedResponse, type Worklog, type WorkLogEvaluationType, type WorkLogStatusType } from "../../shared/types";
 import { createPaginationConfig, getPaddedItem } from "../../utils";
 import worklogTableClasses from "../../components/worklogs/worklog-table/scss/worklog-table.module.css";
 import worklogModalClasses from "../../components/worklogs/modals/worklog-modal/scss/worklog-modal.module.css";
@@ -36,7 +29,7 @@ const Home = () => {
   const fetchWorkLogs = async (pageNum: number = 0, pageSize: number = 10) => {
     setIsFetchingWorkLogs(true);
     try {
-      const response = await requestInstance.get(`/worklog/all?page=${pageNum}&size=${pageSize}`);
+      const response = await requestInstance.get(`/worklog?page=${pageNum}&size=${pageSize}`);
       setWorkLogsResponse(response.data);
     } catch (error) {
       showErrorToast(error);
@@ -171,14 +164,7 @@ const Home = () => {
 
   return (
     <>
-      {manageWorkLogVisible && (
-        <ManageWorkLogModal
-          setIsOpen={setManageWorkLogVisible}
-          setFetchWorkLog={setFetchWorkLog}
-          selectedWorkLog={selectedWorkLog}
-          setSelectedWorkLog={setSelectedWorkLog}
-        />
-      )}
+      {manageWorkLogVisible && <ManageWorkLogModal setIsOpen={setManageWorkLogVisible} setFetchWorkLog={setFetchWorkLog} selectedWorkLog={selectedWorkLog} setSelectedWorkLog={setSelectedWorkLog} />}
       <WorklogModal
         title="Delete Worklog"
         properties={{
@@ -199,14 +185,7 @@ const Home = () => {
       <AppLayout>
         <div className={classes.worklog_status_cards_container}>
           {workLogStatusCards.map((card, index) => (
-            <WorklogStatusCard
-              key={index}
-              cardLabel={card.cardLabel}
-              cardValue={card.cardValue}
-              cardIcon={card.cardIcon}
-              cardColorTheme={card.cardColorTheme}
-              cardSubLabel={card.cardSubLabel}
-            />
+            <WorklogStatusCard key={index} cardLabel={card.cardLabel} cardValue={card.cardValue} cardIcon={card.cardIcon} cardColorTheme={card.cardColorTheme} cardSubLabel={card.cardSubLabel} />
           ))}
         </div>
         <div className={classes.worklogs_content}>
