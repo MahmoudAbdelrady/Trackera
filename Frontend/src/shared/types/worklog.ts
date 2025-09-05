@@ -78,6 +78,13 @@ interface ManageWorkLogModalProps {
   setSelectedWorkLog?: (worklog: Worklog | undefined) => void;
 }
 
+interface WorkLogSummaryCard {
+  label: string;
+  subLabel: string;
+  code: string;
+  value: string;
+}
+
 export type {
   WorkLogEvaluationType,
   WorkLogStatusType,
@@ -90,6 +97,7 @@ export type {
   WorklogTableProps,
   WorklogModalProps,
   ManageWorkLogModalProps,
+  WorkLogSummaryCard,
 };
 
 export { evaluationMetadata, statusMetadata };

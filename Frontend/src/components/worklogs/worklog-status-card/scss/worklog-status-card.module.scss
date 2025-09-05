@@ -14,7 +14,7 @@
   @media (max-width: 768px) {
     width: 100%;
   }
-  &.main {
+  &.total {
     background-color: rgba($mainColor, 0.1);
     .card_info {
       .card_label {
@@ -30,7 +30,7 @@
       color: $mainColor;
     }
   }
-  &.success {
+  &.target {
     background-color: rgba($greenColor, 0.1);
     .card_info {
       .card_label {
@@ -45,7 +45,7 @@
       color: $greenColor;
     }
   }
-  &.info {
+  &.remaining {
     background-color: rgba($orangeColor, 0.1);
     .card_info {
       .card_label {

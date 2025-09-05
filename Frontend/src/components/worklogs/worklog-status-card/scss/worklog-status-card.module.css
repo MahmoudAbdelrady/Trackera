@@ -18,42 +18,42 @@
     width: 100%;
   }
 }
-.worklog_status_card.main {
+.worklog_status_card.total {
   background-color: rgba(37, 99, 235, 0.1);
 }
-.worklog_status_card.main .card_info .card_label {
+.worklog_status_card.total .card_info .card_label {
   color: #2563eb;
 }
-.worklog_status_card.main .card_info .card_sub_label {
+.worklog_status_card.total .card_info .card_sub_label {
   color: #2563eb;
 }
-.worklog_status_card.main .card_icon {
+.worklog_status_card.total .card_icon {
   background-color: rgba(37, 99, 235, 0.2);
   color: #2563eb;
 }
-.worklog_status_card.success {
+.worklog_status_card.target {
   background-color: rgba(22, 163, 74, 0.1);
 }
-.worklog_status_card.success .card_info .card_label {
+.worklog_status_card.target .card_info .card_label {
   color: #16a34a;
 }
-.worklog_status_card.success .card_info .card_sub_label {
+.worklog_status_card.target .card_info .card_sub_label {
   color: #16a34a;
 }
-.worklog_status_card.success .card_icon {
+.worklog_status_card.target .card_icon {
   background-color: rgba(22, 163, 74, 0.2);
   color: #16a34a;
 }
-.worklog_status_card.info {
+.worklog_status_card.remaining {
   background-color: rgba(217, 119, 6, 0.1);
 }
-.worklog_status_card.info .card_info .card_label {
+.worklog_status_card.remaining .card_info .card_label {
   color: #d97706;
 }
-.worklog_status_card.info .card_info .card_sub_label {
+.worklog_status_card.remaining .card_info .card_sub_label {
   color: #d97706;
 }
-.worklog_status_card.info .card_icon {
+.worklog_status_card.remaining .card_icon {
   background-color: rgba(217, 119, 6, 0.2);
   color: #d97706;
 }

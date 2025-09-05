@@ -122,13 +122,8 @@ const ManageWorkLogModal = (props: ManageWorkLogModalProps) => {
         keyboard: !isLoading,
         maskClosable: !isLoading,
         okText: !isEditMode() ? "Add" : "Update",
-        okButtonProps: {
-          loading: isLoading,
-          disabled: !manageWorkLogFormik.isValid || !manageWorkLogFormik.dirty || isLoading,
-        },
-        cancelButtonProps: {
-          disabled: isLoading,
-        },
+        okButtonProps: { loading: isLoading, disabled: !manageWorkLogFormik.isValid || !manageWorkLogFormik.dirty || isLoading },
+        cancelButtonProps: { disabled: isLoading },
         onOk: () => {
           manageWorkLogFormik.submitForm();
         },
@@ -150,9 +145,11 @@ const ManageWorkLogModal = (props: ManageWorkLogModalProps) => {
               disabled={isLoading}
             />
           </Form.Item>
-          <Tooltip title="If not provided, the log name will be auto-generated based on the upload date and weekday.">
-            <Info size={22} cursor={"pointer"} />
-          </Tooltip>
+          {!isEditMode() && (
+            <Tooltip title="If not provided, the log name will be auto-generated based on the upload date and weekday.">
+              <Info size={22} cursor={"pointer"} />
+            </Tooltip>
+          )}
         </div>
         <div className={worklogModalClasses.form_group}>
           <Form.Item

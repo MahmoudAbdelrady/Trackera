@@ -1,13 +1,6 @@
 import type { InputFieldProps, PaginatedResponse } from "./global";
 
-import type {
-  AuthLayoutProps,
-  AuthFormProps,
-  AuthResultFields,
-  AuthResultProps,
-  AuthFooterProps,
-  OAuthBtnProps,
-} from "./auth";
+import type { AuthLayoutProps, AuthFormProps, AuthResultFields, AuthResultProps, AuthFooterProps, OAuthBtnProps } from "./auth";
 
 import type {
   WorkLogEvaluationType,
@@ -21,6 +14,7 @@ import type {
   WorklogTableProps,
   WorklogModalProps,
   ManageWorkLogModalProps,
+  WorkLogSummaryCard,
 } from "./worklog";
 
 import { evaluationMetadata, statusMetadata } from "./worklog";
@@ -45,6 +39,7 @@ export type {
   ManageWorkLogModalProps,
   AuthFooterProps,
   OAuthBtnProps,
+  WorkLogSummaryCard,
 };
 
 export { evaluationMetadata, statusMetadata };

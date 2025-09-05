@@ -1,27 +1,30 @@
-import { CircleCheckBig, Clock, Eye, Info, SquarePen, Trash, ClipboardPlus, CalendarSync, CalendarX2 } from "lucide-react";
+import { Eye, SquarePen, Trash, ClipboardPlus, CalendarSync, CalendarX2 } from "lucide-react";
 import { ManageWorkLogModal, AppLayout, SearchFilter, WorklogModal, WorklogStatusCard, WorklogTable } from "../../components";
 import classes from "./scss/home.module.css";
 import { Switch, Tooltip, type TableProps } from "antd";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { evaluationMetadata, statusMetadata, type PaginatedResponse, type Worklog, type WorkLogEvaluationType, type WorkLogStatusType } from "../../shared/types";
+import { evaluationMetadata, statusMetadata, type WorkLogSummaryCard, type PaginatedResponse, type Worklog, type WorkLogEvaluationType, type WorkLogStatusType } from "../../shared/types";
 import { createPaginationConfig, getPaddedItem } from "../../utils";
 import worklogTableClasses from "../../components/worklogs/worklog-table/scss/worklog-table.module.css";
 import worklogModalClasses from "../../components/worklogs/modals/worklog-modal/scss/worklog-modal.module.css";
 import requestInstance from "../../shared/axios/request-instance";
-import { showErrorToast } from "../../utils/toast-handler/showToast";
+import { showErrorToast, showSuccessToast } from "../../utils/toast-handler/showToast";
 
 const Home = () => {
   const [manageWorkLogVisible, setManageWorkLogVisible] = useState<boolean>(false);
   const [deleteWorkLogVisible, setDeleteWorkLogVisible] = useState<boolean>(false);
   const [isFetchingWorkLogs, setIsFetchingWorkLogs] = useState<boolean>(true);
+  const [isDeletingWorkLog, setIsDeletingWorkLog] = useState<boolean>(false);
   const [fetchWorkLog, setFetchWorkLog] = useState<boolean>(true);
   const [workLogsResponse, setWorkLogsResponse] = useState<PaginatedResponse<Worklog> | null>(null);
+  const [workLogSummary, setWorkLogSummary] = useState<WorkLogSummaryCard[]>([]);
   const [selectedWorkLog, setSelectedWorkLog] = useState<Worklog | undefined>(undefined);
 
   useEffect(() => {
     if (fetchWorkLog) {
       fetchWorkLogs();
+      fetchWorkLogSummary();
       setFetchWorkLog(false);
     }
   }, [fetchWorkLog]);
@@ -36,39 +39,29 @@ const Home = () => {
     }
     setIsFetchingWorkLogs(false);
   };
-  //   {
-  //     id: 1,
-  //     logName: "Frontend Development",
-  //     totalHours: 10,
-  //     date: "2023-10-01",
-  //     evaluation: "EXCELLENT",
-  //     status: "SYNCED",
-  //   },
-  //   {
-  //     id: 2,
-  //     logName: "Backend Development",
-  //     totalHours: 7.45,
-  //     date: "2023-10-01",
-  //     evaluation: "GOOD",
-  //     status: "PARTIALLY",
-  //   },
-  //   {
-  //     id: 3,
-  //     logName: "Bug Fixing",
-  //     totalHours: 6.45,
-  //     date: "2023-10-01",
-  //     evaluation: "MODERATE",
-  //     status: "UNSYNCED",
-  //   },
-  //   {
-  //     id: 4,
-  //     logName: "Reviewing",
-  //     totalHours: 2.45,
-  //     date: "2023-10-01",
-  //     evaluation: "POOR",
-  //     status: "UNSYNCED",
-  //   },
-  // ];
+
+  const fetchWorkLogSummary = async () => {
+    try {
+      const response = await requestInstance.get("/worklog/summary");
+      setWorkLogSummary(response.data);
+    } catch (error: any) {
+      showErrorToast(error);
+    }
+  };
+
+  const deleteWorkLog = async (workLogId: number) => {
+    setIsDeletingWorkLog(true);
+    try {
+      const response = await requestInstance.delete(`/worklog/${workLogId}`);
+      showSuccessToast(response.data);
+      setFetchWorkLog(true);
+    } catch (error: any) {
+      showErrorToast(error);
+    }
+    setIsDeletingWorkLog(false);
+    setDeleteWorkLogVisible(false);
+    setSelectedWorkLog(undefined);
+  };
 
   const tableColumns: TableProps<Worklog>["columns"] = [
     {
@@ -133,32 +126,16 @@ const Home = () => {
             </Link>
           </Tooltip>
           <Tooltip title="Delete">
-            <Trash onClick={() => setDeleteWorkLogVisible(true)} className={`${worklogTableClasses.log_action_btn} ${worklogTableClasses.delete}`} />
+            <Trash
+              onClick={() => {
+                setSelectedWorkLog(record);
+                setDeleteWorkLogVisible(true);
+              }}
+              className={`${worklogTableClasses.log_action_btn} ${worklogTableClasses.delete}`}
+            />
           </Tooltip>
         </div>
       ),
-    },
-  ];
-
-  const workLogStatusCards = [
-    {
-      cardLabel: "Total Logged Hours",
-      cardValue: "34.7",
-      cardIcon: <Clock />,
-      cardColorTheme: "main",
-    },
-    {
-      cardLabel: "Target Hours",
-      cardValue: "40",
-      cardIcon: <CircleCheckBig />,
-      cardColorTheme: "success",
-    },
-    {
-      cardLabel: "Hours Left",
-      cardValue: "5.3",
-      cardIcon: <Info />,
-      cardColorTheme: "info",
-      cardSubLabel: "Approx. 0.7 days",
     },
   ];
 
@@ -171,8 +148,12 @@ const Home = () => {
           open: deleteWorkLogVisible,
           centered: true,
           okText: "Delete",
-          okButtonProps: { danger: true },
-          onOk: () => {},
+          closable: !isDeletingWorkLog,
+          keyboard: !isDeletingWorkLog,
+          maskClosable: !isDeletingWorkLog,
+          okButtonProps: { danger: true, loading: isDeletingWorkLog, disabled: isDeletingWorkLog },
+          cancelButtonProps: { disabled: isDeletingWorkLog },
+          onOk: () => deleteWorkLog(selectedWorkLog?.id!),
           onCancel: () => setDeleteWorkLogVisible(false),
         }}
       >
@@ -184,8 +165,8 @@ const Home = () => {
       </WorklogModal>
       <AppLayout>
         <div className={classes.worklog_status_cards_container}>
-          {workLogStatusCards.map((card, index) => (
-            <WorklogStatusCard key={index} cardLabel={card.cardLabel} cardValue={card.cardValue} cardIcon={card.cardIcon} cardColorTheme={card.cardColorTheme} cardSubLabel={card.cardSubLabel} />
+          {workLogSummary.map((card, index) => (
+            <WorklogStatusCard key={index} label={card.label} subLabel={card.subLabel} code={card.code} value={card.value} />
           ))}
         </div>
         <div className={classes.worklogs_content}>
