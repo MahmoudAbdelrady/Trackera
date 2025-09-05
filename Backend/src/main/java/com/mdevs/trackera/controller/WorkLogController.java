@@ -38,4 +38,14 @@ public class WorkLogController {
         Map<String, Object> result = workLogService.updateWorkLog(id, manageWorkLogDTO, file);
         return result.containsKey("isError") ? new ResponseEntity<>(result, HttpStatus.BAD_REQUEST) : new ResponseEntity<>(result.get("message"), HttpStatus.OK);
     }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> DeleteWorkLog(@PathVariable Long id) {
+        return new ResponseEntity<>(workLogService.deleteWorkLog(id), HttpStatus.OK);
+    }
+
+    @GetMapping("/summary")
+    public ResponseEntity<?> GetCurrentMonthSummary() {
+        return new ResponseEntity<>(workLogService.getCurrentMonthSummary(), HttpStatus.OK);
+    }
 }

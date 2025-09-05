@@ -3,6 +3,7 @@ package com.mdevs.trackera.service;
 import com.mdevs.trackera.config.general.AppConfig;
 import com.mdevs.trackera.dto.worklog.ManageWorkLogDTO;
 import com.mdevs.trackera.dto.worklog.WorkLogInfoDTO;
+import com.mdevs.trackera.dto.worklog.WorkLogSummaryDTO;
 import com.mdevs.trackera.entity.WorkLog;
 import com.mdevs.trackera.entity.WorkLogDetail;
 import com.mdevs.trackera.repository.WorkLogDetailRepository;
@@ -54,7 +55,7 @@ public class WorkLogService {
         Page<WorkLog> workLogList = workLogRepository.findAllOrderByWorkDateDesc(pageable);
         List<WorkLogInfoDTO> workLogInfoDTOList = workLogList.getContent().stream().map(workLog -> {
             WorkLogInfoDTO workLogInfoDTO = modelMapper.map(workLog, WorkLogInfoDTO.class);
-            workLogInfoDTO.setTotalHours(formatDuration(workLog.getTotalHours()));
+            workLogInfoDTO.setTotalHours(TrackeraDateUtil.formatDuration(workLog.getTotalHours()));
             return workLogInfoDTO;
         }).toList();
         return new PageImpl<>(workLogInfoDTOList, pageable, workLogList.getTotalElements());
@@ -97,6 +98,29 @@ public class WorkLogService {
         workLog.setWorkDate(manageWorkLogDTO.getLogDate());
         workLogRepository.save(workLog);
         return Map.of("message", "Worklog updated successfully");
+    }
+
+    @Transactional
+    public String deleteWorkLog(Long id) {
+        WorkLog workLog = workLogRepository.findOne(id);
+        if (workLog == null) {
+            throw new BusinessException("WorkLog with ID " + id + " doesn't exist");
+        }
+        workLogDetailRepository.deleteAllByWorkLog(workLog);
+        workLogRepository.delete(workLog);
+        return "Worklog deleted successfully";
+    }
+
+    public List<WorkLogSummaryDTO> getCurrentMonthSummary() {
+        LocalDate now = LocalDate.now();
+        BigDecimal totalHours = workLogRepository.sumTotalHoursByWorkDateBetween(now.withDayOfMonth(1), now.withDayOfMonth(now.lengthOfMonth()));
+        BigDecimal targetHours = BigDecimal.valueOf(200.0); // @TODO --> Should be based on user settings
+        BigDecimal remainingHours = targetHours.subtract(totalHours).max(BigDecimal.ZERO);
+        return List.of(
+                new WorkLogSummaryDTO("Total Logged Hours", "Equivalent to " + TrackeraDateUtil.formatDurationWithDays(totalHours), "total", totalHours.toString()),
+                new WorkLogSummaryDTO("Target Hours", "Equivalent to " + TrackeraDateUtil.formatDurationWithDays(targetHours), "target", targetHours.toString()),
+                new WorkLogSummaryDTO("Remaining Hours", "Equivalent to " + TrackeraDateUtil.formatDurationWithDays(remainingHours), "remaining", remainingHours.toString())
+        );
     }
 
     private void validateWorkLog(ManageWorkLogDTO manageWorkLogDTO, Long existingWorkLogId) {
@@ -243,19 +267,5 @@ public class WorkLogService {
             LOGGER.error("Error saving worklog details", e);
             throw new RuntimeException(e.getMessage());
         }
-    }
-
-    private String formatDuration(BigDecimal totalHours) {
-        int hours = totalHours.intValue();
-        BigDecimal fractionalPart = totalHours.subtract(BigDecimal.valueOf(hours));
-
-        int minutes = fractionalPart.multiply(BigDecimal.valueOf(60)).setScale(0, RoundingMode.HALF_UP).intValue();
-
-        if (minutes == 60) {
-            hours += 1;
-            minutes = 0;
-        }
-
-        return minutes == 0 ? String.format("%dh", hours) : String.format("%dh %dm", hours, minutes);
     }
 }
