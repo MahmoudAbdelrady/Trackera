@@ -6,44 +6,38 @@ import classes from "./scss/search-filter.module.css";
 import CollapsibleSection from "../../collapsible-section/CollapsibleSection";
 
 const SearchFilter = () => {
-  const [selectedHourOperator, setSelectedHourOperator] = useState<
-    string | undefined
-  >(undefined);
-  const [selectedEvaluation, setSelectedEvaluation] = useState<
-    string | undefined
-  >(undefined);
-  const [selectedStatus, setSelectedStatus] = useState<string | undefined>(
-    undefined
-  );
+  const [selectedHourOperator, setSelectedHourOperator] = useState<string | undefined>(undefined);
+  const [selectedEvaluation, setSelectedEvaluation] = useState<string | undefined>(undefined);
+  const [selectedStatus, setSelectedStatus] = useState<string | undefined>(undefined);
 
   const logHoursFilterOperators: Record<string, string>[] = [
     {
       label: "=",
-      value: "equal",
+      value: "EQUALS",
     },
     {
       label: "!=",
-      value: "notEqual",
+      value: "NOT_EQUALS",
     },
     {
       label: ">",
-      value: "greaterThan",
+      value: "GREATER_THAN",
     },
     {
       label: ">=",
-      value: "greaterThanOrEqual",
+      value: "GREATER_THAN_EQUAL",
     },
     {
       label: "<",
-      value: "lessThan",
+      value: "LESS_THAN",
     },
     {
       label: "<=",
-      value: "lessThanOrEqual",
+      value: "LESS_THAN_EQUAL",
     },
     {
       label: "Between",
-      value: "between",
+      value: "BETWEEN",
     },
   ];
 
@@ -96,12 +90,7 @@ const SearchFilter = () => {
             <div className={classes.search_filter_input}>
               <span className={classes.filter_label}>Total Hours:</span>
               <div className={classes.filter_input_box}>
-                <Select
-                  options={logHoursFilterOperators}
-                  placeholder="Select Operator"
-                  allowClear
-                  onChange={(value) => setSelectedHourOperator(value)}
-                />
+                <Select options={logHoursFilterOperators} placeholder="Select Operator" allowClear onChange={(value) => setSelectedHourOperator(value)} />
                 {selectedHourOperator === "between" ? (
                   <div className={classes.filter_range_inputs}>
                     <InputNumber placeholder="Min" min={1} />
@@ -116,59 +105,37 @@ const SearchFilter = () => {
             <div className={classes.search_filter_input}>
               <span className={classes.filter_label}>Date From:</span>
               <div className={classes.filter_input_box}>
-                <DatePicker
-                  placeholder="Select Date"
-                  style={{ width: "100%" }}
-                />
+                <DatePicker placeholder="Select Date" style={{ width: "100%" }} />
               </div>
             </div>
 
             <div className={classes.search_filter_input}>
               <span className={classes.filter_label}>Date To:</span>
               <div className={classes.filter_input_box}>
-                <DatePicker
-                  placeholder="Select Date"
-                  style={{ width: "100%" }}
-                />
+                <DatePicker placeholder="Select Date" style={{ width: "100%" }} />
               </div>
             </div>
 
             <div className={classes.search_filter_input}>
               <span className={classes.filter_label}>Evaluation:</span>
               <div className={classes.filter_input_box}>
-                <Select
-                  options={evaluationFilterOptions}
-                  placeholder="Select Evaluation"
-                  allowClear
-                  onChange={(value) => setSelectedEvaluation(value)}
-                />
+                <Select options={evaluationFilterOptions} placeholder="Select Evaluation" allowClear onChange={(value) => setSelectedEvaluation(value)} />
               </div>
             </div>
 
             <div className={classes.search_filter_input}>
               <span className={classes.filter_label}>Status:</span>
               <div className={classes.filter_input_box}>
-                <Select
-                  options={statusFilterOptions}
-                  placeholder="Select Status"
-                  allowClear
-                  onChange={(value) => setSelectedStatus(value)}
-                />
+                <Select options={statusFilterOptions} placeholder="Select Status" allowClear onChange={(value) => setSelectedStatus(value)} />
               </div>
             </div>
           </div>
 
           <div className={classes.search_filters_actions}>
-            <Button
-              icon={<RotateCcw />}
-              className={`${classes.filter_button} ${classes.clear}`}
-            >
+            <Button icon={<RotateCcw />} className={`${classes.filter_button} ${classes.clear}`}>
               Clear
             </Button>
-            <Button
-              icon={<Search />}
-              className={`${classes.filter_button} ${classes.search}`}
-            >
+            <Button icon={<Search />} className={`${classes.filter_button} ${classes.search}`}>
               Search
             </Button>
           </div>
