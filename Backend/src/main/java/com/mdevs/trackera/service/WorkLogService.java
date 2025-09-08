@@ -10,6 +10,8 @@ import com.mdevs.trackera.repository.WorkLogDetailRepository;
 import com.mdevs.trackera.repository.WorkLogRepository;
 import com.mdevs.trackera.shared.FileHandler;
 import com.mdevs.trackera.shared.exceptions.types.BusinessException;
+import com.mdevs.trackera.shared.search_filter.SearchFilter;
+import com.mdevs.trackera.shared.search_filter.WorkLogSearchFilterBuilder;
 import com.mdevs.trackera.shared.utils.TrackeraDateUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.modelmapper.ModelMapper;
@@ -24,7 +26,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -51,8 +52,9 @@ public class WorkLogService {
         this.modelMapper = modelMapper;
     }
 
-    public Page<WorkLogInfoDTO> getAllWorklogs(Pageable pageable) {
-        Page<WorkLog> workLogList = workLogRepository.findAllOrderByWorkDateDesc(pageable);
+    public Page<WorkLogInfoDTO> searchAllWorkLogs(List<SearchFilter> searchFilters, Pageable pageable) {
+        WorkLogSearchFilterBuilder searchFilterBuilder = new WorkLogSearchFilterBuilder(searchFilters);
+        Page<WorkLog> workLogList = workLogRepository.findAll(searchFilterBuilder.build(), pageable);
         List<WorkLogInfoDTO> workLogInfoDTOList = workLogList.getContent().stream().map(workLog -> {
             WorkLogInfoDTO workLogInfoDTO = modelMapper.map(workLog, WorkLogInfoDTO.class);
             workLogInfoDTO.setTotalHours(TrackeraDateUtil.formatDuration(workLog.getTotalHours()));

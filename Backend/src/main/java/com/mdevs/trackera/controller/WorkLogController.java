@@ -2,6 +2,7 @@ package com.mdevs.trackera.controller;
 
 import com.mdevs.trackera.dto.worklog.ManageWorkLogDTO;
 import com.mdevs.trackera.service.WorkLogService;
+import com.mdevs.trackera.shared.search_filter.SearchFilter;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
@@ -10,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -22,9 +24,9 @@ public class WorkLogController {
         this.workLogService = workLogService;
     }
 
-    @GetMapping
-    public ResponseEntity<?> GetAllWorkLogs(Pageable pageable) {
-        return new ResponseEntity<>(workLogService.getAllWorklogs(pageable), HttpStatus.OK);
+    @PostMapping("/search")
+    public ResponseEntity<?> SearchAllWorkLogs(@RequestBody(required = false) List<SearchFilter> searchFilters, Pageable pageable) {
+        return new ResponseEntity<>(workLogService.searchAllWorkLogs(searchFilters, pageable), HttpStatus.OK);
     }
 
     @PostMapping
