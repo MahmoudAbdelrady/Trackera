@@ -7,39 +7,68 @@ import jakarta.persistence.criteria.Predicate;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.jpa.domain.Specification;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 public class WorkLogSearchFilterBuilder {
     private final List<SearchFilter> filters = new ArrayList<>();
 
+    private final static Set<String> ALLOWED_FIELDS = Set.of("name", "totalHours", "status", "dateFrom", "dateTo");
+
     public WorkLogSearchFilterBuilder(List<SearchFilter> searchFilters) {
         if (searchFilters != null && !searchFilters.isEmpty()) {
+            validateDateFilters(searchFilters);
             for (SearchFilter filter : searchFilters) {
-                if (filter.getOperator() == null) {
-                    filter.setOperator(getDefaultSearchOperator(filter.getFieldName()));
-                }
-                if (StringUtils.isEmpty(filter.getFieldName())) {
-                    throw new BusinessException("Field name is required in search filter");
-                }
-                if (filter.getValue() == null || StringUtils.isEmpty(filter.getValue().toString())) {
-                    throw new BusinessException("Value is required for field: " + filter.getFieldName());
-                }
-                if (filter.getOperator().equals(SearchOperator.BETWEEN) && (filter.getExtraValue() == null || StringUtils.isEmpty(filter.getExtraValue().toString()))) {
-                    throw new BusinessException("Extra value is required for BETWEEN operator on field: " + filter.getFieldName());
-                }
+                validateSearchFilter(filter);
 
                 if (filter.getFieldName().equals("dateFrom") || filter.getFieldName().equals("dateTo")) {
-                    if (filter.getFieldName().equals("dateFrom") && !filter.getOperator().equals(SearchOperator.GREATER_THAN_EQUAL)) {
-                        throw new BusinessException("Unsupported operator for 'Date From'");
-                    }
-                    if (filter.getFieldName().equals("dateTo") && !filter.getOperator().equals(SearchOperator.LESS_THAN_EQUAL)) {
-                        throw new BusinessException("Unsupported operator for 'Date To'");
-                    }
                     filter.setFieldName("workDate");
                 }
+
                 addFilter(filter);
             }
+        }
+    }
+
+    private void validateDateFilters(List<SearchFilter> searchFilters) {
+        SearchFilter dateFromFilter = searchFilters.stream().filter(filter -> !StringUtils.isEmpty(filter.getFieldName()) && filter.getFieldName().equals("dateFrom")).findFirst().orElse(null);
+        SearchFilter dateToFilter = searchFilters.stream().filter(filter -> !StringUtils.isEmpty(filter.getFieldName()) && filter.getFieldName().equals("dateTo")).findFirst().orElse(null);
+
+        if (dateFromFilter == null || dateToFilter == null) {
+            return;
+        }
+
+        validateSearchFilter(dateFromFilter);
+        validateSearchFilter(dateToFilter);
+
+        LocalDate dateFrom = LocalDate.parse(dateFromFilter.getValue().toString());
+        LocalDate dateTo = LocalDate.parse(dateToFilter.getValue().toString());
+        if (dateFrom.isAfter(dateTo)) {
+            throw new BusinessException("'Date From' cannot be after 'Date To'");
+        }
+        if (dateTo.isAfter(dateFrom.plusYears(1))) {
+            throw new BusinessException("Date range cannot exceed 1 year");
+        }
+    }
+
+    private void validateSearchFilter(SearchFilter searchFilter) {
+        if (StringUtils.isEmpty(searchFilter.getFieldName())) {
+            throw new BusinessException("Field name is required in search filter");
+        }
+        if (!ALLOWED_FIELDS.contains(searchFilter.getFieldName())) {
+            throw new BusinessException("Filtering by field '" + searchFilter.getFieldName() + "' is not supported");
+        }
+        if (searchFilter.getValue() == null || StringUtils.isEmpty(searchFilter.getValue().toString())) {
+            throw new BusinessException("Value is required for field: " + searchFilter.getFieldName());
+        }
+
+        if (searchFilter.getOperator() == null) {
+            searchFilter.setOperator(getDefaultSearchOperator(searchFilter.getFieldName()));
+        }
+        if (searchFilter.getOperator().equals(SearchOperator.BETWEEN) && (searchFilter.getExtraValue() == null || StringUtils.isEmpty(searchFilter.getExtraValue().toString()))) {
+            throw new BusinessException("Extra value is required for BETWEEN operator on field: " + searchFilter.getFieldName());
         }
     }
 
