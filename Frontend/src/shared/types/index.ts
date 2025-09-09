@@ -15,6 +15,8 @@ import type {
   WorklogModalProps,
   ManageWorkLogModalProps,
   WorkLogSummaryCard,
+  WorkLogSearchFilter,
+  WorkLogsFilterProps,
 } from "./worklog";
 
 import { evaluationMetadata, statusMetadata } from "./worklog";
@@ -40,6 +42,8 @@ export type {
   AuthFooterProps,
   OAuthBtnProps,
   WorkLogSummaryCard,
+  WorkLogSearchFilter,
+  WorkLogsFilterProps,
 };
 
 export { evaluationMetadata, statusMetadata };

@@ -85,6 +85,19 @@ interface WorkLogSummaryCard {
   value: string;
 }
 
+interface WorkLogSearchFilter {
+  fieldName: string;
+  operator: string;
+  value: any;
+  extraValue?: any;
+}
+
+interface WorkLogsFilterProps {
+  filters: WorkLogSearchFilter[];
+  setFilters: (filters: WorkLogSearchFilter[]) => void;
+  setFetchWorkLog: (fetch: boolean) => void;
+}
+
 export type {
   WorkLogEvaluationType,
   WorkLogStatusType,
@@ -98,6 +111,8 @@ export type {
   WorklogModalProps,
   ManageWorkLogModalProps,
   WorkLogSummaryCard,
+  WorkLogSearchFilter,
+  WorkLogsFilterProps,
 };
 
 export { evaluationMetadata, statusMetadata };

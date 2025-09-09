@@ -4,7 +4,16 @@ import classes from "./scss/home.module.css";
 import { Switch, Tooltip, type TableProps } from "antd";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { evaluationMetadata, statusMetadata, type WorkLogSummaryCard, type PaginatedResponse, type Worklog, type WorkLogEvaluationType, type WorkLogStatusType } from "../../shared/types";
+import {
+  evaluationMetadata,
+  statusMetadata,
+  type WorkLogSummaryCard,
+  type PaginatedResponse,
+  type Worklog,
+  type WorkLogEvaluationType,
+  type WorkLogStatusType,
+  type WorkLogSearchFilter,
+} from "../../shared/types";
 import { createPaginationConfig, getPaddedItem } from "../../utils";
 import worklogTableClasses from "../../components/worklogs/worklog-table/scss/worklog-table.module.css";
 import worklogModalClasses from "../../components/worklogs/modals/worklog-modal/scss/worklog-modal.module.css";
@@ -20,6 +29,7 @@ const Home = () => {
   const [workLogsResponse, setWorkLogsResponse] = useState<PaginatedResponse<Worklog> | null>(null);
   const [workLogSummary, setWorkLogSummary] = useState<WorkLogSummaryCard[]>([]);
   const [selectedWorkLog, setSelectedWorkLog] = useState<Worklog | undefined>(undefined);
+  const [searchFilters, setSearchFilters] = useState<WorkLogSearchFilter[]>([]);
 
   useEffect(() => {
     if (fetchWorkLog) {
@@ -32,7 +42,7 @@ const Home = () => {
   const fetchWorkLogs = async (pageNum: number = 0, pageSize: number = 10) => {
     setIsFetchingWorkLogs(true);
     try {
-      const response = await requestInstance.get(`/worklog?page=${pageNum}&size=${pageSize}`);
+      const response = await requestInstance.post(`/worklog/search?page=${pageNum}&size=${pageSize}`, searchFilters);
       setWorkLogsResponse(response.data);
     } catch (error) {
       showErrorToast(error);
@@ -170,7 +180,7 @@ const Home = () => {
           ))}
         </div>
         <div className={classes.worklogs_content}>
-          <SearchFilter />
+          <SearchFilter filters={searchFilters} setFilters={setSearchFilters} setFetchWorkLog={setFetchWorkLog} />
           <div className={classes.worklogs_container}>
             <WorklogTable<Worklog>
               properties={{

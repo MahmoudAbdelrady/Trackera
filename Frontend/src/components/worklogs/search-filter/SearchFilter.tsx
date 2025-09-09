@@ -4,8 +4,9 @@ import { useState } from "react";
 
 import classes from "./scss/search-filter.module.css";
 import CollapsibleSection from "../../collapsible-section/CollapsibleSection";
+import type { WorkLogsFilterProps } from "../../../shared/types";
 
-const SearchFilter = () => {
+const SearchFilter = (props: WorkLogsFilterProps) => {
   const [selectedHourOperator, setSelectedHourOperator] = useState<string | undefined>(undefined);
   const [selectedEvaluation, setSelectedEvaluation] = useState<string | undefined>(undefined);
   const [selectedStatus, setSelectedStatus] = useState<string | undefined>(undefined);
@@ -78,7 +79,7 @@ const SearchFilter = () => {
   return (
     <div className={classes.search_filters_container}>
       <CollapsibleSection title="Filters" icon={<Funnel />}>
-        <>
+        <form>
           <div className={classes.search_filters_fields_grid}>
             <div className={classes.search_filter_input}>
               <span className={classes.filter_label}>Log Name:</span>
@@ -132,14 +133,21 @@ const SearchFilter = () => {
           </div>
 
           <div className={classes.search_filters_actions}>
-            <Button icon={<RotateCcw />} className={`${classes.filter_button} ${classes.clear}`}>
+            <Button
+              icon={<RotateCcw />}
+              onClick={() => {
+                props.setFilters([]);
+                props.setFetchWorkLog(true);
+              }}
+              className={`${classes.filter_button} ${classes.clear}`}
+            >
               Clear
             </Button>
-            <Button icon={<Search />} className={`${classes.filter_button} ${classes.search}`}>
+            <Button icon={<Search />} htmlType="submit" className={`${classes.filter_button} ${classes.search}`}>
               Search
             </Button>
           </div>
-        </>
+        </form>
       </CollapsibleSection>
     </div>
   );
