@@ -1,11 +1,5 @@
 import { loginSchema, signUpSchema, resetPasswordSchema } from "./auth";
-import { manageWorkLog } from "./worklog";
+import { manageWorkLog, searchFilterSchema } from "./worklog";
 import emailSchema from "./email";
 
-export {
-  signUpSchema,
-  loginSchema,
-  emailSchema,
-  resetPasswordSchema,
-  manageWorkLog,
-};
+export { signUpSchema, loginSchema, emailSchema, resetPasswordSchema, manageWorkLog, searchFilterSchema };

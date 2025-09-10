@@ -87,9 +87,9 @@ interface WorkLogSummaryCard {
 
 interface WorkLogSearchFilter {
   fieldName: string;
-  operator: string;
-  value: any;
-  extraValue?: any;
+  operator?: string | undefined | null;
+  value: any | undefined | null;
+  extraValue?: any | undefined | null;
 }
 
 interface WorkLogsFilterProps {
