@@ -1,5 +1,5 @@
 import { Funnel, Search, RotateCcw } from "lucide-react";
-import { Button, DatePicker, Input, InputNumber, Select } from "antd";
+import { Button, DatePicker, Form, Input, InputNumber, Radio, Select } from "antd";
 
 import classes from "./scss/search-filter.module.css";
 import CollapsibleSection from "../../collapsible-section/CollapsibleSection";
@@ -7,7 +7,8 @@ import type { WorkLogSearchFilter, WorkLogsFilterProps } from "../../../shared/t
 import { useFormik } from "formik";
 import { searchFilterSchema } from "../../../shared/yup-schemas";
 import dayjs from "dayjs";
-import { formatDate } from "../../../utils";
+import { formatDate, getFormikFieldError, getFormikFieldStatus } from "../../../utils";
+import { useState } from "react";
 
 const fieldConfig: Record<string, WorkLogSearchFilter> = {
   logName: { fieldName: "name", operator: null, value: null },
@@ -18,11 +19,18 @@ const fieldConfig: Record<string, WorkLogSearchFilter> = {
   status: { fieldName: "status", operator: null, value: null },
 };
 
+const criteriaTypes = [
+  { label: "Total Hours", value: "logHours" },
+  { label: "Evaluation", value: "evaluation" },
+];
+
 type SearchFilterFields = {
   [K in keyof typeof fieldConfig]: WorkLogSearchFilter;
 };
 
 const SearchFilter = (props: WorkLogsFilterProps) => {
+  const [criteriaType, setCriteriaType] = useState<"logHours" | "evaluation">("logHours");
+
   const logHoursFilterOperators: Record<string, string>[] = [
     {
       label: "=",
@@ -100,45 +108,19 @@ const SearchFilter = (props: WorkLogsFilterProps) => {
     },
   });
 
-  const getTotalHoursFromEvaluation = (evaluation: string) => {
-    switch (evaluation) {
-      case "EXCELLENT":
-        return 8;
-      case "GOOD":
-        return 7.5;
-      case "MODERATE":
-        return 7;
-      case "POOR":
-        return 6;
-      default:
-        return null;
-    }
-  };
-
   const buildSearchFilters = (values: typeof searchFormik.values) => {
     let filters = Object.values(values);
 
     const evaluationFilter = filters.find((f) => f.fieldName === "evaluation");
+    const logHoursFilter = filters.find((f) => f.fieldName === "totalHours");
 
-    if (evaluationFilter && evaluationFilter.value) {
-      let logHoursFilter = filters.find((f) => f.fieldName === "totalHours");
-
-      if (logHoursFilter) {
-        logHoursFilter.value = getTotalHoursFromEvaluation(evaluationFilter.value);
-      } else {
-        filters.push({
-          fieldName: "totalHours",
-          operator: "GREATER_THAN_EQUAL",
-          value: getTotalHoursFromEvaluation(evaluationFilter.value),
-        });
-      }
-
+    if (criteriaType === "logHours" && logHoursFilter) {
       filters = filters.filter((f) => f.fieldName !== "evaluation");
+    } else if (criteriaType === "evaluation" && evaluationFilter) {
+      filters = filters.filter((f) => f.fieldName !== "totalHours");
     }
 
-    filters = filters.filter((filter) => filter.value !== null && filter.value !== undefined && filter.value !== "");
-
-    return filters;
+    return filters.filter((filter) => filter.value !== null && filter.value !== undefined && filter.value !== "");
   };
 
   const handleNestedChange = (outerField: keyof typeof searchFormik.values, innerField: keyof WorkLogSearchFilter, value: any) => {
@@ -148,6 +130,8 @@ const SearchFilter = (props: WorkLogsFilterProps) => {
   const handleNestedBlur = (outerField: keyof typeof searchFormik.values, innerField: keyof WorkLogSearchFilter) => {
     searchFormik.setFieldTouched(`${outerField}.${innerField}`, true);
   };
+
+  console.log("Formik Errors: ", searchFormik.errors);
 
   return (
     <div className={classes.search_filters_container}>
@@ -164,49 +148,6 @@ const SearchFilter = (props: WorkLogsFilterProps) => {
                   onChange={(e) => handleNestedChange("logName", "value", e.target.value)}
                   onBlur={() => handleNestedBlur("logName", "value")}
                 />
-              </div>
-            </div>
-
-            <div className={classes.search_filter_input}>
-              <span className={classes.filter_label}>Total Hours:</span>
-              <div className={classes.filter_input_box}>
-                <Select
-                  options={logHoursFilterOperators}
-                  placeholder="Select Operator"
-                  allowClear
-                  value={searchFormik.values.logHours.operator}
-                  onChange={(value) => handleNestedChange("logHours", "operator", value)}
-                  onBlur={() => handleNestedBlur("logHours", "operator")}
-                />
-                {searchFormik.values.logHours.operator === "BETWEEN" ? (
-                  <div className={classes.filter_range_inputs}>
-                    <InputNumber
-                      placeholder="Min"
-                      min={1}
-                      name="logHoursMin"
-                      value={searchFormik.values.logHours.value}
-                      onChange={(value) => handleNestedChange("logHours", "value", value)}
-                      onBlur={() => handleNestedBlur("logHours", "value")}
-                    />
-                    <InputNumber
-                      placeholder="Max"
-                      min={1}
-                      name="logHoursMax"
-                      value={searchFormik.values.logHours.extraValue}
-                      onChange={(value) => handleNestedChange("logHours", "extraValue", value)}
-                      onBlur={() => handleNestedBlur("logHours", "extraValue")}
-                    />
-                  </div>
-                ) : (
-                  <InputNumber
-                    placeholder="Hours"
-                    min={1}
-                    name="logHours"
-                    value={searchFormik.values.logHours.value}
-                    onChange={(value) => handleNestedChange("logHours", "value", value)}
-                    onBlur={() => handleNestedBlur("logHours", "value")}
-                  />
-                )}
               </div>
             </div>
 
@@ -239,20 +180,6 @@ const SearchFilter = (props: WorkLogsFilterProps) => {
             </div>
 
             <div className={classes.search_filter_input}>
-              <span className={classes.filter_label}>Evaluation:</span>
-              <div className={classes.filter_input_box}>
-                <Select
-                  options={evaluationFilterOptions}
-                  placeholder="Select Evaluation"
-                  allowClear
-                  value={searchFormik.values.evaluation.value}
-                  onChange={(value) => handleNestedChange("evaluation", "value", value)}
-                  onBlur={() => handleNestedBlur("evaluation", "value")}
-                />
-              </div>
-            </div>
-
-            <div className={classes.search_filter_input}>
               <span className={classes.filter_label}>Status:</span>
               <div className={classes.filter_input_box}>
                 <Select
@@ -265,6 +192,78 @@ const SearchFilter = (props: WorkLogsFilterProps) => {
                 />
               </div>
             </div>
+
+            <div className={classes.search_filter_input}>
+              <span className={classes.filter_label}>Criteria Type:</span>
+              <div className={classes.filter_input_box}>
+                <Radio.Group options={criteriaTypes} value={criteriaType} onChange={(e) => setCriteriaType(e.target.value)} />
+              </div>
+            </div>
+
+            {criteriaType === "logHours" ? (
+              <div className={classes.search_filter_input}>
+                <span className={classes.filter_label}>Total Hours:</span>
+                <div className={classes.filter_input_box}>
+                  <Form.Item
+                    style={{ marginBottom: 0, width: "100%" }}
+                    validateStatus={getFormikFieldStatus(searchFormik, "logHours.operator")}
+                    help={getFormikFieldError(searchFormik, "logHours.operator") as string}
+                  >
+                    <Select
+                      options={logHoursFilterOperators}
+                      placeholder="Select Operator"
+                      allowClear
+                      value={searchFormik.values.logHours.operator}
+                      onChange={(value) => handleNestedChange("logHours", "operator", value)}
+                      onBlur={() => handleNestedBlur("logHours", "operator")}
+                    />
+                  </Form.Item>
+                  {searchFormik.values.logHours.operator === "BETWEEN" ? (
+                    <div className={classes.filter_range_inputs}>
+                      <InputNumber
+                        placeholder="Min"
+                        min={1}
+                        name="logHoursMin"
+                        value={searchFormik.values.logHours.value}
+                        onChange={(value) => handleNestedChange("logHours", "value", value)}
+                        onBlur={() => handleNestedBlur("logHours", "value")}
+                      />
+                      <InputNumber
+                        placeholder="Max"
+                        min={1}
+                        name="logHoursMax"
+                        value={searchFormik.values.logHours.extraValue}
+                        onChange={(value) => handleNestedChange("logHours", "extraValue", value)}
+                        onBlur={() => handleNestedBlur("logHours", "extraValue")}
+                      />
+                    </div>
+                  ) : (
+                    <InputNumber
+                      placeholder="Hours"
+                      min={1}
+                      name="logHours"
+                      value={searchFormik.values.logHours.value}
+                      onChange={(value) => handleNestedChange("logHours", "value", value)}
+                      onBlur={() => handleNestedBlur("logHours", "value")}
+                    />
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className={classes.search_filter_input}>
+                <span className={classes.filter_label}>Evaluation:</span>
+                <div className={classes.filter_input_box}>
+                  <Select
+                    options={evaluationFilterOptions}
+                    placeholder="Select Evaluation"
+                    allowClear
+                    value={searchFormik.values.evaluation.value}
+                    onChange={(value) => handleNestedChange("evaluation", "value", value)}
+                    onBlur={() => handleNestedBlur("evaluation", "value")}
+                  />
+                </div>
+              </div>
+            )}
           </div>
 
           <div className={classes.search_filters_actions}>
@@ -272,6 +271,7 @@ const SearchFilter = (props: WorkLogsFilterProps) => {
               icon={<RotateCcw />}
               onClick={() => {
                 searchFormik.resetForm();
+                setCriteriaType("logHours");
                 props.setFilters([]);
                 props.setFetchWorkLog(true);
               }}

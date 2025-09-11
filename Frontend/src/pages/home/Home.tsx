@@ -26,6 +26,7 @@ const Home = () => {
   const [isFetchingWorkLogs, setIsFetchingWorkLogs] = useState<boolean>(true);
   const [isDeletingWorkLog, setIsDeletingWorkLog] = useState<boolean>(false);
   const [fetchWorkLog, setFetchWorkLog] = useState<boolean>(true);
+  const [fetchSummary, setFetchSummary] = useState<boolean>(true);
   const [workLogsResponse, setWorkLogsResponse] = useState<PaginatedResponse<Worklog> | null>(null);
   const [workLogSummary, setWorkLogSummary] = useState<WorkLogSummaryCard[]>([]);
   const [selectedWorkLog, setSelectedWorkLog] = useState<Worklog | undefined>(undefined);
@@ -34,10 +35,16 @@ const Home = () => {
   useEffect(() => {
     if (fetchWorkLog) {
       fetchWorkLogs();
-      fetchWorkLogSummary();
       setFetchWorkLog(false);
     }
   }, [fetchWorkLog]);
+
+  useEffect(() => {
+    if (fetchSummary) {
+      fetchWorkLogSummary();
+      setFetchSummary(false);
+    }
+  }, [fetchSummary]);
 
   const fetchWorkLogs = async (pageNum: number = 0, pageSize: number = 10) => {
     setIsFetchingWorkLogs(true);
@@ -65,6 +72,7 @@ const Home = () => {
       const response = await requestInstance.delete(`/worklog/${workLogId}`);
       showSuccessToast(response.data);
       setFetchWorkLog(true);
+      setFetchSummary(true);
     } catch (error: any) {
       showErrorToast(error);
     }
@@ -151,7 +159,15 @@ const Home = () => {
 
   return (
     <>
-      {manageWorkLogVisible && <ManageWorkLogModal setIsOpen={setManageWorkLogVisible} setFetchWorkLog={setFetchWorkLog} selectedWorkLog={selectedWorkLog} setSelectedWorkLog={setSelectedWorkLog} />}
+      {manageWorkLogVisible && (
+        <ManageWorkLogModal
+          setIsOpen={setManageWorkLogVisible}
+          setFetchWorkLog={setFetchWorkLog}
+          setFetchSummary={setFetchSummary}
+          selectedWorkLog={selectedWorkLog}
+          setSelectedWorkLog={setSelectedWorkLog}
+        />
+      )}
       <WorklogModal
         title="Delete Worklog"
         properties={{

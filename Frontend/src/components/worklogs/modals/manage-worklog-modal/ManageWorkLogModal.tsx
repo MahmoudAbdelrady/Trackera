@@ -88,6 +88,7 @@ const ManageWorkLogModal = (props: ManageWorkLogModalProps) => {
         showSuccessToast(response.data);
         handleModalClose();
         props.setFetchWorkLog(true);
+        props.setFetchSummary(true);
       } catch (error: any) {
         if (error.response?.data.isError) {
           setWorklogFileErrors(error.response?.data.errors);

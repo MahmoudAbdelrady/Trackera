@@ -26,7 +26,7 @@ const searchFilterSchema = yup.object({
       .nullable()
       .when("operator", {
         is: "BETWEEN",
-        then: (schema) => schema.required("Extra value is required for BETWEEN operator"),
+        then: (schema) => schema.required("Second field is required for BETWEEN operator"),
         otherwise: (schema) => schema.optional(),
       }),
   }),
