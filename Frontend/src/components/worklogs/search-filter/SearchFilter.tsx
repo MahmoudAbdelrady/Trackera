@@ -18,7 +18,9 @@ const fieldConfig: Record<string, WorkLogSearchFilter> = {
   status: { fieldName: "status", operator: null, value: null },
 };
 
-const criteriaTypes = [
+type CriteriaType = "logHours" | "evaluation";
+
+const criteriaTypeItems = [
   { label: "Total Hours", value: "logHours" },
   { label: "Evaluation", value: "evaluation" },
 ];
@@ -28,7 +30,7 @@ type SearchFilterFields = {
 };
 
 const SearchFilter = (props: WorkLogsFilterProps) => {
-  const [criteriaType, setCriteriaType] = useState<"logHours" | "evaluation">("logHours");
+  const [criteriaType, setCriteriaType] = useState<CriteriaType>("logHours");
 
   const logHoursFilterOperators: Record<string, string>[] = [
     {
@@ -108,24 +110,18 @@ const SearchFilter = (props: WorkLogsFilterProps) => {
   });
 
   const buildSearchFilters = (values: typeof searchFormik.values) => {
-    let filters = Object.values(values).filter((filter) => filter.value !== null && filter.value !== undefined && filter.value !== "");
+    let filters = Object.values(values)
+      .filter((filter) => filter.value !== null && filter.value !== undefined && filter.value !== "")
+      .map((f) => ({ ...f })); // create a shallow copy to avoid mutating formik state
 
-    const evaluationFilter = filters.find((f) => f.fieldName === "evaluation");
-    const logHoursFilter = filters.find((f) => f.fieldName === "totalHours");
     const dateFromFilter = filters.find((f) => f.fieldName === "dateFrom");
     const dateToFilter = filters.find((f) => f.fieldName === "dateTo");
 
-    if (dateFromFilter && dateFromFilter.value) {
+    if (dateFromFilter) {
       dateFromFilter.value = formatDate(dateFromFilter.value);
     }
-    if (dateToFilter && dateToFilter.value) {
+    if (dateToFilter) {
       dateToFilter.value = formatDate(dateToFilter.value);
-    }
-
-    if (criteriaType === "logHours" && logHoursFilter) {
-      filters = filters.filter((f) => f.fieldName !== "evaluation");
-    } else if (criteriaType === "evaluation" && evaluationFilter) {
-      filters = filters.filter((f) => f.fieldName !== "totalHours");
     }
 
     return filters;
@@ -137,6 +133,15 @@ const SearchFilter = (props: WorkLogsFilterProps) => {
 
   const handleNestedBlur = (field: keyof typeof searchFormik.values) => {
     searchFormik.setFieldTouched(field, true);
+  };
+
+  const handleCriteriaTypeChange = (value: CriteriaType) => {
+    setCriteriaType(value);
+    if (value === "logHours") {
+      searchFormik.setFieldValue("evaluation", { ...fieldConfig["evaluation"] });
+    } else {
+      searchFormik.setFieldValue("logHours", { ...fieldConfig["logHours"] });
+    }
   };
 
   return (
@@ -160,14 +165,20 @@ const SearchFilter = (props: WorkLogsFilterProps) => {
             <div className={classes.search_filter_input}>
               <span className={classes.filter_label}>Date From:</span>
               <div className={classes.filter_input_box}>
-                <DatePicker
-                  placeholder="Select Date"
-                  style={{ width: "100%" }}
-                  name="dateFrom"
-                  value={searchFormik.values.dateFrom.value}
-                  onChange={(value) => handleNestedChange("dateFrom.value", value)}
-                  onBlur={() => handleNestedBlur("dateFrom.value")}
-                />
+                <Form.Item
+                  style={{ marginBottom: 0, width: "100%" }}
+                  validateStatus={getFormikFieldStatus(searchFormik, "dateFrom.value")}
+                  help={getFormikFieldError(searchFormik, "dateFrom.value") as string}
+                >
+                  <DatePicker
+                    placeholder="Select Date"
+                    style={{ width: "100%" }}
+                    name="dateFrom"
+                    value={searchFormik.values.dateFrom.value}
+                    onChange={(value) => handleNestedChange("dateFrom.value", value)}
+                    onBlur={() => handleNestedBlur("dateFrom.value")}
+                  />
+                </Form.Item>
               </div>
             </div>
 
@@ -191,7 +202,7 @@ const SearchFilter = (props: WorkLogsFilterProps) => {
                 <Select
                   className={classes.filter_operator}
                   options={statusFilterOptions}
-                  placeholder="Select Status"
+                  placeholder="Status"
                   allowClear
                   value={searchFormik.values.status.value}
                   onChange={(value) => handleNestedChange("status.value", value)}
@@ -203,7 +214,7 @@ const SearchFilter = (props: WorkLogsFilterProps) => {
             <div className={classes.search_filter_input}>
               <span className={classes.filter_label}>Criteria Type:</span>
               <div className={classes.filter_input_box}>
-                <Radio.Group className={classes.filter_input_radio} options={criteriaTypes} value={criteriaType} onChange={(e) => setCriteriaType(e.target.value)} />
+                <Radio.Group className={classes.filter_input_radio} options={criteriaTypeItems} value={criteriaType} onChange={(e) => handleCriteriaTypeChange(e.target.value)} />
               </div>
             </div>
 

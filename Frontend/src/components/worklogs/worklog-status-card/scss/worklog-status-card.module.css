@@ -6,11 +6,11 @@
   flex: 1;
   padding: 20px;
   border-radius: 8px;
-  height: 115px;
+  height: 125px;
 }
 @media (min-width: 768px) and (max-width: 860px) {
   .worklog_status_card {
-    height: 140px;
+    height: 165px;
   }
 }
 @media (max-width: 768px) {

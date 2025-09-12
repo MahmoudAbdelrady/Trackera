@@ -1,3 +1,4 @@
+import dayjs from "dayjs";
 import * as yup from "yup";
 
 const workLogSearchFilterSchema = yup.object({
@@ -49,7 +50,29 @@ const searchFilterSchema = yup.object({
     test: validateOperatorWithValues,
   }),
 
-  dateFrom: workLogSearchFilterSchema,
+  dateFrom: workLogSearchFilterSchema.test({
+    name: "validate-dateFrom-after-dateTo",
+    test: function (value) {
+      const { value: dateFromValue } = value || {};
+      const dateToValue = this.parent.dateTo?.value;
+
+      if (!dateFromValue || !dateToValue) {
+        return true;
+      }
+
+      const from = dayjs(dateFromValue);
+      const to = dayjs(dateToValue);
+
+      if (!from.isValid() || !to.isValid()) {
+        return true;
+      }
+
+      if (from.isAfter(to)) {
+        return this.createError({ path: `${this.path}.value`, message: "Field must be before 'Date To'" });
+      }
+      return true;
+    },
+  }),
 
   dateTo: workLogSearchFilterSchema,
 

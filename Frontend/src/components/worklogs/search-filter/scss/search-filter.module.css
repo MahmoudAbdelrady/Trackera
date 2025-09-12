@@ -5,7 +5,7 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
   gap: 15px;
-  align-items: center;
+  align-items: flex-start;
 }
 .search_filters_container .search_filters_fields_grid .search_filter_input {
   display: flex;
@@ -30,12 +30,11 @@
   justify-content: center;
   align-items: flex-start;
   gap: 10px;
-  margin-left: 10px;
+  margin-left: 5px;
 }
 @media (max-width: 768px) {
   .search_filters_container .search_filters_fields_grid .search_filter_input .filter_input_box .filter_range_inputs {
     margin-left: 0;
-    gap: 20px;
   }
 }
 @media (max-width: 768px) {
@@ -50,7 +49,7 @@
   width: 130px;
 }
 .search_filters_container .search_filters_fields_grid .search_filter_input .filter_input_box .range_input {
-  width: 100px;
+  width: 110px;
 }
 .search_filters_container .search_filters_actions {
   display: flex;
