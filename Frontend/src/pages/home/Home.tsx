@@ -180,7 +180,10 @@ const Home = () => {
           okButtonProps: { danger: true, loading: isDeletingWorkLog, disabled: isDeletingWorkLog },
           cancelButtonProps: { disabled: isDeletingWorkLog },
           onOk: () => deleteWorkLog(selectedWorkLog?.id!),
-          onCancel: () => setDeleteWorkLogVisible(false),
+          onCancel: () => {
+            setDeleteWorkLogVisible(false);
+            setSelectedWorkLog(undefined);
+          },
         }}
       >
         <p className={worklogModalClasses.delete_message}>Are you sure you want to delete this worklog? This action cannot be undone.</p>
