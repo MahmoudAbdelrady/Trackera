@@ -1,5 +1,6 @@
 package com.mdevs.trackera.shared.search_filter;
 
+import com.mdevs.trackera.config.general.AppConfig;
 import com.mdevs.trackera.entity.WorkLog;
 import com.mdevs.trackera.shared.exceptions.types.BusinessException;
 import jakarta.persistence.criteria.Expression;
@@ -57,21 +58,29 @@ public class WorkLogSearchFilterBuilder {
     private void validateDateFilters(List<SearchFilter> searchFilters) {
         SearchFilter dateFromFilter = searchFilters.stream().filter(filter -> !StringUtils.isEmpty(filter.getFieldName()) && filter.getFieldName().equals("dateFrom")).findFirst().orElse(null);
         SearchFilter dateToFilter = searchFilters.stream().filter(filter -> !StringUtils.isEmpty(filter.getFieldName()) && filter.getFieldName().equals("dateTo")).findFirst().orElse(null);
+        LocalDate dateFrom = null;
+        LocalDate dateTo = null;
 
-        if (dateFromFilter == null || dateToFilter == null) {
-            return;
+        if (dateFromFilter != null) {
+            validateSearchFilter(dateFromFilter);
+            dateFrom = LocalDate.parse(dateFromFilter.getValue().toString());
         }
 
-        validateSearchFilter(dateFromFilter);
-        validateSearchFilter(dateToFilter);
+        if (dateToFilter != null) {
+            validateSearchFilter(dateToFilter);
+            dateTo = LocalDate.parse(dateToFilter.getValue().toString());
+        }
 
-        LocalDate dateFrom = LocalDate.parse(dateFromFilter.getValue().toString());
-        LocalDate dateTo = LocalDate.parse(dateToFilter.getValue().toString());
-        if (dateFrom.isAfter(dateTo)) {
+        if (dateFrom != null && dateTo != null && dateFrom.isAfter(dateTo)) {
             throw new BusinessException("'Date From' cannot be after 'Date To'");
         }
-        if (dateTo.isAfter(dateFrom.plusYears(1))) {
-            throw new BusinessException("Date range cannot exceed 1 year");
+
+        if (dateFrom != null && dateFrom.isBefore(AppConfig.getMinQueryableDate())) {
+            throw new BusinessException("'Date From' cannot be before " + AppConfig.getMinQueryableDate());
+        }
+
+        if (dateTo != null && dateTo.isBefore(AppConfig.getMinQueryableDate())) {
+            throw new BusinessException("'Date To' cannot be before " + AppConfig.getMinQueryableDate());
         }
     }
 
@@ -141,6 +150,8 @@ public class WorkLogSearchFilterBuilder {
                     case IN -> predicates.add(path.in((List<?>) filter.getValue()));
                 }
             }
+
+            predicates.add(criteriaBuilder.greaterThanOrEqualTo(root.get("workDate"), AppConfig.getMinQueryableDate()));
 
             if (query != null) {
                 query.orderBy(criteriaBuilder.desc(root.get("workDate")));
