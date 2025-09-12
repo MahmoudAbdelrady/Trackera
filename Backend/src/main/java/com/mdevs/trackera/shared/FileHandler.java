@@ -3,6 +3,7 @@ package com.mdevs.trackera.shared;
 import com.mdevs.trackera.shared.exceptions.types.BusinessException;
 import com.mdevs.trackera.shared.utils.TrackeraDateUtil;
 import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.poi.ss.usermodel.*;
@@ -17,7 +18,9 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class FileHandler {
 
@@ -35,7 +38,7 @@ public class FileHandler {
 
     private final static int MAX_WORKLOG_ROWS = 300;
 
-    public static List<List<String>> validateAndParse(MultipartFile workLogFile) {
+    public static List<Map<String, String>> validateAndParse(MultipartFile workLogFile) {
         String mimeType;
         try {
             mimeType = tika.detect(workLogFile.getInputStream(), workLogFile.getOriginalFilename());
@@ -51,13 +54,13 @@ public class FileHandler {
         return parseWorklogFile(workLogFile);
     }
 
-    public static List<List<String>> parseWorklogFile(MultipartFile workLogFile) {
+    public static List<Map<String, String>> parseWorklogFile(MultipartFile workLogFile) {
         try (InputStream inputStream = workLogFile.getInputStream()) {
             String fileName = workLogFile.getOriginalFilename();
             if (StringUtils.isEmpty(fileName)) {
                 throw new IllegalArgumentException("File name is missing.");
             }
-            List<List<String>> parsedData = fileName.toLowerCase().endsWith(".xlsx") ? parseExcel(inputStream) : parseCsv(inputStream);
+            List<Map<String, String>> parsedData = fileName.toLowerCase().endsWith(".xlsx") ? parseExcel(inputStream) : parseCsv(inputStream);
             return parsedData.stream().filter(row -> !isRowEmpty(row)).toList();
         } catch (Exception ex) {
             LOGGER.error("Error parsing worklog file", ex);
@@ -65,17 +68,26 @@ public class FileHandler {
         }
     }
 
-    private static List<List<String>> parseExcel(InputStream inputStream) throws IOException {
-        List<List<String>> rows = new ArrayList<>();
+    private static List<Map<String, String>> parseExcel(InputStream inputStream) throws IOException {
+        List<Map<String, String>> rows = new ArrayList<>();
         int parsedRows = 0;
 
         try (Workbook workbook = new XSSFWorkbook(inputStream)) {
             Sheet sheet = workbook.getSheetAt(0);
-            for (Row row : sheet) {
-                List<String> columns = new ArrayList<>();
-                for (Cell cell : row) {
-                    columns.add(getCellValueAsString(cell));
+            for (int i = 1; i <= sheet.getLastRowNum(); i++) {
+                Row row = sheet.getRow(i);
+                if (row == null) {
+                    continue;
                 }
+                Map<String, String> columns = new HashMap<>();
+                columns.put("rowNum", String.valueOf(row.getRowNum() + 1));
+
+                columns.put("taskName", getCellValueAsString(row.getCell(0)));
+                columns.put("fromHour", getCellValueAsString(row.getCell(1)));
+                columns.put("toHour", getCellValueAsString(row.getCell(2)));
+                columns.put("duration", getCellValueAsString(row.getCell(3)));
+                columns.put("description", getCellValueAsString(row.getCell(4)));
+
                 rows.add(columns);
                 parsedRows++;
                 validateFileRowsLimit(parsedRows);
@@ -84,11 +96,14 @@ public class FileHandler {
         return rows;
     }
 
-    private static boolean isRowEmpty(List<String> row) {
-        return row == null || row.isEmpty() || row.stream().allMatch(StringUtils::isEmpty);
+    private static boolean isRowEmpty(Map<String, String> row) {
+        return row == null || row.isEmpty() || row.entrySet().stream().filter(col -> !col.getKey().equals("rowNum")).allMatch(col -> StringUtils.isEmpty(col.getValue()));
     }
 
     private static String getCellValueAsString(Cell cell) {
+        if (cell == null) {
+            return "";
+        }
         return switch (cell.getCellType()) {
             case STRING -> cell.getStringCellValue();
             case NUMERIC ->
@@ -99,15 +114,25 @@ public class FileHandler {
         };
     }
 
-    private static List<List<String>> parseCsv(InputStream inputStream) throws IOException {
-        List<List<String>> rows = new ArrayList<>();
+    private static List<Map<String, String>> parseCsv(InputStream inputStream) throws IOException {
+        List<Map<String, String>> rows = new ArrayList<>();
         int parsedRows = 0;
 
         try (Reader reader = new InputStreamReader(inputStream)) {
-            Iterable<CSVRecord> records = CSVFormat.DEFAULT.parse(reader);
+            CSVParser records = CSVFormat.Builder.create(CSVFormat.DEFAULT).setSkipHeaderRecord(true).get().parse(reader);
             for (CSVRecord record : records) {
-                List<String> columns = new ArrayList<>();
-                record.forEach(r -> columns.add(normalizeCsvCell(r)));
+                if (record.getRecordNumber() == 1) {
+                    continue; // Skip header row
+                }
+                Map<String, String> columns = new HashMap<>();
+                columns.put("rowNum", String.valueOf(record.getRecordNumber()));
+
+                columns.put("taskName", getAndNormalizeCsvCell(record, 0));
+                columns.put("fromHour", getAndNormalizeCsvCell(record, 1));
+                columns.put("toHour", getAndNormalizeCsvCell(record, 2));
+                columns.put("duration", getAndNormalizeCsvCell(record, 3));
+                columns.put("description", getAndNormalizeCsvCell(record, 4));
+
                 rows.add(columns);
                 parsedRows++;
                 validateFileRowsLimit(parsedRows);
@@ -116,12 +141,13 @@ public class FileHandler {
         return rows;
     }
 
-    private static String normalizeCsvCell(String cell) {
-        if (StringUtils.isEmpty(cell)) {
-            return cell;
+    private static String getAndNormalizeCsvCell(CSVRecord record, int index) {
+        if (index >= record.size() || StringUtils.isEmpty(record.get(index))) {
+            return "";
         }
 
-        String trimmed = cell.trim();
+        String trimmed = record.get(index).trim();
+        // Parsing duration column in HH:MM format
         if (trimmed.matches("\\d{1,2}:\\d{2}\\s*[AaPp][Mm]")) {
             String[] parts = trimmed.split(":");
             String hour = parts[0];
@@ -131,7 +157,7 @@ public class FileHandler {
             }
         }
 
-        return cell;
+        return trimmed;
     }
 
     private static void validateFileRowsLimit(int parsedRows) {

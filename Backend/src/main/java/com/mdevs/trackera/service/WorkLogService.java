@@ -13,6 +13,9 @@ import com.mdevs.trackera.shared.exceptions.types.BusinessException;
 import com.mdevs.trackera.shared.search_filter.SearchFilter;
 import com.mdevs.trackera.shared.search_filter.WorkLogSearchFilterBuilder;
 import com.mdevs.trackera.shared.utils.TrackeraDateUtil;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.apache.commons.lang3.StringUtils;
 import org.modelmapper.ModelMapper;
 import org.slf4j.Logger;
@@ -134,42 +137,51 @@ public class WorkLogService {
         }
     }
 
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    private static class CellValidationResult<T> {
+        private T value;
+        private String errorMessage;
+    }
+
     private Map<String, Object> processWorkLogFile(MultipartFile worklogFile) {
-        List<List<String>> parsedData;
+        List<Map<String, String>> parsedData;
         try {
             parsedData = FileHandler.validateAndParse(worklogFile);
         } catch (Exception ex) {
             LOGGER.error("Error processing worklog file", ex);
             throw new RuntimeException(ex.getMessage());
         }
-        if (parsedData.isEmpty() || parsedData.size() == 1) {
+        if (parsedData.isEmpty()) {
             throw new IllegalArgumentException("The uploaded file is empty or does not contain any valid data.");
         }
 
         List<WorkLogDetail> allWorkLogDetails = new ArrayList<>();
         List<Map<String, Object>> rowErrors = new ArrayList<>();
         double totalTime = 0;
-        for (int i = 1; i < parsedData.size(); i++) {
-            List<String> row = parsedData.get(i);
-            String taskName;
-            LocalTime fromHour;
-            LocalTime toHour;
-            double taskLogDuration;
-            String taskDescription;
-            try {
-                if (row.size() < 5) {
-                    throw new IllegalArgumentException("Row does not contain enough columns. Expected at least 4 columns.");
+        for (Map<String, String> row : parsedData) {
+            StringJoiner rowErrorMessages = new StringJoiner("; ");
+
+            CellValidationResult<String> taskName = validateAndGetCell(row.get("taskName"), "Task Name", String.class, rowErrorMessages);
+            CellValidationResult<LocalTime> fromHour = validateAndGetCell(row.get("fromHour"), "From Hour", LocalTime.class, rowErrorMessages);
+            CellValidationResult<LocalTime> toHour = validateAndGetCell(row.get("toHour"), "To Hour", LocalTime.class, rowErrorMessages);
+            CellValidationResult<String> taskLogDurationResult = validateAndGetCell(row.get("duration"), "Duration", String.class, rowErrorMessages);
+            CellValidationResult<String> taskDescription = validateAndGetCell(row.get("description"), "Description", String.class, rowErrorMessages);
+
+            double taskLogDuration = 0;
+            if (StringUtils.isEmpty(taskLogDurationResult.getErrorMessage())) {
+                try {
+                    taskLogDuration = parseDuration(taskLogDurationResult.getValue());
+                } catch (Exception e) {
+                    rowErrorMessages.add(e.getMessage());
                 }
-                taskName = getCellValue(row.get(0), 0, String.class);
-                fromHour = getCellValue(row.get(1), 1, LocalTime.class);
-                toHour = getCellValue(row.get(2), 2, LocalTime.class);
-                taskLogDuration = parseDuration(getCellValue(row.get(3), 3, String.class));
-                taskDescription = getCellValue(row.get(4), 4, String.class);
-            } catch (Exception e) {
-                LOGGER.error("Error parsing row {}", i + 1, e);
+            }
+
+            if (rowErrorMessages.length() > 0) {
                 Map<String, Object> error = new HashMap<>();
-                error.put("row", i + 1);
-                error.put("error", e.getMessage());
+                error.put("row", row.get("rowNum"));
+                error.put("error", rowErrorMessages.toString());
                 rowErrors.add(error);
                 continue;
             }
@@ -177,12 +189,12 @@ public class WorkLogService {
             totalTime += taskLogDuration;
 
             WorkLogDetail workLogDetail = new WorkLogDetail();
-            workLogDetail.setTaskName(taskName);
+            workLogDetail.setTaskName(taskName.getValue());
             workLogDetail.setTaskUrl(null); // @TODO --> Should be based on the user's selected project
-            workLogDetail.setStartTime(fromHour);
-            workLogDetail.setEndTime(toHour);
+            workLogDetail.setStartTime(fromHour.getValue());
+            workLogDetail.setEndTime(toHour.getValue());
             workLogDetail.setDuration(BigDecimal.valueOf(taskLogDuration));
-            workLogDetail.setDescription(taskDescription);
+            workLogDetail.setDescription(taskDescription.getErrorMessage());
             workLogDetail.setStatus(WorkLog.Status.NOT_SYNCED);
             allWorkLogDetails.add(workLogDetail);
         }
@@ -199,25 +211,37 @@ public class WorkLogService {
         return result;
     }
 
-    private <T> T getCellValue(String cell, int idx, Class<T> expectedType) {
-        int cellPosition = idx + 1;
-        Object result;
-        if (StringUtils.isEmpty(cell)) {
-            throw new IllegalArgumentException("Cell value at position [" + cellPosition + "] is empty");
+    private <T> CellValidationResult<T> validateAndGetCell(String cell, String cellName, Class<T> type, StringJoiner errorMessages) {
+        CellValidationResult<T> cellValidationResult = new CellValidationResult<>();
+        try {
+             cellValidationResult.setValue(parseCell(cell, cellName, type));
+        } catch (Exception e) {
+            errorMessages.add(e.getMessage());
+            cellValidationResult.setErrorMessage(e.getMessage());
         }
-        if (expectedType == String.class) {
-            result = cell;
-        } else if (expectedType == LocalTime.class) {
+        return cellValidationResult;
+    }
+
+    private <T> T parseCell(String cell, String cellName, Class<T> expectedType) {
+        if (StringUtils.isEmpty(cell)) {
+            throw new IllegalArgumentException("[" + cellName + "] cell value is empty");
+        }
+
+        Object result = cell;
+
+        if (expectedType == LocalTime.class) {
             try {
                 result = LocalTime.parse(cell, TrackeraDateUtil.getDateTime12hFormatter());
             } catch (Exception e) {
-                throw new IllegalArgumentException("Invalid time format in cell at position [" + cellPosition + "]. Expected format is hh:mm AM/PM", e);
+                throw new IllegalArgumentException("Invalid time format in [" + cellName + "] cell. Expected format is hh:mm AM/PM", e);
             }
-        } else {
-            throw new IllegalArgumentException("Cell value type at position [" + cellPosition + "] is not supported");
         }
 
-        return expectedType.cast(result);
+        try {
+            return expectedType.cast(result);
+        } catch (Exception e) {
+            throw new IllegalArgumentException("[" + cellName + "] cell value type is not supported");
+        }
     }
 
     private double parseDuration(String duration) {
