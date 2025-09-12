@@ -46,7 +46,7 @@ const ManageWorkLogModal = (props: ManageWorkLogModalProps) => {
     const formData = new FormData();
     let worklogValues: { logName: string; logDate: string; syncToJira?: boolean } = {
       logName: values.logName,
-      logDate: formatDate(values.logDate),
+      logDate: formatDate(values.logDate)!,
     };
     if ((isEdit && values.reEvaluate) || !isEdit) {
       formData.append("file", values.logFile! as Blob);

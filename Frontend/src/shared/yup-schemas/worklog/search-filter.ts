@@ -2,50 +2,60 @@ import * as yup from "yup";
 
 const workLogSearchFilterSchema = yup.object({
   fieldName: yup.string().required(),
-  operator: yup.string().nullable().optional().trim(),
-  value: yup.string().nullable().optional().trim(),
-  extraValue: yup.string().nullable().optional().trim(),
+  operator: yup.string().nullable().optional(),
+  value: yup.string().trim().nullable().optional(),
+  extraValue: yup.string().trim().nullable().optional(),
 });
 
+const validateOperatorWithValues = function (this: yup.TestContext<any>, obj: any) {
+  const { operator, value, extraValue } = obj || {};
+  const errors: any[] = [];
+
+  // if value is provided but no operator
+  if (value && !operator) {
+    errors.push({
+      path: `${this.path}.operator`,
+      message: "Operator is required",
+    });
+  }
+
+  // if operator is provided but no value
+  if (operator && !value) {
+    errors.push({
+      path: `${this.path}.value`,
+      message: "Field is required",
+    });
+  }
+
+  // if operator == "BETWEEN" but no extraValue
+  if (operator === "BETWEEN" && !extraValue) {
+    errors.push({
+      path: `${this.path}.extraValue`,
+      message: "Field is required",
+    });
+  }
+
+  if (errors.length > 0) {
+    return new yup.ValidationError(errors.map((err) => new yup.ValidationError(err.message, obj, err.path)));
+  }
+  return true;
+};
+
 const searchFilterSchema = yup.object({
-  logName: workLogSearchFilterSchema.shape({
-    operator: yup.string().nullable().optional(),
+  logName: workLogSearchFilterSchema,
+
+  logHours: workLogSearchFilterSchema.test({
+    name: "validate-logHours-fields",
+    test: validateOperatorWithValues,
   }),
 
-  logHours: workLogSearchFilterSchema.shape({
-    operator: yup
-      .string()
-      .nullable()
-      .when("value", {
-        is: (val: string | null) => val != null && val !== "",
-        then: (schema) => schema.required("Operator is required when value is provided"),
-        otherwise: (schema) => schema.optional(),
-      }),
-    extraValue: yup
-      .string()
-      .nullable()
-      .when("operator", {
-        is: "BETWEEN",
-        then: (schema) => schema.required("Second field is required for BETWEEN operator"),
-        otherwise: (schema) => schema.optional(),
-      }),
-  }),
+  dateFrom: workLogSearchFilterSchema,
 
-  dateFrom: workLogSearchFilterSchema.shape({
-    operator: yup.string().nullable().optional(),
-  }),
+  dateTo: workLogSearchFilterSchema,
 
-  dateTo: workLogSearchFilterSchema.shape({
-    operator: yup.string().nullable().optional(),
-  }),
+  evaluation: workLogSearchFilterSchema,
 
-  evaluation: workLogSearchFilterSchema.shape({
-    operator: yup.string().nullable().optional(),
-  }),
-
-  status: workLogSearchFilterSchema.shape({
-    operator: yup.string().nullable().optional(),
-  }),
+  status: workLogSearchFilterSchema,
 });
 
 export default searchFilterSchema;

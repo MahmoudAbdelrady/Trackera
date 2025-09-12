@@ -1,30 +1,22 @@
-import type { FormikErrors, FormikTouched } from "formik";
+import { getIn, type FormikErrors, type FormikTouched } from "formik";
 
 type FormikWithValues<V> = {
   values: V;
   touched: FormikTouched<V>;
   errors: FormikErrors<V>;
+  submitCount: number;
 };
 
-const getFormikFieldError = <V, T extends keyof V>(
-  formik: FormikWithValues<V>,
-  field: T
-) => {
-  return validateFieldError(formik, field) ? formik.errors[field] : "";
+const getFormikFieldError = <V>(formik: FormikWithValues<V>, field: string) => {
+  return validateFieldError(formik, field) ? getIn(formik.errors, field) : "";
 };
 
-const getFormikFieldStatus = <V, T extends keyof V>(
-  formik: FormikWithValues<V>,
-  field: T
-) => {
+const getFormikFieldStatus = <V>(formik: FormikWithValues<V>, field: string) => {
   return validateFieldError(formik, field) ? "error" : "";
 };
 
-const validateFieldError = <V, T extends keyof V>(
-  formik: FormikWithValues<V>,
-  field: T
-): boolean => {
-  return !!(formik.touched[field] && formik.errors[field]);
+const validateFieldError = <V>(formik: FormikWithValues<V>, field: string): boolean => {
+  return !!((getIn(formik.touched, field) || formik.submitCount > 0) && getIn(formik.errors, field));
 };
 
 export { getFormikFieldError, getFormikFieldStatus };
