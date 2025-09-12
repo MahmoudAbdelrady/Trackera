@@ -72,7 +72,7 @@ public class WorkLogSearchFilterBuilder {
         }
 
         if (dateFrom != null && dateTo != null && dateFrom.isAfter(dateTo)) {
-            throw new BusinessException("'Date From' cannot be after 'Date To'");
+            throw new BusinessException("'Date From' must be before 'Date To'");
         }
 
         if (dateFrom != null && dateFrom.isBefore(AppConfig.getMinQueryableDate())) {
