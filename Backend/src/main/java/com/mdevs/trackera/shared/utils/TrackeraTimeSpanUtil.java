@@ -5,7 +5,7 @@ import java.math.RoundingMode;
 import java.text.SimpleDateFormat;
 import java.time.format.DateTimeFormatter;
 
-public class TrackeraDateUtil {
+public class TrackeraTimeSpanUtil {
     private final static SimpleDateFormat SIMPLE_12H_FORMAT = new SimpleDateFormat("hh:mm a");
 
     private final static DateTimeFormatter DATE_TIME_12H_FORMATTER = DateTimeFormatter.ofPattern("hh:mm a");
@@ -63,28 +63,27 @@ public class TrackeraDateUtil {
     }
 
     private static DurationParts extractDurationParts(BigDecimal totalHours, boolean includeDays) {
-        if (totalHours == null) {
+        if (totalHours == null || totalHours.compareTo(BigDecimal.ZERO) <= 0) {
             return new DurationParts(0, 0, 0);
         }
 
-        int hours = totalHours.intValue();
-        BigDecimal fractionalPart = totalHours.subtract(BigDecimal.valueOf(hours));
+        BigDecimal totalMinutesBD = totalHours.multiply(BigDecimal.valueOf(60)).setScale(0, RoundingMode.HALF_UP);
 
-        int minutes = fractionalPart.multiply(BigDecimal.valueOf(60)).setScale(0, RoundingMode.HALF_UP).intValue();
-
-        if (minutes == 60) {
-            hours += 1;
-            minutes = 0;
-        }
+        long totalMinutes = totalMinutesBD.longValueExact();
 
         int days = 0;
+        int hours;
+        int minutes;
+
         if (includeDays) {
-            days = hours / 8;
-            hours = hours % 8;
-            if (hours == 0 && minutes == 0 && totalHours.compareTo(BigDecimal.ZERO) > 0) {
-                // exactly multiple of 8h -> count as a full day
-                days += 1;
-            }
+            long minutesPerDay = 8L * 60L;
+            days = (int) (totalMinutes / minutesPerDay);
+            long rem = totalMinutes % minutesPerDay;
+            hours = (int) (rem / 60);
+            minutes = (int) (rem % 60);
+        } else {
+            hours = (int) (totalMinutes / 60);
+            minutes = (int) (totalMinutes % 60);
         }
 
         return new DurationParts(days, hours, minutes);

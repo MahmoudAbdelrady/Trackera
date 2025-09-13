@@ -1,12 +1,11 @@
 package com.mdevs.trackera.entity;
 
-import com.mdevs.trackera.shared.BaseEnum;
+import com.mdevs.trackera.shared.enums.BaseEnum;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.apache.commons.math3.dfp.DfpField;
 import org.hibernate.envers.Audited;
 
 import java.math.BigDecimal;

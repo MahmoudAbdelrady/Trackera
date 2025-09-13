@@ -9,13 +9,11 @@ import com.mdevs.trackera.entity.WorkLogDetail;
 import com.mdevs.trackera.repository.WorkLogDetailRepository;
 import com.mdevs.trackera.repository.WorkLogRepository;
 import com.mdevs.trackera.shared.FileHandler;
+import com.mdevs.trackera.shared.enums.WorkLogColumn;
 import com.mdevs.trackera.shared.exceptions.types.BusinessException;
 import com.mdevs.trackera.shared.search_filter.SearchFilter;
 import com.mdevs.trackera.shared.search_filter.WorkLogSearchFilterBuilder;
-import com.mdevs.trackera.shared.utils.TrackeraDateUtil;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import com.mdevs.trackera.shared.utils.TrackeraTimeSpanUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.modelmapper.ModelMapper;
 import org.slf4j.Logger;
@@ -33,6 +31,7 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.*;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -60,7 +59,7 @@ public class WorkLogService {
         Page<WorkLog> workLogList = workLogRepository.findAll(searchFilterBuilder.build(), pageable);
         List<WorkLogInfoDTO> workLogInfoDTOList = workLogList.getContent().stream().map(workLog -> {
             WorkLogInfoDTO workLogInfoDTO = modelMapper.map(workLog, WorkLogInfoDTO.class);
-            workLogInfoDTO.setTotalHours(TrackeraDateUtil.formatDuration(workLog.getTotalHours()));
+            workLogInfoDTO.setTotalHours(TrackeraTimeSpanUtil.formatDuration(workLog.getTotalHours()));
             return workLogInfoDTO;
         }).toList();
         return new PageImpl<>(workLogInfoDTOList, pageable, workLogList.getTotalElements());
@@ -84,6 +83,9 @@ public class WorkLogService {
         WorkLog workLog = workLogRepository.findOne(id);
         if (workLog == null) {
             throw new BusinessException("WorkLog with ID " + id + " doesn't exist");
+        }
+        if (workLog.getUser().getId() != Objects.requireNonNull(AppConfig.getCurrentUser()).getId()) {
+            throw new BusinessException("You are not authorized to update this worklog");
         }
         validateWorkLog(manageWorkLogDTO, id);
 
@@ -111,6 +113,9 @@ public class WorkLogService {
         if (workLog == null) {
             throw new BusinessException("WorkLog with ID " + id + " doesn't exist");
         }
+        if (workLog.getUser().getId() != Objects.requireNonNull(AppConfig.getCurrentUser()).getId()) {
+            throw new BusinessException("You are not authorized to delete this worklog");
+        }
         workLogDetailRepository.deleteAllByWorkLog(workLog);
         workLogRepository.delete(workLog);
         return "Worklog deleted successfully";
@@ -118,83 +123,71 @@ public class WorkLogService {
 
     public List<WorkLogSummaryDTO> getCurrentMonthSummary() {
         LocalDate now = LocalDate.now();
-        BigDecimal totalHours = workLogRepository.sumTotalHoursByWorkDateBetween(now.withDayOfMonth(1), now.withDayOfMonth(now.lengthOfMonth()));
+        BigDecimal totalHours = workLogRepository.sumTotalHoursByUserAndWorkDateBetween(AppConfig.getCurrentUser(), now.withDayOfMonth(1), now.withDayOfMonth(now.lengthOfMonth()));
         BigDecimal targetHours = BigDecimal.valueOf(200.0); // @TODO --> Should be based on user settings
         BigDecimal remainingHours = targetHours.subtract(totalHours).max(BigDecimal.ZERO);
         return List.of(
-                new WorkLogSummaryDTO("Total Logged Hours", "Equivalent to " + TrackeraDateUtil.formatDurationWithDays(totalHours), "total", totalHours.toString()),
-                new WorkLogSummaryDTO("Target Hours", "Equivalent to " + TrackeraDateUtil.formatDurationWithDays(targetHours), "target", targetHours.toString()),
-                new WorkLogSummaryDTO("Remaining Hours", "Equivalent to " + TrackeraDateUtil.formatDurationWithDays(remainingHours), "remaining", remainingHours.toString())
+                new WorkLogSummaryDTO("Logged Hours", "Equivalent to " + TrackeraTimeSpanUtil.formatDurationWithDays(totalHours), "logged", totalHours.toString()),
+                new WorkLogSummaryDTO("Target Hours", "Equivalent to " + TrackeraTimeSpanUtil.formatDurationWithDays(targetHours), "target", targetHours.toString()),
+                new WorkLogSummaryDTO("Remaining Hours", "Equivalent to " + TrackeraTimeSpanUtil.formatDurationWithDays(remainingHours), "remaining", remainingHours.toString())
         );
     }
 
     private void validateWorkLog(ManageWorkLogDTO manageWorkLogDTO, Long existingWorkLogId) {
-        if (workLogRepository.existsByWorkDateAndWorkLogNot(manageWorkLogDTO.getLogDate(), existingWorkLogId)) {
+        if (workLogRepository.existsByUserAndWorkDateAndWorkLogNot(AppConfig.getCurrentUser(), manageWorkLogDTO.getLogDate(), existingWorkLogId)) {
             throw new BusinessException("WorkLog for the date " + manageWorkLogDTO.getLogDate() + " already exists.");
         }
         if (manageWorkLogDTO.getLogDate().isAfter(LocalDate.now())) {
             throw new BusinessException("WorkLog date cannot be in the future.");
         }
-    }
-
-    @Getter
-    @Setter
-    @NoArgsConstructor
-    private static class CellValidationResult<T> {
-        private T value;
-        private String errorMessage;
+        if (manageWorkLogDTO.getLogDate().isBefore(AppConfig.getMinQueryableDate())) {
+            throw new BusinessException("WorkLog date cannot be before " + AppConfig.getMinQueryableDate() + ".");
+        }
     }
 
     private Map<String, Object> processWorkLogFile(MultipartFile worklogFile) {
-        List<Map<String, String>> parsedData;
+        List<Map<WorkLogColumn, String>> parsedData;
         try {
             parsedData = FileHandler.validateAndParse(worklogFile);
         } catch (Exception ex) {
             LOGGER.error("Error processing worklog file", ex);
             throw new RuntimeException(ex.getMessage());
         }
+
         if (parsedData.isEmpty()) {
-            throw new IllegalArgumentException("The uploaded file is empty or does not contain any valid data.");
+            throw new BusinessException("The uploaded file is empty or does not contain any valid data.");
         }
 
         List<WorkLogDetail> allWorkLogDetails = new ArrayList<>();
         List<Map<String, Object>> rowErrors = new ArrayList<>();
         double totalTime = 0;
-        for (Map<String, String> row : parsedData) {
+        for (Map<WorkLogColumn, String> row : parsedData) {
             StringJoiner rowErrorMessages = new StringJoiner("; ");
 
-            CellValidationResult<String> taskName = validateAndGetCell(row.get("taskName"), "Task Name", String.class, rowErrorMessages);
-            CellValidationResult<LocalTime> fromHour = validateAndGetCell(row.get("fromHour"), "From Hour", LocalTime.class, rowErrorMessages);
-            CellValidationResult<LocalTime> toHour = validateAndGetCell(row.get("toHour"), "To Hour", LocalTime.class, rowErrorMessages);
-            CellValidationResult<String> taskLogDurationResult = validateAndGetCell(row.get("duration"), "Duration", String.class, rowErrorMessages);
-            CellValidationResult<String> taskDescription = validateAndGetCell(row.get("description"), "Description", String.class, rowErrorMessages);
-
-            double taskLogDuration = 0;
-            if (StringUtils.isEmpty(taskLogDurationResult.getErrorMessage())) {
-                try {
-                    taskLogDuration = parseDuration(taskLogDurationResult.getValue());
-                } catch (Exception e) {
-                    rowErrorMessages.add(e.getMessage());
-                }
-            }
+            String taskName = validateAndGetCell(row, WorkLogColumn.TASK_NAME, rowErrorMessages);
+            LocalTime fromHour = validateAndGetCell(row, WorkLogColumn.FROM_HOUR, rowErrorMessages);
+            LocalTime toHour = validateAndGetCell(row, WorkLogColumn.TO_HOUR, rowErrorMessages);
+            Double taskLogDuration = validateAndGetCell(row, WorkLogColumn.DURATION, this::parseDuration, rowErrorMessages);
+            String taskDescription = validateAndGetCell(row, WorkLogColumn.DESCRIPTION, rowErrorMessages);
 
             if (rowErrorMessages.length() > 0) {
                 Map<String, Object> error = new HashMap<>();
-                error.put("row", row.get("rowNum"));
+                error.put("row", row.get(WorkLogColumn.ROW_NUMBER));
                 error.put("error", rowErrorMessages.toString());
                 rowErrors.add(error);
                 continue;
             }
 
-            totalTime += taskLogDuration;
+            double taskLogDurationValue = taskLogDuration != null ? taskLogDuration : 0;
+            totalTime += taskLogDurationValue;
 
             WorkLogDetail workLogDetail = new WorkLogDetail();
-            workLogDetail.setTaskName(taskName.getValue());
+            workLogDetail.setTaskName(taskName);
             workLogDetail.setTaskUrl(null); // @TODO --> Should be based on the user's selected project
-            workLogDetail.setStartTime(fromHour.getValue());
-            workLogDetail.setEndTime(toHour.getValue());
-            workLogDetail.setDuration(BigDecimal.valueOf(taskLogDuration));
-            workLogDetail.setDescription(taskDescription.getErrorMessage());
+            workLogDetail.setStartTime(fromHour);
+            workLogDetail.setEndTime(toHour);
+            workLogDetail.setDuration(BigDecimal.valueOf(taskLogDurationValue));
+            workLogDetail.setDescription(taskDescription);
             workLogDetail.setStatus(WorkLog.Status.NOT_SYNCED);
             allWorkLogDetails.add(workLogDetail);
         }
@@ -211,36 +204,39 @@ public class WorkLogService {
         return result;
     }
 
-    private <T> CellValidationResult<T> validateAndGetCell(String cell, String cellName, Class<T> type, StringJoiner errorMessages) {
-        CellValidationResult<T> cellValidationResult = new CellValidationResult<>();
+    private <T> T validateAndGetCell(Map<WorkLogColumn, String> row, WorkLogColumn columnType, StringJoiner errorMessages) {
+        return validateAndGetCell(row, columnType, null, errorMessages);
+    }
+
+    private <T, R> R validateAndGetCell(Map<WorkLogColumn, String> row, WorkLogColumn columnType, Function<T, R> additionalParser, StringJoiner errorMessages) {
         try {
-             cellValidationResult.setValue(parseCell(cell, cellName, type));
+            T parsedCell = (T) parseCell(row.get(columnType), columnType.getLabel(), columnType.getResultType());
+            return additionalParser != null ? additionalParser.apply(parsedCell) : (R) parsedCell;
         } catch (Exception e) {
             errorMessages.add(e.getMessage());
-            cellValidationResult.setErrorMessage(e.getMessage());
+            return null;
         }
-        return cellValidationResult;
     }
 
     private <T> T parseCell(String cell, String cellName, Class<T> expectedType) {
         if (StringUtils.isEmpty(cell)) {
-            throw new IllegalArgumentException("[" + cellName + "] cell value is empty");
+            throw new BusinessException("[" + cellName + "] cell is empty");
         }
 
         Object result = cell;
 
         if (expectedType == LocalTime.class) {
             try {
-                result = LocalTime.parse(cell, TrackeraDateUtil.getDateTime12hFormatter());
+                result = LocalTime.parse(cell, TrackeraTimeSpanUtil.getDateTime12hFormatter());
             } catch (Exception e) {
-                throw new IllegalArgumentException("Invalid time format in [" + cellName + "] cell. Expected format is hh:mm AM/PM", e);
+                throw new BusinessException("[" + cellName + "] Invalid time format. Expected format is hh:mm AM/PM");
             }
         }
 
         try {
             return expectedType.cast(result);
         } catch (Exception e) {
-            throw new IllegalArgumentException("[" + cellName + "] cell value type is not supported");
+            throw new BusinessException("[" + cellName + "] cell type is not supported");
         }
     }
 
@@ -256,7 +252,7 @@ public class WorkLogService {
                 minutes = Integer.parseInt(matcher.group(2));
             }
         } else {
-            throw new IllegalArgumentException("Invalid duration format: '" + duration + "'. Expected format is 'Xh Ym' (e.g., '2h 30m')");
+            throw new BusinessException("[" + WorkLogColumn.DURATION.getLabel() + "] Invalid format: '" + duration + "'. Expected format is 'Xh Ym' (e.g., '2h 30m')");
         }
 
         return (hours * 60) + minutes;
@@ -274,7 +270,7 @@ public class WorkLogService {
             } else {
                 DayOfWeek dayOfWeek = manageWorkLogDTO.getLogDate().getDayOfWeek();
                 String dayName = dayOfWeek.name().substring(0, 1).toUpperCase() + dayOfWeek.name().substring(1).toLowerCase();
-                String formattedDate = TrackeraDateUtil.getCompactedDateFormatter().format(manageWorkLogDTO.getLogDate());
+                String formattedDate = TrackeraTimeSpanUtil.getCompactedDateFormatter().format(manageWorkLogDTO.getLogDate());
                 workLog.setName("Worklog - " + dayName + formattedDate);
             }
 

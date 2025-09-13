@@ -1,7 +1,8 @@
 package com.mdevs.trackera.shared;
 
+import com.mdevs.trackera.shared.enums.WorkLogColumn;
 import com.mdevs.trackera.shared.exceptions.types.BusinessException;
-import com.mdevs.trackera.shared.utils.TrackeraDateUtil;
+import com.mdevs.trackera.shared.utils.TrackeraTimeSpanUtil;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
@@ -38,7 +39,7 @@ public class FileHandler {
 
     private final static int MAX_WORKLOG_ROWS = 300;
 
-    public static List<Map<String, String>> validateAndParse(MultipartFile workLogFile) {
+    public static List<Map<WorkLogColumn, String>> validateAndParse(MultipartFile workLogFile) {
         String mimeType;
         try {
             mimeType = tika.detect(workLogFile.getInputStream(), workLogFile.getOriginalFilename());
@@ -49,18 +50,18 @@ public class FileHandler {
 
         if (!ALLOWED_MIME_TYPES.contains(mimeType)) {
             LOGGER.error("Invalid MIME type detected for file {}, Detected mime type: {}", workLogFile.getOriginalFilename(), mimeType);
-            throw new IllegalArgumentException("The uploaded file type is not supported. Allowed types are excel and csv files only.");
+            throw new BusinessException("The uploaded file type is not supported. Allowed types are excel and csv files only.");
         }
         return parseWorklogFile(workLogFile);
     }
 
-    public static List<Map<String, String>> parseWorklogFile(MultipartFile workLogFile) {
+    public static List<Map<WorkLogColumn, String>> parseWorklogFile(MultipartFile workLogFile) {
         try (InputStream inputStream = workLogFile.getInputStream()) {
             String fileName = workLogFile.getOriginalFilename();
             if (StringUtils.isEmpty(fileName)) {
                 throw new IllegalArgumentException("File name is missing.");
             }
-            List<Map<String, String>> parsedData = fileName.toLowerCase().endsWith(".xlsx") ? parseExcel(inputStream) : parseCsv(inputStream);
+            List<Map<WorkLogColumn, String>> parsedData = fileName.toLowerCase().endsWith(".xlsx") ? parseExcel(inputStream) : parseCsv(inputStream);
             return parsedData.stream().filter(row -> !isRowEmpty(row)).toList();
         } catch (Exception ex) {
             LOGGER.error("Error parsing worklog file", ex);
@@ -68,8 +69,8 @@ public class FileHandler {
         }
     }
 
-    private static List<Map<String, String>> parseExcel(InputStream inputStream) throws IOException {
-        List<Map<String, String>> rows = new ArrayList<>();
+    private static List<Map<WorkLogColumn, String>> parseExcel(InputStream inputStream) throws IOException {
+        List<Map<WorkLogColumn, String>> rows = new ArrayList<>();
         int parsedRows = 0;
 
         try (Workbook workbook = new XSSFWorkbook(inputStream)) {
@@ -79,14 +80,13 @@ public class FileHandler {
                 if (row == null) {
                     continue;
                 }
-                Map<String, String> columns = new HashMap<>();
-                columns.put("rowNum", String.valueOf(row.getRowNum() + 1));
-
-                columns.put("taskName", getCellValueAsString(row.getCell(0)));
-                columns.put("fromHour", getCellValueAsString(row.getCell(1)));
-                columns.put("toHour", getCellValueAsString(row.getCell(2)));
-                columns.put("duration", getCellValueAsString(row.getCell(3)));
-                columns.put("description", getCellValueAsString(row.getCell(4)));
+                Map<WorkLogColumn, String> columns = new HashMap<>();
+                columns.put(WorkLogColumn.ROW_NUMBER, String.valueOf(row.getRowNum() + 1));
+                columns.put(WorkLogColumn.TASK_NAME, getCellValueAsString(row.getCell(0)));
+                columns.put(WorkLogColumn.FROM_HOUR, getCellValueAsString(row.getCell(1)));
+                columns.put(WorkLogColumn.TO_HOUR, getCellValueAsString(row.getCell(2)));
+                columns.put(WorkLogColumn.DURATION, getCellValueAsString(row.getCell(3)));
+                columns.put(WorkLogColumn.DESCRIPTION, getCellValueAsString(row.getCell(4)));
 
                 rows.add(columns);
                 parsedRows++;
@@ -96,8 +96,8 @@ public class FileHandler {
         return rows;
     }
 
-    private static boolean isRowEmpty(Map<String, String> row) {
-        return row == null || row.isEmpty() || row.entrySet().stream().filter(col -> !col.getKey().equals("rowNum")).allMatch(col -> StringUtils.isEmpty(col.getValue()));
+    private static boolean isRowEmpty(Map<WorkLogColumn, String> row) {
+        return row == null || row.isEmpty() || row.entrySet().stream().filter(col -> !col.getKey().equals(WorkLogColumn.ROW_NUMBER)).allMatch(col -> StringUtils.isEmpty(col.getValue()));
     }
 
     private static String getCellValueAsString(Cell cell) {
@@ -107,31 +107,27 @@ public class FileHandler {
         return switch (cell.getCellType()) {
             case STRING -> cell.getStringCellValue();
             case NUMERIC ->
-                    DateUtil.isCellDateFormatted(cell) ? TrackeraDateUtil.getSimple12hFormat().format(cell.getDateCellValue()) : String.valueOf(cell.getNumericCellValue());
+                    DateUtil.isCellDateFormatted(cell) ? TrackeraTimeSpanUtil.getSimple12hFormat().format(cell.getDateCellValue()) : String.valueOf(cell.getNumericCellValue());
             case BOOLEAN -> String.valueOf(cell.getBooleanCellValue());
             case FORMULA -> cell.getCellFormula();
             default -> "";
         };
     }
 
-    private static List<Map<String, String>> parseCsv(InputStream inputStream) throws IOException {
-        List<Map<String, String>> rows = new ArrayList<>();
+    private static List<Map<WorkLogColumn, String>> parseCsv(InputStream inputStream) throws IOException {
+        List<Map<WorkLogColumn, String>> rows = new ArrayList<>();
         int parsedRows = 0;
 
         try (Reader reader = new InputStreamReader(inputStream)) {
-            CSVParser records = CSVFormat.Builder.create(CSVFormat.DEFAULT).setSkipHeaderRecord(true).get().parse(reader);
+            CSVParser records = CSVFormat.Builder.create(CSVFormat.DEFAULT).setHeader().setSkipHeaderRecord(true).get().parse(reader);
             for (CSVRecord record : records) {
-                if (record.getRecordNumber() == 1) {
-                    continue; // Skip header row
-                }
-                Map<String, String> columns = new HashMap<>();
-                columns.put("rowNum", String.valueOf(record.getRecordNumber()));
-
-                columns.put("taskName", getAndNormalizeCsvCell(record, 0));
-                columns.put("fromHour", getAndNormalizeCsvCell(record, 1));
-                columns.put("toHour", getAndNormalizeCsvCell(record, 2));
-                columns.put("duration", getAndNormalizeCsvCell(record, 3));
-                columns.put("description", getAndNormalizeCsvCell(record, 4));
+                Map<WorkLogColumn, String> columns = new HashMap<>();
+                columns.put(WorkLogColumn.ROW_NUMBER, String.valueOf(record.getRecordNumber()));
+                columns.put(WorkLogColumn.TASK_NAME, getAndNormalizeCsvCell(record, 0));
+                columns.put(WorkLogColumn.FROM_HOUR, getAndNormalizeCsvCell(record, 1));
+                columns.put(WorkLogColumn.TO_HOUR, getAndNormalizeCsvCell(record, 2));
+                columns.put(WorkLogColumn.DURATION, getAndNormalizeCsvCell(record, 3));
+                columns.put(WorkLogColumn.DESCRIPTION, getAndNormalizeCsvCell(record, 4));
 
                 rows.add(columns);
                 parsedRows++;
@@ -147,7 +143,7 @@ public class FileHandler {
         }
 
         String trimmed = record.get(index).trim();
-        // Parsing duration column in HH:MM format
+        // Parsing from/to time columns in HH:MM format
         if (trimmed.matches("\\d{1,2}:\\d{2}\\s*[AaPp][Mm]")) {
             String[] parts = trimmed.split(":");
             String hour = parts[0];
@@ -156,7 +152,6 @@ public class FileHandler {
                 return String.format("0%s:%s", hour, minuteAndAmPm);
             }
         }
-
         return trimmed;
     }
 

@@ -10,9 +10,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 public class WorkLogSearchFilterBuilder {
     private final List<SearchFilter> filters = new ArrayList<>();
@@ -152,6 +150,7 @@ public class WorkLogSearchFilterBuilder {
             }
 
             predicates.add(criteriaBuilder.greaterThanOrEqualTo(root.get("workDate"), AppConfig.getMinQueryableDate()));
+            predicates.add(criteriaBuilder.equal(root.get("user").get("id"), Objects.requireNonNull(AppConfig.getCurrentUser()).getId()));
 
             if (query != null) {
                 query.orderBy(criteriaBuilder.desc(root.get("workDate")));

@@ -1,4 +1,4 @@
-package com.mdevs.trackera.shared;
+package com.mdevs.trackera.shared.enums;
 
 
 public interface BaseEnum {
