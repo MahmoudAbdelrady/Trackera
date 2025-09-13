@@ -1,6 +1,6 @@
 import { Modal } from "antd";
 import classes from "./scss/worklog-modal.module.css";
-import type { WorklogModalProps } from "../../../shared/types";
+import type { WorklogModalProps } from "../../../../shared/types";
 
 const WorklogModal = (props: WorklogModalProps) => {
   return (

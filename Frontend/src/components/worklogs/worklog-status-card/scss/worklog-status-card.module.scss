@@ -1,5 +1,5 @@
-@use "../../../utils/styles/colors" as *;
-@use "../../../utils/styles/mixins" as *;
+@use "../../../../shared/styles/colors" as *;
+@use "../../../../shared/styles/mixins" as *;
 
 .worklog_status_card {
   @include between;
@@ -7,14 +7,14 @@
   flex: 1;
   padding: 20px;
   border-radius: 8px;
-  height: 115px;
-  @media (min-width: 768px) and (max-width: 860px) {
-    height: 140px;
+  height: 125px;
+  @media (min-width: 768px) and (max-width: 992px) {
+    height: 160px;
   }
   @media (max-width: 768px) {
     width: 100%;
   }
-  &.main {
+  &.logged {
     background-color: rgba($mainColor, 0.1);
     .card_info {
       .card_label {
@@ -30,7 +30,7 @@
       color: $mainColor;
     }
   }
-  &.success {
+  &.target {
     background-color: rgba($greenColor, 0.1);
     .card_info {
       .card_label {
@@ -45,7 +45,7 @@
       color: $greenColor;
     }
   }
-  &.info {
+  &.remaining {
     background-color: rgba($orangeColor, 0.1);
     .card_info {
       .card_label {

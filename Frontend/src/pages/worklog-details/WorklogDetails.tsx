@@ -23,7 +23,7 @@ import {
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { getPaddedItem } from "../../utils";
-import worklogModalClasses from "../../components/worklogs/workklog-modal/scss/worklog-modal.module.css";
+import worklogModalClasses from "../../components/worklogs/modals/worklog-modal/scss/worklog-modal.module.css";
 
 const WorklogDetails = () => {
   const [editDetailVisible, setEditDetailVisible] = useState<boolean>(false);
@@ -58,14 +58,14 @@ const WorklogDetails = () => {
       taskName: "SAL-9012",
       taskUrl: "https://jira.example.com/browse/SAL-9012",
       totalHours: 6.45,
-      status: "UNSYNCED",
+      status: "NOT_SYNCED",
     },
     {
       id: 4,
       taskName: "SAL-5486",
       taskUrl: "https://jira.example.com/browse/SAL-5486",
       totalHours: 2.45,
-      status: "UNSYNCED",
+      status: "NOT_SYNCED",
     },
   ];
 
@@ -89,14 +89,14 @@ const WorklogDetails = () => {
       fromTime: "09:00",
       toTime: "11:00",
       description: "Reviewed PR Z",
-      status: "UNSYNCED",
+      status: "NOT_SYNCED",
     },
     {
       id: 4,
       fromTime: "11:30",
       toTime: "12:30",
       description: "Team meeting",
-      status: "UNSYNCED",
+      status: "NOT_SYNCED",
     },
   ];
 

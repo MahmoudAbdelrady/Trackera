@@ -1,5 +1,5 @@
-@use "../../../../utils/styles/colors" as *;
-@use "../../../../utils/styles/mixins" as *;
+@use "../../../../../shared/styles/colors" as *;
+@use "../../../../../shared/styles/mixins" as *;
 
 .worklog_modal {
   .header {
@@ -21,11 +21,17 @@
     margin-top: 20px;
     .form_group {
       width: 100%;
-
+      .form_item {
+        margin-bottom: 0;
+        width: 100%;
+      }
       &:not(.upload_group) {
         @include start;
         .label {
           margin-right: 10px;
+        }
+        @media (max-width: 492px) {
+          align-items: flex-start;
         }
       }
       &.upload_group {
@@ -52,5 +58,8 @@
         }
       }
     }
+  }
+  .file_errors_container {
+    margin-top: 20px;
   }
 }

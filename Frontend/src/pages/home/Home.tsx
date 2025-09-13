@@ -1,106 +1,91 @@
-import {
-  CircleCheckBig,
-  Clock,
-  Eye,
-  Info,
-  SquarePen,
-  Trash,
-  ClipboardPlus,
-  CalendarSync,
-  CalendarX2,
-  Inbox,
-} from "lucide-react";
-import {
-  AppLayout,
-  SearchFilter,
-  WorklogModal,
-  WorklogStatusCard,
-  WorklogTable,
-} from "../../components";
+import { Eye, SquarePen, Trash, ClipboardPlus, CalendarSync, CalendarX2 } from "lucide-react";
+import { ManageWorkLogModal, AppLayout, SearchFilter, WorklogModal, WorklogStatusCard, WorklogTable } from "../../components";
 import classes from "./scss/home.module.css";
-import { DatePicker, Input, Switch, Tooltip, type TableProps } from "antd";
-import { useState } from "react";
-import Dragger from "antd/es/upload/Dragger";
-import dayjs from "dayjs";
+import { Switch, Tooltip, type TableProps } from "antd";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   evaluationMetadata,
   statusMetadata,
+  type WorkLogSummaryCard,
+  type PaginatedResponse,
   type Worklog,
   type WorkLogEvaluationType,
   type WorkLogStatusType,
+  type WorkLogSearchFilter,
 } from "../../shared/types";
-import { getPaddedItem } from "../../utils";
+import { createPaginationConfig, getPaddedItem } from "../../utils";
 import worklogTableClasses from "../../components/worklogs/worklog-table/scss/worklog-table.module.css";
-import worklogModalClasses from "../../components/worklogs/workklog-modal/scss/worklog-modal.module.css";
+import worklogModalClasses from "../../components/worklogs/modals/worklog-modal/scss/worklog-modal.module.css";
+import requestInstance from "../../shared/axios/request-instance";
+import { showErrorToast, showSuccessToast } from "../../utils/toast-handler/showToast";
 
 const Home = () => {
-  const [addWorkLogVisible, setAddWorkLogVisible] = useState<boolean>(false);
-  const [editWorkLogVisible, setEditWorkLogVisible] = useState<boolean>(false);
-  const [deleteWorkLogVisible, setDeleteWorkLogVisible] =
-    useState<boolean>(false);
-  const workLogStatusCards = [
-    {
-      cardLabel: "Total Logged Hours",
-      cardValue: "34.7",
-      cardIcon: <Clock />,
-      cardColorTheme: "main",
-    },
-    {
-      cardLabel: "Target Hours",
-      cardValue: "40",
-      cardIcon: <CircleCheckBig />,
-      cardColorTheme: "success",
-    },
-    {
-      cardLabel: "Hours Left",
-      cardValue: "5.3",
-      cardIcon: <Info />,
-      cardColorTheme: "info",
-      cardSubLabel: "Approx. 0.7 days",
-    },
-  ];
+  const [manageWorkLogVisible, setManageWorkLogVisible] = useState<boolean>(false);
+  const [deleteWorkLogVisible, setDeleteWorkLogVisible] = useState<boolean>(false);
+  const [isFetchingWorkLogs, setIsFetchingWorkLogs] = useState<boolean>(true);
+  const [isDeletingWorkLog, setIsDeletingWorkLog] = useState<boolean>(false);
+  const [fetchWorkLog, setFetchWorkLog] = useState<boolean>(true);
+  const [fetchSummary, setFetchSummary] = useState<boolean>(true);
+  const [workLogsResponse, setWorkLogsResponse] = useState<PaginatedResponse<Worklog> | null>(null);
+  const [workLogSummary, setWorkLogSummary] = useState<WorkLogSummaryCard[]>([]);
+  const [selectedWorkLog, setSelectedWorkLog] = useState<Worklog | undefined>(undefined);
+  const [searchFilters, setSearchFilters] = useState<WorkLogSearchFilter[]>([]);
 
-  const worklogs: Worklog[] = [
-    {
-      id: 1,
-      logName: "Frontend Development",
-      totalHours: 10,
-      date: "2023-10-01",
-      evaluation: "EXCELLENT",
-      status: "SYNCED",
-    },
-    {
-      id: 2,
-      logName: "Backend Development",
-      totalHours: 7.45,
-      date: "2023-10-01",
-      evaluation: "GOOD",
-      status: "PARTIALLY",
-    },
-    {
-      id: 3,
-      logName: "Bug Fixing",
-      totalHours: 6.45,
-      date: "2023-10-01",
-      evaluation: "MODERATE",
-      status: "UNSYNCED",
-    },
-    {
-      id: 4,
-      logName: "Reviewing",
-      totalHours: 2.45,
-      date: "2023-10-01",
-      evaluation: "POOR",
-      status: "UNSYNCED",
-    },
-  ];
+  useEffect(() => {
+    if (fetchWorkLog) {
+      fetchWorkLogs();
+      setFetchWorkLog(false);
+    }
+  }, [fetchWorkLog]);
+
+  useEffect(() => {
+    if (fetchSummary) {
+      fetchWorkLogSummary();
+      setFetchSummary(false);
+    }
+  }, [fetchSummary]);
+
+  const fetchWorkLogs = async (pageNum: number = 0, pageSize: number = 10) => {
+    setIsFetchingWorkLogs(true);
+    try {
+      const response = await requestInstance.post(`/worklog/search?page=${pageNum}&size=${pageSize}`, searchFilters);
+      setWorkLogsResponse(response.data);
+    } catch (error) {
+      showErrorToast(error);
+    }
+    setIsFetchingWorkLogs(false);
+  };
+
+  const fetchWorkLogSummary = async () => {
+    try {
+      const response = await requestInstance.get("/worklog/summary");
+      setWorkLogSummary(response.data);
+    } catch (error: any) {
+      showErrorToast(error);
+    }
+  };
+
+  const deleteWorkLog = async (workLogId: number) => {
+    setIsDeletingWorkLog(true);
+    try {
+      const response = await requestInstance.delete(`/worklog/${workLogId}`);
+      showSuccessToast(response.data);
+      setFetchWorkLog(true);
+      setFetchSummary(true);
+    } catch (error: any) {
+      showErrorToast(error);
+    }
+    setIsDeletingWorkLog(false);
+    setDeleteWorkLogVisible(false);
+    setSelectedWorkLog(undefined);
+  };
 
   const tableColumns: TableProps<Worklog>["columns"] = [
     {
       title: "Log Name",
-      dataIndex: "logName",
-      key: "logName",
+      dataIndex: "name",
+      key: "name",
     },
     {
       title: "Total Hours",
@@ -109,8 +94,8 @@ const Home = () => {
     },
     {
       title: "Date",
-      dataIndex: "date",
-      key: "date",
+      dataIndex: "workDate",
+      key: "workDate",
     },
     {
       title: "Evaluation",
@@ -118,12 +103,7 @@ const Home = () => {
       key: "evaluation",
       render: (_, { evaluation }) => {
         const meta = evaluationMetadata[evaluation as WorkLogEvaluationType];
-        return getPaddedItem(
-          worklogTableClasses,
-          "evaluation_item",
-          meta.label,
-          meta.className
-        );
+        return getPaddedItem(worklogTableClasses, "evaluation_item", meta.label, meta.className);
       },
     },
     {
@@ -132,12 +112,7 @@ const Home = () => {
       key: "status",
       render: (_, { status }) => {
         const meta = statusMetadata[status as WorkLogStatusType];
-        return getPaddedItem(
-          worklogTableClasses,
-          "status_item",
-          meta.label,
-          meta.className
-        );
+        return getPaddedItem(worklogTableClasses, "status_item", meta.label, meta.className);
       },
     },
     {
@@ -147,36 +122,33 @@ const Home = () => {
         <div className={worklogTableClasses.actions_container}>
           {record.status === "SYNCED" ? (
             <Tooltip title="Unsync from Jira">
-              <CalendarX2
-                onClick={() => {}}
-                className={`${worklogTableClasses.log_action_btn} ${worklogTableClasses.unsync}`}
-              />
+              <CalendarX2 onClick={() => {}} className={`${worklogTableClasses.log_action_btn} ${worklogTableClasses.unsync}`} />
             </Tooltip>
           ) : (
             <Tooltip title="Sync to Jira">
-              <CalendarSync
-                onClick={() => {}}
-                className={`${worklogTableClasses.log_action_btn} ${worklogTableClasses.sync}`}
-              />
+              <CalendarSync onClick={() => {}} className={`${worklogTableClasses.log_action_btn} ${worklogTableClasses.sync}`} />
             </Tooltip>
           )}
           <Tooltip title="Edit">
             <SquarePen
-              onClick={() => setEditWorkLogVisible(true)}
+              onClick={() => {
+                setSelectedWorkLog(record);
+                setManageWorkLogVisible(true);
+              }}
               className={`${worklogTableClasses.log_action_btn} ${worklogTableClasses.edit}`}
             />
           </Tooltip>
           <Tooltip title="View">
-            <Link
-              to={`/worklog-details/${record.id}`}
-              className={`${worklogTableClasses.log_action_btn} ${worklogTableClasses.view}`}
-            >
+            <Link to={`/worklog-details/${record.id}`} className={`${worklogTableClasses.log_action_btn} ${worklogTableClasses.view}`}>
               <Eye />
             </Link>
           </Tooltip>
           <Tooltip title="Delete">
             <Trash
-              onClick={() => setDeleteWorkLogVisible(true)}
+              onClick={() => {
+                setSelectedWorkLog(record);
+                setDeleteWorkLogVisible(true);
+              }}
               className={`${worklogTableClasses.log_action_btn} ${worklogTableClasses.delete}`}
             />
           </Tooltip>
@@ -187,115 +159,63 @@ const Home = () => {
 
   return (
     <>
-      <WorklogModal
-        title="Add Worklog"
-        properties={{
-          open: addWorkLogVisible,
-          centered: true,
-          okText: "Add",
-          onOk: () => setAddWorkLogVisible(false),
-          onCancel: () => setAddWorkLogVisible(false),
-        }}
-      >
-        <form className={worklogModalClasses.worklog_form}>
-          <div className={worklogModalClasses.form_group}>
-            <span className={worklogModalClasses.label}>Log Name:</span>
-            <Input
-              placeholder="Enter log name"
-              style={{ width: "70%", marginRight: "10px" }}
-            />
-            <Tooltip title="If not provided, the log name will be auto-generated based on the upload date and weekday.">
-              <Info size={22} cursor={"pointer"} />
-            </Tooltip>
-          </div>
-          <div className={worklogModalClasses.form_group}>
-            <span className={worklogModalClasses.label}>Log date:</span>
-            <DatePicker placeholder="Select log date" defaultValue={dayjs()} />
-          </div>
-          <div
-            className={`${worklogModalClasses.form_group} ${worklogModalClasses.upload_group}`}
-          >
-            <span className={worklogModalClasses.label}>Upload log file:</span>
-            <Dragger className={worklogModalClasses.upload_box}>
-              <div className={worklogModalClasses.upload_icon_box}>
-                <Inbox className={worklogModalClasses.upload_icon} />
-              </div>
-              <span className={worklogModalClasses.upload_title}>
-                Click or drag worklog file to this area to upload
-              </span>
-              <p className={worklogModalClasses.upload_subtitle}>
-                Supported formats: .xlsx
-              </p>
-            </Dragger>
-          </div>
-          <div className={worklogModalClasses.form_group}>
-            <span className={worklogModalClasses.label}>
-              Sync to Jira after upload:
-            </span>
-            <Switch />
-          </div>
-        </form>
-      </WorklogModal>
-      <WorklogModal
-        title="Edit Worklog"
-        properties={{
-          open: editWorkLogVisible,
-          centered: true,
-          okText: "Save",
-          onOk: () => {},
-          onCancel: () => setEditWorkLogVisible(false),
-        }}
-      >
-        <span>To Be Implemented</span>
-      </WorklogModal>
+      {manageWorkLogVisible && (
+        <ManageWorkLogModal
+          setIsOpen={setManageWorkLogVisible}
+          setFetchWorkLog={setFetchWorkLog}
+          setFetchSummary={setFetchSummary}
+          selectedWorkLog={selectedWorkLog}
+          setSelectedWorkLog={setSelectedWorkLog}
+        />
+      )}
       <WorklogModal
         title="Delete Worklog"
         properties={{
           open: deleteWorkLogVisible,
           centered: true,
           okText: "Delete",
-          okButtonProps: { danger: true },
-          onOk: () => {},
-          onCancel: () => setDeleteWorkLogVisible(false),
+          closable: !isDeletingWorkLog,
+          keyboard: !isDeletingWorkLog,
+          maskClosable: !isDeletingWorkLog,
+          okButtonProps: { danger: true, loading: isDeletingWorkLog, disabled: isDeletingWorkLog },
+          cancelButtonProps: { disabled: isDeletingWorkLog },
+          onOk: () => deleteWorkLog(selectedWorkLog?.id!),
+          onCancel: () => {
+            setDeleteWorkLogVisible(false);
+            setSelectedWorkLog(undefined);
+          },
         }}
       >
-        <p className={worklogModalClasses.delete_message}>
-          Are you sure you want to delete this worklog? This action cannot be
-          undone.
-        </p>
+        <p className={worklogModalClasses.delete_message}>Are you sure you want to delete this worklog? This action cannot be undone.</p>
         <div className={worklogModalClasses.switch_option}>
-          <span className={worklogModalClasses.label}>
-            Also unsync from Jira:
-          </span>
+          <span className={worklogModalClasses.label}>Also unsync from Jira:</span>
           <Switch />
         </div>
       </WorklogModal>
       <AppLayout>
         <div className={classes.worklog_status_cards_container}>
-          {workLogStatusCards.map((card, index) => (
-            <WorklogStatusCard
-              key={index}
-              cardLabel={card.cardLabel}
-              cardValue={card.cardValue}
-              cardIcon={card.cardIcon}
-              cardColorTheme={card.cardColorTheme}
-              cardSubLabel={card.cardSubLabel}
-            />
+          {workLogSummary.map((card, index) => (
+            <WorklogStatusCard key={index} label={card.label} subLabel={card.subLabel} code={card.code} value={card.value} />
           ))}
         </div>
         <div className={classes.worklogs_content}>
-          <SearchFilter />
+          <SearchFilter filters={searchFilters} setFilters={setSearchFilters} setFetchWorkLog={setFetchWorkLog} />
           <div className={classes.worklogs_container}>
             <WorklogTable<Worklog>
               properties={{
                 columns: tableColumns,
-                dataSource: worklogs,
+                dataSource: workLogsResponse?.content || [],
+                loading: isFetchingWorkLogs,
+                locale: {
+                  emptyText: isFetchingWorkLogs ? "Loading..." : "No worklogs found",
+                },
+                pagination: createPaginationConfig(workLogsResponse, fetchWorkLogs, "worklogs"),
               }}
               actionButtons={[
                 {
                   label: "Add Worklog",
                   icon: <ClipboardPlus />,
-                  onClick: () => setAddWorkLogVisible(true),
+                  onClick: () => setManageWorkLogVisible(true),
                 },
               ]}
             />

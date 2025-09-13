@@ -1,45 +1,5 @@
-@use "../../../utils/styles/colors" as *;
-@use "../../../utils/styles/mixins" as *;
+@use "../../../shared/styles/colors" as *;
 
-.input_group {
-  @include start-col;
-  flex-direction: column;
-  width: 100%;
-  .input_label {
-    font-size: 14px;
-    position: relative;
-    margin-bottom: 5px;
-    &::after {
-      content: "*";
-      color: $redColor;
-      position: absolute;
-      right: -10px;
-      top: -5px;
-      font-size: 15px;
-    }
-  }
-  .input_field {
-    padding: 10px 12px;
-  }
-  .input_icon {
-    color: $lightGray2;
-    width: 20px;
-    height: 20px;
-    margin-right: 5px;
-  }
-}
-
-.forget_password_box {
-  width: 100%;
-  @include end;
-  .forget_password_link {
-    color: $mainColor;
-    font-size: 14px;
-    text-decoration: none;
-    width: fit-content;
-    &:hover {
-      color: scale-color($mainColor, -20%);
-      text-decoration: underline;
-    }
-  }
+.test {
+  color: $mainColor;
 }

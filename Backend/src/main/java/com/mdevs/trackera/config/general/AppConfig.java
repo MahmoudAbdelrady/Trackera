@@ -17,6 +17,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.time.LocalDate;
 import java.util.Properties;
 
 @Configuration
@@ -74,5 +75,9 @@ public class AppConfig {
     public static User getCurrentUser() {
         Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         return (principal instanceof AuthFilterUserDTO) ? applicationContext.getBean(UserRepository.class).findByEmail(((AuthFilterUserDTO) principal).getEmail()) : null;
+    }
+
+    public static LocalDate getMinQueryableDate() {
+        return LocalDate.now().minusYears(2).withDayOfYear(1);
     }
 }
