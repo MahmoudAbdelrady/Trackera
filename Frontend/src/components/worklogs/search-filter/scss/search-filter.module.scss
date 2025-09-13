@@ -14,6 +14,10 @@
         @include start-rev;
         margin-left: 10px;
         gap: 5px;
+        .filter_form_item {
+          margin-bottom: 0;
+          width: 100%;
+        }
         &.with_operator {
           @media (max-width: 768px) {
             flex-direction: column;

@@ -6,7 +6,7 @@ import type { WorkLogSummaryCard } from "../../../shared/types";
 const WorklogStatusCard = (props: WorkLogSummaryCard) => {
   const getCardIcon = (code: string): React.ReactNode => {
     switch (code) {
-      case "total":
+      case "logged":
         return <Clock />;
       case "target":
         return <CircleCheckBig />;

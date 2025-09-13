@@ -23,6 +23,10 @@
 .worklog_modal .worklog_form .form_group {
   width: 100%;
 }
+.worklog_modal .worklog_form .form_group .form_item {
+  margin-bottom: 0;
+  width: 100%;
+}
 .worklog_modal .worklog_form .form_group:not(.upload_group) {
   display: flex;
   justify-content: flex-start;
@@ -30,6 +34,11 @@
 }
 .worklog_modal .worklog_form .form_group:not(.upload_group) .label {
   margin-right: 10px;
+}
+@media (max-width: 492px) {
+  .worklog_modal .worklog_form .form_group:not(.upload_group) {
+    align-items: flex-start;
+  }
 }
 .worklog_modal .worklog_form .form_group.upload_group {
   display: flex;

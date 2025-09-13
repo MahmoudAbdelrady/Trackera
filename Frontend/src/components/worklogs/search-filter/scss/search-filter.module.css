@@ -19,6 +19,10 @@
   margin-left: 10px;
   gap: 5px;
 }
+.search_filters_container .search_filters_fields_grid .search_filter_input .filter_input_box .filter_form_item {
+  margin-bottom: 0;
+  width: 100%;
+}
 @media (max-width: 768px) {
   .search_filters_container .search_filters_fields_grid .search_filter_input .filter_input_box.with_operator {
     flex-direction: column;

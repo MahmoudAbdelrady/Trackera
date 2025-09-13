@@ -91,9 +91,11 @@ const ManageWorkLogModal = (props: ManageWorkLogModalProps) => {
         props.setFetchSummary(true);
       } catch (error: any) {
         if (error.response?.data.isError) {
+          showErrorToast(error.response?.data.message);
           setWorklogFileErrors(error.response?.data.errors);
         } else {
           showErrorToast(error);
+          setWorklogFileErrors([]);
         }
       }
       setIsLoading(false);
@@ -107,7 +109,7 @@ const ManageWorkLogModal = (props: ManageWorkLogModalProps) => {
       key: "row",
     },
     {
-      title: "Error",
+      title: "Errors",
       dataIndex: "error",
       key: "error",
     },
@@ -134,7 +136,7 @@ const ManageWorkLogModal = (props: ManageWorkLogModalProps) => {
     >
       <form className={worklogModalClasses.worklog_form}>
         <div className={worklogModalClasses.form_group}>
-          <Form.Item style={{ marginBottom: 0, width: "100%" }} validateStatus={getFormikFieldStatus(manageWorkLogFormik, "logName")} help={getFormikFieldError(manageWorkLogFormik, "logName")}>
+          <Form.Item className={worklogModalClasses.form_item} validateStatus={getFormikFieldStatus(manageWorkLogFormik, "logName")} help={getFormikFieldError(manageWorkLogFormik, "logName")}>
             <span className={worklogModalClasses.label}>Log Name:</span>
             <Input
               placeholder="Enter log name"
@@ -142,7 +144,7 @@ const ManageWorkLogModal = (props: ManageWorkLogModalProps) => {
               value={manageWorkLogFormik.values.logName}
               onChange={manageWorkLogFormik.handleChange}
               onBlur={manageWorkLogFormik.handleBlur}
-              style={{ width: "70%", marginRight: "10px" }}
+              style={{ width: "80%" }}
               disabled={isLoading}
             />
           </Form.Item>
@@ -154,7 +156,7 @@ const ManageWorkLogModal = (props: ManageWorkLogModalProps) => {
         </div>
         <div className={worklogModalClasses.form_group}>
           <Form.Item
-            style={{ marginBottom: 0, width: "100%" }}
+            className={worklogModalClasses.form_item}
             validateStatus={getFormikFieldStatus(manageWorkLogFormik, "logDate")}
             help={getFormikFieldError(manageWorkLogFormik, "logDate") as string}
           >
@@ -170,7 +172,7 @@ const ManageWorkLogModal = (props: ManageWorkLogModalProps) => {
             {isEditMode() &&
               manageWorkLogFormik.values.logDate !== null &&
               formatDate(manageWorkLogFormik.values.logDate) !== props.selectedWorkLog?.workDate &&
-              props.selectedWorkLog?.status !== "NOT_SYNCED" && <Alert message="Changing the log date will be synced automatically to jira" type="warning" showIcon style={{ marginTop: "10px" }} />}
+              props.selectedWorkLog?.status !== "NOT_SYNCED" && <Alert message="Changing the log date will be applied to the synced worklogs" type="warning" showIcon style={{ marginTop: "10px" }} />}
           </Form.Item>
         </div>
         {isEditMode() && (
@@ -182,7 +184,7 @@ const ManageWorkLogModal = (props: ManageWorkLogModalProps) => {
         {(!isEditMode() || manageWorkLogFormik.values.reEvaluate) && (
           <>
             <div className={`${worklogModalClasses.form_group} ${worklogModalClasses.upload_group}`}>
-              <Form.Item style={{ marginBottom: 0, width: "100%" }} validateStatus={getFormikFieldStatus(manageWorkLogFormik, "logFile")} help={getFormikFieldError(manageWorkLogFormik, "logFile")}>
+              <Form.Item className={worklogModalClasses.form_item} validateStatus={getFormikFieldStatus(manageWorkLogFormik, "logFile")} help={getFormikFieldError(manageWorkLogFormik, "logFile")}>
                 <span className={worklogModalClasses.label}>Upload log file:</span>
                 <Dragger
                   className={worklogModalClasses.upload_box}
@@ -227,7 +229,7 @@ const ManageWorkLogModal = (props: ManageWorkLogModalProps) => {
               properties={{
                 columns: worklogFileErrorsColumns,
                 dataSource: worklogFileErrors,
-                pagination: { pageSize: 5 },
+                pagination: { pageSize: 5, showSizeChanger: false, style: { marginRight: "16px" } },
               }}
               actionButtons={[]}
             />

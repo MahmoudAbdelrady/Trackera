@@ -8,13 +8,13 @@
   padding: 20px;
   border-radius: 8px;
   height: 125px;
-  @media (min-width: 768px) and (max-width: 860px) {
-    height: 165px;
+  @media (min-width: 768px) and (max-width: 992px) {
+    height: 160px;
   }
   @media (max-width: 768px) {
     width: 100%;
   }
-  &.total {
+  &.logged {
     background-color: rgba($mainColor, 0.1);
     .card_info {
       .card_label {

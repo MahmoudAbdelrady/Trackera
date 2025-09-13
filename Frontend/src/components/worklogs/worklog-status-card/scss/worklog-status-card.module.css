@@ -8,9 +8,9 @@
   border-radius: 8px;
   height: 125px;
 }
-@media (min-width: 768px) and (max-width: 860px) {
+@media (min-width: 768px) and (max-width: 992px) {
   .worklog_status_card {
-    height: 165px;
+    height: 160px;
   }
 }
 @media (max-width: 768px) {
@@ -18,16 +18,16 @@
     width: 100%;
   }
 }
-.worklog_status_card.total {
+.worklog_status_card.logged {
   background-color: rgba(37, 99, 235, 0.1);
 }
-.worklog_status_card.total .card_info .card_label {
+.worklog_status_card.logged .card_info .card_label {
   color: #2563eb;
 }
-.worklog_status_card.total .card_info .card_sub_label {
+.worklog_status_card.logged .card_info .card_sub_label {
   color: #2563eb;
 }
-.worklog_status_card.total .card_icon {
+.worklog_status_card.logged .card_icon {
   background-color: rgba(37, 99, 235, 0.2);
   color: #2563eb;
 }

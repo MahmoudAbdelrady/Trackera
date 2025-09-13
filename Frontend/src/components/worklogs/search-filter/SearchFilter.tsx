@@ -166,7 +166,7 @@ const SearchFilter = (props: WorkLogsFilterProps) => {
               <span className={classes.filter_label}>Date From:</span>
               <div className={classes.filter_input_box}>
                 <Form.Item
-                  style={{ marginBottom: 0, width: "100%" }}
+                  className={classes.filter_form_item}
                   validateStatus={getFormikFieldStatus(searchFormik, "dateFrom.value")}
                   help={getFormikFieldError(searchFormik, "dateFrom.value") as string}
                 >
@@ -223,7 +223,7 @@ const SearchFilter = (props: WorkLogsFilterProps) => {
                 <span className={classes.filter_label}>Total Hours:</span>
                 <div className={`${classes.filter_input_box} ${classes.with_operator}`}>
                   <Form.Item
-                    style={{ marginBottom: 0, width: "100%" }}
+                    className={classes.filter_form_item}
                     validateStatus={getFormikFieldStatus(searchFormik, "logHours.operator")}
                     help={getFormikFieldError(searchFormik, "logHours.operator") as string}
                   >
@@ -239,7 +239,7 @@ const SearchFilter = (props: WorkLogsFilterProps) => {
                   </Form.Item>
                   <div className={classes.filter_range_inputs}>
                     <Form.Item
-                      style={{ marginBottom: 0, width: "100%" }}
+                      className={classes.filter_form_item}
                       validateStatus={getFormikFieldStatus(searchFormik, "logHours.value")}
                       help={getFormikFieldError(searchFormik, "logHours.value") as string}
                     >
@@ -255,7 +255,7 @@ const SearchFilter = (props: WorkLogsFilterProps) => {
                     </Form.Item>
                     {searchFormik.values.logHours.operator === "BETWEEN" && (
                       <Form.Item
-                        style={{ marginBottom: 0, width: "100%" }}
+                        className={classes.filter_form_item}
                         validateStatus={getFormikFieldStatus(searchFormik, "logHours.extraValue")}
                         help={getFormikFieldError(searchFormik, "logHours.extraValue") as string}
                       >
