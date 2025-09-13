@@ -13,6 +13,7 @@ import AuthResult from "./auth/auth-result/AuthResult";
 import OAuthBtns from "./auth/oauth-btns/OAuthBtns";
 import ManageWorkLogModal from "./worklogs/modals/manage-worklog-modal/ManageWorkLogModal";
 import CollapsibleSection from "./collapsible-section/CollapsibleSection";
+import WorklogInfo from "./worklogs/worklog-info/WorklogInfo";
 
 export {
   AuthLayout,
@@ -30,4 +31,5 @@ export {
   OAuthBtns,
   ManageWorkLogModal,
   CollapsibleSection,
+  WorklogInfo,
 };

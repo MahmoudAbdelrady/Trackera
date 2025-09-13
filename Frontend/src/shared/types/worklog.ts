@@ -5,7 +5,7 @@ type WorkLogEvaluationType = "EXCELLENT" | "GOOD" | "MODERATE" | "POOR";
 type WorkLogStatusType = "SYNCED" | "PARTIALLY" | "NOT_SYNCED";
 
 interface Worklog {
-  id: number;
+  logId: string;
   name: string;
   totalHours: string;
   workDate: string;
@@ -13,7 +13,7 @@ interface Worklog {
   status: WorkLogStatusType;
 }
 
-interface WorklogEntry {
+interface WorklogTask {
   id: number;
   taskName: string;
   taskUrl: string;
@@ -21,7 +21,7 @@ interface WorklogEntry {
   status: WorkLogStatusType;
 }
 
-interface WorklogTask {
+interface WorklogEntry {
   id: number;
   fromTime: string;
   toTime: string;
@@ -60,7 +60,7 @@ interface WorklogTableActionButtonProps {
   onClick: () => void;
 }
 
-interface WorklogTableProps<T = Worklog | WorklogEntry | WorklogTask | WorklogError> {
+interface WorklogTableProps<T = Worklog | WorklogTask | WorklogEntry | WorklogError> {
   properties: TableProps<T>;
   actionButtons: WorklogTableActionButtonProps[];
 }
@@ -103,8 +103,8 @@ export type {
   WorkLogEvaluationType,
   WorkLogStatusType,
   Worklog,
-  WorklogEntry,
   WorklogTask,
+  WorklogEntry,
   WorklogError,
   LogMeta,
   WorklogTableActionButtonProps,
