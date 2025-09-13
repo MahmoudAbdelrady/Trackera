@@ -1,23 +1,21 @@
 package com.mdevs.trackera.dto.worklog;
 
 import com.mdevs.trackera.entity.WorkLog;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
-
-import java.time.LocalDate;
 
 @Getter
 @Setter
-public class WorkLogInfoDTO {
-    private String logId;
+@NoArgsConstructor
+@AllArgsConstructor
+public class WorkLogTaskDTO {
+    private String taskName;
 
-    private String name;
+    private String taskUrl;
 
     private String totalHours;
-
-    private LocalDate workDate;
-
-    private WorkLog.Evaluation evaluation;
 
     private WorkLog.Status status;
 }

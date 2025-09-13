@@ -4,6 +4,7 @@ import com.mdevs.trackera.config.general.AppConfig;
 import com.mdevs.trackera.dto.worklog.ManageWorkLogDTO;
 import com.mdevs.trackera.dto.worklog.WorkLogInfoDTO;
 import com.mdevs.trackera.dto.worklog.WorkLogSummaryDTO;
+import com.mdevs.trackera.dto.worklog.WorkLogTaskDTO;
 import com.mdevs.trackera.entity.WorkLog;
 import com.mdevs.trackera.entity.WorkLogDetail;
 import com.mdevs.trackera.repository.WorkLogDetailRepository;
@@ -11,6 +12,8 @@ import com.mdevs.trackera.repository.WorkLogRepository;
 import com.mdevs.trackera.shared.FileHandler;
 import com.mdevs.trackera.shared.enums.WorkLogColumn;
 import com.mdevs.trackera.shared.exceptions.types.BusinessException;
+import com.mdevs.trackera.shared.exceptions.types.NotFoundException;
+import com.mdevs.trackera.shared.exceptions.types.UnauthorizedException;
 import com.mdevs.trackera.shared.search_filter.SearchFilter;
 import com.mdevs.trackera.shared.search_filter.WorkLogSearchFilterBuilder;
 import com.mdevs.trackera.shared.utils.TrackeraTimeSpanUtil;
@@ -59,10 +62,19 @@ public class WorkLogService {
         Page<WorkLog> workLogList = workLogRepository.findAll(searchFilterBuilder.build(), pageable);
         List<WorkLogInfoDTO> workLogInfoDTOList = workLogList.getContent().stream().map(workLog -> {
             WorkLogInfoDTO workLogInfoDTO = modelMapper.map(workLog, WorkLogInfoDTO.class);
+            workLogInfoDTO.setLogId(workLog.getUuid());
             workLogInfoDTO.setTotalHours(TrackeraTimeSpanUtil.formatDuration(workLog.getTotalHours()));
             return workLogInfoDTO;
         }).toList();
         return new PageImpl<>(workLogInfoDTOList, pageable, workLogList.getTotalElements());
+    }
+
+    public WorkLogInfoDTO getWorkLogByUUID(String uuid) {
+        WorkLog workLog = validateWorkLogExistsAndHasPermission(uuid);
+        WorkLogInfoDTO workLogInfoDTO = modelMapper.map(workLog, WorkLogInfoDTO.class);
+        workLogInfoDTO.setLogId(workLog.getUuid());
+        workLogInfoDTO.setTotalHours(TrackeraTimeSpanUtil.formatDuration(workLog.getTotalHours()));
+        return workLogInfoDTO;
     }
 
     @Transactional
@@ -79,15 +91,9 @@ public class WorkLogService {
     }
 
     @Transactional
-    public Map<String, Object> updateWorkLog(Long id, ManageWorkLogDTO manageWorkLogDTO, MultipartFile worklogFile) {
-        WorkLog workLog = workLogRepository.findOne(id);
-        if (workLog == null) {
-            throw new BusinessException("WorkLog with ID " + id + " doesn't exist");
-        }
-        if (workLog.getUser().getId() != Objects.requireNonNull(AppConfig.getCurrentUser()).getId()) {
-            throw new BusinessException("You are not authorized to update this worklog");
-        }
-        validateWorkLog(manageWorkLogDTO, id);
+    public Map<String, Object> updateWorkLog(String uuid, ManageWorkLogDTO manageWorkLogDTO, MultipartFile worklogFile) {
+        WorkLog workLog = validateWorkLogExistsAndHasPermission(uuid);
+        validateWorkLog(manageWorkLogDTO, workLog.getId());
 
         if (worklogFile != null) {
             Map<String, Object> processResult = processWorkLogFile(worklogFile);
@@ -108,14 +114,8 @@ public class WorkLogService {
     }
 
     @Transactional
-    public String deleteWorkLog(Long id) {
-        WorkLog workLog = workLogRepository.findOne(id);
-        if (workLog == null) {
-            throw new BusinessException("WorkLog with ID " + id + " doesn't exist");
-        }
-        if (workLog.getUser().getId() != Objects.requireNonNull(AppConfig.getCurrentUser()).getId()) {
-            throw new BusinessException("You are not authorized to delete this worklog");
-        }
+    public String deleteWorkLog(String uuid) {
+        WorkLog workLog = validateWorkLogExistsAndHasPermission(uuid);
         workLogDetailRepository.deleteAllByWorkLog(workLog);
         workLogRepository.delete(workLog);
         return "Worklog deleted successfully";
@@ -289,5 +289,26 @@ public class WorkLogService {
             LOGGER.error("Error saving worklog details", e);
             throw new RuntimeException(e.getMessage());
         }
+    }
+
+    private WorkLog validateWorkLogExistsAndHasPermission(String uuid) {
+        WorkLog workLog = workLogRepository.findByUserAndWorkLogUUID(AppConfig.getCurrentUser(), uuid);
+        if (workLog == null) {
+            throw new NotFoundException("WorkLog doesn't exist");
+        }
+        if (workLog.getUser().getId() != Objects.requireNonNull(AppConfig.getCurrentUser()).getId()) {
+            throw new UnauthorizedException("You are not authorized to access this worklog");
+        }
+        return workLog;
+    }
+
+    public List<WorkLogTaskDTO> getWorkLogDetailSummary(String uuid) {
+        WorkLog workLog = validateWorkLogExistsAndHasPermission(uuid);
+        List<WorkLogDetail> workLogDetailGroups = workLogDetailRepository.getGroupedWorkLogDetailsByWorkLog(workLog);
+        return workLogDetailGroups.stream().map(workLogDetail -> {
+            WorkLogTaskDTO workLogTaskDTO = modelMapper.map(workLogDetail, WorkLogTaskDTO.class);
+            workLogTaskDTO.setTotalHours(TrackeraTimeSpanUtil.formatDuration(workLogDetail.getDuration()));
+            return workLogTaskDTO;
+        }).toList();
     }
 }

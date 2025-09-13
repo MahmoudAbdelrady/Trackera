@@ -13,7 +13,8 @@ import java.math.RoundingMode;
 import java.time.LocalDate;
 
 @Entity
-@Table(indexes = {@Index(columnList = "NAME"), @Index(columnList = "TOTAL_HOURS"), @Index(columnList = "WORK_DATE"), @Index(columnList = "STATUS")})
+@Table(indexes = {@Index(columnList = "NAME"), @Index(columnList = "TOTAL_HOURS"), @Index(columnList = "WORK_DATE"), @Index(columnList = "STATUS"),
+        @Index(columnList = "UUID"), @Index(columnList = "USER_ID, UUID")})
 @Audited
 @Getter
 @Setter
