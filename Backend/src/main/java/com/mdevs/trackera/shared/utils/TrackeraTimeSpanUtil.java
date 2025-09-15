@@ -36,21 +36,10 @@ public class TrackeraTimeSpanUtil {
         return COMPACTED_DATE_FORMATTER;
     }
 
-    // (hours + minutes only)
-    public static String formatDuration(BigDecimal totalHours) {
-        DurationParts parts = extractDurationParts(totalHours, false);
+    public static String formatDuration(BigDecimal totalHours, boolean includeDays) {
+        DurationParts parts = extractDurationParts(totalHours, includeDays);
 
-        if (parts.hours == 0 && parts.minutes == 0) {
-            return "0h";
-        }
-        return parts.minutes == 0 ? String.format("%dh", parts.hours) : String.format("%dh %dm", parts.hours, parts.minutes);
-    }
-
-    // (days + hours + minutes)
-    public static String formatDurationWithDays(BigDecimal totalHours) {
-        DurationParts parts = extractDurationParts(totalHours, true);
-
-        if (parts.days == 0 && parts.hours == 0 && parts.minutes == 0) {
+        if ((!includeDays || parts.days == 0) && parts.hours == 0 && parts.minutes == 0) {
             return "0h";
         }
 

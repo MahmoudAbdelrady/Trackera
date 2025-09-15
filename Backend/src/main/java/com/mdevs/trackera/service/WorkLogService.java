@@ -63,7 +63,7 @@ public class WorkLogService {
         List<WorkLogInfoDTO> workLogInfoDTOList = workLogList.getContent().stream().map(workLog -> {
             WorkLogInfoDTO workLogInfoDTO = modelMapper.map(workLog, WorkLogInfoDTO.class);
             workLogInfoDTO.setLogId(workLog.getUuid());
-            workLogInfoDTO.setTotalHours(TrackeraTimeSpanUtil.formatDuration(workLog.getTotalHours()));
+            workLogInfoDTO.setTotalHours(TrackeraTimeSpanUtil.formatDuration(workLog.getTotalHours(), false));
             return workLogInfoDTO;
         }).toList();
         return new PageImpl<>(workLogInfoDTOList, pageable, workLogList.getTotalElements());
@@ -73,7 +73,7 @@ public class WorkLogService {
         WorkLog workLog = validateWorkLogExistsAndHasPermission(uuid);
         WorkLogInfoDTO workLogInfoDTO = modelMapper.map(workLog, WorkLogInfoDTO.class);
         workLogInfoDTO.setLogId(workLog.getUuid());
-        workLogInfoDTO.setTotalHours(TrackeraTimeSpanUtil.formatDuration(workLog.getTotalHours()));
+        workLogInfoDTO.setTotalHours(TrackeraTimeSpanUtil.formatDuration(workLog.getTotalHours(), false));
         return workLogInfoDTO;
     }
 
@@ -127,9 +127,9 @@ public class WorkLogService {
         BigDecimal targetHours = BigDecimal.valueOf(200.0); // @TODO --> Should be based on user settings
         BigDecimal remainingHours = targetHours.subtract(totalHours).max(BigDecimal.ZERO);
         return List.of(
-                new WorkLogSummaryDTO("Logged Hours", "Equivalent to " + TrackeraTimeSpanUtil.formatDurationWithDays(totalHours), "logged", totalHours.toString()),
-                new WorkLogSummaryDTO("Target Hours", "Equivalent to " + TrackeraTimeSpanUtil.formatDurationWithDays(targetHours), "target", targetHours.toString()),
-                new WorkLogSummaryDTO("Remaining Hours", "Equivalent to " + TrackeraTimeSpanUtil.formatDurationWithDays(remainingHours), "remaining", remainingHours.toString())
+                new WorkLogSummaryDTO("Logged Hours", "Equivalent to " + TrackeraTimeSpanUtil.formatDuration(totalHours, true), "logged", totalHours.toString()),
+                new WorkLogSummaryDTO("Target Hours", "Equivalent to " + TrackeraTimeSpanUtil.formatDuration(targetHours, true), "target", targetHours.toString()),
+                new WorkLogSummaryDTO("Remaining Hours", "Equivalent to " + TrackeraTimeSpanUtil.formatDuration(remainingHours, true), "remaining", remainingHours.toString())
         );
     }
 
@@ -186,9 +186,9 @@ public class WorkLogService {
             workLogDetail.setTaskUrl(null); // @TODO --> Should be based on the user's selected project
             workLogDetail.setStartTime(fromHour);
             workLogDetail.setEndTime(toHour);
-            workLogDetail.setDuration(BigDecimal.valueOf(taskLogDurationValue));
+            workLogDetail.setDuration(BigDecimal.valueOf(taskLogDurationValue / 60.0));
             workLogDetail.setDescription(taskDescription);
-            workLogDetail.setStatus(WorkLog.Status.NOT_SYNCED);
+            workLogDetail.setSynced(false);
             allWorkLogDetails.add(workLogDetail);
         }
 
@@ -304,10 +304,11 @@ public class WorkLogService {
 
     public List<WorkLogTaskDTO> getWorkLogDetailSummary(String uuid) {
         WorkLog workLog = validateWorkLogExistsAndHasPermission(uuid);
-        List<WorkLogDetail> workLogDetailGroups = workLogDetailRepository.getGroupedWorkLogDetailsByWorkLog(workLog);
-        return workLogDetailGroups.stream().map(workLogDetail -> {
-            WorkLogTaskDTO workLogTaskDTO = modelMapper.map(workLogDetail, WorkLogTaskDTO.class);
-            workLogTaskDTO.setTotalHours(TrackeraTimeSpanUtil.formatDuration(workLogDetail.getDuration()));
+        List<Map<String, Object>> workLogDetailGroups = workLogDetailRepository.getGroupedWorkLogDetailsByWorkLog(workLog);
+        return workLogDetailGroups.stream().map(worklogGroup -> {
+            WorkLogTaskDTO workLogTaskDTO = new WorkLogTaskDTO(worklogGroup.get("taskName").toString(), (String) worklogGroup.get("taskUrl"));
+            workLogTaskDTO.setTotalHours(TrackeraTimeSpanUtil.formatDuration(BigDecimal.valueOf(Double.parseDouble(worklogGroup.get("totalTime").toString())), false));
+            workLogTaskDTO.setStatus(WorkLog.Status.valueOf(worklogGroup.get("status").toString()));
             return workLogTaskDTO;
         }).toList();
     }

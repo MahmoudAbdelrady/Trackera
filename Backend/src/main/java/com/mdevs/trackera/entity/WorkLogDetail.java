@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.envers.Audited;
 
 import java.math.BigDecimal;
@@ -11,6 +12,7 @@ import java.math.RoundingMode;
 import java.time.LocalTime;
 
 @Entity
+@Table(indexes = {@Index(columnList = "TASK_NAME")})
 @Audited
 @Getter
 @Setter
@@ -35,8 +37,8 @@ public class WorkLogDetail extends BaseEntity {
     private String description;
 
     @Column(nullable = false)
-    @Enumerated(EnumType.STRING)
-    private WorkLog.Status status;
+    @ColumnDefault("0")
+    private boolean synced = false;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     private WorkLog workLog;

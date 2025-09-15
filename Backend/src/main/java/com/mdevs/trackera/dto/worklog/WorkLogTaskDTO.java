@@ -1,7 +1,6 @@
 package com.mdevs.trackera.dto.worklog;
 
 import com.mdevs.trackera.entity.WorkLog;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -9,7 +8,6 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
-@AllArgsConstructor
 public class WorkLogTaskDTO {
     private String taskName;
 
@@ -18,4 +16,9 @@ public class WorkLogTaskDTO {
     private String totalHours;
 
     private WorkLog.Status status;
+
+    public WorkLogTaskDTO(String taskName, String taskUrl) {
+        this.taskName = taskName;
+        this.taskUrl = taskUrl;
+    }
 }
