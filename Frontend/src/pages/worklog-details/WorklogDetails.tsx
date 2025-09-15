@@ -18,44 +18,45 @@ const WorklogDetails = () => {
   const [isFetchingDetails, setIsFetchingDetails] = useState<boolean>(false);
   const [worklogInfo, setWorklogInfo] = useState<Worklog | null>(null);
   const [showNotFound, setShowNotFound] = useState<boolean>(false);
+  const [worklogTasks, setWorklogTasks] = useState<WorklogTask[]>([]);
   const [viewDetailTask, setViewDetailTask] = useState<WorklogTask | null>(null);
   const [deleteDetailVisible, setDeleteDetailVisible] = useState<boolean>(false);
 
   const [selectedLogDetails, setSelectedLogDetails] = useState<string[]>([]);
   const [selectedWorklogTasks, setSelectedWorklogTasks] = useState<string[]>([]);
 
-  const worklogDetails: WorklogTask[] = [
-    {
-      id: 1,
-      taskName: "SAL-1234",
-      taskUrl: "https://jira.example.com/browse/SAL-1234",
-      totalHours: 5,
-      status: "SYNCED",
-    },
-    {
-      id: 2,
-      taskName: "SAL-5678",
-      taskUrl: "https://jira.example.com/browse/SAL-5678",
-      totalHours: 7.45,
-      status: "SYNCED",
-    },
-    {
-      id: 3,
-      taskName: "SAL-9012",
-      taskUrl: "https://jira.example.com/browse/SAL-9012",
-      totalHours: 6.45,
-      status: "NOT_SYNCED",
-    },
-    {
-      id: 4,
-      taskName: "SAL-5486",
-      taskUrl: "https://jira.example.com/browse/SAL-5486",
-      totalHours: 2.45,
-      status: "NOT_SYNCED",
-    },
-  ];
+  // const worklogDetails: WorklogTask[] = [
+  //   {
+  //     id: 1,
+  //     taskName: "SAL-1234",
+  //     taskUrl: "https://jira.example.com/browse/SAL-1234",
+  //     totalHours: 5,
+  //     status: "SYNCED",
+  //   },
+  //   {
+  //     id: 2,
+  //     taskName: "SAL-5678",
+  //     taskUrl: "https://jira.example.com/browse/SAL-5678",
+  //     totalHours: 7.45,
+  //     status: "SYNCED",
+  //   },
+  //   {
+  //     id: 3,
+  //     taskName: "SAL-9012",
+  //     taskUrl: "https://jira.example.com/browse/SAL-9012",
+  //     totalHours: 6.45,
+  //     status: "NOT_SYNCED",
+  //   },
+  //   {
+  //     id: 4,
+  //     taskName: "SAL-5486",
+  //     taskUrl: "https://jira.example.com/browse/SAL-5486",
+  //     totalHours: 2.45,
+  //     status: "NOT_SYNCED",
+  //   },
+  // ];
 
-  const worklogTasks: WorklogEntry[] = [
+  const worklogEntries: WorklogEntry[] = [
     {
       id: 1,
       fromTime: "13:00",
@@ -91,13 +92,17 @@ const WorklogDetails = () => {
       title: "Task Name",
       dataIndex: "taskName",
       key: "taskName",
-      render: (_, record) => (
-        <Link to={record.taskUrl} className={worklogTableClasses.task_link} target="_blank">
-          {record.taskName}
-          <ExternalLink className={worklogTableClasses.link_icon} />
-        </Link>
-      ),
-      filters: worklogDetails.map((detail) => ({
+      render: (_, record) => {
+        return record.taskUrl ? (
+          <Link to={record.taskUrl} className={worklogTableClasses.task_link} target="_blank">
+            {record.taskName}
+            <ExternalLink className={worklogTableClasses.link_icon} />
+          </Link>
+        ) : (
+          record.taskName
+        );
+      },
+      filters: worklogTasks.map((detail) => ({
         text: detail.taskName,
         value: detail.taskName,
       })),
@@ -231,7 +236,7 @@ const WorklogDetails = () => {
       setIsFetchingDetails(true);
       try {
         const response = await requestInstance.get(`/worklog/${worklogId}/details`);
-        console.log(response.data); // to be implemented later
+        setWorklogTasks(response.data.map((task: WorklogTask, idx: number) => ({ ...task, id: idx + 1 })));
       } catch (error: any) {
         showErrorToast(error);
       }
@@ -256,7 +261,7 @@ const WorklogDetails = () => {
         <WorklogTable<WorklogEntry>
           properties={{
             columns: taskLogsColumns,
-            dataSource: worklogTasks,
+            dataSource: worklogEntries,
             rowSelection: {
               selectedRowKeys: selectedWorklogTasks,
               onChange: (_, selectedRows: WorklogEntry[]) => {
@@ -311,7 +316,7 @@ const WorklogDetails = () => {
                 <WorklogTable<WorklogTask>
                   properties={{
                     columns: logDetailsColumns,
-                    dataSource: worklogDetails,
+                    dataSource: worklogTasks,
                     rowSelection: {
                       selectedRowKeys: selectedLogDetails,
                       onChange: (_, selectedRows: WorklogTask[]) => {
