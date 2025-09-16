@@ -18,4 +18,6 @@ public interface WorkLogDetailRepository extends BaseRepository<WorkLogDetail> {
             "     ELSE 'PARTIALLY' END AS status) " +
             "FROM WorkLogDetail wld WHERE wld.workLog = :workLog GROUP BY wld.taskName")
     List<Map<String, Object>> getGroupedWorkLogDetailsByWorkLog(WorkLog workLog);
+
+    List<WorkLogDetail> findByWorkLogAndTaskName(WorkLog workLog, String taskName);
 }

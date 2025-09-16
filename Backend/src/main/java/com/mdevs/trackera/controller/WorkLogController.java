@@ -60,4 +60,9 @@ public class WorkLogController {
     public ResponseEntity<?> GetWorkLogDetailSummary(@PathVariable String uuid) {
         return new ResponseEntity<>(workLogService.getWorkLogDetailSummary(uuid), HttpStatus.OK);
     }
+
+    @GetMapping("/{uuid}/details/task")
+    public ResponseEntity<?> GetWorkLogTaskDetails(@PathVariable String uuid, @RequestParam String taskName) {
+        return new ResponseEntity<>(workLogService.getWorkLogTaskDetails(uuid, taskName), HttpStatus.OK);
+    }
 }

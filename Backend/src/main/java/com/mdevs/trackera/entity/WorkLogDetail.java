@@ -32,8 +32,7 @@ public class WorkLogDetail extends BaseEntity {
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal duration;
 
-    @Lob
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "LONGTEXT")
     private String description;
 
     @Column(nullable = false)

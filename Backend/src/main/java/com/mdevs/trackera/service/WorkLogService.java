@@ -1,10 +1,7 @@
 package com.mdevs.trackera.service;
 
 import com.mdevs.trackera.config.general.AppConfig;
-import com.mdevs.trackera.dto.worklog.ManageWorkLogDTO;
-import com.mdevs.trackera.dto.worklog.WorkLogInfoDTO;
-import com.mdevs.trackera.dto.worklog.WorkLogSummaryDTO;
-import com.mdevs.trackera.dto.worklog.WorkLogTaskDTO;
+import com.mdevs.trackera.dto.worklog.*;
 import com.mdevs.trackera.entity.WorkLog;
 import com.mdevs.trackera.entity.WorkLogDetail;
 import com.mdevs.trackera.repository.WorkLogDetailRepository;
@@ -294,7 +291,7 @@ public class WorkLogService {
     private WorkLog validateWorkLogExistsAndHasPermission(String uuid) {
         WorkLog workLog = workLogRepository.findByUserAndWorkLogUUID(AppConfig.getCurrentUser(), uuid);
         if (workLog == null) {
-            throw new NotFoundException("WorkLog doesn't exist");
+            throw new NotFoundException("WorkLog not found");
         }
         if (workLog.getUser().getId() != Objects.requireNonNull(AppConfig.getCurrentUser()).getId()) {
             throw new UnauthorizedException("You are not authorized to access this worklog");
@@ -310,6 +307,24 @@ public class WorkLogService {
             workLogTaskDTO.setTotalHours(TrackeraTimeSpanUtil.formatDuration(BigDecimal.valueOf(Double.parseDouble(worklogGroup.get("totalTime").toString())), false));
             workLogTaskDTO.setStatus(WorkLog.Status.valueOf(worklogGroup.get("status").toString()));
             return workLogTaskDTO;
+        }).toList();
+    }
+
+    public List<WorkLogEntryDTO> getWorkLogTaskDetails(String uuid, String taskName) {
+        WorkLog workLog = validateWorkLogExistsAndHasPermission(uuid);
+        List<WorkLogDetail> workLogDetails = workLogDetailRepository.findByWorkLogAndTaskName(workLog, taskName);
+        if (workLogDetails.isEmpty()) {
+            throw new NotFoundException("No details found for the specified task in this worklog");
+        }
+        return workLogDetails.stream().map(workLogDetail -> {
+            WorkLogEntryDTO workLogEntryDTO = new WorkLogEntryDTO();
+            workLogEntryDTO.setId(workLogDetail.getUuid());
+            workLogEntryDTO.setFromTime(TrackeraTimeSpanUtil.getDateTime12hFormatter().format(workLogDetail.getStartTime()));
+            workLogEntryDTO.setToTime(TrackeraTimeSpanUtil.getDateTime12hFormatter().format(workLogDetail.getEndTime()));
+            workLogEntryDTO.setDuration(TrackeraTimeSpanUtil.formatDuration(workLogDetail.getDuration(), false));
+            workLogEntryDTO.setDescription(workLogDetail.getDescription());
+            workLogEntryDTO.setStatus(workLogDetail.isSynced() ? WorkLog.Status.SYNCED : WorkLog.Status.NOT_SYNCED);
+            return workLogEntryDTO;
         }).toList();
     }
 }
