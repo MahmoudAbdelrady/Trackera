@@ -25,6 +25,7 @@ interface WorklogEntry {
   id: number;
   fromTime: string;
   toTime: string;
+  duration: string;
   description: string;
   status: WorkLogStatusType;
 }

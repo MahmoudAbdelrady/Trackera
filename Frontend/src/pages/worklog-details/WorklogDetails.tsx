@@ -2,7 +2,7 @@ import { CalendarSync, CalendarX2, ExternalLink, Eye, Trash } from "lucide-react
 import { AppLayout, WorklogInfo, WorklogModal, WorklogTable } from "../../components";
 import classes from "./scss/worklog-details.module.css";
 import worklogTableClasses from "../../components/worklogs/worklog-table/scss/worklog-table.module.css";
-import { Skeleton, Switch, Tooltip, type TableProps } from "antd";
+import { Empty, Skeleton, Switch, Tooltip, type TableProps } from "antd";
 import { statusMetadata, type Worklog, type WorklogEntry, type WorkLogStatusType, type WorklogTask } from "../../shared/types";
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
@@ -16,76 +16,47 @@ const WorklogDetails = () => {
   const [isFetchingLogInfo, setIsFetchingLogInfo] = useState<boolean>(true);
   const [canFetchDetails, setCanFetchDetails] = useState<boolean>(false);
   const [isFetchingDetails, setIsFetchingDetails] = useState<boolean>(false);
+  const [isFetchingTasks, setIsFetchingTasks] = useState<boolean>(false);
   const [worklogInfo, setWorklogInfo] = useState<Worklog | null>(null);
   const [showNotFound, setShowNotFound] = useState<boolean>(false);
   const [worklogTasks, setWorklogTasks] = useState<WorklogTask[]>([]);
   const [viewDetailTask, setViewDetailTask] = useState<WorklogTask | null>(null);
   const [deleteDetailVisible, setDeleteDetailVisible] = useState<boolean>(false);
+  const [worklogEntries, setWorkLogEntries] = useState<WorklogEntry[]>([]);
 
   const [selectedLogDetails, setSelectedLogDetails] = useState<string[]>([]);
   const [selectedWorklogTasks, setSelectedWorklogTasks] = useState<string[]>([]);
 
-  // const worklogDetails: WorklogTask[] = [
+  // const worklogEntries: WorklogEntry[] = [
   //   {
   //     id: 1,
-  //     taskName: "SAL-1234",
-  //     taskUrl: "https://jira.example.com/browse/SAL-1234",
-  //     totalHours: 5,
+  //     fromTime: "13:00",
+  //     toTime: "15:00",
+  //     description: "Worked on feature X",
   //     status: "SYNCED",
   //   },
   //   {
   //     id: 2,
-  //     taskName: "SAL-5678",
-  //     taskUrl: "https://jira.example.com/browse/SAL-5678",
-  //     totalHours: 7.45,
+  //     fromTime: "15:30",
+  //     toTime: "17:00",
+  //     description: "Fixed bug Y",
   //     status: "SYNCED",
   //   },
   //   {
   //     id: 3,
-  //     taskName: "SAL-9012",
-  //     taskUrl: "https://jira.example.com/browse/SAL-9012",
-  //     totalHours: 6.45,
+  //     fromTime: "09:00",
+  //     toTime: "11:00",
+  //     description: "Reviewed PR Z",
   //     status: "NOT_SYNCED",
   //   },
   //   {
   //     id: 4,
-  //     taskName: "SAL-5486",
-  //     taskUrl: "https://jira.example.com/browse/SAL-5486",
-  //     totalHours: 2.45,
+  //     fromTime: "11:30",
+  //     toTime: "12:30",
+  //     description: "Team meeting",
   //     status: "NOT_SYNCED",
   //   },
   // ];
-
-  const worklogEntries: WorklogEntry[] = [
-    {
-      id: 1,
-      fromTime: "13:00",
-      toTime: "15:00",
-      description: "Worked on feature X",
-      status: "SYNCED",
-    },
-    {
-      id: 2,
-      fromTime: "15:30",
-      toTime: "17:00",
-      description: "Fixed bug Y",
-      status: "SYNCED",
-    },
-    {
-      id: 3,
-      fromTime: "09:00",
-      toTime: "11:00",
-      description: "Reviewed PR Z",
-      status: "NOT_SYNCED",
-    },
-    {
-      id: 4,
-      fromTime: "11:30",
-      toTime: "12:30",
-      description: "Team meeting",
-      status: "NOT_SYNCED",
-    },
-  ];
 
   const logDetailsColumns: TableProps<WorklogTask>["columns"] = [
     {
@@ -162,6 +133,11 @@ const WorklogDetails = () => {
       title: "To Time",
       dataIndex: "toTime",
       key: "toTime",
+    },
+    {
+      title: "Duration",
+      dataIndex: "duration",
+      key: "duration",
     },
     {
       title: "Description",
@@ -246,68 +222,91 @@ const WorklogDetails = () => {
     fetchWorklogDetails();
   }, [canFetchDetails]);
 
+  useEffect(() => {
+    if (!viewDetailTask) return;
+    const fetchTaskDetails = async () => {
+      setIsFetchingTasks(true);
+      try {
+        const response = await requestInstance.get(`/worklog/${worklogId}/details/task?taskName=${viewDetailTask.taskName}`);
+        setWorkLogEntries(response.data);
+      } catch (error: any) {
+        showErrorToast(error);
+      }
+      setIsFetchingTasks(false);
+    };
+
+    fetchTaskDetails();
+  }, [viewDetailTask]);
+
   return (
     <>
-      <WorklogModal
-        title={`${viewDetailTask?.taskName} Task Logs`}
-        properties={{
-          open: !!viewDetailTask,
-          centered: true,
-          footer: null,
-          width: "80%",
-          onCancel: viewTaskModalCloseHandler,
-        }}
-      >
-        <WorklogTable<WorklogEntry>
+      {viewDetailTask && (
+        <WorklogModal
+          title={`${viewDetailTask?.taskName} Task Logs`}
           properties={{
-            columns: taskLogsColumns,
-            dataSource: worklogEntries,
-            rowSelection: {
-              selectedRowKeys: selectedWorklogTasks,
-              onChange: (_, selectedRows: WorklogEntry[]) => {
-                setSelectedWorklogTasks(selectedRows.map((row) => row.id.toString()));
-              },
-              getCheckboxProps: (record) => ({
-                disabled: record.status === "SYNCED",
-              }),
-            },
+            open: true,
+            centered: true,
+            footer: null,
+            width: "80%",
+            onCancel: viewTaskModalCloseHandler,
+            loading: isFetchingTasks,
           }}
-          actionButtons={[
-            {
-              label: "Sync to Jira",
-              icon: <CalendarSync />,
-              onClick: () => {},
-              disabled: selectedWorklogTasks.length === 0,
-            },
-          ]}
-        />
-      </WorklogModal>
-      <WorklogModal
-        title="Delete Task Log"
-        properties={{
-          open: deleteDetailVisible,
-          centered: true,
-          okText: "Delete",
-          onOk: () => {},
-          onCancel: () => setDeleteDetailVisible(false),
-          okButtonProps: { danger: true },
-        }}
-      >
-        <p className={worklogModalClasses.delete_message}>Are you sure you want to delete this task log? This action cannot be undone.</p>
-        <div className={worklogModalClasses.switch_option}>
-          <span className={worklogModalClasses.label}>Also unsync from Jira:</span>
-          <Switch />
-        </div>
-      </WorklogModal>
+        >
+          <WorklogTable<WorklogEntry>
+            properties={{
+              columns: taskLogsColumns,
+              dataSource: worklogEntries,
+              rowSelection: {
+                selectedRowKeys: selectedWorklogTasks,
+                onChange: (_, selectedRows: WorklogEntry[]) => {
+                  setSelectedWorklogTasks(selectedRows.map((row) => row.id.toString()));
+                },
+                getCheckboxProps: (record) => ({
+                  disabled: record.status === "SYNCED",
+                }),
+              },
+            }}
+            actionButtons={[
+              {
+                label: "Sync to Jira",
+                icon: <CalendarSync />,
+                onClick: () => {},
+                disabled: selectedWorklogTasks.length === 0,
+              },
+            ]}
+          />
+        </WorklogModal>
+      )}
+
+      {deleteDetailVisible && (
+        <WorklogModal
+          title="Delete Task Log"
+          properties={{
+            open: true,
+            centered: true,
+            okText: "Delete",
+            onOk: () => {},
+            onCancel: () => setDeleteDetailVisible(false),
+            okButtonProps: { danger: true },
+          }}
+        >
+          <p className={worklogModalClasses.delete_message}>Are you sure you want to delete this task log? This action cannot be undone.</p>
+          <div className={worklogModalClasses.switch_option}>
+            <span className={worklogModalClasses.label}>Also unsync from Jira:</span>
+            <Switch />
+          </div>
+        </WorklogModal>
+      )}
+
       <AppLayout>
         {isFetchingLogInfo ? (
           <Skeleton active paragraph={{ rows: 2 }} />
-        ) : showNotFound ? (
-          <div>Worklog not found</div>
-        ) : !worklogInfo ? (
-          <>
-            <div>Something went wrong</div>
-          </>
+        ) : showNotFound || !worklogInfo ? (
+          <Empty
+            description={`${showNotFound ? "Worklog not found" : "Failed to load worklog data"}`}
+            image={showNotFound ? Empty.PRESENTED_IMAGE_DEFAULT : <img src="/Assets/not_found.svg" alt="Not Found" />}
+            styles={{ description: { fontSize: "16px" } }}
+          />
         ) : (
           <>
             <WorklogInfo worklogInfo={worklogInfo} />
@@ -320,7 +319,7 @@ const WorklogDetails = () => {
                     rowSelection: {
                       selectedRowKeys: selectedLogDetails,
                       onChange: (_, selectedRows: WorklogTask[]) => {
-                        setSelectedLogDetails(selectedRows.map((_, idx) => idx.toString()));
+                        setSelectedLogDetails(selectedRows.map((row) => row.id.toString()));
                       },
                       getCheckboxProps: (record) => ({
                         disabled: record.status === "SYNCED",
@@ -330,15 +329,9 @@ const WorklogDetails = () => {
                   }}
                   actionButtons={[
                     {
-                      label: "Sync selected to Jira",
+                      label: "Sync to Jira",
                       icon: <CalendarSync />,
-                      onClick: () => {},
                       disabled: selectedLogDetails.length === 0,
-                      customClasses: ["sync_selected"],
-                    },
-                    {
-                      label: "Sync all to Jira",
-                      icon: <CalendarSync />,
                       onClick: () => {},
                     },
                   ]}
