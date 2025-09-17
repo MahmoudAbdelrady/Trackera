@@ -19,6 +19,5 @@ public interface WorkLogRepository extends BaseRepository<WorkLog> {
     @Query("SELECT COALESCE(SUM(w.totalHours), 0) FROM WorkLog w WHERE w.user = :user AND w.workDate BETWEEN :startDate AND :endDate")
     BigDecimal sumTotalHoursByUserAndWorkDateBetween(@Param("user") User user, @Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
 
-    @Query("SELECT w FROM WorkLog w WHERE w.user = :user AND w.uuid = :uuid")
-    WorkLog findByUserAndWorkLogUUID(@Param("user") User user, @Param("uuid") String uuid);
+    WorkLog findByUserAndUuid(User user, String uuid);
 }

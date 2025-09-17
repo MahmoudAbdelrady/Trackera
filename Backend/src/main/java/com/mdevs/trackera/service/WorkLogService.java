@@ -289,7 +289,7 @@ public class WorkLogService {
     }
 
     private WorkLog validateWorkLogExistsAndHasPermission(String uuid) {
-        WorkLog workLog = workLogRepository.findByUserAndWorkLogUUID(AppConfig.getCurrentUser(), uuid);
+        WorkLog workLog = workLogRepository.findByUserAndUuid(AppConfig.getCurrentUser(), uuid);
         if (workLog == null) {
             throw new NotFoundException("WorkLog not found");
         }
@@ -314,7 +314,7 @@ public class WorkLogService {
         WorkLog workLog = validateWorkLogExistsAndHasPermission(uuid);
         List<WorkLogDetail> workLogDetails = workLogDetailRepository.findByWorkLogAndTaskName(workLog, taskName);
         if (workLogDetails.isEmpty()) {
-            throw new NotFoundException("No details found for the specified task in this worklog");
+            throw new NotFoundException("No logs found for the specified task in this worklog");
         }
         return workLogDetails.stream().map(workLogDetail -> {
             WorkLogEntryDTO workLogEntryDTO = new WorkLogEntryDTO();
@@ -326,5 +326,57 @@ public class WorkLogService {
             workLogEntryDTO.setStatus(workLogDetail.isSynced() ? WorkLog.Status.SYNCED : WorkLog.Status.NOT_SYNCED);
             return workLogEntryDTO;
         }).toList();
+    }
+
+    @Transactional
+    public Map<String, Object> deleteWorkLogTaskDetails(String uuid, String taskName) {
+        WorkLog workLog = validateWorkLogExistsAndHasPermission(uuid);
+        List<WorkLogDetail> detailsToDelete = workLogDetailRepository.findByWorkLogAndTaskName(workLog, taskName);
+        if (detailsToDelete.isEmpty()) {
+            throw new NotFoundException("No logs found for the specified task in this worklog");
+        }
+        workLogDetailRepository.deleteAll(detailsToDelete);
+
+        List<WorkLogDetail> existingDetails = workLogDetailRepository.findAllByWorkLog(workLog);
+        Map<String, Object> result = new HashMap<>();
+        if (existingDetails.isEmpty()) {
+            workLogRepository.delete(workLog);
+            result.put("isLast", true);
+        } else {
+            double totalDeletedHours = detailsToDelete.stream().mapToDouble(detail -> detail.getDuration().doubleValue()).sum();
+            workLog.setTotalHours(workLog.getTotalHours().subtract(BigDecimal.valueOf(totalDeletedHours)).max(BigDecimal.ZERO));
+            workLogRepository.save(workLog);
+        }
+
+        result.put("message", "Task logs deleted successfully");
+        return result;
+    }
+
+    @Transactional
+    public Map<String, Object> deleteWorkLogTaskEntry(String uuid) {
+        WorkLogDetail workLogEntry = workLogDetailRepository.findByUuid(uuid);
+        if (workLogEntry == null) {
+            throw new NotFoundException("WorkLog entry not found");
+        }
+        WorkLog workLog = workLogEntry.getWorkLog();
+        if (workLog.getUser().getId() != Objects.requireNonNull(AppConfig.getCurrentUser()).getId()) {
+            throw new UnauthorizedException("You are not authorized to access this entry");
+        }
+
+        workLogDetailRepository.delete(workLogEntry);
+
+        List<WorkLogDetail> existingDetails = workLogDetailRepository.findAllByWorkLog(workLog);
+        Map<String, Object> result = new HashMap<>();
+        if (existingDetails.isEmpty()) {
+            workLogRepository.delete(workLog);
+            result.put("isLast", true);
+        } else {
+            double deletedDuration = workLogEntry.getDuration().doubleValue();
+            workLog.setTotalHours(workLog.getTotalHours().subtract(BigDecimal.valueOf(deletedDuration)).max(BigDecimal.ZERO));
+            workLogRepository.save(workLog);
+        }
+
+        result.put("message", "WorkLog entry deleted successfully");
+        return result;
     }
 }

@@ -19,5 +19,9 @@ public interface WorkLogDetailRepository extends BaseRepository<WorkLogDetail> {
             "FROM WorkLogDetail wld WHERE wld.workLog = :workLog GROUP BY wld.taskName")
     List<Map<String, Object>> getGroupedWorkLogDetailsByWorkLog(WorkLog workLog);
 
+    List<WorkLogDetail> findAllByWorkLog(WorkLog workLog);
+
     List<WorkLogDetail> findByWorkLogAndTaskName(WorkLog workLog, String taskName);
+
+    WorkLogDetail findByUuid(String uuid);
 }
