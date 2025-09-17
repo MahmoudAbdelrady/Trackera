@@ -121,4 +121,8 @@
 }
 .worklog_table_container .table_details .actions_container .log_action_btn.delete {
   color: #dc2626;
+}
+.worklog_table_container .table_details .actions_container .log_action_btn.delete.disabled {
+  color: #e5e7eb;
+  cursor: not-allowed;
 }/*# sourceMappingURL=worklog-table.module.css.map */

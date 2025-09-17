@@ -2,32 +2,36 @@ import { CalendarSync, CalendarX2, ExternalLink, Eye, Trash } from "lucide-react
 import { AppLayout, WorklogInfo, WorklogModal, WorklogTable } from "../../components";
 import classes from "./scss/worklog-details.module.css";
 import worklogTableClasses from "../../components/worklogs/worklog-table/scss/worklog-table.module.css";
-import { Empty, Skeleton, Switch, Tooltip, type TableProps } from "antd";
+import { Empty, Popconfirm, Skeleton, Switch, Tooltip, type TableProps } from "antd";
 import { statusMetadata, type Worklog, type WorklogEntry, type WorkLogStatusType, type WorklogTask } from "../../shared/types";
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { getWorklogTablePaddedItem } from "../../utils";
 import worklogModalClasses from "../../components/worklogs/modals/worklog-modal/scss/worklog-modal.module.css";
 import requestInstance from "../../shared/axios/request-instance";
-import { showErrorToast } from "../../utils/toast-handler/showToast";
+import { showErrorToast, showSuccessToast } from "../../utils/toast-handler/showToast";
 
 const WorklogDetails = () => {
   const { worklogId } = useParams();
+  const navigate = useNavigate();
   const [isFetchingLogInfo, setIsFetchingLogInfo] = useState<boolean>(true);
   const [canFetchDetails, setCanFetchDetails] = useState<boolean>(false);
+  const [canFetchEntries, setCanFetchEntries] = useState<boolean>(false);
   const [isFetchingDetails, setIsFetchingDetails] = useState<boolean>(false);
   const [isFetchingTasks, setIsFetchingTasks] = useState<boolean>(false);
   const [worklogInfo, setWorklogInfo] = useState<Worklog | null>(null);
   const [showNotFound, setShowNotFound] = useState<boolean>(false);
   const [worklogTasks, setWorklogTasks] = useState<WorklogTask[]>([]);
   const [viewDetailTask, setViewDetailTask] = useState<WorklogTask | null>(null);
+  const [selectedTask, setSelectedTask] = useState<WorklogTask | null>(null);
   const [deleteDetailVisible, setDeleteDetailVisible] = useState<boolean>(false);
+  const [isDeletingTask, setIsDeletingTask] = useState<boolean>(false);
+  const [isDeletingEntry, setIsDeletingEntry] = useState<boolean>(false);
+  const [selectedEntry, setSelectedEntry] = useState<WorklogEntry | null>(null);
   const [worklogEntries, setWorkLogEntries] = useState<WorklogEntry[]>([]);
 
   const [selectedLogDetails, setSelectedLogDetails] = useState<string[]>([]);
   const [selectedWorklogTasks, setSelectedWorklogTasks] = useState<string[]>([]);
-
-  // const worklogEntries: WorklogEntry[] = [
   //   {
   //     id: 1,
   //     fromTime: "13:00",
@@ -116,14 +120,20 @@ const WorklogDetails = () => {
             <Eye className={`${worklogTableClasses.log_action_btn} ${worklogTableClasses.view}`} onClick={() => setViewDetailTask(record)} />
           </Tooltip>
           <Tooltip title="Delete">
-            <Trash onClick={() => setDeleteDetailVisible(true)} className={`${worklogTableClasses.log_action_btn} ${worklogTableClasses.delete}`} />
+            <Trash
+              onClick={() => {
+                setDeleteDetailVisible(true);
+                setSelectedTask(record);
+              }}
+              className={`${worklogTableClasses.log_action_btn} ${worklogTableClasses.delete}`}
+            />
           </Tooltip>
         </div>
       ),
     },
   ];
 
-  const taskLogsColumns: TableProps<WorklogEntry>["columns"] = [
+  const taskEntryColumns: TableProps<WorklogEntry>["columns"] = [
     {
       title: "From Time",
       dataIndex: "fromTime",
@@ -173,9 +183,30 @@ const WorklogDetails = () => {
               <CalendarSync onClick={() => {}} className={`${worklogTableClasses.log_action_btn} ${worklogTableClasses.sync}`} />
             </Tooltip>
           )}
-          <Tooltip title="Delete">
-            <Trash onClick={() => {}} className={`${worklogTableClasses.log_action_btn} ${worklogTableClasses.delete}`} />
-          </Tooltip>
+          <Popconfirm
+            title="Are you sure to delete this entry?"
+            description={
+              <div className={worklogModalClasses.switch_option}>
+                <span className={worklogModalClasses.label} style={{ marginRight: 8 }}>
+                  Also unsync from Jira:
+                </span>
+                <Switch />
+              </div>
+            }
+            onConfirm={() => {
+              setSelectedEntry(record);
+              handleDeleteWorkLogEntry(record.id);
+            }}
+            okText="Yes"
+            okButtonProps={{ danger: true, loading: isDeletingEntry, disabled: isDeletingEntry }}
+            destroyOnHidden={true}
+            cancelText="No"
+            cancelButtonProps={{ disabled: isDeletingEntry }}
+          >
+            <Tooltip title="Delete">
+              <Trash className={`${worklogTableClasses.log_action_btn} ${worklogTableClasses.delete} ${isDeletingEntry && selectedEntry?.id !== record.id && worklogTableClasses.disabled}`} />
+            </Tooltip>
+          </Popconfirm>
         </div>
       ),
     },
@@ -236,7 +267,41 @@ const WorklogDetails = () => {
     };
 
     fetchTaskDetails();
-  }, [viewDetailTask]);
+  }, [viewDetailTask, canFetchEntries]);
+
+  const handleDeleteWorkLogTask = async () => {
+    setIsDeletingTask(true);
+    try {
+      const response = await requestInstance.delete(`/worklog/${worklogId}/details/task?taskName=${selectedTask?.taskName}`);
+      if (response.data.isLast) {
+        navigate("/");
+      } else {
+        setCanFetchDetails(true);
+      }
+      showSuccessToast(response.data.message);
+    } catch (error: any) {
+      showErrorToast(error);
+    }
+    setIsDeletingTask(false);
+    setDeleteDetailVisible(false);
+  };
+
+  const handleDeleteWorkLogEntry = async (entryId: number) => {
+    setIsDeletingEntry(true);
+    try {
+      const response = await requestInstance.delete(`/details/entry/${entryId}`);
+      if (response.data.isLast) {
+        navigate("/");
+      } else {
+        setCanFetchEntries(true);
+      }
+      showSuccessToast(response.data.message);
+    } catch (error: any) {
+      showErrorToast(error);
+    }
+    setIsDeletingEntry(false);
+    setSelectedEntry(null);
+  };
 
   return (
     <>
@@ -254,7 +319,7 @@ const WorklogDetails = () => {
         >
           <WorklogTable<WorklogEntry>
             properties={{
-              columns: taskLogsColumns,
+              columns: taskEntryColumns,
               dataSource: worklogEntries,
               rowSelection: {
                 selectedRowKeys: selectedWorklogTasks,
@@ -280,14 +345,18 @@ const WorklogDetails = () => {
 
       {deleteDetailVisible && (
         <WorklogModal
-          title="Delete Task Log"
+          title={`Delete ${selectedTask?.taskName} Task Log`}
           properties={{
             open: true,
             centered: true,
+            closable: !isDeletingTask,
+            keyboard: !isDeletingTask,
+            maskClosable: !isDeletingTask,
             okText: "Delete",
-            onOk: () => {},
+            onOk: handleDeleteWorkLogTask,
+            okButtonProps: { loading: isDeletingTask, disabled: isDeletingTask, danger: true },
+            cancelButtonProps: { disabled: isDeletingTask },
             onCancel: () => setDeleteDetailVisible(false),
-            okButtonProps: { danger: true },
           }}
         >
           <p className={worklogModalClasses.delete_message}>Are you sure you want to delete this task log? This action cannot be undone.</p>
