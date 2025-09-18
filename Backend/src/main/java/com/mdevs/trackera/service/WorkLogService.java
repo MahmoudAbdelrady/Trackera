@@ -365,15 +365,18 @@ public class WorkLogService {
 
         workLogDetailRepository.delete(workLogEntry);
 
-        List<WorkLogDetail> existingDetails = workLogDetailRepository.findAllByWorkLog(workLog);
         Map<String, Object> result = new HashMap<>();
-        if (existingDetails.isEmpty()) {
+        if (!workLogDetailRepository.existsByWorkLog(workLog)) {
             workLogRepository.delete(workLog);
             result.put("isLast", true);
         } else {
             double deletedDuration = workLogEntry.getDuration().doubleValue();
             workLog.setTotalHours(workLog.getTotalHours().subtract(BigDecimal.valueOf(deletedDuration)).max(BigDecimal.ZERO));
             workLogRepository.save(workLog);
+
+            if (!workLogDetailRepository.existsByWorkLogAndTaskName(workLog, workLogEntry.getTaskName())) {
+                result.put("isLastOfTask", true);
+            }
         }
 
         result.put("message", "WorkLog entry deleted successfully");

@@ -56,7 +56,7 @@ public class WorkLog extends BaseEntity {
     @Column(nullable = false)
     private String name;
 
-    @Column(nullable = false, precision = 10, scale = 2)
+    @Column(nullable = false, precision = 10, scale = 3)
     private BigDecimal totalHours;
 
     @Column(nullable = false)
@@ -77,6 +77,6 @@ public class WorkLog extends BaseEntity {
     }
 
     public void setTotalHours(BigDecimal totalHours) {
-        this.totalHours = totalHours.setScale(2, RoundingMode.HALF_UP);
+        this.totalHours = totalHours.setScale(3, RoundingMode.HALF_UP);
     }
 }

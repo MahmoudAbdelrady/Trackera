@@ -21,7 +21,11 @@ public interface WorkLogDetailRepository extends BaseRepository<WorkLogDetail> {
 
     List<WorkLogDetail> findAllByWorkLog(WorkLog workLog);
 
+    boolean existsByWorkLog(WorkLog workLog);
+
     List<WorkLogDetail> findByWorkLogAndTaskName(WorkLog workLog, String taskName);
+
+    boolean existsByWorkLogAndTaskName(WorkLog workLog, String taskName);
 
     WorkLogDetail findByUuid(String uuid);
 }

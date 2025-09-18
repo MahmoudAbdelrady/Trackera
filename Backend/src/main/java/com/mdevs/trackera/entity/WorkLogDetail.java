@@ -29,7 +29,7 @@ public class WorkLogDetail extends BaseEntity {
     @Column(nullable = false, columnDefinition = "TIME(0)")
     private LocalTime endTime;
 
-    @Column(nullable = false, precision = 10, scale = 2)
+    @Column(nullable = false, precision = 10, scale = 3)
     private BigDecimal duration;
 
     @Column(nullable = false, columnDefinition = "LONGTEXT")
@@ -43,6 +43,6 @@ public class WorkLogDetail extends BaseEntity {
     private WorkLog workLog;
 
     public void setDuration(BigDecimal duration) {
-        this.duration = duration.setScale(2, RoundingMode.HALF_UP);
+        this.duration = duration.setScale(3, RoundingMode.HALF_UP);
     }
 }
