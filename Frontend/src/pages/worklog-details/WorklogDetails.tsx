@@ -14,53 +14,30 @@ import { showErrorToast, showSuccessToast } from "../../utils/toast-handler/show
 const WorklogDetails = () => {
   const { worklogId } = useParams();
   const navigate = useNavigate();
-  const [isFetchingLogInfo, setIsFetchingLogInfo] = useState<boolean>(true);
-  const [canFetchDetails, setCanFetchDetails] = useState<boolean>(false);
-  const [canFetchEntries, setCanFetchEntries] = useState<boolean>(false);
-  const [isFetchingDetails, setIsFetchingDetails] = useState<boolean>(false);
-  const [isFetchingTasks, setIsFetchingTasks] = useState<boolean>(false);
+
+  // worklog info
   const [worklogInfo, setWorklogInfo] = useState<Worklog | null>(null);
+  const [isFetchingLogInfo, setIsFetchingLogInfo] = useState<boolean>(true);
+  const [canFetchWorkLogInfo, setCanFetchWorkLogInfo] = useState<boolean>(!!worklogId);
   const [showNotFound, setShowNotFound] = useState<boolean>(false);
-  const [worklogTasks, setWorklogTasks] = useState<WorklogTask[]>([]);
-  const [viewDetailTask, setViewDetailTask] = useState<WorklogTask | null>(null);
+
+  // worklog tasks
   const [selectedTask, setSelectedTask] = useState<WorklogTask | null>(null);
-  const [deleteDetailVisible, setDeleteDetailVisible] = useState<boolean>(false);
+  const [selectedWorklogTasks, setSelectedWorklogTasks] = useState<string[]>([]);
+  const [canFetchDetails, setCanFetchDetails] = useState<boolean>(false);
+  const [isFetchingDetails, setIsFetchingDetails] = useState<boolean>(false);
+  const [viewDetailTask, setViewDetailTask] = useState<WorklogTask | null>(null);
+  const [worklogTasks, setWorklogTasks] = useState<WorklogTask[]>([]);
+  const [deleteTaskVisible, setDeleteTaskVisible] = useState<boolean>(false);
   const [isDeletingTask, setIsDeletingTask] = useState<boolean>(false);
+
+  // worklog entries
+  const [canFetchEntries, setCanFetchEntries] = useState<boolean>(false);
+  const [isFetchingEntries, setIsFetchingEntries] = useState<boolean>(false);
   const [isDeletingEntry, setIsDeletingEntry] = useState<boolean>(false);
   const [selectedEntry, setSelectedEntry] = useState<WorklogEntry | null>(null);
   const [worklogEntries, setWorkLogEntries] = useState<WorklogEntry[]>([]);
-
-  const [selectedLogDetails, setSelectedLogDetails] = useState<string[]>([]);
-  const [selectedWorklogTasks, setSelectedWorklogTasks] = useState<string[]>([]);
-  //   {
-  //     id: 1,
-  //     fromTime: "13:00",
-  //     toTime: "15:00",
-  //     description: "Worked on feature X",
-  //     status: "SYNCED",
-  //   },
-  //   {
-  //     id: 2,
-  //     fromTime: "15:30",
-  //     toTime: "17:00",
-  //     description: "Fixed bug Y",
-  //     status: "SYNCED",
-  //   },
-  //   {
-  //     id: 3,
-  //     fromTime: "09:00",
-  //     toTime: "11:00",
-  //     description: "Reviewed PR Z",
-  //     status: "NOT_SYNCED",
-  //   },
-  //   {
-  //     id: 4,
-  //     fromTime: "11:30",
-  //     toTime: "12:30",
-  //     description: "Team meeting",
-  //     status: "NOT_SYNCED",
-  //   },
-  // ];
+  const [selectedWorklogEntries, setSelectedWorklogEntries] = useState<string[]>([]);
 
   const logDetailsColumns: TableProps<WorklogTask>["columns"] = [
     {
@@ -117,12 +94,18 @@ const WorklogDetails = () => {
             </Tooltip>
           )}
           <Tooltip title="View">
-            <Eye className={`${worklogTableClasses.log_action_btn} ${worklogTableClasses.view}`} onClick={() => setViewDetailTask(record)} />
+            <Eye
+              className={`${worklogTableClasses.log_action_btn} ${worklogTableClasses.view}`}
+              onClick={() => {
+                setViewDetailTask(record);
+                setCanFetchEntries(true);
+              }}
+            />
           </Tooltip>
           <Tooltip title="Delete">
             <Trash
               onClick={() => {
-                setDeleteDetailVisible(true);
+                setDeleteTaskVisible(true);
                 setSelectedTask(record);
               }}
               className={`${worklogTableClasses.log_action_btn} ${worklogTableClasses.delete}`}
@@ -214,11 +197,10 @@ const WorklogDetails = () => {
 
   const viewTaskModalCloseHandler = () => {
     setViewDetailTask(null);
-    setSelectedWorklogTasks([]);
+    setSelectedWorklogEntries([]);
   };
 
   useEffect(() => {
-    if (!worklogId) return;
     const fetchWorklogInfo = async () => {
       try {
         const response = await requestInstance.get(`/worklog/${worklogId}`);
@@ -234,11 +216,13 @@ const WorklogDetails = () => {
       setIsFetchingLogInfo(false);
     };
 
-    fetchWorklogInfo();
-  }, [worklogId]);
+    if (canFetchWorkLogInfo) {
+      fetchWorklogInfo();
+      setCanFetchWorkLogInfo(false);
+    }
+  }, [canFetchWorkLogInfo]);
 
   useEffect(() => {
-    if (!canFetchDetails) return;
     const fetchWorklogDetails = async () => {
       setIsFetchingDetails(true);
       try {
@@ -250,23 +234,29 @@ const WorklogDetails = () => {
       setIsFetchingDetails(false);
     };
 
-    fetchWorklogDetails();
+    if (canFetchDetails) {
+      fetchWorklogDetails();
+      setCanFetchDetails(false);
+    }
   }, [canFetchDetails]);
 
   useEffect(() => {
     if (!viewDetailTask) return;
     const fetchTaskDetails = async () => {
-      setIsFetchingTasks(true);
+      setIsFetchingEntries(true);
       try {
         const response = await requestInstance.get(`/worklog/${worklogId}/details/task?taskName=${viewDetailTask.taskName}`);
         setWorkLogEntries(response.data);
       } catch (error: any) {
         showErrorToast(error);
       }
-      setIsFetchingTasks(false);
+      setIsFetchingEntries(false);
     };
 
-    fetchTaskDetails();
+    if (canFetchEntries) {
+      fetchTaskDetails();
+      setCanFetchEntries(false);
+    }
   }, [viewDetailTask, canFetchEntries]);
 
   const handleDeleteWorkLogTask = async () => {
@@ -277,23 +267,30 @@ const WorklogDetails = () => {
         navigate("/");
       } else {
         setCanFetchDetails(true);
+        setCanFetchWorkLogInfo(true);
       }
       showSuccessToast(response.data.message);
     } catch (error: any) {
       showErrorToast(error);
     }
     setIsDeletingTask(false);
-    setDeleteDetailVisible(false);
+    setDeleteTaskVisible(false);
   };
 
   const handleDeleteWorkLogEntry = async (entryId: number) => {
     setIsDeletingEntry(true);
     try {
-      const response = await requestInstance.delete(`/details/entry/${entryId}`);
+      const response = await requestInstance.delete(`/worklog/details/entry/${entryId}`);
       if (response.data.isLast) {
         navigate("/");
       } else {
-        setCanFetchEntries(true);
+        if (response.data.isLastOfTask) {
+          setViewDetailTask(null);
+        } else {
+          setCanFetchEntries(true);
+        }
+        setCanFetchDetails(true);
+        setCanFetchWorkLogInfo(true);
       }
       showSuccessToast(response.data.message);
     } catch (error: any) {
@@ -314,7 +311,7 @@ const WorklogDetails = () => {
             footer: null,
             width: "80%",
             onCancel: viewTaskModalCloseHandler,
-            loading: isFetchingTasks,
+            loading: isFetchingEntries,
           }}
         >
           <WorklogTable<WorklogEntry>
@@ -322,9 +319,9 @@ const WorklogDetails = () => {
               columns: taskEntryColumns,
               dataSource: worklogEntries,
               rowSelection: {
-                selectedRowKeys: selectedWorklogTasks,
+                selectedRowKeys: selectedWorklogEntries,
                 onChange: (_, selectedRows: WorklogEntry[]) => {
-                  setSelectedWorklogTasks(selectedRows.map((row) => row.id.toString()));
+                  setSelectedWorklogEntries(selectedRows.map((row) => row.id.toString()));
                 },
                 getCheckboxProps: (record) => ({
                   disabled: record.status === "SYNCED",
@@ -336,14 +333,14 @@ const WorklogDetails = () => {
                 label: "Sync to Jira",
                 icon: <CalendarSync />,
                 onClick: () => {},
-                disabled: selectedWorklogTasks.length === 0,
+                disabled: selectedWorklogEntries.length === 0,
               },
             ]}
           />
         </WorklogModal>
       )}
 
-      {deleteDetailVisible && (
+      {deleteTaskVisible && (
         <WorklogModal
           title={`Delete ${selectedTask?.taskName} Task Log`}
           properties={{
@@ -356,13 +353,13 @@ const WorklogDetails = () => {
             onOk: handleDeleteWorkLogTask,
             okButtonProps: { loading: isDeletingTask, disabled: isDeletingTask, danger: true },
             cancelButtonProps: { disabled: isDeletingTask },
-            onCancel: () => setDeleteDetailVisible(false),
+            onCancel: () => setDeleteTaskVisible(false),
           }}
         >
           <p className={worklogModalClasses.delete_message}>Are you sure you want to delete this task log? This action cannot be undone.</p>
           <div className={worklogModalClasses.switch_option}>
             <span className={worklogModalClasses.label}>Also unsync from Jira:</span>
-            <Switch />
+            <Switch disabled={isDeletingTask} />
           </div>
         </WorklogModal>
       )}
@@ -380,15 +377,15 @@ const WorklogDetails = () => {
           <>
             <WorklogInfo worklogInfo={worklogInfo} />
             <div className={classes.worklog_details_content}>
-              {canFetchDetails && (
+              {worklogTasks.length > 0 && (
                 <WorklogTable<WorklogTask>
                   properties={{
                     columns: logDetailsColumns,
                     dataSource: worklogTasks,
                     rowSelection: {
-                      selectedRowKeys: selectedLogDetails,
+                      selectedRowKeys: selectedWorklogTasks,
                       onChange: (_, selectedRows: WorklogTask[]) => {
-                        setSelectedLogDetails(selectedRows.map((row) => row.id.toString()));
+                        setSelectedWorklogTasks(selectedRows.map((row) => row.id.toString()));
                       },
                       getCheckboxProps: (record) => ({
                         disabled: record.status === "SYNCED",
@@ -400,7 +397,7 @@ const WorklogDetails = () => {
                     {
                       label: "Sync to Jira",
                       icon: <CalendarSync />,
-                      disabled: selectedLogDetails.length === 0,
+                      disabled: selectedWorklogTasks.length === 0,
                       onClick: () => {},
                     },
                   ]}
