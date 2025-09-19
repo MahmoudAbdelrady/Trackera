@@ -17,7 +17,8 @@ interface WorklogTask {
   id: number;
   taskName: string;
   taskUrl: string;
-  totalHours: number;
+  totalHours: string;
+  totalTime: number;
   status: WorkLogStatusType;
 }
 

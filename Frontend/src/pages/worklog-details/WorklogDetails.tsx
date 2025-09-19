@@ -22,24 +22,24 @@ const WorklogDetails = () => {
   const [showNotFound, setShowNotFound] = useState<boolean>(false);
 
   // worklog tasks
+  const [worklogTasks, setWorklogTasks] = useState<WorklogTask[]>([]);
   const [selectedTask, setSelectedTask] = useState<WorklogTask | null>(null);
   const [selectedWorklogTasks, setSelectedWorklogTasks] = useState<string[]>([]);
-  const [canFetchDetails, setCanFetchDetails] = useState<boolean>(false);
-  const [isFetchingDetails, setIsFetchingDetails] = useState<boolean>(false);
-  const [viewDetailTask, setViewDetailTask] = useState<WorklogTask | null>(null);
-  const [worklogTasks, setWorklogTasks] = useState<WorklogTask[]>([]);
+  const [viewTaskVisible, setViewTaskVisible] = useState<boolean>(false);
   const [deleteTaskVisible, setDeleteTaskVisible] = useState<boolean>(false);
+  const [canFetchTasks, setCanFetchTasks] = useState<boolean>(false);
+  const [isFetchingTasks, setIsFetchingTasks] = useState<boolean>(false);
   const [isDeletingTask, setIsDeletingTask] = useState<boolean>(false);
 
   // worklog entries
+  const [worklogEntries, setWorklogEntries] = useState<WorklogEntry[]>([]);
+  const [selectedEntry, setSelectedEntry] = useState<WorklogEntry | null>(null);
+  const [selectedWorklogEntries, setSelectedWorklogEntries] = useState<string[]>([]);
   const [canFetchEntries, setCanFetchEntries] = useState<boolean>(false);
   const [isFetchingEntries, setIsFetchingEntries] = useState<boolean>(false);
   const [isDeletingEntry, setIsDeletingEntry] = useState<boolean>(false);
-  const [selectedEntry, setSelectedEntry] = useState<WorklogEntry | null>(null);
-  const [worklogEntries, setWorkLogEntries] = useState<WorklogEntry[]>([]);
-  const [selectedWorklogEntries, setSelectedWorklogEntries] = useState<string[]>([]);
 
-  const logDetailsColumns: TableProps<WorklogTask>["columns"] = [
+  const worklogTaskColumns: TableProps<WorklogTask>["columns"] = [
     {
       title: "Task Name",
       dataIndex: "taskName",
@@ -64,7 +64,7 @@ const WorklogDetails = () => {
       title: "Total Hours",
       dataIndex: "totalHours",
       key: "totalHours",
-      sorter: (a, b) => a.totalHours - b.totalHours,
+      sorter: (a, b) => a.totalTime - b.totalTime,
     },
     {
       title: "Status",
@@ -73,9 +73,9 @@ const WorklogDetails = () => {
       render: (_, { status }) => {
         return getWorklogTablePaddedItem(worklogTableClasses, "status_item", statusMetadata[status as WorkLogStatusType]);
       },
-      filters: Object.entries(statusMetadata).map(([key, value]) => ({
-        text: value.label,
-        value: key,
+      filters: Array.from(new Set(worklogTasks.map((task) => task.status))).map((status) => ({
+        text: statusMetadata[status as WorkLogStatusType]?.label ?? status,
+        value: status,
       })),
       onFilter: (value, record) => record.status === value,
     },
@@ -97,7 +97,8 @@ const WorklogDetails = () => {
             <Eye
               className={`${worklogTableClasses.log_action_btn} ${worklogTableClasses.view}`}
               onClick={() => {
-                setViewDetailTask(record);
+                setSelectedTask(record);
+                setViewTaskVisible(true);
                 setCanFetchEntries(true);
               }}
             />
@@ -116,7 +117,7 @@ const WorklogDetails = () => {
     },
   ];
 
-  const taskEntryColumns: TableProps<WorklogEntry>["columns"] = [
+  const worklogEntryColumns: TableProps<WorklogEntry>["columns"] = [
     {
       title: "From Time",
       dataIndex: "fromTime",
@@ -144,12 +145,10 @@ const WorklogDetails = () => {
       render: (_, { status }) => {
         return getWorklogTablePaddedItem(worklogTableClasses, "status_item", statusMetadata[status as WorkLogStatusType]);
       },
-      filters: Object.entries(statusMetadata)
-        .filter(([key]) => key != "PARTIALLY")
-        .map(([key, value]) => ({
-          text: value.label,
-          value: key,
-        })),
+      filters: Array.from(new Set(worklogEntries.map((task) => task.status))).map((status) => ({
+        text: statusMetadata[status as WorkLogStatusType]?.label ?? status,
+        value: status,
+      })),
       onFilter: (value, record) => record.status === value,
     },
     {
@@ -196,8 +195,9 @@ const WorklogDetails = () => {
   ];
 
   const viewTaskModalCloseHandler = () => {
-    setViewDetailTask(null);
-    setSelectedWorklogEntries([]);
+    setSelectedTask(null);
+    setViewTaskVisible(false);
+    selectedWorklogEntries.length > 0 && setSelectedWorklogEntries([]);
   };
 
   useEffect(() => {
@@ -205,7 +205,7 @@ const WorklogDetails = () => {
       try {
         const response = await requestInstance.get(`/worklog/${worklogId}`);
         setWorklogInfo(response.data);
-        setCanFetchDetails(true);
+        setCanFetchTasks(true);
       } catch (error: any) {
         if (error.response?.status === 404) {
           setShowNotFound(true);
@@ -223,30 +223,29 @@ const WorklogDetails = () => {
   }, [canFetchWorkLogInfo]);
 
   useEffect(() => {
-    const fetchWorklogDetails = async () => {
-      setIsFetchingDetails(true);
+    const fetchWorklogTasks = async () => {
+      setIsFetchingTasks(true);
       try {
         const response = await requestInstance.get(`/worklog/${worklogId}/details`);
         setWorklogTasks(response.data.map((task: WorklogTask, idx: number) => ({ ...task, id: idx + 1 })));
       } catch (error: any) {
         showErrorToast(error);
       }
-      setIsFetchingDetails(false);
+      setIsFetchingTasks(false);
     };
 
-    if (canFetchDetails) {
-      fetchWorklogDetails();
-      setCanFetchDetails(false);
+    if (canFetchTasks) {
+      fetchWorklogTasks();
+      setCanFetchTasks(false);
     }
-  }, [canFetchDetails]);
+  }, [canFetchTasks]);
 
   useEffect(() => {
-    if (!viewDetailTask) return;
-    const fetchTaskDetails = async () => {
+    const fetchTaskEntries = async () => {
       setIsFetchingEntries(true);
       try {
-        const response = await requestInstance.get(`/worklog/${worklogId}/details/task?taskName=${viewDetailTask.taskName}`);
-        setWorkLogEntries(response.data);
+        const response = await requestInstance.get(`/worklog/${worklogId}/details/task?taskName=${selectedTask?.taskName}`);
+        setWorklogEntries(response.data);
       } catch (error: any) {
         showErrorToast(error);
       }
@@ -254,10 +253,10 @@ const WorklogDetails = () => {
     };
 
     if (canFetchEntries) {
-      fetchTaskDetails();
+      fetchTaskEntries();
       setCanFetchEntries(false);
     }
-  }, [viewDetailTask, canFetchEntries]);
+  }, [canFetchEntries]);
 
   const handleDeleteWorkLogTask = async () => {
     setIsDeletingTask(true);
@@ -266,7 +265,7 @@ const WorklogDetails = () => {
       if (response.data.isLast) {
         navigate("/");
       } else {
-        setCanFetchDetails(true);
+        setCanFetchTasks(true);
         setCanFetchWorkLogInfo(true);
       }
       showSuccessToast(response.data.message);
@@ -285,11 +284,12 @@ const WorklogDetails = () => {
         navigate("/");
       } else {
         if (response.data.isLastOfTask) {
-          setViewDetailTask(null);
+          setViewTaskVisible(false);
+          setSelectedTask(null);
         } else {
           setCanFetchEntries(true);
         }
-        setCanFetchDetails(true);
+        setCanFetchTasks(true);
         setCanFetchWorkLogInfo(true);
       }
       showSuccessToast(response.data.message);
@@ -302,9 +302,9 @@ const WorklogDetails = () => {
 
   return (
     <>
-      {viewDetailTask && (
+      {viewTaskVisible && (
         <WorklogModal
-          title={`${viewDetailTask?.taskName} Task Logs`}
+          title={`${selectedTask?.taskName} Task Logs`}
           properties={{
             open: true,
             centered: true,
@@ -316,7 +316,7 @@ const WorklogDetails = () => {
         >
           <WorklogTable<WorklogEntry>
             properties={{
-              columns: taskEntryColumns,
+              columns: worklogEntryColumns,
               dataSource: worklogEntries,
               rowSelection: {
                 selectedRowKeys: selectedWorklogEntries,
@@ -380,7 +380,7 @@ const WorklogDetails = () => {
               {worklogTasks.length > 0 && (
                 <WorklogTable<WorklogTask>
                   properties={{
-                    columns: logDetailsColumns,
+                    columns: worklogTaskColumns,
                     dataSource: worklogTasks,
                     rowSelection: {
                       selectedRowKeys: selectedWorklogTasks,
@@ -391,7 +391,7 @@ const WorklogDetails = () => {
                         disabled: record.status === "SYNCED",
                       }),
                     },
-                    loading: isFetchingDetails,
+                    loading: isFetchingTasks,
                   }}
                   actionButtons={[
                     {
