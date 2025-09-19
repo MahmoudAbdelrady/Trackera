@@ -304,7 +304,9 @@ public class WorkLogService {
         List<Map<String, Object>> workLogDetailGroups = workLogDetailRepository.getGroupedWorkLogDetailsByWorkLog(workLog);
         return workLogDetailGroups.stream().map(worklogGroup -> {
             WorkLogTaskDTO workLogTaskDTO = new WorkLogTaskDTO(worklogGroup.get("taskName").toString(), (String) worklogGroup.get("taskUrl"));
-            workLogTaskDTO.setTotalHours(TrackeraTimeSpanUtil.formatDuration(BigDecimal.valueOf(Double.parseDouble(worklogGroup.get("totalTime").toString())), false));
+            BigDecimal totalTime = BigDecimal.valueOf(Double.parseDouble(worklogGroup.get("totalTime").toString()));
+            workLogTaskDTO.setTotalHours(TrackeraTimeSpanUtil.formatDuration(totalTime, false));
+            workLogTaskDTO.setTotalTime(totalTime); // for sorting purpose
             workLogTaskDTO.setStatus(WorkLog.Status.valueOf(worklogGroup.get("status").toString()));
             return workLogTaskDTO;
         }).toList();

@@ -1,6 +1,5 @@
 package com.mdevs.trackera.entity;
 
-import com.github.f4b6a3.uuid.UuidCreator;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -11,6 +10,7 @@ import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Audited
 @EntityListeners(AuditingEntityListener.class)
@@ -41,6 +41,6 @@ public abstract class BaseEntity {
 
     @PrePersist
     public void prePersist() {
-        this.uuid = UuidCreator.getTimeBased().toString();
+        this.uuid = UUID.randomUUID().toString();
     }
 }

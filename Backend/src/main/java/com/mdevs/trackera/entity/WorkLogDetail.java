@@ -12,7 +12,7 @@ import java.math.RoundingMode;
 import java.time.LocalTime;
 
 @Entity
-@Table(indexes = {@Index(columnList = "TASK_NAME")})
+@Table(indexes = {@Index(columnList = "TASK_NAME"), @Index(columnList = "UUID")})
 @Audited
 @Getter
 @Setter

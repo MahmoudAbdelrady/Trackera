@@ -5,6 +5,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.math.BigDecimal;
+
 @Getter
 @Setter
 @NoArgsConstructor
@@ -14,6 +16,8 @@ public class WorkLogTaskDTO {
     private String taskUrl;
 
     private String totalHours;
+
+    private BigDecimal totalTime;
 
     private WorkLog.Status status;
 
