@@ -2,6 +2,7 @@ package com.mdevs.trackera.shared.utils;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.time.format.DateTimeFormatter;
 
@@ -11,6 +12,8 @@ public class TrackeraTimeSpanUtil {
     private final static DateTimeFormatter DATE_TIME_12H_FORMATTER = DateTimeFormatter.ofPattern("hh:mm a");
 
     private final static DateTimeFormatter COMPACTED_DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd");
+
+    private final static DecimalFormat DURATION_DECIMAL_FORMAT = new DecimalFormat("#.##");
 
     private static class DurationParts {
         int days;
@@ -34,6 +37,10 @@ public class TrackeraTimeSpanUtil {
 
     public static DateTimeFormatter getCompactedDateFormatter() {
         return COMPACTED_DATE_FORMATTER;
+    }
+
+    public static DecimalFormat getDurationDecimalFormat() {
+        return DURATION_DECIMAL_FORMAT;
     }
 
     public static String formatDuration(BigDecimal totalHours, boolean includeDays) {
