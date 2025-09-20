@@ -1,8 +1,7 @@
 package com.mdevs.trackera.shared.oauth_provider;
 
-import com.mdevs.trackera.dto.auth.OAuthRequestDTO;
-import com.mdevs.trackera.dto.auth.OAuthUserInfoDTO;
-import org.apache.commons.lang3.EnumUtils;
+import com.mdevs.trackera.shared.oauth_provider.providers.GoogleOAuthServiceProvider;
+import com.mdevs.trackera.shared.oauth_provider.providers.JiraOAuthServiceProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -10,17 +9,25 @@ import org.springframework.stereotype.Component;
 public class OAuthProviderFactory {
     private final GoogleOAuthServiceProvider googleOAuthServiceProvider;
 
+    private final JiraOAuthServiceProvider jiraOAuthServiceProvider;
+
     @Autowired
-    public OAuthProviderFactory(GoogleOAuthServiceProvider googleOAuthServiceProvider) {
+    public OAuthProviderFactory(GoogleOAuthServiceProvider googleOAuthServiceProvider, JiraOAuthServiceProvider jiraOAuthServiceProvider) {
         this.googleOAuthServiceProvider = googleOAuthServiceProvider;
+        this.jiraOAuthServiceProvider = jiraOAuthServiceProvider;
     }
 
-    public OAuthUserInfoDTO getOAuthUserInfoDTO(OAuthRequestDTO oAuthRequestDTO) {
-        OAuthProvider providerRequest = EnumUtils.isValidEnum(OAuthProvider.class, oAuthRequestDTO.getProvider()) ? OAuthProvider.valueOf(oAuthRequestDTO.getProvider()) : null;
-        if (providerRequest == null) {
-            throw new IllegalArgumentException("Invalid OAuth Provider: " + oAuthRequestDTO.getProvider());
-        } else {
-            return googleOAuthServiceProvider.authenticate(oAuthRequestDTO.getTokenCode());
+    public OAuthServiceProvider getProvider(OAuthProvider oAuthProvider) {
+        switch (oAuthProvider) {
+            case GOOGLE -> {
+                return googleOAuthServiceProvider;
+            }
+            case JIRA -> {
+                return jiraOAuthServiceProvider;
+            }
+            default -> {
+                return null;
+            }
         }
     }
 }

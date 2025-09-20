@@ -1,5 +1,6 @@
 package com.mdevs.trackera.service;
 
+import com.mdevs.trackera.config.general.AppConfig;
 import com.mdevs.trackera.dto.auth.*;
 import com.mdevs.trackera.entity.SecurityToken;
 import com.mdevs.trackera.entity.User;
@@ -11,6 +12,7 @@ import com.mdevs.trackera.repository.UserOAuthProviderRepository;
 import com.mdevs.trackera.repository.UserRepository;
 import com.mdevs.trackera.shared.exceptions.types.BusinessException;
 import com.mdevs.trackera.shared.exceptions.types.UnauthorizedException;
+import com.mdevs.trackera.shared.oauth_provider.OAuthProvider;
 import com.mdevs.trackera.shared.oauth_provider.OAuthProviderFactory;
 import com.mdevs.trackera.shared.utils.JwtUtil;
 import com.mdevs.trackera.shared.utils.TrackeraHasher;
@@ -18,6 +20,7 @@ import io.jsonwebtoken.Claims;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.apache.commons.lang3.EnumUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,6 +34,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -135,7 +139,11 @@ public class AuthService {
 
     @Transactional
     public Map<String, Object> oAuth(OAuthRequestDTO oAuthRequestDTO, HttpServletResponse httpResponse) {
-        OAuthUserInfoDTO oAuthUserInfo = oAuthProviderFactory.getOAuthUserInfoDTO(oAuthRequestDTO);
+        OAuthProvider providerRequest = EnumUtils.isValidEnum(OAuthProvider.class, oAuthRequestDTO.getProvider()) ? OAuthProvider.valueOf(oAuthRequestDTO.getProvider()) : null;
+        if (providerRequest == null) {
+            throw new IllegalArgumentException("Invalid OAuth Provider: " + oAuthRequestDTO.getProvider());
+        }
+        OAuthUserInfoDTO oAuthUserInfo = oAuthProviderFactory.getProvider(providerRequest).authenticate(oAuthRequestDTO.getTokenCode());
         User authenticatedUser = userRepository.findByEmail(oAuthUserInfo.getEmail());
         if (authenticatedUser == null) {
             authenticatedUser = new User();
@@ -157,6 +165,35 @@ public class AuthService {
             }
         }
         return generateLoginInfo(authenticatedUser, httpResponse);
+    }
+
+    public void oAuthV2(String oAuthProvider, HttpServletResponse httpResponse) {
+        try {
+            String redirectUrl = oAuthProviderFactory.getProvider(OAuthProvider.fromLabel(oAuthProvider)).getRedirectUrl();
+            httpResponse.sendRedirect(redirectUrl);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Transactional
+    public void oAuthV2Callback(String provider, String code, String state, HttpServletResponse httpResponse) {
+        try {
+            OAuthProvider oAuthProvider = OAuthProvider.fromLabel(provider);
+            OAuthAccessCredentialsDTO credentialsDTO = oAuthProviderFactory.getProvider(oAuthProvider).getAccessCredentials(code, false);
+            UserOAuthProvider userOAuthProvider = userOAuthProviderRepository.findByUserAndProvider(AppConfig.getCurrentUser(), oAuthProvider); // @TODO --> api is public so it needs handling by fetching user from state
+            if (userOAuthProvider == null) {
+                userOAuthProvider = new UserOAuthProvider(AppConfig.getCurrentUser(), oAuthProvider);
+            }
+            userOAuthProvider.setAccessToken(trackeraHasher.encryptToBase64(credentialsDTO.getAccessToken()));
+            userOAuthProvider.setRefreshToken(trackeraHasher.encryptToBase64(credentialsDTO.getRefreshToken()));
+            userOAuthProvider.setAccessTokenExpiry(LocalDateTime.now().plusSeconds(credentialsDTO.getExpiresIn()));
+            userOAuthProvider.setRevoked(false);
+            userOAuthProviderRepository.save(userOAuthProvider);
+            httpResponse.sendRedirect(AppConfig.getFrontendUrl() + "/settings");
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private Map<String, Object> generateLoginInfo(User user, HttpServletResponse httpResponse) {

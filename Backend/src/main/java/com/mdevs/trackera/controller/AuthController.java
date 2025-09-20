@@ -4,6 +4,7 @@ import com.mdevs.trackera.dto.auth.*;
 import com.mdevs.trackera.service.AuthService;
 import com.mdevs.trackera.shared.annotations.PublicAPI;
 import com.mdevs.trackera.shared.exceptions.ExceptionResponseMaker;
+import com.mdevs.trackera.shared.oauth_provider.OAuthProvider;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -42,6 +43,18 @@ public class AuthController {
     @PostMapping("/oauth")
     public ResponseEntity<?> OAuth(@RequestBody @Valid OAuthRequestDTO oAuthRequestDTO, HttpServletResponse httpServletResponse) {
         return new ResponseEntity<>(authService.oAuth(oAuthRequestDTO, httpServletResponse), HttpStatus.OK);
+    }
+
+    @PublicAPI
+    @GetMapping("/oauth-v2/{oAuthProvider}")
+    public void OAuthV2(@PathVariable String oAuthProvider, HttpServletResponse httpServletResponse) {
+        authService.oAuthV2(oAuthProvider, httpServletResponse);
+    }
+
+    @PublicAPI
+    @GetMapping("/oauth-v2/{oAuthProvider}/callback")
+    public void OAuthV2Callback(@PathVariable String oAuthProvider, @RequestParam String code, @RequestParam(required = false) String state, HttpServletResponse httpServletResponse) {
+        authService.oAuthV2Callback(oAuthProvider, code, state, httpServletResponse);
     }
 
     @PostMapping("/logout")

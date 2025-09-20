@@ -6,6 +6,7 @@ import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.type.filter.AnnotationTypeFilter;
+import org.springframework.util.AntPathMatcher;
 import org.springframework.web.bind.annotation.*;
 
 import java.lang.annotation.Annotation;
@@ -19,6 +20,8 @@ import java.util.Set;
 public class ApiConfig {
     private Map<Class<? extends Annotation>, Map<String, String>> CUSTOM_ANNOTATED_APIS;
 
+    private final static AntPathMatcher ANT_PATH_MATCHER = new AntPathMatcher();
+
     @PostConstruct
     public void init() {
         CUSTOM_ANNOTATED_APIS = Collections.unmodifiableMap(scanCustomAnnotatedApis("com.mdevs.trackera.controller", Set.of(PublicAPI.class)));
@@ -30,8 +33,15 @@ public class ApiConfig {
 
     public boolean hasAnnotations(String requestPath, String method, Set<Class<? extends Annotation>> annotationsClasses) {
         return annotationsClasses.stream().anyMatch(annotationClass -> {
-            String requestPathValue = String.valueOf(getAnnotationApis(annotationClass).get(requestPath));
-            return requestPathValue.equals(method) || requestPathValue.equals("ALL");
+            Map<String, String> apis = getAnnotationApis(annotationClass);
+            return apis.entrySet().stream().anyMatch(entry -> {
+                String pattern = entry.getKey();
+                if (ANT_PATH_MATCHER.match(pattern, requestPath)) {
+                    String httpMethod = entry.getValue();
+                    return httpMethod.equals(method) || httpMethod.equals("ALL");
+                }
+                return false;
+            });
         });
     }
 

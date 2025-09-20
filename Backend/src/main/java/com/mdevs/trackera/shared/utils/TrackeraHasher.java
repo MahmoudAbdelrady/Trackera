@@ -101,6 +101,14 @@ public class TrackeraHasher {
         }
     }
 
+    public String encryptToBase64(String text) {
+        return Base64.getEncoder().encodeToString(encrypt(text));
+    }
+
+    public String decryptFromBase64(String base64Text) {
+        return decrypt(Base64.getDecoder().decode(base64Text));
+    }
+
     private byte[] encrypt(String text) {
         try {
             Cipher cipher = Cipher.getInstance(ENCRYPTION_ALGORITHM);
