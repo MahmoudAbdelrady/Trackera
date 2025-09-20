@@ -2,6 +2,7 @@ package com.mdevs.trackera.shared.utils;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.time.format.DateTimeFormatter;
 
@@ -11,6 +12,8 @@ public class TrackeraTimeSpanUtil {
     private final static DateTimeFormatter DATE_TIME_12H_FORMATTER = DateTimeFormatter.ofPattern("hh:mm a");
 
     private final static DateTimeFormatter COMPACTED_DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd");
+
+    private final static DecimalFormat DURATION_DECIMAL_FORMAT = new DecimalFormat("#.##");
 
     private static class DurationParts {
         int days;
@@ -36,21 +39,14 @@ public class TrackeraTimeSpanUtil {
         return COMPACTED_DATE_FORMATTER;
     }
 
-    // (hours + minutes only)
-    public static String formatDuration(BigDecimal totalHours) {
-        DurationParts parts = extractDurationParts(totalHours, false);
-
-        if (parts.hours == 0 && parts.minutes == 0) {
-            return "0h";
-        }
-        return parts.minutes == 0 ? String.format("%dh", parts.hours) : String.format("%dh %dm", parts.hours, parts.minutes);
+    public static DecimalFormat getDurationDecimalFormat() {
+        return DURATION_DECIMAL_FORMAT;
     }
 
-    // (days + hours + minutes)
-    public static String formatDurationWithDays(BigDecimal totalHours) {
-        DurationParts parts = extractDurationParts(totalHours, true);
+    public static String formatDuration(BigDecimal totalHours, boolean includeDays) {
+        DurationParts parts = extractDurationParts(totalHours, includeDays);
 
-        if (parts.days == 0 && parts.hours == 0 && parts.minutes == 0) {
+        if ((!includeDays || parts.days == 0) && parts.hours == 0 && parts.minutes == 0) {
             return "0h";
         }
 

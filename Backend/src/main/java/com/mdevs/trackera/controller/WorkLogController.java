@@ -29,25 +29,50 @@ public class WorkLogController {
         return new ResponseEntity<>(workLogService.searchAllWorkLogs(searchFilters, pageable), HttpStatus.OK);
     }
 
+    @GetMapping("/{uuid}")
+    public ResponseEntity<?> GetWorkLogByUUID(@PathVariable String uuid) {
+        return new ResponseEntity<>(workLogService.getWorkLogByUUID(uuid), HttpStatus.OK);
+    }
+
     @PostMapping
     public ResponseEntity<?> AddWorkLog(@RequestPart(name = "worklogInfo") @Valid ManageWorkLogDTO manageWorkLogDTO, @RequestPart MultipartFile file) {
         Map<String, Object> result = workLogService.addWorkLog(manageWorkLogDTO, file);
         return result.containsKey("isError") ? new ResponseEntity<>(result, HttpStatus.BAD_REQUEST) : new ResponseEntity<>(result.get("message"), HttpStatus.CREATED);
     }
 
-    @PutMapping("/{id}")
-    public ResponseEntity<?> UpdateWorkLog(@PathVariable Long id, @RequestPart(name = "worklogInfo") @Valid ManageWorkLogDTO manageWorkLogDTO, @RequestPart(required = false) MultipartFile file) {
-        Map<String, Object> result = workLogService.updateWorkLog(id, manageWorkLogDTO, file);
+    @PutMapping("/{uuid}")
+    public ResponseEntity<?> UpdateWorkLog(@PathVariable String uuid, @RequestPart(name = "worklogInfo") @Valid ManageWorkLogDTO manageWorkLogDTO, @RequestPart(required = false) MultipartFile file) {
+        Map<String, Object> result = workLogService.updateWorkLog(uuid, manageWorkLogDTO, file);
         return result.containsKey("isError") ? new ResponseEntity<>(result, HttpStatus.BAD_REQUEST) : new ResponseEntity<>(result.get("message"), HttpStatus.OK);
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<?> DeleteWorkLog(@PathVariable Long id) {
-        return new ResponseEntity<>(workLogService.deleteWorkLog(id), HttpStatus.OK);
+    @DeleteMapping("/{uuid}")
+    public ResponseEntity<?> DeleteWorkLog(@PathVariable String uuid) {
+        return new ResponseEntity<>(workLogService.deleteWorkLog(uuid), HttpStatus.OK);
     }
 
     @GetMapping("/summary")
     public ResponseEntity<?> GetCurrentMonthSummary() {
         return new ResponseEntity<>(workLogService.getCurrentMonthSummary(), HttpStatus.OK);
+    }
+
+    @GetMapping("/{uuid}/details")
+    public ResponseEntity<?> GetWorkLogDetailSummary(@PathVariable String uuid) {
+        return new ResponseEntity<>(workLogService.getWorkLogDetailSummary(uuid), HttpStatus.OK);
+    }
+
+    @GetMapping("/{uuid}/details/task")
+    public ResponseEntity<?> GetWorkLogTaskDetails(@PathVariable String uuid, @RequestParam String taskName) {
+        return new ResponseEntity<>(workLogService.getWorkLogTaskDetails(uuid, taskName), HttpStatus.OK);
+    }
+
+    @DeleteMapping("/{uuid}/details/task")
+    public ResponseEntity<?> DeleteWorkLogTaskDetails(@PathVariable String uuid, @RequestParam String taskName) {
+        return new ResponseEntity<>(workLogService.deleteWorkLogTaskDetails(uuid, taskName), HttpStatus.OK);
+    }
+
+    @DeleteMapping("/details/entry/{uuid}")
+    public ResponseEntity<?> DeleteWorkLogTaskEntry(@PathVariable String uuid) {
+        return new ResponseEntity<>(workLogService.deleteWorkLogTaskEntry(uuid), HttpStatus.OK);
     }
 }

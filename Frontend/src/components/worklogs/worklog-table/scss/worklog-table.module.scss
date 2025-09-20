@@ -121,6 +121,10 @@
         }
         &.delete {
           color: $redColor;
+          &.disabled {
+            color: $borderColor;
+            cursor: not-allowed;
+          }
         }
       }
     }

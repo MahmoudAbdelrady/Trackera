@@ -19,8 +19,7 @@ public class UserInvalidToken extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     private User user;
 
-    @Lob
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "LONGTEXT")
     private String token;
 
     @Column(nullable = false, columnDefinition = "TIMESTAMP(0)")

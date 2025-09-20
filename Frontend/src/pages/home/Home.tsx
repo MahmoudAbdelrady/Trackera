@@ -14,7 +14,7 @@ import {
   type WorkLogStatusType,
   type WorkLogSearchFilter,
 } from "../../shared/types";
-import { createPaginationConfig, getPaddedItem } from "../../utils";
+import { createPaginationConfig, getWorklogTablePaddedItem } from "../../utils";
 import worklogTableClasses from "../../components/worklogs/worklog-table/scss/worklog-table.module.css";
 import worklogModalClasses from "../../components/worklogs/modals/worklog-modal/scss/worklog-modal.module.css";
 import requestInstance from "../../shared/axios/request-instance";
@@ -66,7 +66,7 @@ const Home = () => {
     }
   };
 
-  const deleteWorkLog = async (workLogId: number) => {
+  const deleteWorkLog = async (workLogId: string) => {
     setIsDeletingWorkLog(true);
     try {
       const response = await requestInstance.delete(`/worklog/${workLogId}`);
@@ -102,8 +102,7 @@ const Home = () => {
       dataIndex: "evaluation",
       key: "evaluation",
       render: (_, { evaluation }) => {
-        const meta = evaluationMetadata[evaluation as WorkLogEvaluationType];
-        return getPaddedItem(worklogTableClasses, "evaluation_item", meta.label, meta.className);
+        return getWorklogTablePaddedItem(worklogTableClasses, "evaluation_item", evaluationMetadata[evaluation as WorkLogEvaluationType]);
       },
     },
     {
@@ -111,8 +110,7 @@ const Home = () => {
       dataIndex: "status",
       key: "status",
       render: (_, { status }) => {
-        const meta = statusMetadata[status as WorkLogStatusType];
-        return getPaddedItem(worklogTableClasses, "status_item", meta.label, meta.className);
+        return getWorklogTablePaddedItem(worklogTableClasses, "status_item", statusMetadata[status as WorkLogStatusType]);
       },
     },
     {
@@ -139,7 +137,7 @@ const Home = () => {
             />
           </Tooltip>
           <Tooltip title="View">
-            <Link to={`/worklog-details/${record.id}`} className={`${worklogTableClasses.log_action_btn} ${worklogTableClasses.view}`}>
+            <Link to={`/worklog-details/${record.logId}`} className={`${worklogTableClasses.log_action_btn} ${worklogTableClasses.view}`}>
               <Eye />
             </Link>
           </Tooltip>
@@ -179,7 +177,7 @@ const Home = () => {
           maskClosable: !isDeletingWorkLog,
           okButtonProps: { danger: true, loading: isDeletingWorkLog, disabled: isDeletingWorkLog },
           cancelButtonProps: { disabled: isDeletingWorkLog },
-          onOk: () => deleteWorkLog(selectedWorkLog?.id!),
+          onOk: () => deleteWorkLog(selectedWorkLog?.logId!),
           onCancel: () => {
             setDeleteWorkLogVisible(false);
             setSelectedWorkLog(undefined);

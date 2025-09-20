@@ -31,7 +31,7 @@ public class SecurityToken extends BaseEntity {
     @Column(nullable = false)
     private Type type;
 
-    @Lob
+    @Column(columnDefinition = "LONGTEXT")
     private String additionalInfo;
 
     public SecurityToken(User user, Type type) {

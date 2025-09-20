@@ -27,9 +27,6 @@ public abstract class BaseEntity {
     @Column(nullable = false)
     private String uuid;
 
-    @Column(nullable = false)
-    private String entityType;
-
     @Version
     @Column(nullable = false)
     private long version = 0;
@@ -45,8 +42,5 @@ public abstract class BaseEntity {
     @PrePersist
     public void prePersist() {
         this.uuid = UUID.randomUUID().toString();
-        if (this.entityType == null) {
-            this.entityType = this.getClass().getSimpleName();
-        }
     }
 }

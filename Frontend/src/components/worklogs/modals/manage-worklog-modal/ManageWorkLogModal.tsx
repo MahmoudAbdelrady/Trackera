@@ -81,7 +81,7 @@ const ManageWorkLogModal = (props: ManageWorkLogModalProps) => {
         const formData = getFormData(values, isEditMode());
         let response;
         if (isEditMode()) {
-          response = await requestInstance.put(`/worklog/${props.selectedWorkLog!.id}`, formData);
+          response = await requestInstance.put(`/worklog/${props.selectedWorkLog!.logId}`, formData);
         } else {
           response = await requestInstance.post("/worklog", formData);
         }

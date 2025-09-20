@@ -16,9 +16,8 @@ public interface WorkLogRepository extends BaseRepository<WorkLog> {
     @Query("SELECT COUNT(w) > 0 FROM WorkLog w WHERE w.user = :user AND w.workDate = :workDate AND (:workLogId IS NULL OR w.id != :workLogId)")
     boolean existsByUserAndWorkDateAndWorkLogNot(@Param("user") User user, @Param("workDate") LocalDate workDate, @Param("workLogId") Long workLogId);
 
-    @Query("SELECT w FROM WorkLog w WHERE w.user = :user ORDER BY w.workDate DESC")
-    Page<WorkLog> findAllByUserOrderByWorkDateDesc(@Param("user") User user, Pageable pageable);
-
     @Query("SELECT COALESCE(SUM(w.totalHours), 0) FROM WorkLog w WHERE w.user = :user AND w.workDate BETWEEN :startDate AND :endDate")
     BigDecimal sumTotalHoursByUserAndWorkDateBetween(@Param("user") User user, @Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
+
+    WorkLog findByUserAndUuid(User user, String uuid);
 }

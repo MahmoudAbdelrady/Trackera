@@ -1,9 +1,7 @@
 package com.mdevs.trackera.service;
 
 import com.mdevs.trackera.config.general.AppConfig;
-import com.mdevs.trackera.dto.worklog.ManageWorkLogDTO;
-import com.mdevs.trackera.dto.worklog.WorkLogInfoDTO;
-import com.mdevs.trackera.dto.worklog.WorkLogSummaryDTO;
+import com.mdevs.trackera.dto.worklog.*;
 import com.mdevs.trackera.entity.WorkLog;
 import com.mdevs.trackera.entity.WorkLogDetail;
 import com.mdevs.trackera.repository.WorkLogDetailRepository;
@@ -11,6 +9,8 @@ import com.mdevs.trackera.repository.WorkLogRepository;
 import com.mdevs.trackera.shared.FileHandler;
 import com.mdevs.trackera.shared.enums.WorkLogColumn;
 import com.mdevs.trackera.shared.exceptions.types.BusinessException;
+import com.mdevs.trackera.shared.exceptions.types.NotFoundException;
+import com.mdevs.trackera.shared.exceptions.types.UnauthorizedException;
 import com.mdevs.trackera.shared.search_filter.SearchFilter;
 import com.mdevs.trackera.shared.search_filter.WorkLogSearchFilterBuilder;
 import com.mdevs.trackera.shared.utils.TrackeraTimeSpanUtil;
@@ -27,6 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
+import java.text.DecimalFormat;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -59,10 +60,19 @@ public class WorkLogService {
         Page<WorkLog> workLogList = workLogRepository.findAll(searchFilterBuilder.build(), pageable);
         List<WorkLogInfoDTO> workLogInfoDTOList = workLogList.getContent().stream().map(workLog -> {
             WorkLogInfoDTO workLogInfoDTO = modelMapper.map(workLog, WorkLogInfoDTO.class);
-            workLogInfoDTO.setTotalHours(TrackeraTimeSpanUtil.formatDuration(workLog.getTotalHours()));
+            workLogInfoDTO.setLogId(workLog.getUuid());
+            workLogInfoDTO.setTotalHours(TrackeraTimeSpanUtil.formatDuration(workLog.getTotalHours(), false));
             return workLogInfoDTO;
         }).toList();
         return new PageImpl<>(workLogInfoDTOList, pageable, workLogList.getTotalElements());
+    }
+
+    public WorkLogInfoDTO getWorkLogByUUID(String uuid) {
+        WorkLog workLog = validateWorkLogExistsAndHasPermission(uuid);
+        WorkLogInfoDTO workLogInfoDTO = modelMapper.map(workLog, WorkLogInfoDTO.class);
+        workLogInfoDTO.setLogId(workLog.getUuid());
+        workLogInfoDTO.setTotalHours(TrackeraTimeSpanUtil.formatDuration(workLog.getTotalHours(), false));
+        return workLogInfoDTO;
     }
 
     @Transactional
@@ -79,15 +89,9 @@ public class WorkLogService {
     }
 
     @Transactional
-    public Map<String, Object> updateWorkLog(Long id, ManageWorkLogDTO manageWorkLogDTO, MultipartFile worklogFile) {
-        WorkLog workLog = workLogRepository.findOne(id);
-        if (workLog == null) {
-            throw new BusinessException("WorkLog with ID " + id + " doesn't exist");
-        }
-        if (workLog.getUser().getId() != Objects.requireNonNull(AppConfig.getCurrentUser()).getId()) {
-            throw new BusinessException("You are not authorized to update this worklog");
-        }
-        validateWorkLog(manageWorkLogDTO, id);
+    public Map<String, Object> updateWorkLog(String uuid, ManageWorkLogDTO manageWorkLogDTO, MultipartFile worklogFile) {
+        WorkLog workLog = validateWorkLogExistsAndHasPermission(uuid);
+        validateWorkLog(manageWorkLogDTO, workLog.getId());
 
         if (worklogFile != null) {
             Map<String, Object> processResult = processWorkLogFile(worklogFile);
@@ -108,14 +112,8 @@ public class WorkLogService {
     }
 
     @Transactional
-    public String deleteWorkLog(Long id) {
-        WorkLog workLog = workLogRepository.findOne(id);
-        if (workLog == null) {
-            throw new BusinessException("WorkLog with ID " + id + " doesn't exist");
-        }
-        if (workLog.getUser().getId() != Objects.requireNonNull(AppConfig.getCurrentUser()).getId()) {
-            throw new BusinessException("You are not authorized to delete this worklog");
-        }
+    public String deleteWorkLog(String uuid) {
+        WorkLog workLog = validateWorkLogExistsAndHasPermission(uuid);
         workLogDetailRepository.deleteAllByWorkLog(workLog);
         workLogRepository.delete(workLog);
         return "Worklog deleted successfully";
@@ -123,13 +121,14 @@ public class WorkLogService {
 
     public List<WorkLogSummaryDTO> getCurrentMonthSummary() {
         LocalDate now = LocalDate.now();
+        DecimalFormat durationDecimalFormat = TrackeraTimeSpanUtil.getDurationDecimalFormat();
         BigDecimal totalHours = workLogRepository.sumTotalHoursByUserAndWorkDateBetween(AppConfig.getCurrentUser(), now.withDayOfMonth(1), now.withDayOfMonth(now.lengthOfMonth()));
         BigDecimal targetHours = BigDecimal.valueOf(200.0); // @TODO --> Should be based on user settings
         BigDecimal remainingHours = targetHours.subtract(totalHours).max(BigDecimal.ZERO);
         return List.of(
-                new WorkLogSummaryDTO("Logged Hours", "Equivalent to " + TrackeraTimeSpanUtil.formatDurationWithDays(totalHours), "logged", totalHours.toString()),
-                new WorkLogSummaryDTO("Target Hours", "Equivalent to " + TrackeraTimeSpanUtil.formatDurationWithDays(targetHours), "target", targetHours.toString()),
-                new WorkLogSummaryDTO("Remaining Hours", "Equivalent to " + TrackeraTimeSpanUtil.formatDurationWithDays(remainingHours), "remaining", remainingHours.toString())
+                new WorkLogSummaryDTO("Logged Hours", "Equivalent to " + TrackeraTimeSpanUtil.formatDuration(totalHours, true), "logged", durationDecimalFormat.format(totalHours)),
+                new WorkLogSummaryDTO("Target Hours", "Equivalent to " + TrackeraTimeSpanUtil.formatDuration(targetHours, true), "target", durationDecimalFormat.format(targetHours)),
+                new WorkLogSummaryDTO("Remaining Hours", "Equivalent to " + TrackeraTimeSpanUtil.formatDuration(remainingHours, true), "remaining", durationDecimalFormat.format(remainingHours))
         );
     }
 
@@ -186,9 +185,9 @@ public class WorkLogService {
             workLogDetail.setTaskUrl(null); // @TODO --> Should be based on the user's selected project
             workLogDetail.setStartTime(fromHour);
             workLogDetail.setEndTime(toHour);
-            workLogDetail.setDuration(BigDecimal.valueOf(taskLogDurationValue));
+            workLogDetail.setDuration(BigDecimal.valueOf(taskLogDurationValue / 60.0));
             workLogDetail.setDescription(taskDescription);
-            workLogDetail.setStatus(WorkLog.Status.NOT_SYNCED);
+            workLogDetail.setSynced(false);
             allWorkLogDetails.add(workLogDetail);
         }
 
@@ -289,5 +288,102 @@ public class WorkLogService {
             LOGGER.error("Error saving worklog details", e);
             throw new RuntimeException(e.getMessage());
         }
+    }
+
+    private WorkLog validateWorkLogExistsAndHasPermission(String uuid) {
+        WorkLog workLog = workLogRepository.findByUserAndUuid(AppConfig.getCurrentUser(), uuid);
+        if (workLog == null) {
+            throw new NotFoundException("WorkLog not found");
+        }
+        if (workLog.getUser().getId() != Objects.requireNonNull(AppConfig.getCurrentUser()).getId()) {
+            throw new UnauthorizedException("You are not authorized to access this worklog");
+        }
+        return workLog;
+    }
+
+    public List<WorkLogTaskDTO> getWorkLogDetailSummary(String uuid) {
+        WorkLog workLog = validateWorkLogExistsAndHasPermission(uuid);
+        List<Map<String, Object>> workLogDetailGroups = workLogDetailRepository.getGroupedWorkLogDetailsByWorkLog(workLog);
+        return workLogDetailGroups.stream().map(worklogGroup -> {
+            WorkLogTaskDTO workLogTaskDTO = new WorkLogTaskDTO(worklogGroup.get("taskName").toString(), (String) worklogGroup.get("taskUrl"));
+            BigDecimal totalTime = BigDecimal.valueOf(Double.parseDouble(worklogGroup.get("totalTime").toString()));
+            workLogTaskDTO.setTotalHours(TrackeraTimeSpanUtil.formatDuration(totalTime, false));
+            workLogTaskDTO.setTotalTime(totalTime); // for sorting purpose
+            workLogTaskDTO.setStatus(WorkLog.Status.valueOf(worklogGroup.get("status").toString()));
+            return workLogTaskDTO;
+        }).toList();
+    }
+
+    public List<WorkLogEntryDTO> getWorkLogTaskDetails(String uuid, String taskName) {
+        WorkLog workLog = validateWorkLogExistsAndHasPermission(uuid);
+        List<WorkLogDetail> workLogDetails = workLogDetailRepository.findByWorkLogAndTaskName(workLog, taskName);
+        if (workLogDetails.isEmpty()) {
+            throw new NotFoundException("No logs found for the specified task in this worklog");
+        }
+        return workLogDetails.stream().map(workLogDetail -> {
+            WorkLogEntryDTO workLogEntryDTO = new WorkLogEntryDTO();
+            workLogEntryDTO.setId(workLogDetail.getUuid());
+            workLogEntryDTO.setFromTime(TrackeraTimeSpanUtil.getDateTime12hFormatter().format(workLogDetail.getStartTime()));
+            workLogEntryDTO.setToTime(TrackeraTimeSpanUtil.getDateTime12hFormatter().format(workLogDetail.getEndTime()));
+            workLogEntryDTO.setDuration(TrackeraTimeSpanUtil.formatDuration(workLogDetail.getDuration(), false));
+            workLogEntryDTO.setDescription(workLogDetail.getDescription());
+            workLogEntryDTO.setStatus(workLogDetail.isSynced() ? WorkLog.Status.SYNCED : WorkLog.Status.NOT_SYNCED);
+            return workLogEntryDTO;
+        }).toList();
+    }
+
+    @Transactional
+    public Map<String, Object> deleteWorkLogTaskDetails(String uuid, String taskName) {
+        WorkLog workLog = validateWorkLogExistsAndHasPermission(uuid);
+        List<WorkLogDetail> detailsToDelete = workLogDetailRepository.findByWorkLogAndTaskName(workLog, taskName);
+        if (detailsToDelete.isEmpty()) {
+            throw new NotFoundException("No logs found for the specified task in this worklog");
+        }
+        workLogDetailRepository.deleteAll(detailsToDelete);
+
+        List<WorkLogDetail> existingDetails = workLogDetailRepository.findAllByWorkLog(workLog);
+        Map<String, Object> result = new HashMap<>();
+        if (existingDetails.isEmpty()) {
+            workLogRepository.delete(workLog);
+            result.put("isLast", true);
+        } else {
+            double totalDeletedHours = detailsToDelete.stream().mapToDouble(detail -> detail.getDuration().doubleValue()).sum();
+            workLog.setTotalHours(workLog.getTotalHours().subtract(BigDecimal.valueOf(totalDeletedHours)).max(BigDecimal.ZERO));
+            workLogRepository.save(workLog);
+        }
+
+        result.put("message", "Task logs deleted successfully");
+        return result;
+    }
+
+    @Transactional
+    public Map<String, Object> deleteWorkLogTaskEntry(String uuid) {
+        WorkLogDetail workLogEntry = workLogDetailRepository.findByUuid(uuid);
+        if (workLogEntry == null) {
+            throw new NotFoundException("WorkLog entry not found");
+        }
+        WorkLog workLog = workLogEntry.getWorkLog();
+        if (workLog.getUser().getId() != Objects.requireNonNull(AppConfig.getCurrentUser()).getId()) {
+            throw new UnauthorizedException("You are not authorized to access this entry");
+        }
+
+        workLogDetailRepository.delete(workLogEntry);
+
+        Map<String, Object> result = new HashMap<>();
+        if (!workLogDetailRepository.existsByWorkLog(workLog)) {
+            workLogRepository.delete(workLog);
+            result.put("isLast", true);
+        } else {
+            double deletedDuration = workLogEntry.getDuration().doubleValue();
+            workLog.setTotalHours(workLog.getTotalHours().subtract(BigDecimal.valueOf(deletedDuration)).max(BigDecimal.ZERO));
+            workLogRepository.save(workLog);
+
+            if (!workLogDetailRepository.existsByWorkLogAndTaskName(workLog, workLogEntry.getTaskName())) {
+                result.put("isLastOfTask", true);
+            }
+        }
+
+        result.put("message", "WorkLog entry deleted successfully");
+        return result;
     }
 }
