@@ -1,0 +1,75 @@
+.search_filters_container {
+  margin-top: 20px;
+}
+.search_filters_container .search_filters_fields_grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: 15px;
+  align-items: flex-start;
+}
+.search_filters_container .search_filters_fields_grid .search_filter_input {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+}
+.search_filters_container .search_filters_fields_grid .search_filter_input .filter_input_box {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  margin-left: 10px;
+  gap: 5px;
+}
+.search_filters_container .search_filters_fields_grid .search_filter_input .filter_input_box .filter_form_item {
+  margin-bottom: 0;
+  width: 100%;
+}
+@media (max-width: 768px) {
+  .search_filters_container .search_filters_fields_grid .search_filter_input .filter_input_box.with_operator {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+.search_filters_container .search_filters_fields_grid .search_filter_input .filter_input_box .filter_range_inputs {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 10px;
+  margin-left: 5px;
+}
+@media (max-width: 768px) {
+  .search_filters_container .search_filters_fields_grid .search_filter_input .filter_input_box .filter_range_inputs {
+    margin-left: 0;
+  }
+}
+@media (max-width: 768px) {
+  .search_filters_container .search_filters_fields_grid .search_filter_input .filter_input_box .filter_input_radio {
+    display: flex;
+    justify-content: flex-start;
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+.search_filters_container .search_filters_fields_grid .search_filter_input .filter_input_box .filter_operator {
+  width: 130px;
+}
+.search_filters_container .search_filters_fields_grid .search_filter_input .filter_input_box .range_input {
+  width: 110px;
+}
+.search_filters_container .search_filters_actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  margin: 25px 0 5px;
+  gap: 10px;
+}
+.search_filters_container .search_filters_actions .filter_button {
+  color: #fff;
+  padding: 20px;
+}
+.search_filters_container .search_filters_actions .filter_button.search {
+  background-color: #2563eb;
+}
+.search_filters_container .search_filters_actions .filter_button.clear {
+  color: #000;
+  background-color: #eff6ff;
+}/*# sourceMappingURL=search-filter.module.css.map */

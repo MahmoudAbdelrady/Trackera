@@ -1,0 +1,10 @@
+@use "../../../shared/styles/colors" as *;
+@use "../../../shared/styles/mixins" as *;
+
+.worklog_status_cards_container {
+  @include center;
+  gap: 15px;
+  @media (max-width: 768px) {
+    flex-direction: column;
+  }
+}

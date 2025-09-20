@@ -1,0 +1,8 @@
+@use "../../../shared/styles/colors" as *;
+@use "../../../shared/styles/mixins" as *;
+
+.loading_spinner_container {
+  width: 100vw;
+  height: 100vh;
+  @include center;
+}

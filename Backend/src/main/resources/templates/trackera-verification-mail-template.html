@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>Trackera</title>
+</head>
+<body style="margin:0;padding:0;font-family:ui-sans-serif,system-ui,sans-serif,'Apple Color Emoji','Segoe UI Emoji','Segoe UI Symbol','Noto Color Emoji';">
+
+<!-- HEADER -->
+<div style="background-color:#2563eb;color:#ffffff;padding:15px;font-size:20px;font-weight:bold;">
+    <h1 style="margin:0;color:#ffffff;font-size:24px;display:block;">Trackera</h1>
+</div>
+
+<!-- CONTENT -->
+<div style="padding:20px;">
+
+    <!-- Content Header -->
+    <h2 th:text="${emailType}"
+        style="margin:0 0 10px 0;font-size:18px;color:#4b0082;display:block;">
+    </h2>
+
+    <!-- Description -->
+    <p th:text="${emailTypeDesc}"
+       style="margin:0 0 20px 0;color:#5c5c5c;font-size:14px;line-height:1.4;display:block;">
+    </p>
+
+    <!-- Button -->
+    <div style="text-align:left;margin-bottom:20px;">
+        <a th:href="${verificationLink}" th:text="${linkLabel}" target="_blank" style="padding:15px 25px;font-weight:500;background-color:#2563eb;border-radius:12px;color:#ffffff;text-decoration:none;display:inline-block;">
+        </a>
+    </div>
+
+    <!-- Footer Note -->
+    <p style="margin:0;color:#5c5c5c;font-size:13px;line-height:1.4;display:block;">
+        The link is valid for 15 minutes. If you didn't request this, please ignore the email.
+    </p>
+
+</div>
+
+<!-- GLOBAL FOOTER -->
+<div style="border-top:1px solid #e5e7eb;text-align:center;padding:20px;background-color:#dddddd;">
+    <p style="margin:0;font-size:13px;color:#2563eb;display:block;">
+        Trackera - All rights reserved.
+    </p>
+</div>
+</body>
+</html>

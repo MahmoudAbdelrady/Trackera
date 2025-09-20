@@ -1,0 +1,45 @@
+.auth_footer_container {
+  margin-top: 20px;
+}
+.auth_footer_container .separator {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+}
+.auth_footer_container .separator .separator_text {
+  background-color: #fff;
+  color: #5c5c5c;
+  padding: 0 10px;
+  z-index: 1;
+  position: relative;
+  font-size: 15px;
+}
+.auth_footer_container .separator::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  border-bottom: 1px solid #c9cacc;
+  z-index: 0;
+}
+.auth_footer_container .auth_redirection {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 25px;
+  font-size: 14px;
+}
+.auth_footer_container .auth_redirection p {
+  color: #5c5c5c;
+}
+.auth_footer_container .auth_redirection p a {
+  color: #2563eb;
+  font-weight: 500;
+  margin-left: 5px;
+}
+.auth_footer_container .auth_redirection p a:hover {
+  text-decoration: underline;
+}/*# sourceMappingURL=auth-footer.module.css.map */

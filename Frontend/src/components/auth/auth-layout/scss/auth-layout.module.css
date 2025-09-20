@@ -1,0 +1,37 @@
+.auth_layout {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  width: 100vw;
+  height: 100vh;
+}
+@media (max-width: 577px) or (max-height: 620px) {
+  .auth_layout {
+    margin: 20px 0;
+    height: auto;
+  }
+}
+.auth_layout .header {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+}
+.auth_layout .header h3 {
+  color: #2563eb;
+  font-size: 24px;
+}
+.auth_layout .header p {
+  color: #5c5c5c;
+  font-size: 14px;
+  margin-top: 5px;
+}
+.auth_layout .layout_content {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  width: 100%;
+  margin-top: 30px;
+}/*# sourceMappingURL=auth-layout.module.css.map */

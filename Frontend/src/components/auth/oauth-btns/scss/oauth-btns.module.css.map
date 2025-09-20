@@ -1,0 +1,1 @@
+{"version":3,"sources":["oauth-btns.module.scss","../../../../shared/styles/_mixins.scss","oauth-btns.module.css"],"names":[],"mappings":"AAGA;EACE,gBAAA;ECAA,aAAA;EACA,uBAAA;EACA,mBAAA;EDAA,WAAA;AEAF;AFCE;EACE,WAAA;EACA,kBAAA;AECJ;AFAI;ECNF,aAAA;EACA,uBAAA;EACA,mBAAA;ACSF;AFHM;EACE,WAAA;EACA,YAAA;AEKR","file":"oauth-btns.module.css"}

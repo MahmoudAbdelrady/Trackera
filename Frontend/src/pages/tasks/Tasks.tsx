@@ -1,8 +1,12 @@
+import { AppLayout } from "../../components";
+
 const Tasks = () => {
   return (
-    <div>
-      <h1>Tasks</h1>
-    </div>
+    <AppLayout>
+      <div>
+        <h1>Tasks</h1>
+      </div>
+    </AppLayout>
   );
 };
 

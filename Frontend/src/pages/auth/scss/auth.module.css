@@ -1,0 +1,12 @@
+.composite_input_group {
+  display: flex;
+  justify-content: flex-start;
+  align-items: flex-start;
+  gap: 20px;
+  width: 100%;
+}
+@media (max-width: 480px) {
+  .composite_input_group {
+    flex-direction: column;
+  }
+}/*# sourceMappingURL=auth.module.css.map */

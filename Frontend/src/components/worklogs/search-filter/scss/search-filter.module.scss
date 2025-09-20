@@ -1,0 +1,66 @@
+@use "../../../../shared/styles/colors" as *;
+@use "../../../../shared/styles/mixins" as *;
+
+.search_filters_container {
+  margin-top: 20px;
+  .search_filters_fields_grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 15px;
+    align-items: flex-start;
+    .search_filter_input {
+      @include start;
+      .filter_input_box {
+        @include start-rev;
+        margin-left: 10px;
+        gap: 5px;
+        .filter_form_item {
+          margin-bottom: 0;
+          width: 100%;
+        }
+        &.with_operator {
+          @media (max-width: 768px) {
+            flex-direction: column;
+            align-items: flex-start;
+          }
+        }
+        .filter_range_inputs {
+          @include start-rev;
+          gap: 10px;
+          margin-left: 5px;
+          @media (max-width: 768px) {
+            margin-left: 0;
+          }
+        }
+        .filter_input_radio {
+          @media (max-width: 768px) {
+            @include all-start;
+            flex-direction: column;
+          }
+        }
+        .filter_operator {
+          width: 130px;
+        }
+        .range_input {
+          width: 110px;
+        }
+      }
+    }
+  }
+  .search_filters_actions {
+    @include end;
+    margin: 25px 0 5px;
+    gap: 10px;
+    .filter_button {
+      color: #fff;
+      padding: 20px;
+      &.search {
+        background-color: $mainColor;
+      }
+      &.clear {
+        color: #000;
+        background-color: $mainColorLight;
+      }
+    }
+  }
+}

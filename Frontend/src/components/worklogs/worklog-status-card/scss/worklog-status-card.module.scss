@@ -1,0 +1,84 @@
+@use "../../../../shared/styles/colors" as *;
+@use "../../../../shared/styles/mixins" as *;
+
+.worklog_status_card {
+  @include between;
+  align-items: flex-start;
+  flex: 1;
+  padding: 20px;
+  border-radius: 8px;
+  height: 125px;
+  @media (min-width: 768px) and (max-width: 992px) {
+    height: 160px;
+  }
+  @media (max-width: 768px) {
+    width: 100%;
+  }
+  &.logged {
+    background-color: rgba($mainColor, 0.1);
+    .card_info {
+      .card_label {
+        color: $mainColor;
+      }
+      .card_sub_label {
+        color: $mainColor;
+      }
+    }
+
+    .card_icon {
+      background-color: rgba($mainColor, 0.2);
+      color: $mainColor;
+    }
+  }
+  &.target {
+    background-color: rgba($greenColor, 0.1);
+    .card_info {
+      .card_label {
+        color: $greenColor;
+      }
+      .card_sub_label {
+        color: $greenColor;
+      }
+    }
+    .card_icon {
+      background-color: rgba($greenColor, 0.2);
+      color: $greenColor;
+    }
+  }
+  &.remaining {
+    background-color: rgba($orangeColor, 0.1);
+    .card_info {
+      .card_label {
+        color: $orangeColor;
+      }
+      .card_sub_label {
+        color: $orangeColor;
+      }
+    }
+    .card_icon {
+      background-color: rgba($orangeColor, 0.2);
+      color: $orangeColor;
+    }
+  }
+  .card_info {
+    @include start-rev;
+    flex-direction: column;
+    gap: 8px;
+    .card_label {
+      font-size: 15px;
+      font-weight: 500;
+    }
+    .card_value {
+      font-size: 25px;
+      font-weight: bold;
+    }
+    .card_sub_label {
+      font-size: 13px;
+    }
+  }
+  .card_icon {
+    @include center;
+    padding: 12px;
+    border-radius: 50%;
+  }
+}

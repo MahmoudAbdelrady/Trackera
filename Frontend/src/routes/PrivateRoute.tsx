@@ -1,9 +1,23 @@
-import { Navigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import { userQueries } from "../state/queries";
+import { LoadingSpinner } from "../components";
+import { showErrorToast } from "../utils/toast-handler/showToast";
+import { useEffect } from "react";
 
 const PrivateRoute = ({ children }: { children: React.JSX.Element }) => {
-  const isAuthenticated = true;
+  const meQuery = userQueries.useMeQuery();
+  const navigate = useNavigate();
 
-  return isAuthenticated ? children : <Navigate to="/login" />;
+  useEffect(() => {
+    if (meQuery.isError) {
+      showErrorToast(meQuery.error);
+      navigate("/login");
+    }
+  }, [meQuery.isError]);
+
+  if (!meQuery.isEnabled || meQuery.isLoading) return <LoadingSpinner />;
+
+  return children;
 };
 
 export default PrivateRoute;

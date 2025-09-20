@@ -1,0 +1,11 @@
+@use "../../../shared/styles/colors" as *;
+@use "../../../shared/styles/mixins" as *;
+
+.composite_input_group {
+  @include all-start;
+  gap: 20px;
+  width: 100%;
+  @media (max-width: 480px) {
+    flex-direction: column;
+  }
+}

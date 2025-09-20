@@ -1,7 +1,23 @@
-import Login from "./auth/Login";
-import SignUp from "./auth/SignUp";
+import Login from "./auth/login/Login";
+import SignUp from "./auth/sign-up/SignUp";
+import ForgotPassword from "./auth/forgot-password/ForgotPassword";
+import ChangePassword from "./auth/change-password/ChangePassword";
+import SecurityVerification from "./auth/security-verification/SecurityVerification";
 import Home from "./home/Home";
+import WorklogDetails from "./worklog-details/WorklogDetails";
 import Tasks from "./tasks/Tasks";
 import Settings from "./settings/Settings";
+import Test from "./test/Test";
 
-export { Login, SignUp, Home, Tasks, Settings };
+export {
+  Login,
+  SignUp,
+  ForgotPassword,
+  ChangePassword,
+  SecurityVerification,
+  Home,
+  WorklogDetails,
+  Tasks,
+  Settings,
+  Test,
+};

@@ -1,0 +1,11 @@
+.worklog_status_cards_container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 15px;
+}
+@media (max-width: 768px) {
+  .worklog_status_cards_container {
+    flex-direction: column;
+  }
+}/*# sourceMappingURL=home.module.css.map */
