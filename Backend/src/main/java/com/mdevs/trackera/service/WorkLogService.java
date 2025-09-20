@@ -60,7 +60,7 @@ public class WorkLogService {
         Page<WorkLog> workLogList = workLogRepository.findAll(searchFilterBuilder.build(), pageable);
         List<WorkLogInfoDTO> workLogInfoDTOList = workLogList.getContent().stream().map(workLog -> {
             WorkLogInfoDTO workLogInfoDTO = modelMapper.map(workLog, WorkLogInfoDTO.class);
-            workLogInfoDTO.setLogId(workLog.getUuid());
+            workLogInfoDTO.setId(workLog.getUuid());
             workLogInfoDTO.setTotalHours(TrackeraTimeSpanUtil.formatDuration(workLog.getTotalHours(), false));
             return workLogInfoDTO;
         }).toList();
@@ -70,7 +70,7 @@ public class WorkLogService {
     public WorkLogInfoDTO getWorkLogByUUID(String uuid) {
         WorkLog workLog = validateWorkLogExistsAndHasPermission(uuid);
         WorkLogInfoDTO workLogInfoDTO = modelMapper.map(workLog, WorkLogInfoDTO.class);
-        workLogInfoDTO.setLogId(workLog.getUuid());
+        workLogInfoDTO.setId(workLog.getUuid());
         workLogInfoDTO.setTotalHours(TrackeraTimeSpanUtil.formatDuration(workLog.getTotalHours(), false));
         return workLogInfoDTO;
     }
