@@ -24,6 +24,8 @@ import type { JiraTask, JiraTaskEvaluationType } from "./jira-tasks";
 
 import { jiraTaskEvaluationMetadata } from "./jira-tasks";
 
+import type { SettingsSectionProps, LinkedAccountProps } from "./settings";
+
 export type {
   TrackeraTableEntity,
   StatusBadgeProps,
@@ -50,6 +52,8 @@ export type {
   WorkLogsFilterProps,
   JiraTask,
   JiraTaskEvaluationType,
+  SettingsSectionProps,
+  LinkedAccountProps,
 };
 
 export { worklogEvaluationMetadata, statusMetadata, jiraTaskEvaluationMetadata };

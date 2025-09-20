@@ -1,0 +1,22 @@
+.settings_section {
+  background-color: #fff;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+.settings_section .header {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 10px;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 15px 20px;
+}
+.settings_section .header .header_icon {
+  color: #9ca3af;
+}
+.settings_section .header .header_title {
+  font-weight: bold;
+}
+.settings_section .content {
+  padding: 15px 20px;
+}/*# sourceMappingURL=settings-section.module.css.map */

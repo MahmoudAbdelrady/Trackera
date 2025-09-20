@@ -15,6 +15,8 @@ import ManageWorkLogModal from "./worklogs/modals/manage-worklog-modal/ManageWor
 import CollapsibleSection from "./collapsible-section/CollapsibleSection";
 import WorklogInfo from "./worklogs/worklog-info/WorklogInfo";
 import StatusBadge from "./status-badge/StatusBadge";
+import SettingsSection from "./settings/settings-section/SettingsSection";
+import LinkedAccount from "./settings/linked-account/LinkedAccount";
 
 export {
   AuthLayout,
@@ -34,4 +36,6 @@ export {
   CollapsibleSection,
   WorklogInfo,
   StatusBadge,
+  SettingsSection,
+  LinkedAccount,
 };
