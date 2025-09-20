@@ -1,11 +1,11 @@
 import { Button, Table } from "antd";
-import type { Worklog, WorklogEntry, WorklogError, WorklogTableProps, WorklogTask } from "../../../shared/types";
-import classes from "./scss/worklog-table.module.css";
+import type { TrackeraTableEntity, WorklogTableProps } from "../../shared/types";
+import classes from "./scss/trackera-table.module.css";
 
-const WorklogTable = <T extends Worklog | WorklogEntry | WorklogTask | WorklogError>(props: WorklogTableProps<T>) => {
+const TrackeraTable = <T extends TrackeraTableEntity>(props: WorklogTableProps<T>) => {
   return (
     <div className={classes.worklog_table_container}>
-      {props.actionButtons.length > 0 && (
+      {props.actionButtons && props.actionButtons.length > 0 && (
         <div className={classes.table_actions}>
           {props.actionButtons.map((button, index) => (
             <Button
@@ -27,8 +27,7 @@ const WorklogTable = <T extends Worklog | WorklogEntry | WorklogTask | WorklogEr
           rowKey={(record) => {
             if ("row" in record && record.row != null) {
               return record.row.toString();
-            }
-            if ("id" in record && record.id != null) {
+            } else if ("id" in record && record.id != null) {
               return record.id.toString();
             }
             return Math.random().toString();
@@ -40,4 +39,4 @@ const WorklogTable = <T extends Worklog | WorklogEntry | WorklogTask | WorklogEr
   );
 };
 
-export default WorklogTable;
+export default TrackeraTable;

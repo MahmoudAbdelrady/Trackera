@@ -1,3 +1,14 @@
+type BadgeType = "main" | "success" | "warning" | "danger";
+
+interface TrackeraTableEntity {
+  id: string | number;
+}
+
+interface StatusBadgeProps {
+  label: string;
+  type: BadgeType;
+}
+
 interface InputFieldProps {
   label: string;
   icon?: React.ReactNode;
@@ -21,4 +32,4 @@ interface PaginatedResponse<T> {
   };
 }
 
-export type { InputFieldProps, PaginatedResponse };
+export type { TrackeraTableEntity, StatusBadgeProps, InputFieldProps, PaginatedResponse };

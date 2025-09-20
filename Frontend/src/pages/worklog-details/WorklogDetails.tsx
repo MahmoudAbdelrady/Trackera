@@ -1,12 +1,11 @@
 import { CalendarSync, CalendarX2, ExternalLink, Eye, Trash } from "lucide-react";
-import { AppLayout, WorklogInfo, WorklogModal, WorklogTable } from "../../components";
+import { AppLayout, WorklogInfo, WorklogModal, TrackeraTable, StatusBadge } from "../../components";
 import classes from "./scss/worklog-details.module.css";
-import worklogTableClasses from "../../components/worklogs/worklog-table/scss/worklog-table.module.css";
+import trackeraTableClasses from "../../components/trackera-table/scss/trackera-table.module.css";
 import { Empty, Popconfirm, Skeleton, Switch, Tooltip, type TableProps } from "antd";
 import { statusMetadata, type Worklog, type WorklogEntry, type WorkLogStatusType, type WorklogTask } from "../../shared/types";
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { getWorklogTablePaddedItem } from "../../utils";
 import worklogModalClasses from "../../components/worklogs/modals/worklog-modal/scss/worklog-modal.module.css";
 import requestInstance from "../../shared/axios/request-instance";
 import { showErrorToast, showSuccessToast } from "../../utils/toast-handler/showToast";
@@ -46,9 +45,9 @@ const WorklogDetails = () => {
       key: "taskName",
       render: (_, record) => {
         return record.taskUrl ? (
-          <Link to={record.taskUrl} className={worklogTableClasses.task_link} target="_blank">
+          <Link to={record.taskUrl} className={trackeraTableClasses.task_link} target="_blank">
             {record.taskName}
-            <ExternalLink className={worklogTableClasses.link_icon} />
+            <ExternalLink className={trackeraTableClasses.link_icon} />
           </Link>
         ) : (
           record.taskName
@@ -71,7 +70,7 @@ const WorklogDetails = () => {
       dataIndex: "status",
       key: "status",
       render: (_, { status }) => {
-        return getWorklogTablePaddedItem(worklogTableClasses, "status_item", statusMetadata[status as WorkLogStatusType]);
+        return <StatusBadge badgeProps={statusMetadata[status as WorkLogStatusType]} />;
       },
       filters: Array.from(new Set(worklogTasks.map((task) => task.status))).map((status) => ({
         text: statusMetadata[status as WorkLogStatusType]?.label ?? status,
@@ -83,19 +82,19 @@ const WorklogDetails = () => {
       title: "Actions",
       key: "actions",
       render: (_, record) => (
-        <div className={worklogTableClasses.actions_container}>
+        <div className={trackeraTableClasses.actions_container}>
           {record.status === "SYNCED" ? (
             <Tooltip title="Unsync from Jira">
-              <CalendarX2 onClick={() => {}} className={`${worklogTableClasses.log_action_btn} ${worklogTableClasses.unsync}`} />
+              <CalendarX2 onClick={() => {}} className={`${trackeraTableClasses.log_action_btn} ${trackeraTableClasses.unsync}`} />
             </Tooltip>
           ) : (
             <Tooltip title="Sync to Jira">
-              <CalendarSync onClick={() => {}} className={`${worklogTableClasses.log_action_btn} ${worklogTableClasses.sync}`} />
+              <CalendarSync onClick={() => {}} className={`${trackeraTableClasses.log_action_btn} ${trackeraTableClasses.sync}`} />
             </Tooltip>
           )}
           <Tooltip title="View">
             <Eye
-              className={`${worklogTableClasses.log_action_btn} ${worklogTableClasses.view}`}
+              className={`${trackeraTableClasses.log_action_btn} ${trackeraTableClasses.view}`}
               onClick={() => {
                 setSelectedTask(record);
                 setViewTaskVisible(true);
@@ -109,7 +108,7 @@ const WorklogDetails = () => {
                 setDeleteTaskVisible(true);
                 setSelectedTask(record);
               }}
-              className={`${worklogTableClasses.log_action_btn} ${worklogTableClasses.delete}`}
+              className={`${trackeraTableClasses.log_action_btn} ${trackeraTableClasses.delete}`}
             />
           </Tooltip>
         </div>
@@ -143,7 +142,7 @@ const WorklogDetails = () => {
       dataIndex: "status",
       key: "status",
       render: (_, { status }) => {
-        return getWorklogTablePaddedItem(worklogTableClasses, "status_item", statusMetadata[status as WorkLogStatusType]);
+        return <StatusBadge badgeProps={statusMetadata[status as WorkLogStatusType]} />;
       },
       filters: Array.from(new Set(worklogEntries.map((task) => task.status))).map((status) => ({
         text: statusMetadata[status as WorkLogStatusType]?.label ?? status,
@@ -155,14 +154,14 @@ const WorklogDetails = () => {
       title: "Actions",
       key: "actions",
       render: (_, record) => (
-        <div className={worklogTableClasses.actions_container}>
+        <div className={trackeraTableClasses.actions_container}>
           {record.status === "SYNCED" ? (
             <Tooltip title="Unsync from Jira">
-              <CalendarX2 onClick={() => {}} className={`${worklogTableClasses.log_action_btn} ${worklogTableClasses.unsync}`} />
+              <CalendarX2 onClick={() => {}} className={`${trackeraTableClasses.log_action_btn} ${trackeraTableClasses.unsync}`} />
             </Tooltip>
           ) : (
             <Tooltip title="Sync to Jira">
-              <CalendarSync onClick={() => {}} className={`${worklogTableClasses.log_action_btn} ${worklogTableClasses.sync}`} />
+              <CalendarSync onClick={() => {}} className={`${trackeraTableClasses.log_action_btn} ${trackeraTableClasses.sync}`} />
             </Tooltip>
           )}
           <Popconfirm
@@ -186,7 +185,7 @@ const WorklogDetails = () => {
             cancelButtonProps={{ disabled: isDeletingEntry }}
           >
             <Tooltip title="Delete">
-              <Trash className={`${worklogTableClasses.log_action_btn} ${worklogTableClasses.delete} ${isDeletingEntry && selectedEntry?.id !== record.id && worklogTableClasses.disabled}`} />
+              <Trash className={`${trackeraTableClasses.log_action_btn} ${trackeraTableClasses.delete} ${isDeletingEntry && selectedEntry?.id !== record.id && trackeraTableClasses.disabled}`} />
             </Tooltip>
           </Popconfirm>
         </div>
@@ -276,7 +275,7 @@ const WorklogDetails = () => {
     setDeleteTaskVisible(false);
   };
 
-  const handleDeleteWorkLogEntry = async (entryId: number) => {
+  const handleDeleteWorkLogEntry = async (entryId: string | number) => {
     setIsDeletingEntry(true);
     try {
       const response = await requestInstance.delete(`/worklog/details/entry/${entryId}`);
@@ -314,7 +313,7 @@ const WorklogDetails = () => {
             loading: isFetchingEntries,
           }}
         >
-          <WorklogTable<WorklogEntry>
+          <TrackeraTable<WorklogEntry>
             properties={{
               columns: worklogEntryColumns,
               dataSource: worklogEntries,
@@ -378,7 +377,7 @@ const WorklogDetails = () => {
             <WorklogInfo worklogInfo={worklogInfo} />
             <div className={classes.worklog_details_content}>
               {worklogTasks.length > 0 && (
-                <WorklogTable<WorklogTask>
+                <TrackeraTable<WorklogTask>
                   properties={{
                     columns: worklogTaskColumns,
                     dataSource: worklogTasks,

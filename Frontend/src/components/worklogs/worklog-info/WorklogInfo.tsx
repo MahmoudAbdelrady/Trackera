@@ -1,11 +1,13 @@
 import classes from "./scss/worklog-info.module.css";
 import { Calendar, Clock, RefreshCcw, Target } from "lucide-react";
 import { Tooltip } from "antd";
-import { evaluationMetadata, statusMetadata, type Worklog, type WorkLogEvaluationType, type WorkLogStatusType } from "../../../shared/types";
+import { worklogEvaluationMetadata, statusMetadata, type Worklog, type WorkLogEvaluationType, type WorkLogStatusType } from "../../../shared/types";
+import { StatusBadge } from "../../";
 
 const WorklogInfo = ({ worklogInfo }: { worklogInfo: Worklog }) => {
-  const evaluationMetaItem = evaluationMetadata[worklogInfo?.evaluation as WorkLogEvaluationType];
+  const evaluationMetaItem = worklogEvaluationMetadata[worklogInfo?.evaluation as WorkLogEvaluationType];
   const statusMetaItem = statusMetadata[worklogInfo?.status as WorkLogStatusType];
+
   return (
     <div className={classes.worklog_info}>
       <h3 className={classes.title}>{worklogInfo?.name}</h3>
@@ -26,13 +28,13 @@ const WorklogInfo = ({ worklogInfo }: { worklogInfo: Worklog }) => {
           <Tooltip title="Evaluation">
             <Target className={classes.info_icon} />
           </Tooltip>
-          <span className={`${classes.info_label} ${classes.evaluation} ${classes[evaluationMetaItem.className]}`}>{evaluationMetaItem.label}</span>
+          <StatusBadge badgeProps={evaluationMetaItem} />
         </div>
         <div className={classes.info_box}>
           <Tooltip title="Status">
             <RefreshCcw className={classes.info_icon} />
           </Tooltip>
-          <span className={`${classes.info_label} ${classes.status} ${classes[statusMetaItem.className]}`}>{statusMetaItem.label}</span>
+          <StatusBadge badgeProps={statusMetaItem} />
         </div>
       </div>
     </div>

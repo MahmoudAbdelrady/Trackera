@@ -1,17 +1,6 @@
 import { RouterProvider, createBrowserRouter } from "react-router-dom";
 import { GuestRoute, PrivateRoute } from "./routes";
-import {
-  Login,
-  SignUp,
-  SecurityVerification,
-  Home,
-  Tasks,
-  Settings,
-  Test,
-  WorklogDetails,
-  ForgotPassword,
-  ChangePassword,
-} from "./pages";
+import { Login, SignUp, SecurityVerification, Home, JiraTasks, Settings, Test, WorklogDetails, ForgotPassword, ChangePassword } from "./pages";
 import { Toaster } from "react-hot-toast";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { GoogleOAuthProvider } from "@react-oauth/google";
@@ -71,10 +60,10 @@ const router = createBrowserRouter([
     ),
   },
   {
-    path: "/tasks",
+    path: "/jira-tasks",
     element: (
       <PrivateRoute>
-        <Tasks />
+        <JiraTasks />
       </PrivateRoute>
     ),
   },
@@ -98,9 +87,7 @@ const router = createBrowserRouter([
 
 const App = () => {
   return (
-    <GoogleOAuthProvider
-      clientId={import.meta.env.VITE_TRACKERA_GOOGLE_CLIENT_ID}
-    >
+    <GoogleOAuthProvider clientId={import.meta.env.VITE_TRACKERA_GOOGLE_CLIENT_ID}>
       <QueryClientProvider client={queryClient}>
         <Toaster />
         <RouterProvider router={router} />

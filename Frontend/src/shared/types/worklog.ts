@@ -1,11 +1,11 @@
 import type { ModalProps, TableProps } from "antd";
+import type { StatusBadgeProps, TrackeraTableEntity } from "./global";
 
 type WorkLogEvaluationType = "EXCELLENT" | "GOOD" | "MODERATE" | "POOR";
 
 type WorkLogStatusType = "SYNCED" | "PARTIALLY" | "NOT_SYNCED";
 
-interface Worklog {
-  logId: string;
+interface Worklog extends TrackeraTableEntity {
   name: string;
   totalHours: string;
   workDate: string;
@@ -13,8 +13,7 @@ interface Worklog {
   status: WorkLogStatusType;
 }
 
-interface WorklogTask {
-  id: number;
+interface WorklogTask extends TrackeraTableEntity {
   taskName: string;
   taskUrl: string;
   totalHours: string;
@@ -22,8 +21,7 @@ interface WorklogTask {
   status: WorkLogStatusType;
 }
 
-interface WorklogEntry {
-  id: number;
+interface WorklogEntry extends TrackeraTableEntity {
   fromTime: string;
   toTime: string;
   duration: string;
@@ -31,27 +29,22 @@ interface WorklogEntry {
   status: WorkLogStatusType;
 }
 
-interface WorklogError {
+interface WorklogError extends TrackeraTableEntity {
   row: number;
   error: string;
 }
 
-interface LogMeta {
-  label: string;
-  className: string;
-}
-
-const evaluationMetadata: Record<WorkLogEvaluationType, LogMeta> = {
-  EXCELLENT: { label: "Excellent", className: "excellent" },
-  GOOD: { label: "Good", className: "good" },
-  MODERATE: { label: "Moderate", className: "moderate" },
-  POOR: { label: "Poor", className: "poor" },
+const worklogEvaluationMetadata: Record<WorkLogEvaluationType, StatusBadgeProps> = {
+  EXCELLENT: { label: "Excellent", type: "main" },
+  GOOD: { label: "Good", type: "success" },
+  MODERATE: { label: "Moderate", type: "warning" },
+  POOR: { label: "Poor", type: "danger" },
 };
 
-const statusMetadata: Record<WorkLogStatusType, LogMeta> = {
-  SYNCED: { label: "Synced", className: "synced" },
-  PARTIALLY: { label: "Partially", className: "partially" },
-  NOT_SYNCED: { label: "Not Synced", className: "not_synced" },
+const statusMetadata: Record<WorkLogStatusType, StatusBadgeProps> = {
+  SYNCED: { label: "Synced", type: "success" },
+  PARTIALLY: { label: "Partially", type: "warning" },
+  NOT_SYNCED: { label: "Not Synced", type: "danger" },
 };
 
 interface WorklogTableActionButtonProps {
@@ -62,9 +55,9 @@ interface WorklogTableActionButtonProps {
   onClick: () => void;
 }
 
-interface WorklogTableProps<T = Worklog | WorklogTask | WorklogEntry | WorklogError> {
+interface WorklogTableProps<T = TrackeraTableEntity> {
   properties: TableProps<T>;
-  actionButtons: WorklogTableActionButtonProps[];
+  actionButtons?: WorklogTableActionButtonProps[];
 }
 
 interface WorklogModalProps {
@@ -108,7 +101,7 @@ export type {
   WorklogTask,
   WorklogEntry,
   WorklogError,
-  LogMeta,
+  StatusBadgeProps,
   WorklogTableActionButtonProps,
   WorklogTableProps,
   WorklogModalProps,
@@ -118,4 +111,4 @@ export type {
   WorkLogsFilterProps,
 };
 
-export { evaluationMetadata, statusMetadata };
+export { worklogEvaluationMetadata, statusMetadata };

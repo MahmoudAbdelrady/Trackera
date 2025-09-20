@@ -12,9 +12,9 @@ const Sidebar = () => {
       text: "Worklogs",
     },
     {
-      to: "/tasks",
+      to: "/jira-tasks",
       icon: <SquareCheckBig />,
-      text: "Tasks",
+      text: "Jira Tasks",
     },
     {
       to: "/settings",
@@ -23,18 +23,9 @@ const Sidebar = () => {
     },
   ];
 
-  const getPageItem = (
-    to: string,
-    icon: React.ReactNode,
-    text: string,
-    index: number
-  ) => {
+  const getPageItem = (to: string, icon: React.ReactNode, text: string, index: number) => {
     return (
-      <Link
-        to={to}
-        className={`${classes.page_item} ${isPageActive(to) && classes.active}`}
-        key={index}
-      >
+      <Link to={to} className={`${classes.page_item} ${isPageActive(to) && classes.active}`} key={index}>
         <div className={classes.page_item_icn}>{icon}</div>
         <span className={classes.page_item_text}>{text}</span>
       </Link>
@@ -43,11 +34,7 @@ const Sidebar = () => {
 
   return (
     <div className={classes.sidebar}>
-      <div className={classes.page_items}>
-        {pages.map((page, index) =>
-          getPageItem(page.to, page.icon, page.text, index)
-        )}
-      </div>
+      <div className={classes.page_items}>{pages.map((page, index) => getPageItem(page.to, page.icon, page.text, index))}</div>
     </div>
   );
 };

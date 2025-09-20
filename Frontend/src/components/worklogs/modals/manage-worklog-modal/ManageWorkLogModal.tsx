@@ -5,7 +5,7 @@ import worklogModalClasses from "../worklog-modal/scss/worklog-modal.module.css"
 import { Alert, DatePicker, Form, Input, Switch, Tooltip, type TableProps, type UploadFile } from "antd";
 import { Inbox, Info } from "lucide-react";
 import Dragger from "antd/es/upload/Dragger";
-import { CollapsibleSection, WorklogModal, WorklogTable } from "../../..";
+import { CollapsibleSection, WorklogModal, TrackeraTable } from "../../..";
 import { useMemo, useState } from "react";
 import { showErrorToast, showSuccessToast } from "../../../../utils/toast-handler/showToast";
 import requestInstance from "../../../../shared/axios/request-instance";
@@ -81,7 +81,7 @@ const ManageWorkLogModal = (props: ManageWorkLogModalProps) => {
         const formData = getFormData(values, isEditMode());
         let response;
         if (isEditMode()) {
-          response = await requestInstance.put(`/worklog/${props.selectedWorkLog!.logId}`, formData);
+          response = await requestInstance.put(`/worklog/${props.selectedWorkLog!.id}`, formData);
         } else {
           response = await requestInstance.post("/worklog", formData);
         }
@@ -225,13 +225,12 @@ const ManageWorkLogModal = (props: ManageWorkLogModalProps) => {
       {worklogFileErrors.length > 0 && (
         <div className={worklogModalClasses.file_errors_container}>
           <CollapsibleSection title="Uploaded File Errors" icon={<Info color="#dc2626" />}>
-            <WorklogTable
+            <TrackeraTable<WorklogError>
               properties={{
                 columns: worklogFileErrorsColumns,
                 dataSource: worklogFileErrors,
                 pagination: { pageSize: 5, showSizeChanger: false, style: { marginRight: "16px" } },
               }}
-              actionButtons={[]}
             />
           </CollapsibleSection>
         </div>
