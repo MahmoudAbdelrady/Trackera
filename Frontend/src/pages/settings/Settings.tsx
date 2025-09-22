@@ -2,10 +2,28 @@ import { Link } from "lucide-react";
 import { AppLayout, LinkedAccount } from "../../components";
 import { SettingsSection } from "../../components";
 import classes from "./scss/settings.module.css";
+import { showErrorToast } from "../../utils/toast-handler/showToast";
+import requestInstance from "../../shared/axios/request-instance";
 
 const Settings = () => {
-  const linkJiraAccount = () => {
-    window.location.href = `${import.meta.env.VITE_TRACKERA_BACKEND_URL}/auth/oauth-v2/jira`;
+  const linkJiraAccount = async () => {
+    const jiraOAuthLink = await fetchOAuthFlowLink("jira");
+    window.open(jiraOAuthLink, "Link Jira Account", "width=600,height=600");
+    window.addEventListener("message", async (event) => {
+      if (event.origin !== window.location.origin) return;
+      if (event.data?.code) {
+        console.log("Received OAuth code:", event.data.code);
+      }
+    });
+  };
+
+  const fetchOAuthFlowLink = async (provider: string) => {
+    try {
+      const response = await requestInstance.get(`/auth/oauth-v2/${provider}`);
+      return response.data.url;
+    } catch (error: any) {
+      showErrorToast(error);
+    }
   };
 
   return (
