@@ -47,8 +47,8 @@ public class AuthController {
 
     @PublicAPI
     @GetMapping("/oauth-v2/{oAuthProvider}")
-    public void OAuthV2(@PathVariable String oAuthProvider, HttpServletResponse httpServletResponse) {
-        authService.oAuthV2(oAuthProvider, httpServletResponse);
+    public ResponseEntity<?> OAuthV2(@PathVariable String oAuthProvider) {
+        return new ResponseEntity<>(authService.oAuthV2(oAuthProvider), HttpStatus.OK);
     }
 
     @PublicAPI

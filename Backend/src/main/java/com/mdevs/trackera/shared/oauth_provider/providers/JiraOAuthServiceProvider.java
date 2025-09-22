@@ -27,7 +27,7 @@ public class JiraOAuthServiceProvider extends OAuthServiceProvider {
     private final RestTemplate restTemplate = new RestTemplate();
 
     @Override
-    public String getRedirectUrl() {
+    public String getFlowUrl() {
         return UriComponentsBuilder
                 .fromUriString("https://auth.atlassian.com/authorize")
                 .queryParam("audience", "api.atlassian.com")

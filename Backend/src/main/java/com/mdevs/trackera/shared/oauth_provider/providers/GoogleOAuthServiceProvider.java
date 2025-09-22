@@ -28,7 +28,7 @@ public class GoogleOAuthServiceProvider extends OAuthServiceProvider {
     private final static Logger LOGGER = Logger.getLogger(GoogleOAuthServiceProvider.class.getName());
 
     @Override
-    public String getRedirectUrl() {
+    public String getFlowUrl() {
         return null;
     }
 

@@ -167,13 +167,9 @@ public class AuthService {
         return generateLoginInfo(authenticatedUser, httpResponse);
     }
 
-    public void oAuthV2(String oAuthProvider, HttpServletResponse httpResponse) {
-        try {
-            String redirectUrl = oAuthProviderFactory.getProvider(OAuthProvider.fromLabel(oAuthProvider)).getRedirectUrl();
-            httpResponse.sendRedirect(redirectUrl);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+    public Map<String, Object> oAuthV2(String oAuthProvider) {
+        String flowUrl = oAuthProviderFactory.getProvider(OAuthProvider.fromLabel(oAuthProvider)).getFlowUrl();
+        return Map.of("url", flowUrl);
     }
 
     @Transactional

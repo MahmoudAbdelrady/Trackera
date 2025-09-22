@@ -4,7 +4,7 @@ import com.mdevs.trackera.dto.auth.OAuthAccessCredentialsDTO;
 import com.mdevs.trackera.dto.auth.OAuthUserInfoDTO;
 
 public abstract class OAuthServiceProvider {
-    public abstract String getRedirectUrl();
+    public abstract String getFlowUrl();
 
     public abstract OAuthAccessCredentialsDTO getAccessCredentials(String code, boolean isRefresh);
 
