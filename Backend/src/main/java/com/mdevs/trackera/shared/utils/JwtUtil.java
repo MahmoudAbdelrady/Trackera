@@ -49,6 +49,15 @@ public class JwtUtil {
                 .compact();
     }
 
+    public Claims validateAndGetTokenPayload(String token, boolean isAccessToken) {
+        Claims claims = getTokenPayload(token, isAccessToken);
+        String email = claims.get("email", String.class);
+        if (isTokenInvalid(email, token, isAccessToken)) {
+            throw new SecurityException("Invalid or expired token");
+        }
+        return claims;
+    }
+
     public Claims getTokenPayload(String token, boolean isAccessToken) {
         try {
             String tokenSecretKey = isAccessToken ? accessTokenSecretKey : refreshTokenSecretKey;

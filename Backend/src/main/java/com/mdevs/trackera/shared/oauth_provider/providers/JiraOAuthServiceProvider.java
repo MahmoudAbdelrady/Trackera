@@ -3,6 +3,7 @@ package com.mdevs.trackera.shared.oauth_provider.providers;
 import com.mdevs.trackera.config.general.AppConfig;
 import com.mdevs.trackera.dto.auth.OAuthAccessCredentialsDTO;
 import com.mdevs.trackera.dto.auth.OAuthUserInfoDTO;
+import com.mdevs.trackera.entity.User;
 import com.mdevs.trackera.shared.oauth_provider.OAuthProvider;
 import com.mdevs.trackera.shared.oauth_provider.OAuthServiceProvider;
 import org.springframework.beans.factory.annotation.Value;
@@ -27,7 +28,12 @@ public class JiraOAuthServiceProvider extends OAuthServiceProvider {
     private final RestTemplate restTemplate = new RestTemplate();
 
     @Override
-    public String getFlowUrl() {
+    protected OAuthProvider getOAuthProvider() {
+        return OAuthProvider.JIRA;
+    }
+
+    @Override
+    public String getAuthFlowUrl(User user) {
         return UriComponentsBuilder
                 .fromUriString("https://auth.atlassian.com/authorize")
                 .queryParam("audience", "api.atlassian.com")

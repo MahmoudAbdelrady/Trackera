@@ -167,8 +167,8 @@ public class AuthService {
         return generateLoginInfo(authenticatedUser, httpResponse);
     }
 
-    public Map<String, Object> oAuthV2(String oAuthProvider) {
-        String flowUrl = oAuthProviderFactory.getProvider(OAuthProvider.fromLabel(oAuthProvider)).getFlowUrl();
+    public Map<String, Object> oAuthV2(String oAuthProvider, HttpServletRequest httpRequest) {
+        String flowUrl = oAuthProviderFactory.getProvider(OAuthProvider.fromLabel(oAuthProvider)).generateAuthFlowUrl(httpRequest);
         return Map.of("url", flowUrl);
     }
 
@@ -228,12 +228,13 @@ public class AuthService {
     }
 
     public Map<String, Object> refreshJwt(String refreshToken) {
-        Claims accessTokenClaims = jwtUtil.getTokenPayload(refreshToken, false);
-        String userEmail = accessTokenClaims.get("email", String.class);
-        if (jwtUtil.isTokenInvalid(userEmail, refreshToken, false)) {
+        Claims accessTokenClaims;
+        try {
+            accessTokenClaims = jwtUtil.validateAndGetTokenPayload(refreshToken, false);
+        } catch (SecurityException e) {
             throw new SecurityException("Login has expired. Please sign in again.");
         }
-        String newAccessToken = jwtUtil.generateToken(userEmail, true);
+        String newAccessToken = jwtUtil.generateToken(accessTokenClaims.get("email", String.class), true);
         return Map.of("token", newAccessToken);
     }
 

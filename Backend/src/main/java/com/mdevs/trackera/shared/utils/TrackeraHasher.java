@@ -9,6 +9,8 @@ import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.util.*;
 
 @Component
@@ -22,6 +24,8 @@ public class TrackeraHasher {
 
     private final static String ENCRYPTION_ALGORITHM = "AES";
 
+    private final static SecureRandom secureRandom = new SecureRandom();
+
     private SecretKey getAesKey() {
         return new SecretKeySpec(Base64.getDecoder().decode(encryptionSecretKey), "AES");
     }
@@ -30,7 +34,7 @@ public class TrackeraHasher {
         try {
             byte[] encryptedData = encrypt(text);
             Base64.Encoder encoder = isUrl ? Base64.getUrlEncoder() : Base64.getEncoder();
-            return encoder.withoutPadding().encodeToString(hashByteData(encryptedData));
+            return encoder.withoutPadding().encodeToString(hmacHashByteData(encryptedData));
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -40,7 +44,7 @@ public class TrackeraHasher {
         try {
             byte[] encryptedData = encrypt(text);
             byte[] expectedHash = isUrl ? Base64.getUrlDecoder().decode(hash) : Base64.getDecoder().decode(hash);
-            byte[] actualHash = hashByteData(encryptedData);
+            byte[] actualHash = hmacHashByteData(encryptedData);
             return MessageDigest.isEqual(expectedHash, actualHash);
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -56,7 +60,7 @@ public class TrackeraHasher {
             byte[] encryptedPayloadBytes = encrypt(payload);
             String encodedPayload = Base64.getUrlEncoder().withoutPadding().encodeToString(encryptedPayloadBytes);
 
-            byte[] hmac = hashByteData(encryptedPayloadBytes);
+            byte[] hmac = hmacHashByteData(encryptedPayloadBytes);
             String encodedHmac = Base64.getUrlEncoder().withoutPadding().encodeToString(hmac);
 
             return String.join(".", encodedPayload, encodedHmac);
@@ -74,7 +78,7 @@ public class TrackeraHasher {
             byte[] encryptedPayload = Base64.getUrlDecoder().decode(parts[0]);
             byte[] signatureBytes = Base64.getUrlDecoder().decode(parts[1]);
 
-            byte[] expectedHmac = hashByteData(encryptedPayload);
+            byte[] expectedHmac = hmacHashByteData(encryptedPayload);
             if (!MessageDigest.isEqual(signatureBytes, expectedHmac))
                 return Map.of();
 
@@ -89,7 +93,7 @@ public class TrackeraHasher {
         }
     }
 
-    private byte[] hashByteData(byte[] data) {
+    private byte[] hmacHashByteData(byte[] data) {
         try {
             Mac sha256Hmac = Mac.getInstance("HmacSHA256");
             SecretKeySpec secretKeySpec = new SecretKeySpec(hasherSecretKey.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
@@ -129,4 +133,52 @@ public class TrackeraHasher {
             throw new RuntimeException("Decryption failed", e);
         }
     }
+
+    //<editor-fold desc="OAuth State Handling">
+    public String createOAuthState(String userEmail) {
+        String payload = userEmail + ":" + System.currentTimeMillis();
+        return encryptToBase64(payload);
+    }
+
+    public Map<String,String> parseOAuthState(String state) {
+        String decryptedPayload = decryptFromBase64(state);
+        String[] parts = decryptedPayload.split(":");
+        return Map.of("userEmail", parts[0]);
+    }
+
+    // Generate a cryptographically random string of the desired length
+    private static String generateRandomString(int byteLength) {
+        byte[] code = new byte[byteLength];
+        secureRandom.nextBytes(code);
+        // Base64 URL-safe encoding without padding
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(code);
+    }
+
+    /**
+     * Generate the "state" parameter
+     */
+    public static String generateState() {
+        // 16–32 bytes is enough, here we use 24 for ~32 chars output
+        return generateRandomString(24);
+    }
+
+    /**
+     * Generate the "code_verifier" parameter
+     */
+    public static String generateCodeVerifier() {
+        // RFC 7636 requires 43–128 characters
+        // 32 bytes will give ~43 chars Base64URL string
+        return generateRandomString(32);
+    }
+
+    public static String generateCodeChallenge(String codeVerifier) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(codeVerifier.getBytes(StandardCharsets.US_ASCII));
+            return Base64.getUrlEncoder().withoutPadding().encodeToString(hash);
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException("SHA-256 not supported", e);
+        }
+    }
+    //</editor-fold>
 }

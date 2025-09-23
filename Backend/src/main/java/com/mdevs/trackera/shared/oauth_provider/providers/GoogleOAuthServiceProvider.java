@@ -8,6 +8,7 @@ import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.json.gson.GsonFactory;
 import com.mdevs.trackera.dto.auth.OAuthAccessCredentialsDTO;
 import com.mdevs.trackera.dto.auth.OAuthUserInfoDTO;
+import com.mdevs.trackera.entity.User;
 import com.mdevs.trackera.shared.oauth_provider.OAuthProvider;
 import com.mdevs.trackera.shared.oauth_provider.OAuthServiceProvider;
 import org.springframework.beans.factory.annotation.Value;
@@ -28,7 +29,12 @@ public class GoogleOAuthServiceProvider extends OAuthServiceProvider {
     private final static Logger LOGGER = Logger.getLogger(GoogleOAuthServiceProvider.class.getName());
 
     @Override
-    public String getFlowUrl() {
+    protected OAuthProvider getOAuthProvider() {
+        return OAuthProvider.GOOGLE;
+    }
+
+    @Override
+    public String getAuthFlowUrl(User user) {
         return null;
     }
 
