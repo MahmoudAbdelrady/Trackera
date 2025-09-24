@@ -52,9 +52,9 @@ public class AuthController {
     }
 
     @PublicAPI
-    @GetMapping("/oauth-v2/{oAuthProvider}/callback")
-    public void OAuthV2Callback(@PathVariable String oAuthProvider, @RequestParam String code, @RequestParam(required = false) String state, HttpServletResponse httpServletResponse) {
-        authService.oAuthV2Callback(oAuthProvider, code, state, httpServletResponse);
+    @PostMapping("/oauth-v2/{oAuthProvider}/callback")
+    public void OAuthV2Callback(@PathVariable String oAuthProvider, @RequestBody @Valid OAuthV2RequestDTO oAuthV2RequestDTO) {
+        authService.oAuthV2Callback(oAuthProvider, oAuthV2RequestDTO);
     }
 
     @PostMapping("/logout")

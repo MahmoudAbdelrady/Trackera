@@ -34,7 +34,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -173,23 +172,18 @@ public class AuthService {
     }
 
     @Transactional
-    public void oAuthV2Callback(String provider, String code, String state, HttpServletResponse httpResponse) {
-        try {
-            OAuthProvider oAuthProvider = OAuthProvider.fromLabel(provider);
-            OAuthAccessCredentialsDTO credentialsDTO = oAuthProviderFactory.getProvider(oAuthProvider).getAccessCredentials(code, false);
-            UserOAuthProvider userOAuthProvider = userOAuthProviderRepository.findByUserAndProvider(AppConfig.getCurrentUser(), oAuthProvider); // @TODO --> api is public so it needs handling by fetching user from state
-            if (userOAuthProvider == null) {
-                userOAuthProvider = new UserOAuthProvider(AppConfig.getCurrentUser(), oAuthProvider);
-            }
-            userOAuthProvider.setAccessToken(trackeraHasher.encryptToBase64(credentialsDTO.getAccessToken()));
-            userOAuthProvider.setRefreshToken(trackeraHasher.encryptToBase64(credentialsDTO.getRefreshToken()));
-            userOAuthProvider.setAccessTokenExpiry(LocalDateTime.now().plusSeconds(credentialsDTO.getExpiresIn()));
-            userOAuthProvider.setRevoked(false);
-            userOAuthProviderRepository.save(userOAuthProvider);
-            httpResponse.sendRedirect(AppConfig.getFrontendUrl() + "/settings");
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+    public void oAuthV2Callback(String provider, OAuthV2RequestDTO oAuthV2RequestDTO) {
+        OAuthProvider oAuthProvider = OAuthProvider.fromLabel(provider);
+//        OAuthAccessCredentialsDTO credentialsDTO = oAuthProviderFactory.getProvider(oAuthProvider).getAccessCredentials(oAuthV2RequestDTO.getAuthCode(), false);
+        /*UserOAuthProvider userOAuthProvider = userOAuthProviderRepository.findByUserAndProvider(AppConfig.getCurrentUser(), oAuthProvider); // @TODO --> api is public so it needs handling by fetching user from state
+        if (userOAuthProvider == null) {
+            userOAuthProvider = new UserOAuthProvider(AppConfig.getCurrentUser(), oAuthProvider);
         }
+        userOAuthProvider.setAccessToken(trackeraHasher.encryptToBase64(credentialsDTO.getAccessToken(), false));
+        userOAuthProvider.setRefreshToken(trackeraHasher.encryptToBase64(credentialsDTO.getRefreshToken(), false));
+        userOAuthProvider.setAccessTokenExpiry(LocalDateTime.now().plusSeconds(credentialsDTO.getExpiresIn()));
+        userOAuthProvider.setRevoked(false);
+        userOAuthProviderRepository.save(userOAuthProvider);*/
     }
 
     private Map<String, Object> generateLoginInfo(User user, HttpServletResponse httpResponse) {

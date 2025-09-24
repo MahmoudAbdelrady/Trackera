@@ -23,6 +23,9 @@ public class UserOAuthProvider extends BaseEntity {
     @Enumerated(EnumType.STRING)
     private OAuthProvider provider;
 
+    @Column(nullable = false)
+    private String providerUserEmail;
+
     @Column(nullable = false, columnDefinition = "LONGTEXT")
     private String accessToken;
 

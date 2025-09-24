@@ -3,6 +3,7 @@ package com.mdevs.trackera.shared.oauth_provider;
 import com.mdevs.trackera.config.general.AppConfig;
 import com.mdevs.trackera.dto.auth.OAuthAccessCredentialsDTO;
 import com.mdevs.trackera.dto.auth.OAuthUserInfoDTO;
+import com.mdevs.trackera.dto.auth.OAuthV2RequestDTO;
 import com.mdevs.trackera.entity.User;
 import com.mdevs.trackera.repository.UserOAuthProviderRepository;
 import com.mdevs.trackera.repository.UserRepository;
@@ -16,15 +17,17 @@ import org.springframework.http.HttpHeaders;
 public abstract class OAuthServiceProvider {
     protected abstract OAuthProvider getOAuthProvider();
 
+    protected abstract String getAuthFlowUrl(User user);
+
+    public abstract OAuthUserInfoDTO authenticate(String code);
+
+    public abstract OAuthUserInfoDTO authenticateV2(OAuthV2RequestDTO authRequest);
+
+    public abstract String refreshAccessToken(String refreshToken);
+
     public String generateAuthFlowUrl(HttpServletRequest request) {
         return getAuthFlowUrl(validateAndGetAuthFlowUser(request));
     }
-
-    protected abstract String getAuthFlowUrl(User user);
-
-    public abstract OAuthAccessCredentialsDTO getAccessCredentials(String code, boolean isRefresh);
-
-    public abstract OAuthUserInfoDTO authenticate(String code);
 
     private User validateAndGetAuthFlowUser(HttpServletRequest request) {
         String jwtTokenHeader = request.getHeader(HttpHeaders.AUTHORIZATION);

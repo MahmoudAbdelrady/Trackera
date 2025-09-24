@@ -6,8 +6,8 @@ import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
 import com.google.api.client.googleapis.auth.oauth2.GoogleTokenResponse;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.json.gson.GsonFactory;
-import com.mdevs.trackera.dto.auth.OAuthAccessCredentialsDTO;
 import com.mdevs.trackera.dto.auth.OAuthUserInfoDTO;
+import com.mdevs.trackera.dto.auth.OAuthV2RequestDTO;
 import com.mdevs.trackera.entity.User;
 import com.mdevs.trackera.shared.oauth_provider.OAuthProvider;
 import com.mdevs.trackera.shared.oauth_provider.OAuthServiceProvider;
@@ -39,12 +39,6 @@ public class GoogleOAuthServiceProvider extends OAuthServiceProvider {
     }
 
     @Override
-    public OAuthAccessCredentialsDTO getAccessCredentials(String code, boolean isRefresh) {
-        GoogleTokenResponse googleTokenResponse = getGoogleTokenResponse(code);
-        return new OAuthAccessCredentialsDTO(googleTokenResponse.getAccessToken(), googleTokenResponse.getRefreshToken(), googleTokenResponse.getScope(), googleTokenResponse.getTokenType(), googleTokenResponse.getExpiresInSeconds());
-    }
-
-    @Override
     public OAuthUserInfoDTO authenticate(String code) {
         try {
             GoogleTokenResponse tokenResponse = getGoogleTokenResponse(code);
@@ -55,6 +49,16 @@ public class GoogleOAuthServiceProvider extends OAuthServiceProvider {
             LOGGER.log(Level.SEVERE, "Error while authenticating with Google: " + e.getMessage(), e);
             throw new SecurityException("Error while authenticating with Google");
         }
+    }
+
+    @Override
+    public OAuthUserInfoDTO authenticateV2(OAuthV2RequestDTO authRequest) {
+        return null;
+    }
+
+    @Override
+    public String refreshAccessToken(String refreshToken) {
+        return "";
     }
 
     private GoogleTokenResponse getGoogleTokenResponse(String code) {

@@ -3,9 +3,12 @@ package com.mdevs.trackera.shared.oauth_provider.providers;
 import com.mdevs.trackera.config.general.AppConfig;
 import com.mdevs.trackera.dto.auth.OAuthAccessCredentialsDTO;
 import com.mdevs.trackera.dto.auth.OAuthUserInfoDTO;
+import com.mdevs.trackera.dto.auth.OAuthV2RequestDTO;
 import com.mdevs.trackera.entity.User;
 import com.mdevs.trackera.shared.oauth_provider.OAuthProvider;
 import com.mdevs.trackera.shared.oauth_provider.OAuthServiceProvider;
+import com.mdevs.trackera.shared.utils.OAuthUtil;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Component;
@@ -25,7 +28,16 @@ public class JiraOAuthServiceProvider extends OAuthServiceProvider {
 
     private final static String REDIRECT_URI = AppConfig.getBackendUrl() + "/auth/oauth-v2/jira/callback";
 
+    private final static String JIRA_AUTH_BASE_URL = "https://auth.atlassian.com";
+
     private final RestTemplate restTemplate = new RestTemplate();
+
+    private final OAuthUtil oAuthUtil;
+
+    @Autowired
+    public JiraOAuthServiceProvider(OAuthUtil oAuthUtil) {
+        this.oAuthUtil = oAuthUtil;
+    }
 
     @Override
     protected OAuthProvider getOAuthProvider() {
@@ -34,25 +46,48 @@ public class JiraOAuthServiceProvider extends OAuthServiceProvider {
 
     @Override
     public String getAuthFlowUrl(User user) {
+        Map<String, String> securityParams = oAuthUtil.generateSecurityParams(user != null ? user.getEmail() : null);
+        // @TODO --> store the codeVerifier against the state in redis to validate later
         return UriComponentsBuilder
-                .fromUriString("https://auth.atlassian.com/authorize")
+                .fromUriString(JIRA_AUTH_BASE_URL + "/authorize")
                 .queryParam("audience", "api.atlassian.com")
                 .queryParam("client_id", CLIENT_ID)
                 .queryParam("scope", "read:jira-work read:jira-user write:jira-work offline_access")
                 .queryParam("redirect_uri", REDIRECT_URI)
+                .queryParam("state", securityParams.get("state"))
                 .queryParam("response_type", "code")
+                .queryParam("code_challenge", securityParams.get("codeChallenge"))
+                .queryParam("code_challenge_method", "S256")
                 .build().toString();
     }
 
     @Override
-    public OAuthAccessCredentialsDTO getAccessCredentials(String code, boolean isRefresh) {
-        String tokenUrl = "https://auth.atlassian.com/oauth/token";
+    public OAuthUserInfoDTO authenticate(String code) {
+        return null;
+    }
+
+    @Override
+    public OAuthUserInfoDTO authenticateV2(OAuthV2RequestDTO authRequest) {
+        OAuthAccessCredentialsDTO tokenResponse = getJiraTokenResponse(authRequest);
+        // @TODO --> use the access token to get accessible resources
+        // @TODO --> then use the first accessible resource to get user info and return it
+        return null;
+    }
+
+    @Override
+    public String refreshAccessToken(String refreshToken) {
+        return "";
+    }
+
+    public OAuthAccessCredentialsDTO getJiraTokenResponse(OAuthV2RequestDTO authRequest) {
+        String tokenUrl = JIRA_AUTH_BASE_URL + "/oauth/token";
 
         Map<String, String> requestBody = new HashMap<>();
-        requestBody.put("grant_type",  isRefresh ? "refresh_token" : "authorization_code");
+        requestBody.put("grant_type",  "authorization_code");
         requestBody.put("client_id", CLIENT_ID);
         requestBody.put("client_secret", CLIENT_SECRET);
-        requestBody.put("code", code);
+        requestBody.put("code", authRequest.getAuthCode());
+        requestBody.put("code_verifier", "test"); // @TODO --> get the codeVerifier from redis using the state
         requestBody.put("redirect_uri", REDIRECT_URI);
 
         HttpHeaders headers = new HttpHeaders();
@@ -63,10 +98,5 @@ public class JiraOAuthServiceProvider extends OAuthServiceProvider {
         ResponseEntity<OAuthAccessCredentialsDTO> response = restTemplate.exchange(tokenUrl, HttpMethod.POST, entity, OAuthAccessCredentialsDTO.class);
 
         return response.getBody();
-    }
-
-    @Override
-    public OAuthUserInfoDTO authenticate(String code) {
-        return null;
     }
 }
