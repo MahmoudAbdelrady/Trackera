@@ -174,16 +174,10 @@ public class AuthService {
     @Transactional
     public void oAuthV2Callback(String provider, OAuthV2RequestDTO oAuthV2RequestDTO) {
         OAuthProvider oAuthProvider = OAuthProvider.fromLabel(provider);
-//        OAuthAccessCredentialsDTO credentialsDTO = oAuthProviderFactory.getProvider(oAuthProvider).getAccessCredentials(oAuthV2RequestDTO.getAuthCode(), false);
-        /*UserOAuthProvider userOAuthProvider = userOAuthProviderRepository.findByUserAndProvider(AppConfig.getCurrentUser(), oAuthProvider); // @TODO --> api is public so it needs handling by fetching user from state
-        if (userOAuthProvider == null) {
-            userOAuthProvider = new UserOAuthProvider(AppConfig.getCurrentUser(), oAuthProvider);
-        }
-        userOAuthProvider.setAccessToken(trackeraHasher.encryptToBase64(credentialsDTO.getAccessToken(), false));
-        userOAuthProvider.setRefreshToken(trackeraHasher.encryptToBase64(credentialsDTO.getRefreshToken(), false));
-        userOAuthProvider.setAccessTokenExpiry(LocalDateTime.now().plusSeconds(credentialsDTO.getExpiresIn()));
-        userOAuthProvider.setRevoked(false);
-        userOAuthProviderRepository.save(userOAuthProvider);*/
+        OAuthUserInfoDTO oAuthUserInfo = oAuthProviderFactory.getProvider(oAuthProvider).authenticateV2(oAuthV2RequestDTO);
+        System.out.println("User Info: " + oAuthUserInfo.getEmail() + ", " + oAuthUserInfo.getFirstname() + ", " + oAuthUserInfo.getLastname());
+        System.out.println("Access Token: " + oAuthUserInfo.getAccessCredentials().getAccessToken());
+        System.out.println("Refresh Token: " + oAuthUserInfo.getAccessCredentials().getRefreshToken());
     }
 
     private Map<String, Object> generateLoginInfo(User user, HttpServletResponse httpResponse) {

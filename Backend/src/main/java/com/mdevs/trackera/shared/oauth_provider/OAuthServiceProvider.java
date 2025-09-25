@@ -1,7 +1,6 @@
 package com.mdevs.trackera.shared.oauth_provider;
 
 import com.mdevs.trackera.config.general.AppConfig;
-import com.mdevs.trackera.dto.auth.OAuthAccessCredentialsDTO;
 import com.mdevs.trackera.dto.auth.OAuthUserInfoDTO;
 import com.mdevs.trackera.dto.auth.OAuthV2RequestDTO;
 import com.mdevs.trackera.entity.User;

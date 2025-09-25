@@ -20,4 +20,14 @@ public class OAuthUserInfoDTO {
     private String profilePicture;
 
     private OAuthProvider provider;
+
+    private OAuthAccessCredentialsDTO accessCredentials;
+
+    public OAuthUserInfoDTO(String email, String firstname, String lastname, String profilePicture, OAuthProvider provider) {
+        this.email = email;
+        this.firstname = firstname;
+        this.lastname = lastname;
+        this.profilePicture = profilePicture;
+        this.provider = provider;
+    }
 }

@@ -4,6 +4,7 @@ import com.mdevs.trackera.config.general.AppConfig;
 import com.mdevs.trackera.dto.auth.OAuthAccessCredentialsDTO;
 import com.mdevs.trackera.dto.auth.OAuthUserInfoDTO;
 import com.mdevs.trackera.dto.auth.OAuthV2RequestDTO;
+import com.mdevs.trackera.dto.jira.AccessibleResourceDTO;
 import com.mdevs.trackera.entity.User;
 import com.mdevs.trackera.shared.oauth_provider.OAuthProvider;
 import com.mdevs.trackera.shared.oauth_provider.OAuthServiceProvider;
@@ -12,10 +13,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Component
@@ -26,7 +30,7 @@ public class JiraOAuthServiceProvider extends OAuthServiceProvider {
     @Value("${trackera.oauth2.jira.client-secret}")
     private String CLIENT_SECRET;
 
-    private final static String REDIRECT_URI = AppConfig.getBackendUrl() + "/auth/oauth-v2/jira/callback";
+    private final static String REDIRECT_URI = AppConfig.getFrontendUrl() + "/oauth/jira/callback";
 
     private final static String JIRA_AUTH_BASE_URL = "https://auth.atlassian.com";
 
@@ -68,10 +72,25 @@ public class JiraOAuthServiceProvider extends OAuthServiceProvider {
 
     @Override
     public OAuthUserInfoDTO authenticateV2(OAuthV2RequestDTO authRequest) {
-        OAuthAccessCredentialsDTO tokenResponse = getJiraTokenResponse(authRequest);
-        // @TODO --> use the access token to get accessible resources
-        // @TODO --> then use the first accessible resource to get user info and return it
-        return null;
+        try {
+            // @TODO --> validate the state and get the codeVerifier from redis
+            OAuthAccessCredentialsDTO tokenResponse = getJiraTokenResponse(authRequest);
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setBearerAuth(tokenResponse.getAccessToken());
+            headers.setAccept(List.of(MediaType.APPLICATION_JSON));
+            HttpEntity<Void> entity = new HttpEntity<>(headers);
+
+            ResponseEntity<AccessibleResourceDTO[]> response = restTemplate.exchange("https://api.atlassian.com/oauth/token/accessible-resources", HttpMethod.GET, entity, AccessibleResourceDTO[].class);
+            AccessibleResourceDTO accessibleResourceList = List.of(response.getBody()).getFirst();
+
+            ResponseEntity<Map> userJiraInfo = restTemplate.exchange(accessibleResourceList.getUrl() + "/rest/api/3/myself", HttpMethod.GET, entity, Map.class);
+            Map<String, Object> userInfo = userJiraInfo.getBody();
+            return new OAuthUserInfoDTO(userInfo.get("emailAddress").toString(), userInfo.get("displayName").toString(), "",
+                                            userInfo.get("avatarUrls") != null ? ((Map<String, String>) userInfo.get("avatarUrls")).get("48x48") : "", OAuthProvider.JIRA, tokenResponse);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
