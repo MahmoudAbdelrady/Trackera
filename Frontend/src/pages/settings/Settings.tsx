@@ -2,19 +2,14 @@ import { Link } from "lucide-react";
 import { AppLayout, LinkedAccount } from "../../components";
 import { SettingsSection } from "../../components";
 import classes from "./scss/settings.module.css";
-import { showErrorToast } from "../../utils/toast-handler/showToast";
+import { showErrorToast, showSuccessToast } from "../../utils/toast-handler/showToast";
 import requestInstance from "../../shared/axios/request-instance";
+import { useEffect } from "react";
 
 const Settings = () => {
   const linkJiraAccount = async () => {
     const jiraOAuthLink = await fetchOAuthFlowLink("jira");
     window.open(jiraOAuthLink, "Link Jira Account", "width=600,height=600");
-    window.addEventListener("message", async (event) => {
-      if (event.origin !== window.location.origin) return;
-      if (event.data?.code) {
-        console.log("Received OAuth code:", event.data.code);
-      }
-    });
   };
 
   const fetchOAuthFlowLink = async (provider: string) => {
@@ -25,6 +20,22 @@ const Settings = () => {
       showErrorToast(error);
     }
   };
+
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent<any>) => {
+      if (event.origin !== window.location.origin || event.data?.type !== "OAUTH_RESULT") return;
+      console.log("Received event:", event.data);
+      const { success, error } = event.data;
+      if (success) {
+        showSuccessToast("Account linked successfully");
+        // refetch linked accounts
+      } else {
+        showErrorToast(error || "Failed to link account");
+      }
+    };
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
+  }, []);
 
   return (
     <AppLayout>
