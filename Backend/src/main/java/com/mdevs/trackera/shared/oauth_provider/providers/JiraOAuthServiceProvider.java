@@ -9,15 +9,16 @@ import com.mdevs.trackera.entity.User;
 import com.mdevs.trackera.shared.oauth_provider.OAuthProvider;
 import com.mdevs.trackera.shared.oauth_provider.OAuthServiceProvider;
 import com.mdevs.trackera.shared.utils.OAuthUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.*;
 import org.springframework.stereotype.Component;
-import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,12 +35,19 @@ public class JiraOAuthServiceProvider extends OAuthServiceProvider {
 
     private final static String JIRA_AUTH_BASE_URL = "https://auth.atlassian.com";
 
+    private final static String JIRA_API_BASE_URL = "https://api.atlassian.com/ex/jira/{cloudId}/rest/api/3";
+
     private final RestTemplate restTemplate = new RestTemplate();
+
+    private final RedisTemplate<String, Object> redisTemplate;
 
     private final OAuthUtil oAuthUtil;
 
+    private final static Logger logger = LoggerFactory.getLogger(JiraOAuthServiceProvider.class);
+
     @Autowired
-    public JiraOAuthServiceProvider(OAuthUtil oAuthUtil) {
+    public JiraOAuthServiceProvider(RedisTemplate<String, Object> redisTemplate, OAuthUtil oAuthUtil) {
+        this.redisTemplate = redisTemplate;
         this.oAuthUtil = oAuthUtil;
     }
 
@@ -50,8 +58,9 @@ public class JiraOAuthServiceProvider extends OAuthServiceProvider {
 
     @Override
     public String getAuthFlowUrl(User user) {
-        Map<String, String> securityParams = oAuthUtil.generateSecurityParams(user != null ? user.getEmail() : null);
-        // @TODO --> store the codeVerifier against the state in redis to validate later
+        Map<String, String> securityParams = oAuthUtil.generateSecurityParams(user != null ? user.getId() : null);
+        // @TODO --> need to handle concurrent logins with same user/no user
+        redisTemplate.opsForValue().set(securityParams.get("state"), securityParams);
         return UriComponentsBuilder
                 .fromUriString(JIRA_AUTH_BASE_URL + "/authorize")
                 .queryParam("audience", "api.atlassian.com")
@@ -73,8 +82,12 @@ public class JiraOAuthServiceProvider extends OAuthServiceProvider {
     @Override
     public OAuthUserInfoDTO authenticateV2(OAuthV2RequestDTO authRequest) {
         try {
-            // @TODO --> validate the state and get the codeVerifier from redis
-            OAuthAccessCredentialsDTO tokenResponse = getJiraTokenResponse(authRequest);
+            Map<String, String> securityParams = (Map<String, String>) redisTemplate.opsForValue().getAndDelete(authRequest.getState());
+            if (securityParams == null || securityParams.isEmpty()) {
+                throw new SecurityException("Invalid state parameter");
+            }
+
+            OAuthAccessCredentialsDTO tokenResponse = getJiraTokenResponse(authRequest.getAuthCode(), securityParams.get("codeVerifier"));
 
             HttpHeaders headers = new HttpHeaders();
             headers.setBearerAuth(tokenResponse.getAccessToken());
@@ -82,14 +95,16 @@ public class JiraOAuthServiceProvider extends OAuthServiceProvider {
             HttpEntity<Void> entity = new HttpEntity<>(headers);
 
             ResponseEntity<AccessibleResourceDTO[]> response = restTemplate.exchange("https://api.atlassian.com/oauth/token/accessible-resources", HttpMethod.GET, entity, AccessibleResourceDTO[].class);
-            AccessibleResourceDTO accessibleResourceList = List.of(response.getBody()).getFirst();
+            AccessibleResourceDTO accessibleResourceDTO = List.of(response.getBody()).getFirst();
 
-            ResponseEntity<Map> userJiraInfo = restTemplate.exchange(accessibleResourceList.getUrl() + "/rest/api/3/myself", HttpMethod.GET, entity, Map.class);
+            ResponseEntity<Map> userJiraInfo = restTemplate.exchange(JIRA_API_BASE_URL.replace("{cloudId}", accessibleResourceDTO.getId()) + "/myself", HttpMethod.GET, entity, Map.class);
             Map<String, Object> userInfo = userJiraInfo.getBody();
-            return new OAuthUserInfoDTO(userInfo.get("emailAddress").toString(), userInfo.get("displayName").toString(), "",
-                                            userInfo.get("avatarUrls") != null ? ((Map<String, String>) userInfo.get("avatarUrls")).get("48x48") : "", OAuthProvider.JIRA, tokenResponse);
+            Long userId = securityParams.containsKey("userId") ? Long.parseLong(securityParams.get("userId")) : null;
+
+            return new OAuthUserInfoDTO(userId, userInfo.get("emailAddress").toString(), userInfo.get("displayName").toString(), null, userInfo.get("avatarUrls") != null ? ((Map<String, String>) userInfo.get("avatarUrls")).get("48x48") : "", OAuthProvider.JIRA, tokenResponse);
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            logger.error("Error while authenticating Jira Token", e);
+            throw new SecurityException("Failed to authenticate with Jira");
         }
     }
 
@@ -98,15 +113,15 @@ public class JiraOAuthServiceProvider extends OAuthServiceProvider {
         return "";
     }
 
-    public OAuthAccessCredentialsDTO getJiraTokenResponse(OAuthV2RequestDTO authRequest) {
+    public OAuthAccessCredentialsDTO getJiraTokenResponse(String authCode, String codeVerifier) {
         String tokenUrl = JIRA_AUTH_BASE_URL + "/oauth/token";
 
         Map<String, String> requestBody = new HashMap<>();
         requestBody.put("grant_type",  "authorization_code");
         requestBody.put("client_id", CLIENT_ID);
         requestBody.put("client_secret", CLIENT_SECRET);
-        requestBody.put("code", authRequest.getAuthCode());
-        requestBody.put("code_verifier", "test"); // @TODO --> get the codeVerifier from redis using the state
+        requestBody.put("code", authCode);
+        requestBody.put("code_verifier", codeVerifier);
         requestBody.put("redirect_uri", REDIRECT_URI);
 
         HttpHeaders headers = new HttpHeaders();

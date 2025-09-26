@@ -1,13 +1,12 @@
 package com.mdevs.trackera.shared.utils;
 
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.StringJoiner;
 
@@ -20,31 +19,25 @@ public class OAuthUtil {
         this.trackeraHasher = trackeraHasher;
     }
 
-    public Map<String, String> generateSecurityParams(String userEmail) {
-        String state = generateState(userEmail);
+    public Map<String, String> generateSecurityParams(Long userId) {
+        String state = generateState();
         String codeVerifier = generateCodeVerifier();
         String codeChallenge = generateCodeChallenge(codeVerifier);
-        return Map.of(
-                "state", state,
-                "codeVerifier", codeVerifier,
-                "codeChallenge", codeChallenge
-        );
+        Map<String, String> securityParams = new HashMap<>();
+        securityParams.put("state", state);
+        securityParams.put("codeVerifier", codeVerifier);
+        securityParams.put("codeChallenge", codeChallenge);
+        if (userId != null) {
+            securityParams.put("userId", String.valueOf(userId));
+        }
+        return securityParams;
     }
 
-    private String generateState(String userEmail) {
+    private String generateState() {
         StringJoiner joiner = new StringJoiner(":");
         joiner.add(trackeraHasher.generateRandomString(24));
-        if (!StringUtils.isEmpty(userEmail)) {
-            joiner.add(userEmail);
-        }
         joiner.add(String.valueOf(System.currentTimeMillis()));
         return trackeraHasher.encryptToBase64(joiner.toString(), true);
-    }
-
-    public Map<String,String> parseOAuthState(String state) {
-        String decryptedPayload = trackeraHasher.decryptFromBase64(state, true);
-        String[] parts = decryptedPayload.split(":");
-        return Collections.singletonMap("userEmail", parts.length > 2 ? parts[1] : null);
     }
 
     private String generateCodeVerifier() {
