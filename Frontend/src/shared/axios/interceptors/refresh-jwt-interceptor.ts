@@ -3,9 +3,9 @@ import { showErrorToast } from "../../../utils/toast-handler/showToast";
 import requestInstance from "../request-instance";
 
 const refreshJwtInterceptor = async (error: any) => {
-  const filteredAPIs = ["/auth/refresh-jwt", "/auth/login"];
+  const filteredAPIs = ["/auth/refresh-jwt", "/auth/login", "/auth/oauth-v2/[^/]+/callback"].map((api) => new RegExp(api));
   const originalRequest = error.config;
-  if (error.response.status === 401 && !originalRequest._retry && filteredAPIs.every((api) => !originalRequest.url.includes(api))) {
+  if (error.response.status === 401 && !originalRequest._retry && filteredAPIs.every((pattern) => !pattern.test(originalRequest.url))) {
     originalRequest._retry = true;
     try {
       const response = await requestInstance.post("/auth/refresh-jwt");

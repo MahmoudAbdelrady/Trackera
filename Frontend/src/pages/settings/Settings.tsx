@@ -8,8 +8,12 @@ import { useEffect } from "react";
 
 const Settings = () => {
   const linkJiraAccount = async () => {
-    const jiraOAuthLink = await fetchOAuthFlowLink("jira");
-    window.open(jiraOAuthLink, "Link Jira Account", "width=600,height=600");
+    try {
+      const jiraOAuthLink = await fetchOAuthFlowLink("jira");
+      window.open(jiraOAuthLink, "Link Jira Account", "width=600,height=600");
+    } catch (error: any) {
+      showErrorToast(error);
+    }
   };
 
   const fetchOAuthFlowLink = async (provider: string) => {
@@ -17,7 +21,7 @@ const Settings = () => {
       const response = await requestInstance.get(`/auth/oauth-v2/${provider}`);
       return response.data.url;
     } catch (error: any) {
-      showErrorToast(error);
+      throw error;
     }
   };
 
