@@ -17,6 +17,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.*;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.util.InvalidUrlException;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.util.*;
@@ -59,18 +60,23 @@ public class JiraOAuthServiceProvider extends OAuthServiceProvider {
     public String getAuthFlowUrl(User user) {
         Map<String, String> securityParams = oAuthUtil.generateSecurityParams(user != null ? user.getId() : null);
         // @TODO --> need to handle concurrent logins with same user/no user
-        redisTemplate.opsForValue().set(securityParams.get("state"), securityParams);
-        return UriComponentsBuilder
-                .fromUriString(JIRA_AUTH_BASE_URL + "/authorize")
-                .queryParam("audience", "api.atlassian.com")
-                .queryParam("client_id", CLIENT_ID)
-                .queryParam("scope", "read:jira-work read:jira-user write:jira-work offline_access")
-                .queryParam("redirect_uri", REDIRECT_URI)
-                .queryParam("state", securityParams.get("state"))
-                .queryParam("response_type", "code")
-                .queryParam("code_challenge", securityParams.get("codeChallenge"))
-                .queryParam("code_challenge_method", "S256")
-                .build().toString();
+        try {
+            redisTemplate.opsForValue().set(securityParams.get("state"), securityParams);
+            return UriComponentsBuilder
+                    .fromUriString(JIRA_AUTH_BASE_URL + "/authorize")
+                    .queryParam("audience", "api.atlassian.com")
+                    .queryParam("client_id", CLIENT_ID)
+                    .queryParam("scope", "read:jira-work read:jira-user write:jira-work offline_access")
+                    .queryParam("redirect_uri", REDIRECT_URI)
+                    .queryParam("state", securityParams.get("state"))
+                    .queryParam("response_type", "code")
+                    .queryParam("code_challenge", securityParams.get("codeChallenge"))
+                    .queryParam("code_challenge_method", "S256")
+                    .build().toString();
+        } catch (Exception e) {
+            logger.error("Error while generating Jira Auth URL", e);
+            throw new RuntimeException("Something went wrong while linking Jira account");
+        }
     }
 
     @Override
