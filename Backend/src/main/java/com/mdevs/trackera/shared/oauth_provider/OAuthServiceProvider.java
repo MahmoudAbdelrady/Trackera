@@ -24,8 +24,8 @@ public abstract class OAuthServiceProvider {
 
     public abstract String refreshAccessToken(String refreshToken);
 
-    public String generateAuthFlowUrl(HttpServletRequest request) {
-        return getAuthFlowUrl(validateAndGetAuthFlowUser(request));
+    public String generateAuthFlowUrl(HttpServletRequest httpRequest) {
+        return getAuthFlowUrl(validateAndGetAuthFlowUser(httpRequest));
     }
 
     private User validateAndGetAuthFlowUser(HttpServletRequest request) {

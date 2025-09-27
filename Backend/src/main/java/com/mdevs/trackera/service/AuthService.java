@@ -172,12 +172,56 @@ public class AuthService {
     }
 
     @Transactional
-    public void oAuthV2Callback(String provider, OAuthV2RequestDTO oAuthV2RequestDTO) {
-        OAuthProvider oAuthProvider = OAuthProvider.fromLabel(provider);
-        OAuthUserInfoDTO oAuthUserInfo = oAuthProviderFactory.getProvider(oAuthProvider).authenticateV2(oAuthV2RequestDTO);
-        System.out.println("User Info: " + oAuthUserInfo.getEmail() + ", " + oAuthUserInfo.getFirstname() + ", " + oAuthUserInfo.getLastname());
-        System.out.println("Access Token: " + oAuthUserInfo.getAccessCredentials().getAccessToken());
-        System.out.println("Refresh Token: " + oAuthUserInfo.getAccessCredentials().getRefreshToken());
+    public Map<String, Object> oAuthV2Callback(String provider, OAuthV2RequestDTO oAuthV2RequestDTO, HttpServletResponse httpResponse) {
+        OAuthUserInfoDTO oAuthUserInfoDTO = oAuthProviderFactory.getProvider(OAuthProvider.fromLabel(provider)).authenticateV2(oAuthV2RequestDTO);
+        User authenticatedUser;
+        boolean createOAuthProvider = true;
+        boolean isLinkingAccount = false;
+        if (oAuthUserInfoDTO.getUserId() != null) { // means the user is linking an oAuth provider as user id is fetched from jwt
+            authenticatedUser = userRepository.findOne(oAuthUserInfoDTO.getUserId());
+            isLinkingAccount = true;
+        } else {
+            Map<String, Object> oAuthUserData = createOrGetOAuthUser(oAuthUserInfoDTO);
+            authenticatedUser = (User) oAuthUserData.get("user");
+            createOAuthProvider = (boolean) oAuthUserData.get("createOAuthProvider");
+        }
+
+        if (createOAuthProvider) {
+            UserOAuthProvider userOAuthProvider = new UserOAuthProvider(authenticatedUser, oAuthUserInfoDTO.getProvider());
+            userOAuthProvider.setProviderUserEmail(oAuthUserInfoDTO.getEmail());
+            userOAuthProvider.setAccessToken(trackeraHasher.encryptToBase64(oAuthUserInfoDTO.getAccessCredentials().getAccessToken(), false));
+            userOAuthProvider.setRefreshToken(trackeraHasher.encryptToBase64(oAuthUserInfoDTO.getAccessCredentials().getRefreshToken(), false));
+            userOAuthProvider.setAccessTokenExpiry(LocalDateTime.now().plusSeconds(oAuthUserInfoDTO.getAccessCredentials().getExpiresIn()));
+            userOAuthProviderRepository.save(userOAuthProvider);
+        }
+
+        return isLinkingAccount ? Map.of("message", "Account linked successfully") : generateLoginInfo(authenticatedUser, httpResponse);
+    }
+
+    private Map<String, Object> createOrGetOAuthUser(OAuthUserInfoDTO oAuthUserInfo) {
+        User authenticatedUser = userRepository.findByEmail(oAuthUserInfo.getEmail());
+        boolean createOAuthProvider = true;
+        if (authenticatedUser != null) { // means the user is logging in with an oAuth provider
+            createOAuthProvider = false;
+            if (!authenticatedUser.isOAuth()) {
+                throw new BusinessException("Password login required for this account");
+            }
+            if (!userOAuthProviderRepository.existsByUserAndProvider(authenticatedUser, oAuthUserInfo.getProvider())) {
+                throw new BusinessException("This account is not linked with the requested login provider");
+            }
+        } else {
+            authenticatedUser = new User();
+            authenticatedUser.setEmail(oAuthUserInfo.getEmail());
+            authenticatedUser.setFirstname(oAuthUserInfo.getFirstname());
+            authenticatedUser.setLastname(oAuthUserInfo.getLastname());
+            authenticatedUser.setProfilePicture(oAuthUserInfo.getProfilePicture());
+            authenticatedUser.setVerified(true);
+            userRepository.save(authenticatedUser);
+        }
+        return Map.of(
+                "user", authenticatedUser,
+                "createOAuthProvider", createOAuthProvider
+        );
     }
 
     private Map<String, Object> generateLoginInfo(User user, HttpServletResponse httpResponse) {
