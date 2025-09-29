@@ -19,4 +19,7 @@
 }
 .settings_section .content {
   padding: 15px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }/*# sourceMappingURL=settings-section.module.css.map */

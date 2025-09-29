@@ -6,8 +6,7 @@ interface SettingsSectionProps {
 
 interface LinkedAccountProps {
   platform: string;
-  icon: React.ReactNode;
-  accountIdentifier: string;
+  accountIdentifier?: string;
   isLinked: boolean;
   onLink: () => void;
   onUnlink: () => void;

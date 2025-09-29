@@ -12,6 +12,10 @@
     gap: 10px;
   }
 }
+.linked_account:not(:last-child) {
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: 20px;
+}
 .linked_account .account_info {
   display: flex;
   justify-content: center;
@@ -38,7 +42,7 @@
   height: 22px;
 }
 .linked_account .account_info .platform .platform_name {
-  font-size: 20px;
+  font-size: 18px;
 }
 .linked_account .account_info .account_identifier {
   margin-top: 5px;

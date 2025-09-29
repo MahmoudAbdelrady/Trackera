@@ -2,13 +2,18 @@ import { Button } from "antd";
 import type { LinkedAccountProps } from "../../../shared/types";
 import classes from "./scss/linked-account.module.css";
 
+const providerIconMap: Record<string, React.ReactNode> = {
+  jira: <img src="/Assets/jira_icon.svg" alt="Jira" />,
+  google: <img src="/Assets/google_logo.webp" alt="Google" />,
+};
+
 const LinkedAccount = (props: LinkedAccountProps) => {
   return (
     <div className={classes.linked_account}>
       <div className={classes.account_info}>
         <div className={classes.platform}>
-          <div className={classes.icon}>{props.icon}</div>
-          <div className={classes.platform_name}>{props.platform}</div>
+          <div className={classes.icon}>{providerIconMap[props.platform]}</div>
+          <div className={classes.platform_name}>{props.platform.charAt(0).toUpperCase() + props.platform.slice(1)}</div>
         </div>
         <div className={classes.account_identifier}>{props.accountIdentifier}</div>
       </div>
