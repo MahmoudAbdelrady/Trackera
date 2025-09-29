@@ -22,7 +22,7 @@ public class UserOAuthProvider extends BaseEntity {
     private OAuthProvider provider;
 
     @Column(nullable = false)
-    private String providerUserEmail;
+    private String email;
 
     @Column(nullable = false, columnDefinition = "LONGTEXT")
     private String accessToken;

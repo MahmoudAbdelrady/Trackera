@@ -26,6 +26,11 @@ public class AuthController {
         this.authService = authService;
     }
 
+    @GetMapping("/oauth-providers")
+    public ResponseEntity<?> GetUserOAuthProviders() {
+        return new ResponseEntity<>(authService.getUserOAuthProviders(), HttpStatus.OK);
+    }
+
     @PublicAPI
     @PostMapping("/signup")
     public ResponseEntity<?> SignUp(@RequestBody @Valid SignUpDTO signUpDTO) {
@@ -55,6 +60,11 @@ public class AuthController {
     @PostMapping("/oauth-v2/{oAuthProvider}/callback")
     public ResponseEntity<?> OAuthV2Callback(@PathVariable String oAuthProvider, @RequestBody @Valid OAuthV2RequestDTO oAuthV2RequestDTO, HttpServletResponse httpServletResponse) {
         return new ResponseEntity<>(authService.oAuthV2Callback(oAuthProvider, oAuthV2RequestDTO, httpServletResponse), HttpStatus.OK);
+    }
+
+    @PostMapping("/unlink-oauth/{oAuthProvider}")
+    public ResponseEntity<?> UnlinkOAuthProvider(@PathVariable String oAuthProvider) {
+        return new ResponseEntity<>(authService.unlinkOAuthProvider(oAuthProvider), HttpStatus.OK);
     }
 
     @PostMapping("/logout")

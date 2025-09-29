@@ -86,6 +86,19 @@ public class AuthService {
         this.passwordEncoder = passwordEncoder;
     }
 
+    public List<Map<String, Object>> getUserOAuthProviders() {
+        User loggedUser = AppConfig.getCurrentUser();
+        List<UserOAuthProvider> userOAuthProviders = userOAuthProviderRepository.findByUser(loggedUser);
+        return Arrays.stream(OAuthProvider.values()).map(p -> {
+            UserOAuthProvider userOAuthProvider = userOAuthProviders.stream().filter(uop -> uop.getProvider().equals(p)).findFirst().orElse(null);
+            Map<String, Object> providerInfo = new HashMap<>();
+            providerInfo.put("provider", p.getLabel());
+            providerInfo.put("isLinked", userOAuthProvider != null);
+            providerInfo.put("email", userOAuthProvider != null && !StringUtils.isEmpty(userOAuthProvider.getEmail()) ? userOAuthProvider.getEmail() : null);
+            return providerInfo;
+        }).toList();
+    }
+
     @Transactional
     public String signUp(SignUpDTO signUpDTO) {
         if (userRepository.existsByEmail(signUpDTO.getEmail())) {
@@ -188,7 +201,7 @@ public class AuthService {
 
         if (createOAuthProvider) {
             UserOAuthProvider userOAuthProvider = new UserOAuthProvider(authenticatedUser, oAuthUserInfoDTO.getProvider());
-            userOAuthProvider.setProviderUserEmail(oAuthUserInfoDTO.getEmail());
+            userOAuthProvider.setEmail(oAuthUserInfoDTO.getEmail());
             userOAuthProvider.setAccessToken(trackeraHasher.encryptToBase64(oAuthUserInfoDTO.getAccessCredentials().getAccessToken(), false));
             userOAuthProvider.setRefreshToken(trackeraHasher.encryptToBase64(oAuthUserInfoDTO.getAccessCredentials().getRefreshToken(), false));
             userOAuthProvider.setAccessTokenExpiry(LocalDateTime.now().plusSeconds(oAuthUserInfoDTO.getAccessCredentials().getExpiresIn()));
@@ -229,6 +242,21 @@ public class AuthService {
         String refreshToken = jwtUtil.generateToken(user.getEmail(), false);
         httpResponse.addCookie(createTrackeraCookie(REFRESH_TOKEN_COOKIE_NAME, refreshToken, true, Integer.parseInt(cookieMaxAge)));
         return Map.of("token", accessToken);
+    }
+
+    @Transactional
+    public String unlinkOAuthProvider(String provider) {
+        OAuthProvider oAuthProvider = OAuthProvider.fromLabel(provider);
+        User loggedUser = Objects.requireNonNull(AppConfig.getCurrentUser());
+        UserOAuthProvider userOAuthProvider = userOAuthProviderRepository.findByUserAndProvider(loggedUser, oAuthProvider);
+        if (userOAuthProvider == null) {
+            throw new BusinessException("Your account is not linked with " + oAuthProvider.getLabel());
+        }
+        if (userOAuthProviderRepository.countByUser(loggedUser) <= 1 && !loggedUser.isPasswordSet()) {
+            throw new BusinessException("You cannot unlink the last linked account without setting a password");
+        }
+        userOAuthProviderRepository.delete(userOAuthProvider);
+        return oAuthProvider.getLabel() + " unlinked successfully";
     }
 
     @Transactional

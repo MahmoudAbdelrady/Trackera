@@ -63,6 +63,10 @@ public class User extends BaseEntity implements UserDetails {
     }
 
     public boolean canChangePassword() {
-        return !isOAuth || !StringUtils.isEmpty(password);
+        return !isOAuth || isPasswordSet();
+    }
+
+    public boolean isPasswordSet() {
+        return !StringUtils.isEmpty(password);
     }
 }

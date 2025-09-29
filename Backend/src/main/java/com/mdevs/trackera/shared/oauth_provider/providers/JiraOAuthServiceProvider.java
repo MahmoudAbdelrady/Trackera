@@ -21,6 +21,7 @@ import org.springframework.web.util.InvalidUrlException;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Component
@@ -61,7 +62,7 @@ public class JiraOAuthServiceProvider extends OAuthServiceProvider {
         Map<String, String> securityParams = oAuthUtil.generateSecurityParams(user != null ? user.getId() : null);
         // @TODO --> need to handle concurrent logins with same user/no user
         try {
-            redisTemplate.opsForValue().set(securityParams.get("state"), securityParams);
+            redisTemplate.opsForValue().set(securityParams.get("state"), securityParams, 10, TimeUnit.MINUTES);
             return UriComponentsBuilder
                     .fromUriString(JIRA_AUTH_BASE_URL + "/authorize")
                     .queryParam("audience", "api.atlassian.com")
