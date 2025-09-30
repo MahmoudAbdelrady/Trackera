@@ -20,7 +20,6 @@ import io.jsonwebtoken.Claims;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.apache.commons.lang3.EnumUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -149,50 +148,26 @@ public class AuthService {
         }
     }
 
-    @Transactional
-    public Map<String, Object> oAuth(OAuthRequestDTO oAuthRequestDTO, HttpServletResponse httpResponse) {
-        OAuthProvider providerRequest = EnumUtils.isValidEnum(OAuthProvider.class, oAuthRequestDTO.getProvider()) ? OAuthProvider.valueOf(oAuthRequestDTO.getProvider()) : null;
-        if (providerRequest == null) {
-            throw new IllegalArgumentException("Invalid OAuth Provider: " + oAuthRequestDTO.getProvider());
-        }
-        OAuthUserInfoDTO oAuthUserInfo = oAuthProviderFactory.getProvider(providerRequest).authenticate(oAuthRequestDTO.getTokenCode());
-        User authenticatedUser = userRepository.findByEmail(oAuthUserInfo.getEmail());
-        if (authenticatedUser == null) {
-            authenticatedUser = new User();
-            authenticatedUser.setEmail(oAuthUserInfo.getEmail());
-            authenticatedUser.setFirstname(oAuthUserInfo.getFirstname());
-            authenticatedUser.setLastname(oAuthUserInfo.getLastname());
-            authenticatedUser.setProfilePicture(oAuthUserInfo.getProfilePicture());
-            authenticatedUser.setVerified(true);
-            userRepository.save(authenticatedUser);
-
-            UserOAuthProvider userOAuthProvider = new UserOAuthProvider(authenticatedUser, oAuthUserInfo.getProvider());
-            userOAuthProviderRepository.save(userOAuthProvider);
-        } else {
-            if (!authenticatedUser.isOAuth()) {
-                throw new BusinessException("Password login required for this account");
-            }
-            if (!userOAuthProviderRepository.existsByUserAndProvider(authenticatedUser, oAuthUserInfo.getProvider())) {
-                throw new BusinessException("This account is not linked with the requested login provider");
-            }
-        }
-        return generateLoginInfo(authenticatedUser, httpResponse);
-    }
-
-    public Map<String, Object> oAuthV2(String oAuthProvider, HttpServletRequest httpRequest) {
+    public Map<String, Object> oAuth(String oAuthProvider, HttpServletRequest httpRequest) {
         String flowUrl = oAuthProviderFactory.getProvider(OAuthProvider.fromLabel(oAuthProvider)).generateAuthFlowUrl(httpRequest);
         return Map.of("url", flowUrl);
     }
 
     @Transactional
-    public Map<String, Object> oAuthV2Callback(String provider, OAuthV2RequestDTO oAuthV2RequestDTO, HttpServletResponse httpResponse) {
-        OAuthUserInfoDTO oAuthUserInfoDTO = oAuthProviderFactory.getProvider(OAuthProvider.fromLabel(provider)).authenticateV2(oAuthV2RequestDTO);
+    public Map<String, Object> oAuthCallback(String provider, OAuthRequestDTO oAuthRequestDTO, HttpServletResponse httpResponse) {
+        OAuthUserInfoDTO oAuthUserInfoDTO = oAuthProviderFactory.getProvider(OAuthProvider.fromLabel(provider)).authenticate(oAuthRequestDTO);
         User authenticatedUser;
         boolean createOAuthProvider = true;
         boolean isLinkingAccount = false;
         if (oAuthUserInfoDTO.getUserId() != null) { // means the user is linking an oAuth provider as user id is fetched from jwt
-            authenticatedUser = userRepository.findOne(oAuthUserInfoDTO.getUserId());
             isLinkingAccount = true;
+            authenticatedUser = userRepository.findOne(oAuthUserInfoDTO.getUserId());
+            if (userRepository.existsByEmailAndIdNot(oAuthUserInfoDTO.getEmail(), authenticatedUser.getId())) {
+                throw new BusinessException("Email already exists");
+            }
+            if (userOAuthProviderRepository.existsByUserAndProvider(authenticatedUser, oAuthUserInfoDTO.getProvider())) {
+                throw new BusinessException(oAuthUserInfoDTO.getProvider().getLabel() + " account is already linked to the current account");
+            }
         } else {
             Map<String, Object> oAuthUserData = createOrGetOAuthUser(oAuthUserInfoDTO);
             authenticatedUser = (User) oAuthUserData.get("user");
@@ -220,7 +195,7 @@ public class AuthService {
                 throw new BusinessException("Password login required for this account");
             }
             if (!userOAuthProviderRepository.existsByUserAndProvider(authenticatedUser, oAuthUserInfo.getProvider())) {
-                throw new BusinessException("This account is not linked with the requested login provider");
+                throw new BusinessException("This account is not linked with " + oAuthUserInfo.getProvider().getLabel());
             }
         } else {
             authenticatedUser = new User();

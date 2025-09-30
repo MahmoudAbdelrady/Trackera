@@ -3,7 +3,7 @@ package com.mdevs.trackera.shared.oauth_provider.providers;
 import com.mdevs.trackera.config.general.AppConfig;
 import com.mdevs.trackera.dto.auth.OAuthAccessCredentialsDTO;
 import com.mdevs.trackera.dto.auth.OAuthUserInfoDTO;
-import com.mdevs.trackera.dto.auth.OAuthV2RequestDTO;
+import com.mdevs.trackera.dto.auth.OAuthRequestDTO;
 import com.mdevs.trackera.dto.jira.AccessibleResourceDTO;
 import com.mdevs.trackera.entity.User;
 import com.mdevs.trackera.shared.oauth_provider.OAuthProvider;
@@ -17,12 +17,10 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.*;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.web.util.InvalidUrlException;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 @Component
 public class JiraOAuthServiceProvider extends OAuthServiceProvider {
@@ -44,7 +42,7 @@ public class JiraOAuthServiceProvider extends OAuthServiceProvider {
 
     private final OAuthUtil oAuthUtil;
 
-    private final static Logger logger = LoggerFactory.getLogger(JiraOAuthServiceProvider.class);
+    private final static Logger LOGGER = LoggerFactory.getLogger(JiraOAuthServiceProvider.class);
 
     @Autowired
     public JiraOAuthServiceProvider(RedisTemplate<String, Object> redisTemplate, OAuthUtil oAuthUtil) {
@@ -60,7 +58,6 @@ public class JiraOAuthServiceProvider extends OAuthServiceProvider {
     @Override
     public String getAuthFlowUrl(User user) {
         Map<String, String> securityParams = oAuthUtil.generateSecurityParams(user != null ? user.getId() : null);
-        // @TODO --> need to handle concurrent logins with same user/no user
         try {
             redisTemplate.opsForValue().set(securityParams.get("state"), securityParams, 10, TimeUnit.MINUTES);
             return UriComponentsBuilder
@@ -75,18 +72,13 @@ public class JiraOAuthServiceProvider extends OAuthServiceProvider {
                     .queryParam("code_challenge_method", "S256")
                     .build().toString();
         } catch (Exception e) {
-            logger.error("Error while generating Jira Auth URL", e);
+            LOGGER.error("Error while generating Jira Auth URL", e);
             throw new RuntimeException("Something went wrong while linking Jira account");
         }
     }
 
     @Override
-    public OAuthUserInfoDTO authenticate(String code) {
-        return null;
-    }
-
-    @Override
-    public OAuthUserInfoDTO authenticateV2(OAuthV2RequestDTO authRequest) {
+    public OAuthUserInfoDTO authenticate(OAuthRequestDTO authRequest) {
         try {
             Map<String, String> securityParams = (Map<String, String>) redisTemplate.opsForValue().getAndDelete(authRequest.getState());
             if (securityParams == null || securityParams.isEmpty()) {
@@ -110,7 +102,7 @@ public class JiraOAuthServiceProvider extends OAuthServiceProvider {
 
             return new OAuthUserInfoDTO(userId, userJiraInfo.get("emailAddress").toString(), names[0], names.length > 1 ? String.join(" ", names) : null, userJiraInfo.get("avatarUrls") != null ? ((Map<String, String>) userJiraInfo.get("avatarUrls")).get("48x48") : null, OAuthProvider.JIRA, tokenResponse);
         } catch (Exception e) {
-            logger.error("Error while authenticating Jira Token", e);
+            LOGGER.error("Error while authenticating Jira Token", e);
             throw new SecurityException("Failed to authenticate with Jira");
         }
     }

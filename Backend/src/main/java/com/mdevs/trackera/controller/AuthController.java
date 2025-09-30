@@ -4,7 +4,6 @@ import com.mdevs.trackera.dto.auth.*;
 import com.mdevs.trackera.service.AuthService;
 import com.mdevs.trackera.shared.annotations.PublicAPI;
 import com.mdevs.trackera.shared.exceptions.ExceptionResponseMaker;
-import com.mdevs.trackera.shared.oauth_provider.OAuthProvider;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -45,21 +44,15 @@ public class AuthController {
     }
 
     @PublicAPI
-    @PostMapping("/oauth")
-    public ResponseEntity<?> OAuth(@RequestBody @Valid OAuthRequestDTO oAuthRequestDTO, HttpServletResponse httpServletResponse) {
-        return new ResponseEntity<>(authService.oAuth(oAuthRequestDTO, httpServletResponse), HttpStatus.OK);
+    @GetMapping("/oauth/{oAuthProvider}")
+    public ResponseEntity<?> OAuth(@PathVariable String oAuthProvider, HttpServletRequest httpServletRequest) {
+        return new ResponseEntity<>(authService.oAuth(oAuthProvider, httpServletRequest), HttpStatus.OK);
     }
 
     @PublicAPI
-    @GetMapping("/oauth-v2/{oAuthProvider}")
-    public ResponseEntity<?> OAuthV2(@PathVariable String oAuthProvider, HttpServletRequest httpServletRequest) {
-        return new ResponseEntity<>(authService.oAuthV2(oAuthProvider, httpServletRequest), HttpStatus.OK);
-    }
-
-    @PublicAPI
-    @PostMapping("/oauth-v2/{oAuthProvider}/callback")
-    public ResponseEntity<?> OAuthV2Callback(@PathVariable String oAuthProvider, @RequestBody @Valid OAuthV2RequestDTO oAuthV2RequestDTO, HttpServletResponse httpServletResponse) {
-        return new ResponseEntity<>(authService.oAuthV2Callback(oAuthProvider, oAuthV2RequestDTO, httpServletResponse), HttpStatus.OK);
+    @PostMapping("/oauth/{oAuthProvider}/callback")
+    public ResponseEntity<?> OAuthCallback(@PathVariable String oAuthProvider, @RequestBody @Valid OAuthRequestDTO oAuthRequestDTO, HttpServletResponse httpServletResponse) {
+        return new ResponseEntity<>(authService.oAuthCallback(oAuthProvider, oAuthRequestDTO, httpServletResponse), HttpStatus.OK);
     }
 
     @PostMapping("/unlink-oauth/{oAuthProvider}")

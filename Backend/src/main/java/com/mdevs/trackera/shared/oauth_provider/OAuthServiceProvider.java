@@ -2,7 +2,7 @@ package com.mdevs.trackera.shared.oauth_provider;
 
 import com.mdevs.trackera.config.general.AppConfig;
 import com.mdevs.trackera.dto.auth.OAuthUserInfoDTO;
-import com.mdevs.trackera.dto.auth.OAuthV2RequestDTO;
+import com.mdevs.trackera.dto.auth.OAuthRequestDTO;
 import com.mdevs.trackera.entity.User;
 import com.mdevs.trackera.repository.UserOAuthProviderRepository;
 import com.mdevs.trackera.repository.UserRepository;
@@ -18,9 +18,7 @@ public abstract class OAuthServiceProvider {
 
     protected abstract String getAuthFlowUrl(User user);
 
-    public abstract OAuthUserInfoDTO authenticate(String code);
-
-    public abstract OAuthUserInfoDTO authenticateV2(OAuthV2RequestDTO authRequest);
+    public abstract OAuthUserInfoDTO authenticate(OAuthRequestDTO authRequest);
 
     public abstract String refreshAccessToken(String refreshToken);
 
