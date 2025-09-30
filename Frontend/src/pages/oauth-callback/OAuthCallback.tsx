@@ -12,7 +12,7 @@ const OAuthCallback = () => {
     const state = searchParams.get("state");
     const fetchOAuthUserInfo = async () => {
       try {
-        const response = await requestInstance.post(`/auth/oauth-v2/${provider}/callback`, {
+        const response = await requestInstance.post(`/auth/oauth/${provider}/callback`, {
           authCode: code,
           state,
         });
@@ -27,7 +27,7 @@ const OAuthCallback = () => {
     if (provider && code && state) {
       fetchOAuthUserInfo();
     } else {
-      window.opener.postMessage({ type: "OAUTH_RESULT", success: false, error: "missing provider/code/state" }, window.location.origin);
+      window.opener.postMessage({ type: "OAUTH_RESULT", success: false, error: `Failed to authenticate with ${provider}` }, window.location.origin);
       window.close();
     }
   }, []);

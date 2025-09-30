@@ -38,7 +38,7 @@ const Settings = () => {
 
   const fetchOAuthFlowLink = async (provider: string) => {
     try {
-      const response = await requestInstance.get(`/auth/oauth-v2/${provider}`);
+      const response = await requestInstance.get(`/auth/oauth/${provider}`);
       return response.data.url;
     } catch (error: any) {
       throw error;
@@ -48,7 +48,6 @@ const Settings = () => {
   useEffect(() => {
     const handleMessage = (event: MessageEvent<any>) => {
       if (event.origin !== window.location.origin || event.data?.type !== "OAUTH_RESULT") return;
-      console.log("Received event:", event.data);
       const { success, error } = event.data;
       if (success) {
         showSuccessToast("Account linked successfully");
