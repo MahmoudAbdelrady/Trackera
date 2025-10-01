@@ -8,24 +8,19 @@ import com.mdevs.trackera.repository.UserOAuthProviderRepository;
 import com.mdevs.trackera.repository.UserRepository;
 import com.mdevs.trackera.shared.exceptions.types.BusinessException;
 import com.mdevs.trackera.shared.utils.JwtUtil;
+import com.mdevs.trackera.shared.utils.OAuthUtil;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.http.HttpServletRequest;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpHeaders;
+import org.springframework.web.util.UriComponentsBuilder;
+
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 public abstract class OAuthServiceProvider {
-    protected abstract OAuthProvider getOAuthProvider();
-
-    protected abstract String getAuthFlowUrl(User user);
-
-    public abstract OAuthUserInfoDTO authenticate(OAuthRequestDTO authRequest);
-
-    public abstract String refreshAccessToken(String refreshToken);
-
-    public String generateAuthFlowUrl(HttpServletRequest httpRequest) {
-        return getAuthFlowUrl(validateAndGetAuthFlowUser(httpRequest));
-    }
-
+    //<editor-fold> common methods
     private User validateAndGetAuthFlowUser(HttpServletRequest request) {
         String jwtTokenHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
         if (StringUtils.isEmpty(jwtTokenHeader) || !jwtTokenHeader.startsWith("Bearer ")) {
@@ -38,8 +33,46 @@ public abstract class OAuthServiceProvider {
         Claims claims = jwtUtil.validateAndGetTokenPayload(jwtTokenHeader.substring(7), true);
         User user = userRepository.findByEmail(claims.get("email", String.class));
         if (userOAuthProviderRepository.existsByUserAndProvider(user, getOAuthProvider())) {
-            throw new BusinessException(getOAuthProvider().getLabel() + " account is already linked to the current account");
+            throw new BusinessException("The current account is already linked with " + getOAuthProvider().getDisplayName());
         }
         return user;
     }
+
+    protected String getRedirectUri() {
+        return AppConfig.getFrontendUrl() + "/oauth/" + getOAuthProvider().getCode() + "/callback";
+    }
+
+    protected UriComponentsBuilder getBaseOAuthBuilder(String authBaseUrl, String clientId, HttpServletRequest httpRequest, String... scopes) {
+        User user = validateAndGetAuthFlowUser(httpRequest);
+        Map<String, String> securityParams = AppConfig.getApplicationContext().getBean(OAuthUtil.class).generateSecurityParams(user != null ? user.getId() : null);
+        AppConfig.getApplicationContext().getBean(RedisTemplate.class).opsForValue().set(securityParams.get("state"), securityParams, 10, TimeUnit.MINUTES);
+
+        return UriComponentsBuilder.fromUriString(authBaseUrl)
+                .queryParam("client_id", clientId)
+                .queryParam("redirect_uri", getRedirectUri())
+                .queryParam("scope", String.join(" ", scopes))
+                .queryParam("response_type", "code")
+                .queryParam("state", securityParams.get("state"))
+                .queryParam("code_challenge", securityParams.get("codeChallenge"))
+                .queryParam("code_challenge_method", "S256");
+    }
+
+    protected Map<String, String> validateAndGetSecurityParams(String state) {
+        Map<String, String> securityParams = (Map<String, String>) AppConfig.getApplicationContext().getBean(RedisTemplate.class).opsForValue().getAndDelete(state);
+        if (securityParams == null || securityParams.isEmpty()) {
+            throw new SecurityException("Invalid state parameter");
+        }
+        return securityParams;
+    }
+    //</editor-fold>
+
+    //<editor-fold> methods to be implemented by subclasses
+    protected abstract OAuthProvider getOAuthProvider();
+
+    public abstract String generateAuthFlowUrl(HttpServletRequest httpRequest);
+
+    public abstract OAuthUserInfoDTO authenticate(OAuthRequestDTO authRequest);
+
+    public abstract String refreshAccessToken(String refreshToken);
+    //</editor-fold>
 }

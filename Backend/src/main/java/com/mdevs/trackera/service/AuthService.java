@@ -91,7 +91,7 @@ public class AuthService {
         return Arrays.stream(OAuthProvider.values()).map(p -> {
             UserOAuthProvider userOAuthProvider = userOAuthProviders.stream().filter(uop -> uop.getProvider().equals(p)).findFirst().orElse(null);
             Map<String, Object> providerInfo = new HashMap<>();
-            providerInfo.put("provider", p.getLabel());
+            providerInfo.put("provider", Map.of("code", p.getCode(), "name", p.getDisplayName()));
             providerInfo.put("isLinked", userOAuthProvider != null);
             providerInfo.put("email", userOAuthProvider != null && !StringUtils.isEmpty(userOAuthProvider.getEmail()) ? userOAuthProvider.getEmail() : null);
             return providerInfo;
@@ -149,33 +149,35 @@ public class AuthService {
     }
 
     public Map<String, Object> oAuth(String oAuthProvider, HttpServletRequest httpRequest) {
-        String flowUrl = oAuthProviderFactory.getProvider(OAuthProvider.fromLabel(oAuthProvider)).generateAuthFlowUrl(httpRequest);
+        String flowUrl = oAuthProviderFactory.getProvider(OAuthProvider.fromCode(oAuthProvider)).generateAuthFlowUrl(httpRequest);
         return Map.of("url", flowUrl);
     }
 
     @Transactional
     public Map<String, Object> oAuthCallback(String provider, OAuthRequestDTO oAuthRequestDTO, HttpServletResponse httpResponse) {
-        OAuthUserInfoDTO oAuthUserInfoDTO = oAuthProviderFactory.getProvider(OAuthProvider.fromLabel(provider)).authenticate(oAuthRequestDTO);
+        OAuthProvider oAuthProvider = OAuthProvider.fromCode(provider);
+        OAuthUserInfoDTO oAuthUserInfoDTO = oAuthProviderFactory.getProvider(oAuthProvider).authenticate(oAuthRequestDTO);
         User authenticatedUser;
         boolean createOAuthProvider = true;
         boolean isLinkingAccount = false;
+
         if (oAuthUserInfoDTO.getUserId() != null) { // means the user is linking an oAuth provider as user id is fetched from jwt
             isLinkingAccount = true;
             authenticatedUser = userRepository.findOne(oAuthUserInfoDTO.getUserId());
             if (userRepository.existsByEmailAndIdNot(oAuthUserInfoDTO.getEmail(), authenticatedUser.getId())) {
                 throw new BusinessException("Email already exists");
             }
-            if (userOAuthProviderRepository.existsByUserAndProvider(authenticatedUser, oAuthUserInfoDTO.getProvider())) {
-                throw new BusinessException(oAuthUserInfoDTO.getProvider().getLabel() + " account is already linked to the current account");
+            if (userOAuthProviderRepository.existsByUserAndProvider(authenticatedUser, oAuthProvider)) {
+                throw new BusinessException("The current account is already linked with " + oAuthProvider.getDisplayName());
             }
         } else {
-            Map<String, Object> oAuthUserData = createOrGetOAuthUser(oAuthUserInfoDTO);
+            Map<String, Object> oAuthUserData = createOrGetOAuthUser(oAuthUserInfoDTO, oAuthProvider);
             authenticatedUser = (User) oAuthUserData.get("user");
             createOAuthProvider = (boolean) oAuthUserData.get("createOAuthProvider");
         }
 
         if (createOAuthProvider) {
-            UserOAuthProvider userOAuthProvider = new UserOAuthProvider(authenticatedUser, oAuthUserInfoDTO.getProvider());
+            UserOAuthProvider userOAuthProvider = new UserOAuthProvider(authenticatedUser, oAuthProvider);
             userOAuthProvider.setEmail(oAuthUserInfoDTO.getEmail());
             userOAuthProvider.setAccessToken(trackeraHasher.encryptToBase64(oAuthUserInfoDTO.getAccessCredentials().getAccessToken(), false));
             userOAuthProvider.setRefreshToken(trackeraHasher.encryptToBase64(oAuthUserInfoDTO.getAccessCredentials().getRefreshToken(), false));
@@ -186,16 +188,17 @@ public class AuthService {
         return isLinkingAccount ? Map.of("message", "Account linked successfully") : generateLoginInfo(authenticatedUser, httpResponse);
     }
 
-    private Map<String, Object> createOrGetOAuthUser(OAuthUserInfoDTO oAuthUserInfo) {
+    private Map<String, Object> createOrGetOAuthUser(OAuthUserInfoDTO oAuthUserInfo, OAuthProvider oAuthProvider) {
         User authenticatedUser = userRepository.findByEmail(oAuthUserInfo.getEmail());
         boolean createOAuthProvider = true;
+
         if (authenticatedUser != null) { // means the user is logging in with an oAuth provider
             createOAuthProvider = false;
             if (!authenticatedUser.isOAuth()) {
                 throw new BusinessException("Password login required for this account");
             }
-            if (!userOAuthProviderRepository.existsByUserAndProvider(authenticatedUser, oAuthUserInfo.getProvider())) {
-                throw new BusinessException("This account is not linked with " + oAuthUserInfo.getProvider().getLabel());
+            if (!userOAuthProviderRepository.existsByUserAndProvider(authenticatedUser, oAuthProvider)) {
+                throw new BusinessException("This account is not linked with " + oAuthProvider.getDisplayName());
             }
         } else {
             authenticatedUser = new User();
@@ -206,6 +209,7 @@ public class AuthService {
             authenticatedUser.setVerified(true);
             userRepository.save(authenticatedUser);
         }
+
         return Map.of(
                 "user", authenticatedUser,
                 "createOAuthProvider", createOAuthProvider
@@ -221,17 +225,17 @@ public class AuthService {
 
     @Transactional
     public String unlinkOAuthProvider(String provider) {
-        OAuthProvider oAuthProvider = OAuthProvider.fromLabel(provider);
+        OAuthProvider oAuthProvider = OAuthProvider.fromCode(provider);
         User loggedUser = Objects.requireNonNull(AppConfig.getCurrentUser());
         UserOAuthProvider userOAuthProvider = userOAuthProviderRepository.findByUserAndProvider(loggedUser, oAuthProvider);
         if (userOAuthProvider == null) {
-            throw new BusinessException("Your account is not linked with " + oAuthProvider.getLabel());
+            throw new BusinessException("Your account is not linked with " + oAuthProvider.getDisplayName());
         }
         if (userOAuthProviderRepository.countByUser(loggedUser) <= 1 && !loggedUser.isPasswordSet()) {
             throw new BusinessException("You cannot unlink the last linked account without setting a password");
         }
         userOAuthProviderRepository.delete(userOAuthProvider);
-        return oAuthProvider.getLabel() + " unlinked successfully";
+        return oAuthProvider.getDisplayName() + " unlinked successfully";
     }
 
     @Transactional

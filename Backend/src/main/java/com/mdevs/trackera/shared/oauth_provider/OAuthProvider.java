@@ -1,25 +1,24 @@
 package com.mdevs.trackera.shared.oauth_provider;
 
-import com.mdevs.trackera.shared.enums.BaseEnum;
+import lombok.Getter;
 
-public enum OAuthProvider implements BaseEnum {
-    GOOGLE("google"),
-    JIRA("jira");
+@Getter
+public enum OAuthProvider {
+    GOOGLE("google", "Google"),
+    JIRA("jira", "Jira");
 
-    private final String label;
+    private final String code;
 
-    OAuthProvider(String label) {
-        this.label = label;
+    private final String displayName;
+
+    OAuthProvider(String code, String displayName) {
+        this.code = code;
+        this.displayName = displayName;
     }
 
-    @Override
-    public String getLabel() {
-        return label;
-    }
-
-    public static OAuthProvider fromLabel(String value) {
+    public static OAuthProvider fromCode(String value) {
         for (OAuthProvider provider : OAuthProvider.values()) {
-            if (provider.getLabel().equalsIgnoreCase(value)) {
+            if (provider.getCode().equalsIgnoreCase(value)) {
                 return provider;
             }
         }
