@@ -7,7 +7,7 @@ import requestInstance from "../../shared/axios/request-instance";
 import { useEffect, useState } from "react";
 
 interface OAuthAccount {
-  provider: string;
+  provider: Record<string, string>;
   isLinked: boolean;
   email?: string;
 }
@@ -17,10 +17,10 @@ const Settings = () => {
   const [fetchOAuthAccounts, setFetchOAuthAccounts] = useState(true);
   const [oAuthAccounts, setOAuthAccounts] = useState<OAuthAccount[]>([]);
 
-  const linkProviderAccount = async (provider: string) => {
+  const linkProviderAccount = async (provider: Record<string, string>) => {
     try {
-      const providerOAuthLink = await fetchOAuthFlowLink(provider);
-      window.open(providerOAuthLink, `Link ${provider} Account`, "width=600,height=600");
+      const providerOAuthLink = await fetchOAuthFlowLink(provider.code);
+      window.open(providerOAuthLink, `Link ${provider.name} Account`, "width=600,height=600");
     } catch (error: any) {
       showErrorToast(error);
     }
@@ -92,7 +92,7 @@ const Settings = () => {
                 accountIdentifier={account.email}
                 isLinked={account.isLinked}
                 onLink={() => linkProviderAccount(account.provider)}
-                onUnlink={() => unlinkProviderAccount(account.provider)}
+                onUnlink={() => unlinkProviderAccount(account.provider.code)}
               />
             ))
           )}

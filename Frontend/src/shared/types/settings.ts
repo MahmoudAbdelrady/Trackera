@@ -5,7 +5,7 @@ interface SettingsSectionProps {
 }
 
 interface LinkedAccountProps {
-  platform: string;
+  platform: Record<string, string>;
   accountIdentifier?: string;
   isLinked: boolean;
   onLink: () => void;

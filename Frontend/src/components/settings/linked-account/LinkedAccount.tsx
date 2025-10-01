@@ -12,8 +12,8 @@ const LinkedAccount = (props: LinkedAccountProps) => {
     <div className={classes.linked_account}>
       <div className={classes.account_info}>
         <div className={classes.platform}>
-          <div className={classes.icon}>{providerIconMap[props.platform]}</div>
-          <div className={classes.platform_name}>{props.platform.charAt(0).toUpperCase() + props.platform.slice(1)}</div>
+          <div className={classes.icon}>{providerIconMap[props.platform.code]}</div>
+          <div className={classes.platform_name}>{props.platform.name}</div>
         </div>
         <div className={classes.account_identifier}>{props.accountIdentifier}</div>
       </div>
