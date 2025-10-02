@@ -1,9 +1,6 @@
 package com.mdevs.trackera.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Index;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -47,6 +44,10 @@ public class User extends BaseEntity implements UserDetails {
     @Formula("EXISTS (SELECT 1 FROM USEROAUTHPROVIDERS uap WHERE uap.USER_ID = ID)")
     @NotAudited
     private boolean isOAuth;
+
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "user")
+    @NotAudited
+    private List<UserOAuthProvider> oAuthProviders;
 
     public User() {
         this.avatarColor = String.format("#%06x", (int) (Math.random() * 0xffffff));

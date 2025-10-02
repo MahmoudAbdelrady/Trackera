@@ -164,11 +164,11 @@ public class AuthService {
         if (oAuthUserInfoDTO.getUserId() != null) { // means the user is linking an oAuth provider as user id is fetched from jwt
             isLinkingAccount = true;
             authenticatedUser = userRepository.findOne(oAuthUserInfoDTO.getUserId());
-            if (userRepository.existsByEmailAndIdNot(oAuthUserInfoDTO.getEmail(), authenticatedUser.getId())) {
-                throw new BusinessException("Email already exists");
-            }
             if (userOAuthProviderRepository.existsByUserAndProvider(authenticatedUser, oAuthProvider)) {
                 throw new BusinessException("The current account is already linked with " + oAuthProvider.getDisplayName());
+            }
+            if (userRepository.existsByUserEmailOrOAuthProvidersEmailAndIdNot(oAuthUserInfoDTO.getEmail(), authenticatedUser.getId())) {
+                throw new BusinessException(oAuthProvider.getDisplayName() + " account's email already in use");
             }
         } else {
             Map<String, Object> oAuthUserData = createOrGetOAuthUser(oAuthUserInfoDTO, oAuthProvider);
@@ -189,7 +189,7 @@ public class AuthService {
     }
 
     private Map<String, Object> createOrGetOAuthUser(OAuthUserInfoDTO oAuthUserInfo, OAuthProvider oAuthProvider) {
-        User authenticatedUser = userRepository.findByEmail(oAuthUserInfo.getEmail());
+        User authenticatedUser = userRepository.findByEmailOrOAuthProvidersEmail(oAuthUserInfo.getEmail());
         boolean createOAuthProvider = true;
 
         if (authenticatedUser != null) { // means the user is logging in with an oAuth provider
