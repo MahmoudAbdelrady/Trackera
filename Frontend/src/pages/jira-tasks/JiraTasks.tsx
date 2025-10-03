@@ -24,6 +24,16 @@ const JiraTasks = () => {
       },
     },
     {
+      title: "Story Points",
+      dataIndex: "storyPoints",
+      key: "storyPoints",
+    },
+    {
+      title: "Original Estimate",
+      dataIndex: "originalEstimate",
+      key: "originalEstimate",
+    },
+    {
       title: "Logged Hours",
       dataIndex: "loggedHours",
       key: "loggedHours",
@@ -60,6 +70,8 @@ const JiraTasks = () => {
     {
       id: 1,
       taskName: "Implement authentication module",
+      storyPoints: 20,
+      originalEstimate: 20,
       loggedHours: 12,
       remainingHours: 8,
       evaluation: "ON_TIME",
@@ -68,8 +80,10 @@ const JiraTasks = () => {
     {
       id: 2,
       taskName: "Design database schema",
-      loggedHours: 15,
-      remainingHours: 5,
+      storyPoints: 15,
+      originalEstimate: 18,
+      loggedHours: 16,
+      remainingHours: 0,
       evaluation: "OVERESTIMATED",
       status: "Pending Testzone",
       notes: "Overestimated by 2 hours",
@@ -80,6 +94,8 @@ const JiraTasks = () => {
     {
       id: 3,
       taskName: "Create user profile page",
+      storyPoints: 10,
+      originalEstimate: 15,
       loggedHours: 20,
       remainingHours: 0,
       status: "Done",
@@ -88,6 +104,8 @@ const JiraTasks = () => {
     {
       id: 4,
       taskName: "Set up CI/CD pipeline",
+      storyPoints: 25,
+      originalEstimate: 21,
       loggedHours: 18,
       remainingHours: 2,
       status: "Pending Staging",
