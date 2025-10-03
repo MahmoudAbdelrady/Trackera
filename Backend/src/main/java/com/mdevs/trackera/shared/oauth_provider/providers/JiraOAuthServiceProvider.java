@@ -27,7 +27,7 @@ public class JiraOAuthServiceProvider extends OAuthServiceProvider {
 
     private final static String JIRA_AUTH_BASE_URL = "https://auth.atlassian.com";
 
-    private final static String JIRA_API_BASE_URL = "https://api.atlassian.com/ex/jira/{cloudId}/rest/api/3";
+    private final static String JIRA_API_BASE_URL = "https://api.atlassian.com/ex/jira/{projectId}/rest/api/3";
 
     private final RestTemplate restTemplate = new RestTemplate();
 
@@ -60,16 +60,20 @@ public class JiraOAuthServiceProvider extends OAuthServiceProvider {
             headers.setBearerAuth(tokenResponse.getAccessToken());
             headers.setAccept(List.of(MediaType.APPLICATION_JSON));
             HttpEntity<Void> entity = new HttpEntity<>(headers);
+            System.out.println(tokenResponse.getAccessToken());
 
             AccessibleResourceDTO accessibleResourceDTO = List.of(restTemplate.exchange("https://api.atlassian.com/oauth/token/accessible-resources", HttpMethod.GET, entity, AccessibleResourceDTO[].class).getBody()).getFirst();
-            Map<String, Object> userJiraInfo = restTemplate.exchange(JIRA_API_BASE_URL.replace("{cloudId}", accessibleResourceDTO.getId()) + "/myself", HttpMethod.GET, entity, Map.class).getBody();
+            Map<String, Object> userJiraInfo = restTemplate.exchange(JIRA_API_BASE_URL.replace("{projectId}", accessibleResourceDTO.getId()) + "/myself", HttpMethod.GET, entity, Map.class).getBody();
             if (userJiraInfo == null || userJiraInfo.isEmpty() || !userJiraInfo.containsKey("accountId")) {
                 throw new SecurityException("Failed to fetch user info from Jira");
             }
             Long userId = securityParams.containsKey("userId") ? Long.parseLong(securityParams.get("userId")) : null;
             String[] names = userJiraInfo.get("displayName").toString().split(" ");
+            Map<String, Object> additionalInfo = new HashMap<>();
+            additionalInfo.put("projectId", accessibleResourceDTO.getId());
 
-            return new OAuthUserInfoDTO(userId, userJiraInfo.get("emailAddress").toString(), names[0], names.length > 1 ? String.join(" ", names) : null, userJiraInfo.get("avatarUrls") != null ? ((Map<String, String>) userJiraInfo.get("avatarUrls")).get("48x48") : null, tokenResponse);
+            return new OAuthUserInfoDTO(userId, userJiraInfo.get("emailAddress").toString(), names[0], names.length > 1 ? String.join(" ", names) : null,
+                    userJiraInfo.get("avatarUrls") != null ? ((Map<String, String>) userJiraInfo.get("avatarUrls")).get("48x48") : null, tokenResponse, additionalInfo);
         } catch (Exception e) {
             LOGGER.error("Error while authenticating Jira Token", e);
             throw new SecurityException("Failed to authenticate with Jira");

@@ -58,7 +58,7 @@ public class GoogleOAuthServiceProvider extends OAuthServiceProvider {
             GoogleIdToken.Payload payload = tokenVerifier.verify(tokenResponse.getIdToken()).getPayload();
             Long userId = securityParams.containsKey("userId") ? Long.parseLong(securityParams.get("userId")) : null;
             OAuthAccessCredentialsDTO accessCredentialsDTO = new OAuthAccessCredentialsDTO(tokenResponse.getAccessToken(), tokenResponse.getRefreshToken(), tokenResponse.getScope(), tokenResponse.getTokenType(), tokenResponse.getExpiresInSeconds());
-            return new OAuthUserInfoDTO(userId, payload.getEmail(), (String) payload.get("given_name"), (String) payload.get("family_name"), (String) payload.get("picture"), accessCredentialsDTO);
+            return new OAuthUserInfoDTO(userId, payload.getEmail(), (String) payload.get("given_name"), (String) payload.get("family_name"), (String) payload.get("picture"), accessCredentialsDTO, null);
         } catch (Exception e) {
             LOGGER.error("Error while authenticating with Google: {}", e.getMessage(), e);
             throw new SecurityException("Error while authenticating with Google");

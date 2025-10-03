@@ -2,14 +2,8 @@ package com.mdevs.trackera.service;
 
 import com.mdevs.trackera.config.general.AppConfig;
 import com.mdevs.trackera.dto.auth.*;
-import com.mdevs.trackera.entity.SecurityToken;
-import com.mdevs.trackera.entity.User;
-import com.mdevs.trackera.entity.UserInvalidToken;
-import com.mdevs.trackera.entity.UserOAuthProvider;
-import com.mdevs.trackera.repository.SecurityTokenRepository;
-import com.mdevs.trackera.repository.UserInvalidTokenRepository;
-import com.mdevs.trackera.repository.UserOAuthProviderRepository;
-import com.mdevs.trackera.repository.UserRepository;
+import com.mdevs.trackera.entity.*;
+import com.mdevs.trackera.repository.*;
 import com.mdevs.trackera.shared.exceptions.types.BusinessException;
 import com.mdevs.trackera.shared.exceptions.types.UnauthorizedException;
 import com.mdevs.trackera.shared.oauth_provider.OAuthProvider;
@@ -52,6 +46,8 @@ public class AuthService {
 
     private final UserOAuthProviderRepository userOAuthProviderRepository;
 
+    private final UserPreferredSettingRepository userPreferredSettingRepository;
+
     private final JwtUtil jwtUtil;
 
     private final TrackeraHasher trackeraHasher;
@@ -71,7 +67,7 @@ public class AuthService {
     private String cookieMaxAge;
 
     @Autowired
-    public AuthService(UserRepository userRepository, AuthenticationManager authenticationManager, SecurityTokenService securityTokenService, OAuthProviderFactory oAuthProviderFactory, SecurityTokenRepository securityTokenRepository, UserInvalidTokenRepository userInvalidTokenRepository, UserOAuthProviderRepository userOAuthProviderRepository, JwtUtil jwtUtil, TrackeraHasher trackeraHasher, ModelMapper modelMapper, PasswordEncoder passwordEncoder) {
+    public AuthService(UserRepository userRepository, AuthenticationManager authenticationManager, SecurityTokenService securityTokenService, OAuthProviderFactory oAuthProviderFactory, SecurityTokenRepository securityTokenRepository, UserInvalidTokenRepository userInvalidTokenRepository, UserOAuthProviderRepository userOAuthProviderRepository, UserPreferredSettingRepository userPreferredSettingRepository, JwtUtil jwtUtil, TrackeraHasher trackeraHasher, ModelMapper modelMapper, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.authenticationManager = authenticationManager;
         this.securityTokenService = securityTokenService;
@@ -79,6 +75,7 @@ public class AuthService {
         this.securityTokenRepository = securityTokenRepository;
         this.userInvalidTokenRepository = userInvalidTokenRepository;
         this.userOAuthProviderRepository = userOAuthProviderRepository;
+        this.userPreferredSettingRepository = userPreferredSettingRepository;
         this.jwtUtil = jwtUtil;
         this.trackeraHasher = trackeraHasher;
         this.modelMapper = modelMapper;
@@ -185,6 +182,8 @@ public class AuthService {
             userOAuthProviderRepository.save(userOAuthProvider);
         }
 
+        handleOAuthProviderAdditionalInfo(authenticatedUser, oAuthProvider, oAuthUserInfoDTO.getAdditionalInfo());
+
         return isLinkingAccount ? Map.of("message", "Account linked successfully") : generateLoginInfo(authenticatedUser, httpResponse);
     }
 
@@ -216,6 +215,16 @@ public class AuthService {
         );
     }
 
+    private void handleOAuthProviderAdditionalInfo(User authenticatedUser, OAuthProvider oAuthProvider, Map<String, Object> additionalInfo) {
+        if (additionalInfo == null || additionalInfo.isEmpty())
+            return;
+
+        if (oAuthProvider.equals(OAuthProvider.JIRA)) {
+            UserPreferredSetting preferredSetting = new UserPreferredSetting(authenticatedUser, "jiraProjectId", additionalInfo.get("projectId").toString());
+            userPreferredSettingRepository.save(preferredSetting);
+        }
+    }
+
     private Map<String, Object> generateLoginInfo(User user, HttpServletResponse httpResponse) {
         String accessToken = jwtUtil.generateToken(user.getEmail(), true);
         String refreshToken = jwtUtil.generateToken(user.getEmail(), false);
@@ -234,6 +243,7 @@ public class AuthService {
         if (userOAuthProviderRepository.countByUser(loggedUser) <= 1 && !loggedUser.isPasswordSet()) {
             throw new BusinessException("You cannot unlink the last linked account without setting a password");
         }
+        userPreferredSettingRepository.deleteByUserAndKey(loggedUser, "jiraProjectUrl");
         userOAuthProviderRepository.delete(userOAuthProvider);
         return oAuthProvider.getDisplayName() + " unlinked successfully";
     }
