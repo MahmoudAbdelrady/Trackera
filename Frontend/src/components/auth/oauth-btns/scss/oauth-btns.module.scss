@@ -5,6 +5,8 @@
   margin-top: 20px;
   @include center;
   width: 100%;
+  gap: 15px;
+  flex-wrap: wrap;
   .auth_btn {
     width: 100%;
     padding: 20px 15px;

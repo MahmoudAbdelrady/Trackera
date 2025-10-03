@@ -1,11 +1,11 @@
 import { Eye, SquarePen, Trash, ClipboardPlus, CalendarSync, CalendarX2 } from "lucide-react";
-import { ManageWorkLogModal, AppLayout, SearchFilter, WorklogModal, WorklogStatusCard, WorklogTable } from "../../components";
+import { ManageWorkLogModal, AppLayout, SearchFilter, WorklogModal, WorklogStatusCard, TrackeraTable, StatusBadge } from "../../components";
 import classes from "./scss/home.module.css";
 import { Switch, Tooltip, type TableProps } from "antd";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
-  evaluationMetadata,
+  worklogEvaluationMetadata,
   statusMetadata,
   type WorkLogSummaryCard,
   type PaginatedResponse,
@@ -14,8 +14,8 @@ import {
   type WorkLogStatusType,
   type WorkLogSearchFilter,
 } from "../../shared/types";
-import { createPaginationConfig, getWorklogTablePaddedItem } from "../../utils";
-import worklogTableClasses from "../../components/worklogs/worklog-table/scss/worklog-table.module.css";
+import { createPaginationConfig } from "../../utils";
+import trackeraTableClasses from "../../components/trackera-table/scss/trackera-table.module.css";
 import worklogModalClasses from "../../components/worklogs/modals/worklog-modal/scss/worklog-modal.module.css";
 import requestInstance from "../../shared/axios/request-instance";
 import { showErrorToast, showSuccessToast } from "../../utils/toast-handler/showToast";
@@ -66,7 +66,7 @@ const Home = () => {
     }
   };
 
-  const deleteWorkLog = async (workLogId: string) => {
+  const deleteWorkLog = async (workLogId: string | number) => {
     setIsDeletingWorkLog(true);
     try {
       const response = await requestInstance.delete(`/worklog/${workLogId}`);
@@ -102,7 +102,7 @@ const Home = () => {
       dataIndex: "evaluation",
       key: "evaluation",
       render: (_, { evaluation }) => {
-        return getWorklogTablePaddedItem(worklogTableClasses, "evaluation_item", evaluationMetadata[evaluation as WorkLogEvaluationType]);
+        return <StatusBadge badgeProps={worklogEvaluationMetadata[evaluation as WorkLogEvaluationType]} />;
       },
     },
     {
@@ -110,21 +110,21 @@ const Home = () => {
       dataIndex: "status",
       key: "status",
       render: (_, { status }) => {
-        return getWorklogTablePaddedItem(worklogTableClasses, "status_item", statusMetadata[status as WorkLogStatusType]);
+        return <StatusBadge badgeProps={statusMetadata[status as WorkLogStatusType]} />;
       },
     },
     {
       title: "Actions",
       key: "actions",
       render: (_, record) => (
-        <div className={worklogTableClasses.actions_container}>
+        <div className={trackeraTableClasses.actions_container}>
           {record.status === "SYNCED" ? (
             <Tooltip title="Unsync from Jira">
-              <CalendarX2 onClick={() => {}} className={`${worklogTableClasses.log_action_btn} ${worklogTableClasses.unsync}`} />
+              <CalendarX2 onClick={() => {}} className={`${trackeraTableClasses.log_action_btn} ${trackeraTableClasses.unsync}`} />
             </Tooltip>
           ) : (
             <Tooltip title="Sync to Jira">
-              <CalendarSync onClick={() => {}} className={`${worklogTableClasses.log_action_btn} ${worklogTableClasses.sync}`} />
+              <CalendarSync onClick={() => {}} className={`${trackeraTableClasses.log_action_btn} ${trackeraTableClasses.sync}`} />
             </Tooltip>
           )}
           <Tooltip title="Edit">
@@ -133,11 +133,11 @@ const Home = () => {
                 setSelectedWorkLog(record);
                 setManageWorkLogVisible(true);
               }}
-              className={`${worklogTableClasses.log_action_btn} ${worklogTableClasses.edit}`}
+              className={`${trackeraTableClasses.log_action_btn} ${trackeraTableClasses.edit}`}
             />
           </Tooltip>
           <Tooltip title="View">
-            <Link to={`/worklog-details/${record.logId}`} className={`${worklogTableClasses.log_action_btn} ${worklogTableClasses.view}`}>
+            <Link to={`/worklog-details/${record.id}`} className={`${trackeraTableClasses.log_action_btn} ${trackeraTableClasses.view}`}>
               <Eye />
             </Link>
           </Tooltip>
@@ -147,7 +147,7 @@ const Home = () => {
                 setSelectedWorkLog(record);
                 setDeleteWorkLogVisible(true);
               }}
-              className={`${worklogTableClasses.log_action_btn} ${worklogTableClasses.delete}`}
+              className={`${trackeraTableClasses.log_action_btn} ${trackeraTableClasses.delete}`}
             />
           </Tooltip>
         </div>
@@ -177,7 +177,7 @@ const Home = () => {
           maskClosable: !isDeletingWorkLog,
           okButtonProps: { danger: true, loading: isDeletingWorkLog, disabled: isDeletingWorkLog },
           cancelButtonProps: { disabled: isDeletingWorkLog },
-          onOk: () => deleteWorkLog(selectedWorkLog?.logId!),
+          onOk: () => deleteWorkLog(selectedWorkLog?.id!),
           onCancel: () => {
             setDeleteWorkLogVisible(false);
             setSelectedWorkLog(undefined);
@@ -199,7 +199,7 @@ const Home = () => {
         <div className={classes.worklogs_content}>
           <SearchFilter filters={searchFilters} setFilters={setSearchFilters} setFetchWorkLog={setFetchWorkLog} />
           <div className={classes.worklogs_container}>
-            <WorklogTable<Worklog>
+            <TrackeraTable<Worklog>
               properties={{
                 columns: tableColumns,
                 dataSource: workLogsResponse?.content || [],

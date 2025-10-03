@@ -1,0 +1,26 @@
+@use "../../../../shared/styles/colors" as *;
+@use "../../../../shared/styles/mixins" as *;
+
+.settings_section {
+  background-color: #fff;
+  border-radius: 8px;
+  border: 1px solid $borderColor;
+  .header {
+    @include start;
+    gap: 10px;
+    border-bottom: 1px solid $borderColor;
+    padding: 15px 20px;
+    .header_icon {
+      color: $lightGray2;
+    }
+    .header_title {
+      font-weight: bold;
+    }
+  }
+  .content {
+    padding: 15px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+}

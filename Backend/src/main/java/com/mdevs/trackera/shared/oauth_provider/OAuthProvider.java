@@ -1,5 +1,27 @@
 package com.mdevs.trackera.shared.oauth_provider;
 
+import lombok.Getter;
+
+@Getter
 public enum OAuthProvider {
-    GOOGLE
+    GOOGLE("google", "Google"),
+    JIRA("jira", "Jira");
+
+    private final String code;
+
+    private final String displayName;
+
+    OAuthProvider(String code, String displayName) {
+        this.code = code;
+        this.displayName = displayName;
+    }
+
+    public static OAuthProvider fromCode(String value) {
+        for (OAuthProvider provider : OAuthProvider.values()) {
+            if (provider.getCode().equalsIgnoreCase(value)) {
+                return provider;
+            }
+        }
+        throw new IllegalArgumentException("Unsupported OAuth Provider: " + value);
+    }
 }

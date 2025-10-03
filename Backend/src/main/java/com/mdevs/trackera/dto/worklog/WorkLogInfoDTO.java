@@ -9,7 +9,7 @@ import java.time.LocalDate;
 @Getter
 @Setter
 public class WorkLogInfoDTO {
-    private String logId;
+    private String id;
 
     private String name;
 

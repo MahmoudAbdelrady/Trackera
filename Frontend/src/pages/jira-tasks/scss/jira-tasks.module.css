@@ -1,0 +1,18 @@
+.refresh_container {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+.refresh_container .last_refresh {
+  color: #5c5c5c;
+  font-size: 14px;
+}
+
+.jira_tasks_container {
+  padding: 10px 20px 15px;
+  border: 1px solid #e5e7eb;
+  background-color: #fff;
+  border-radius: 8px;
+}/*# sourceMappingURL=jira-tasks.module.css.map */

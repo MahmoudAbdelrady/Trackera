@@ -1,4 +1,4 @@
-import type { InputFieldProps, PaginatedResponse } from "./global";
+import type { TrackeraTableEntity, StatusBadgeProps, InputFieldProps, PaginatedResponse } from "./global";
 
 import type { AuthLayoutProps, AuthFormProps, AuthResultFields, AuthResultProps, AuthFooterProps, OAuthBtnProps } from "./auth";
 
@@ -9,7 +9,6 @@ import type {
   WorklogEntry,
   WorklogTask,
   WorklogError,
-  LogMeta,
   WorklogTableActionButtonProps,
   WorklogTableProps,
   WorklogModalProps,
@@ -19,9 +18,17 @@ import type {
   WorkLogsFilterProps,
 } from "./worklog";
 
-import { evaluationMetadata, statusMetadata } from "./worklog";
+import { worklogEvaluationMetadata, statusMetadata } from "./worklog";
+
+import type { JiraTask, JiraTaskEvaluationType } from "./jira-tasks";
+
+import { jiraTaskEvaluationMetadata } from "./jira-tasks";
+
+import type { SettingsSectionProps, LinkedAccountProps } from "./settings";
 
 export type {
+  TrackeraTableEntity,
+  StatusBadgeProps,
   InputFieldProps,
   PaginatedResponse,
   AuthLayoutProps,
@@ -34,7 +41,6 @@ export type {
   WorklogEntry,
   WorklogTask,
   WorklogError,
-  LogMeta,
   WorklogTableActionButtonProps,
   WorklogTableProps,
   WorklogModalProps,
@@ -44,6 +50,10 @@ export type {
   WorkLogSummaryCard,
   WorkLogSearchFilter,
   WorkLogsFilterProps,
+  JiraTask,
+  JiraTaskEvaluationType,
+  SettingsSectionProps,
+  LinkedAccountProps,
 };
 
-export { evaluationMetadata, statusMetadata };
+export { worklogEvaluationMetadata, statusMetadata, jiraTaskEvaluationMetadata };

@@ -9,6 +9,7 @@ import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.security.SecureRandom;
 import java.util.*;
 
 @Component
@@ -22,6 +23,8 @@ public class TrackeraHasher {
 
     private final static String ENCRYPTION_ALGORITHM = "AES";
 
+    private static final SecureRandom secureRandom = new SecureRandom();
+
     private SecretKey getAesKey() {
         return new SecretKeySpec(Base64.getDecoder().decode(encryptionSecretKey), "AES");
     }
@@ -29,8 +32,7 @@ public class TrackeraHasher {
     public String hash(String text, boolean isUrl) {
         try {
             byte[] encryptedData = encrypt(text);
-            Base64.Encoder encoder = isUrl ? Base64.getUrlEncoder() : Base64.getEncoder();
-            return encoder.withoutPadding().encodeToString(hashByteData(encryptedData));
+            return encodeToBase64(hmacHashByteData(encryptedData), isUrl);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -39,8 +41,8 @@ public class TrackeraHasher {
     public boolean isMatch(String text, String hash, boolean isUrl) {
         try {
             byte[] encryptedData = encrypt(text);
-            byte[] expectedHash = isUrl ? Base64.getUrlDecoder().decode(hash) : Base64.getDecoder().decode(hash);
-            byte[] actualHash = hashByteData(encryptedData);
+            byte[] expectedHash = decodeFromBase64(hash, isUrl);
+            byte[] actualHash = hmacHashByteData(encryptedData);
             return MessageDigest.isEqual(expectedHash, actualHash);
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -50,14 +52,14 @@ public class TrackeraHasher {
     public String hashForSecurityToken(Long secTokenId) {
         try {
             byte[] encryptedId = encrypt(secTokenId.toString());
-            String encodedId = Base64.getUrlEncoder().withoutPadding().encodeToString(encryptedId);
+            String encodedId = encodeToBase64(encryptedId, true);
 
             String payload = String.join(":", encodedId, UUID.randomUUID().toString());
             byte[] encryptedPayloadBytes = encrypt(payload);
-            String encodedPayload = Base64.getUrlEncoder().withoutPadding().encodeToString(encryptedPayloadBytes);
+            String encodedPayload = encodeToBase64(encryptedPayloadBytes, true);
 
-            byte[] hmac = hashByteData(encryptedPayloadBytes);
-            String encodedHmac = Base64.getUrlEncoder().withoutPadding().encodeToString(hmac);
+            byte[] hmac = hmacHashByteData(encryptedPayloadBytes);
+            String encodedHmac = encodeToBase64(hmac, true);
 
             return String.join(".", encodedPayload, encodedHmac);
         } catch (Exception e) {
@@ -71,10 +73,10 @@ public class TrackeraHasher {
             return Map.of();
 
         try {
-            byte[] encryptedPayload = Base64.getUrlDecoder().decode(parts[0]);
-            byte[] signatureBytes = Base64.getUrlDecoder().decode(parts[1]);
+            byte[] encryptedPayload = decodeFromBase64(parts[0], true);
+            byte[] signatureBytes = decodeFromBase64(parts[1], true);
 
-            byte[] expectedHmac = hashByteData(encryptedPayload);
+            byte[] expectedHmac = hmacHashByteData(encryptedPayload);
             if (!MessageDigest.isEqual(signatureBytes, expectedHmac))
                 return Map.of();
 
@@ -83,13 +85,13 @@ public class TrackeraHasher {
             if (payloadParts.length != 2)
                 return Map.of();
 
-            return Map.of("tokenId", decrypt(Base64.getUrlDecoder().decode(payloadParts[0])));
+            return Map.of("tokenId", decrypt(decodeFromBase64(payloadParts[0], true)));
         } catch (Exception e) {
             return Map.of();
         }
     }
 
-    private byte[] hashByteData(byte[] data) {
+    private byte[] hmacHashByteData(byte[] data) {
         try {
             Mac sha256Hmac = Mac.getInstance("HmacSHA256");
             SecretKeySpec secretKeySpec = new SecretKeySpec(hasherSecretKey.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
@@ -99,6 +101,14 @@ public class TrackeraHasher {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public String encryptToBase64(String text, boolean isUrl) {
+        return encodeToBase64(encrypt(text), isUrl);
+    }
+
+    public String decryptFromBase64(String base64Text, boolean isUrl) {
+        return decrypt(decodeFromBase64(base64Text, isUrl));
     }
 
     private byte[] encrypt(String text) {
@@ -120,5 +130,21 @@ public class TrackeraHasher {
         } catch (Exception e) {
             throw new RuntimeException("Decryption failed", e);
         }
+    }
+
+    public String encodeToBase64(byte[] text, boolean isUrl) {
+        Base64.Encoder encoder = isUrl ? Base64.getUrlEncoder() : Base64.getEncoder();
+        return encoder.withoutPadding().encodeToString(text);
+    }
+
+    public byte[] decodeFromBase64(String base64Text, boolean isUrl) {
+        Base64.Decoder decoder = isUrl ? Base64.getUrlDecoder() : Base64.getDecoder();
+        return decoder.decode(base64Text);
+    }
+
+    public String generateRandomString(int byteLength) {
+        byte[] code = new byte[byteLength];
+        secureRandom.nextBytes(code);
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(code);
     }
 }

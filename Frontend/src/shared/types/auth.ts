@@ -36,15 +36,7 @@ interface AuthFooterProps {
 interface OAuthBtnProps {
   label: string;
   icon: React.ReactNode;
-  provider: string;
   onClick: () => void;
 }
 
-export type {
-  AuthLayoutProps,
-  AuthFormProps,
-  AuthResultFields,
-  AuthResultProps,
-  AuthFooterProps,
-  OAuthBtnProps,
-};
+export type { AuthLayoutProps, AuthFormProps, AuthResultFields, AuthResultProps, AuthFooterProps, OAuthBtnProps };

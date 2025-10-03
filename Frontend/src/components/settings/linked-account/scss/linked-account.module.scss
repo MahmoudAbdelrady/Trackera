@@ -1,0 +1,54 @@
+@use "../../../../shared/styles/colors" as *;
+@use "../../../../shared/styles/mixins" as *;
+
+.linked_account {
+  @include between;
+  @media (max-width: 340px) {
+    @include center;
+    flex-direction: column;
+    gap: 10px;
+  }
+  &:not(:last-child) {
+    border-bottom: 1px solid $borderColor;
+    padding-bottom: 20px;
+  }
+  .account_info {
+    @include start-rev;
+    flex-direction: column;
+    @media (max-width: 340px) {
+      @include between;
+      flex-direction: row;
+      width: 100%;
+    }
+    .platform {
+      @include start;
+      gap: 5px;
+      .icon {
+        img {
+          width: 22px;
+          height: 22px;
+        }
+      }
+      .platform_name {
+        font-size: 18px;
+      }
+    }
+    .account_identifier {
+      margin-top: 5px;
+      font-size: 14px;
+      color: $subtitleColor;
+    }
+  }
+  .actions {
+    @include center;
+    gap: 5px;
+    @media (max-width: 340px) {
+      width: 100%;
+    }
+    .link_button {
+      @media (max-width: 340px) {
+        width: 100%;
+      }
+    }
+  }
+}

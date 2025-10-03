@@ -25,6 +25,11 @@ public class AuthController {
         this.authService = authService;
     }
 
+    @GetMapping("/oauth-providers")
+    public ResponseEntity<?> GetUserOAuthProviders() {
+        return new ResponseEntity<>(authService.getUserOAuthProviders(), HttpStatus.OK);
+    }
+
     @PublicAPI
     @PostMapping("/signup")
     public ResponseEntity<?> SignUp(@RequestBody @Valid SignUpDTO signUpDTO) {
@@ -39,9 +44,20 @@ public class AuthController {
     }
 
     @PublicAPI
-    @PostMapping("/oauth")
-    public ResponseEntity<?> OAuth(@RequestBody @Valid OAuthRequestDTO oAuthRequestDTO, HttpServletResponse httpServletResponse) {
-        return new ResponseEntity<>(authService.oAuth(oAuthRequestDTO, httpServletResponse), HttpStatus.OK);
+    @GetMapping("/oauth/{oAuthProvider}")
+    public ResponseEntity<?> OAuth(@PathVariable String oAuthProvider, HttpServletRequest httpServletRequest) {
+        return new ResponseEntity<>(authService.oAuth(oAuthProvider, httpServletRequest), HttpStatus.OK);
+    }
+
+    @PublicAPI
+    @PostMapping("/oauth/{oAuthProvider}/callback")
+    public ResponseEntity<?> OAuthCallback(@PathVariable String oAuthProvider, @RequestBody @Valid OAuthRequestDTO oAuthRequestDTO, HttpServletResponse httpServletResponse) {
+        return new ResponseEntity<>(authService.oAuthCallback(oAuthProvider, oAuthRequestDTO, httpServletResponse), HttpStatus.OK);
+    }
+
+    @PostMapping("/unlink-oauth/{oAuthProvider}")
+    public ResponseEntity<?> UnlinkOAuthProvider(@PathVariable String oAuthProvider) {
+        return new ResponseEntity<>(authService.unlinkOAuthProvider(oAuthProvider), HttpStatus.OK);
     }
 
     @PostMapping("/logout")

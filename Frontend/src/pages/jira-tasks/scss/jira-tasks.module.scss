@@ -1,0 +1,18 @@
+@use "../../../shared/styles/colors" as *;
+@use "../../../shared/styles/mixins" as *;
+
+.refresh_container {
+  @include end;
+  gap: 10px;
+  margin-bottom: 20px;
+  .last_refresh {
+    color: $subtitleColor;
+    font-size: 14px;
+  }
+}
+.jira_tasks_container {
+  padding: 10px 20px 15px;
+  border: 1px solid $borderColor;
+  background-color: #fff;
+  border-radius: 8px;
+}

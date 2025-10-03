@@ -1,0 +1,25 @@
+.padded_item {
+  text-align: center;
+  padding: 5px 10px;
+  border-radius: 12px;
+  background-color: #2563eb;
+  width: -moz-fit-content;
+  width: fit-content;
+  font-weight: 500;
+}
+.padded_item.main {
+  background-color: #e4f0ff;
+  color: #2563eb;
+}
+.padded_item.success {
+  background-color: #dcfce7;
+  color: #166534;
+}
+.padded_item.warning {
+  background-color: #fef0e1;
+  color: #d97706;
+}
+.padded_item.danger {
+  background-color: #fee2e2;
+  color: #991b1b;
+}/*# sourceMappingURL=status-badge.module.css.map */

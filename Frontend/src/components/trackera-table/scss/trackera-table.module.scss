@@ -1,5 +1,5 @@
-@use "../../../../shared/styles/colors" as *;
-@use "../../../../shared/styles/mixins" as *;
+@use "../../../shared/styles/colors" as *;
+@use "../../../shared/styles/mixins" as *;
 
 .worklog_table_container {
   .table_actions {
@@ -63,47 +63,6 @@
         width: 15px;
         height: 15px;
         color: $mainColor;
-      }
-    }
-    .evaluation_item,
-    .status_item {
-      text-align: center;
-      padding: 5px 10px;
-      border-radius: 12px;
-      background-color: $mainColor;
-      width: fit-content;
-      font-weight: 500;
-    }
-    .evaluation_item {
-      &.excellent {
-        background-color: $mainColorLight2;
-        color: $mainColor;
-      }
-      &.good {
-        background-color: $greenColorLight;
-        color: $darkGreenColor;
-      }
-      &.moderate {
-        background-color: $orangeColorLight;
-        color: $orangeColor;
-      }
-      &.poor {
-        background-color: $redColorLight;
-        color: $darkRedColor;
-      }
-    }
-    .status_item {
-      &.synced {
-        background-color: $greenColorLight;
-        color: $darkGreenColor;
-      }
-      &.partially {
-        background-color: $orangeColorLight;
-        color: $orangeColor;
-      }
-      &.not_synced {
-        background-color: $redColorLight;
-        color: $darkRedColor;
       }
     }
     .actions_container {

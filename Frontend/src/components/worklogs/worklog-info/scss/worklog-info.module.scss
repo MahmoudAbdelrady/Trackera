@@ -32,48 +32,6 @@
         width: 20px;
         height: 20px;
       }
-      .info_label {
-        &.evaluation,
-        &.status {
-          padding: 5px 10px;
-          border-radius: 12px;
-          background-color: $mainColor;
-          width: fit-content;
-          font-weight: 500;
-        }
-        &.evaluation {
-          &.excellent {
-            background-color: $mainColorLight2;
-            color: $mainColor;
-          }
-          &.good {
-            background-color: $greenColorLight;
-            color: $darkGreenColor;
-          }
-          &.moderate {
-            background-color: $orangeColorLight;
-            color: $orangeColor;
-          }
-          &.poor {
-            background-color: $redColorLight;
-            color: $darkRedColor;
-          }
-        }
-        &.status {
-          &.synced {
-            background-color: $greenColorLight;
-            color: $darkGreenColor;
-          }
-          &.partially {
-            background-color: $orangeColorLight;
-            color: $orangeColor;
-          }
-          &.not_synced {
-            background-color: $redColorLight;
-            color: $darkRedColor;
-          }
-        }
-      }
     }
   }
 }

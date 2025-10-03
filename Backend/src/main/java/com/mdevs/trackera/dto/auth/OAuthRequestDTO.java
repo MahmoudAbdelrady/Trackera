@@ -7,9 +7,9 @@ import lombok.Setter;
 @Getter
 @Setter
 public class OAuthRequestDTO {
-    @NotBlank(message = "Token Code is required")
-    private String tokenCode;
+    @NotBlank(message = "Authorization Code is required")
+    private String authCode;
 
-    @NotBlank(message = "OAuth Provider is required")
-    private String provider;
+    @NotBlank(message = "State is required")
+    private String state;
 }

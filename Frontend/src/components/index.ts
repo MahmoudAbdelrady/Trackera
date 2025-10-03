@@ -4,7 +4,7 @@ import AppLayout from "./app-layout/AppLayout";
 import Sidebar from "./sidebar/Sidebar";
 import WorklogStatusCard from "./worklogs/worklog-status-card/WorklogStatusCard";
 import SearchFilter from "./worklogs/search-filter/SearchFilter";
-import WorklogTable from "./worklogs/worklog-table/WorklogTable";
+import TrackeraTable from "./trackera-table/TrackeraTable";
 import WorklogModal from "./worklogs/modals/worklog-modal/WorklogModal";
 import InputField from "./input-field/InputField";
 import LoadingSpinner from "./loading-spinner/LoadingSpinner";
@@ -14,6 +14,9 @@ import OAuthBtns from "./auth/oauth-btns/OAuthBtns";
 import ManageWorkLogModal from "./worklogs/modals/manage-worklog-modal/ManageWorkLogModal";
 import CollapsibleSection from "./collapsible-section/CollapsibleSection";
 import WorklogInfo from "./worklogs/worklog-info/WorklogInfo";
+import StatusBadge from "./status-badge/StatusBadge";
+import SettingsSection from "./settings/settings-section/SettingsSection";
+import LinkedAccount from "./settings/linked-account/LinkedAccount";
 
 export {
   AuthLayout,
@@ -22,7 +25,7 @@ export {
   Sidebar,
   WorklogStatusCard,
   SearchFilter,
-  WorklogTable,
+  TrackeraTable,
   WorklogModal,
   InputField,
   LoadingSpinner,
@@ -32,4 +35,7 @@ export {
   ManageWorkLogModal,
   CollapsibleSection,
   WorklogInfo,
+  StatusBadge,
+  SettingsSection,
+  LinkedAccount,
 };

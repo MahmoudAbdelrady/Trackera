@@ -5,19 +5,9 @@ import ChangePassword from "./auth/change-password/ChangePassword";
 import SecurityVerification from "./auth/security-verification/SecurityVerification";
 import Home from "./home/Home";
 import WorklogDetails from "./worklog-details/WorklogDetails";
-import Tasks from "./tasks/Tasks";
+import JiraTasks from "./jira-tasks/JiraTasks";
 import Settings from "./settings/Settings";
 import Test from "./test/Test";
+import OAuthCallback from "./oauth-callback/OAuthCallback";
 
-export {
-  Login,
-  SignUp,
-  ForgotPassword,
-  ChangePassword,
-  SecurityVerification,
-  Home,
-  WorklogDetails,
-  Tasks,
-  Settings,
-  Test,
-};
+export { Login, SignUp, ForgotPassword, ChangePassword, SecurityVerification, Home, WorklogDetails, JiraTasks, Settings, Test, OAuthCallback };

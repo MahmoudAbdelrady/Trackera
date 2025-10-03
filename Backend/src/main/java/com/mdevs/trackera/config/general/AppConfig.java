@@ -72,6 +72,10 @@ public class AppConfig {
         return applicationContext.getEnvironment().getProperty("trackera.frontend.url");
     }
 
+    public static String getBackendUrl() {
+        return applicationContext.getEnvironment().getProperty("trackera.backend.url");
+    }
+
     public static User getCurrentUser() {
         Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         return (principal instanceof AuthFilterUserDTO) ? applicationContext.getBean(UserRepository.class).findByEmail(((AuthFilterUserDTO) principal).getEmail()) : null;
