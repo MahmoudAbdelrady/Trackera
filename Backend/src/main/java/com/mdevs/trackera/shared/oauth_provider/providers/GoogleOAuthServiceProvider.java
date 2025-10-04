@@ -66,8 +66,8 @@ public class GoogleOAuthServiceProvider extends OAuthServiceProvider {
     }
 
     @Override
-    public String refreshAccessToken(String refreshToken) {
-        return "";
+    public OAuthAccessCredentialsDTO refreshAccessToken(String refreshToken) {
+        return null;
     }
 
     private GoogleTokenResponse getGoogleTokenResponse(String code, String codeVerifier) {

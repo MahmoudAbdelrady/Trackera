@@ -4,8 +4,10 @@ import com.mdevs.trackera.dto.auth.OAuthAccessCredentialsDTO;
 import com.mdevs.trackera.dto.auth.OAuthUserInfoDTO;
 import com.mdevs.trackera.dto.auth.OAuthRequestDTO;
 import com.mdevs.trackera.dto.jira.AccessibleResourceDTO;
+import com.mdevs.trackera.service.JiraService;
 import com.mdevs.trackera.shared.oauth_provider.OAuthProvider;
 import com.mdevs.trackera.shared.oauth_provider.OAuthServiceProvider;
+import com.mdevs.trackera.shared.utils.AppUtils;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,10 +28,6 @@ public class JiraOAuthServiceProvider extends OAuthServiceProvider {
     private String CLIENT_SECRET;
 
     private final static String JIRA_AUTH_BASE_URL = "https://auth.atlassian.com";
-
-    private final static String JIRA_API_BASE_URL = "https://api.atlassian.com/ex/jira/{projectId}/rest/api/3";
-
-    private final RestTemplate restTemplate = new RestTemplate();
 
     private final static Logger LOGGER = LoggerFactory.getLogger(JiraOAuthServiceProvider.class);
 
@@ -60,17 +58,16 @@ public class JiraOAuthServiceProvider extends OAuthServiceProvider {
             headers.setBearerAuth(tokenResponse.getAccessToken());
             headers.setAccept(List.of(MediaType.APPLICATION_JSON));
             HttpEntity<Void> entity = new HttpEntity<>(headers);
-            System.out.println(tokenResponse.getAccessToken());
+            RestTemplate restTemplate = AppUtils.getRestTemplate();
 
             AccessibleResourceDTO accessibleResourceDTO = List.of(restTemplate.exchange("https://api.atlassian.com/oauth/token/accessible-resources", HttpMethod.GET, entity, AccessibleResourceDTO[].class).getBody()).getFirst();
-            Map<String, Object> userJiraInfo = restTemplate.exchange(JIRA_API_BASE_URL.replace("{projectId}", accessibleResourceDTO.getId()) + "/myself", HttpMethod.GET, entity, Map.class).getBody();
+            Map<String, Object> userJiraInfo = restTemplate.exchange(JiraService.JIRA_API_BASE_URL.replace("{cloudId}", accessibleResourceDTO.getId()) + "/myself", HttpMethod.GET, entity, Map.class).getBody();
             if (userJiraInfo == null || userJiraInfo.isEmpty() || !userJiraInfo.containsKey("accountId")) {
                 throw new SecurityException("Failed to fetch user info from Jira");
             }
             Long userId = securityParams.containsKey("userId") ? Long.parseLong(securityParams.get("userId")) : null;
             String[] names = userJiraInfo.get("displayName").toString().split(" ");
-            Map<String, Object> additionalInfo = new HashMap<>();
-            additionalInfo.put("projectId", accessibleResourceDTO.getId());
+            Map<String, Object> additionalInfo = new HashMap<>(Map.of("id", accessibleResourceDTO.getId(), "url", accessibleResourceDTO.getUrl()));
 
             return new OAuthUserInfoDTO(userId, userJiraInfo.get("emailAddress").toString(), names[0], names.length > 1 ? String.join(" ", names) : null,
                     userJiraInfo.get("avatarUrls") != null ? ((Map<String, String>) userJiraInfo.get("avatarUrls")).get("48x48") : null, tokenResponse, additionalInfo);
@@ -81,8 +78,28 @@ public class JiraOAuthServiceProvider extends OAuthServiceProvider {
     }
 
     @Override
-    public String refreshAccessToken(String refreshToken) {
-        return "";
+    public OAuthAccessCredentialsDTO refreshAccessToken(String refreshToken) {
+        try {
+            String tokenUrl = JIRA_AUTH_BASE_URL + "/oauth/token";
+
+            Map<String, String> requestBody = new HashMap<>();
+            requestBody.put("grant_type",  "refresh_token");
+            requestBody.put("client_id", CLIENT_ID);
+            requestBody.put("client_secret", CLIENT_SECRET);
+            requestBody.put("refresh_token", refreshToken);
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+
+            HttpEntity<Map<String, String>> entity = new HttpEntity<>(requestBody, headers);
+
+            ResponseEntity<OAuthAccessCredentialsDTO> response = AppUtils.getRestTemplate().exchange(tokenUrl, HttpMethod.POST, entity, OAuthAccessCredentialsDTO.class);
+
+            return response.getBody();
+        } catch (RestClientException e) {
+            LOGGER.error("Error while refreshing Jira access token: {}", e.getMessage(), e);
+            throw new RuntimeException("Failed to authenticate with jira");
+        }
     }
 
     public OAuthAccessCredentialsDTO getJiraTokenResponse(String authCode, String codeVerifier) {
@@ -102,7 +119,7 @@ public class JiraOAuthServiceProvider extends OAuthServiceProvider {
 
             HttpEntity<Map<String, String>> entity = new HttpEntity<>(requestBody, headers);
 
-            ResponseEntity<OAuthAccessCredentialsDTO> response = restTemplate.exchange(tokenUrl, HttpMethod.POST, entity, OAuthAccessCredentialsDTO.class);
+            ResponseEntity<OAuthAccessCredentialsDTO> response = AppUtils.getRestTemplate().exchange(tokenUrl, HttpMethod.POST, entity, OAuthAccessCredentialsDTO.class);
 
             return response.getBody();
         } catch (RestClientException e) {

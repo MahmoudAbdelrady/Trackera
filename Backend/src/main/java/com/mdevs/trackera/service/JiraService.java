@@ -1,0 +1,204 @@
+package com.mdevs.trackera.service;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.mdevs.trackera.config.general.AppConfig;
+import com.mdevs.trackera.entity.UserOAuthProvider;
+import com.mdevs.trackera.entity.UserPreferredSetting;
+import com.mdevs.trackera.repository.UserOAuthProviderRepository;
+import com.mdevs.trackera.repository.UserPreferredSettingRepository;
+import com.mdevs.trackera.shared.enums.JiraTaskEvaluation;
+import com.mdevs.trackera.shared.exceptions.types.BusinessException;
+import com.mdevs.trackera.shared.oauth_provider.OAuthProvider;
+import com.mdevs.trackera.shared.oauth_provider.OAuthProviderFactory;
+import com.mdevs.trackera.shared.oauth_provider.OAuthServiceProvider;
+import com.mdevs.trackera.shared.utils.AppUtils;
+import com.mdevs.trackera.shared.utils.TrackeraHasher;
+import com.mdevs.trackera.shared.utils.TrackeraTimeSpanUtil;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.http.*;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Retryable;
+import org.springframework.stereotype.Service;
+
+import java.math.BigDecimal;
+import java.time.Duration;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.*;
+
+@Service
+public class JiraService {
+    private final RedisTemplate<String, Object> redisTemplate;
+
+    private final UserOAuthProviderRepository userOAuthProviderRepository;
+
+    private final UserPreferredSettingRepository userPreferredSettingRepository;
+
+    private final OAuthProviderFactory oAuthProviderFactory;
+
+    private final TrackeraHasher trackeraHasher;
+
+    public static final String JIRA_API_BASE_URL = "https://api.atlassian.com/ex/jira/{cloudId}/rest/api/3";
+
+    private static final String USER_JIRA_TASKS_CACHE_KEY_PREFIX = "userJiraTasks:";
+
+    private static final String USER_JIRA_TASKS_FORCE_UPDATE_CACHE_KEY_PREFIX = "userJiraTasks:forceUpdate:";
+
+    private static final Duration USER_JIRA_TASKS_CACHE_TTL = Duration.ofHours(1);
+
+    private static final Duration USER_JIRA_TASKS_FORCE_UPDATE_CACHE_TTL = Duration.ofMinutes(15);
+
+    @Autowired
+    public JiraService(RedisTemplate<String, Object> redisTemplate, UserOAuthProviderRepository userOAuthProviderRepository, UserPreferredSettingRepository userPreferredSettingRepository,
+                       OAuthProviderFactory oAuthProviderFactory, TrackeraHasher trackeraHasher) {
+        this.redisTemplate = redisTemplate;
+        this.userOAuthProviderRepository = userOAuthProviderRepository;
+        this.userPreferredSettingRepository = userPreferredSettingRepository;
+        this.oAuthProviderFactory = oAuthProviderFactory;
+        this.trackeraHasher = trackeraHasher;
+    }
+
+    public Map<String, Object> getUserTasks(boolean forceUpdate) {
+        String cacheKey = USER_JIRA_TASKS_CACHE_KEY_PREFIX + Objects.requireNonNull(AppConfig.getCurrentUser()).getId();
+        String forceUpdateCacheKey = USER_JIRA_TASKS_FORCE_UPDATE_CACHE_KEY_PREFIX + Objects.requireNonNull(AppConfig.getCurrentUser()).getId();
+        boolean shouldFetch = false;
+        LocalDateTime now = LocalDateTime.now();
+
+        Map<String, Object> cachedData = (Map<String, Object>) redisTemplate.opsForValue().get(cacheKey);
+        if (cachedData == null) {
+            shouldFetch = true;
+        } else if (forceUpdate) {
+            LocalDateTime lastForceUpdate = (LocalDateTime) redisTemplate.opsForValue().get(forceUpdateCacheKey);
+            if (lastForceUpdate == null || lastForceUpdate.isBefore(now.minusMinutes(15))) {
+                shouldFetch = true;
+            }
+        } else if (((LocalDateTime) cachedData.get("lastUpdated")).isBefore(now.minusHours(1))) {
+            shouldFetch = true;
+        }
+
+        if (shouldFetch) {
+            Map<String, Object> result = new HashMap<>();
+            List<Map<String, Object>> jiraTasks = getTasksFromJira();
+            List<Map<String, Object>> currentTasks = jiraTasks.stream().filter(task -> !(Boolean) task.get("isResolved")).toList();
+            List<Map<String, Object>> overestimatedTasks = jiraTasks.stream().filter(task -> ((Map<String, Object>) task.get("timeTracking")).get("evaluation") == JiraTaskEvaluation.OVERESTIMATED).toList();
+
+            result.put("currentTasks", Map.of("total", currentTasks.size(), "data", currentTasks));
+            result.put("overestimatedTasks", Map.of("total", overestimatedTasks.size(), "data", overestimatedTasks));
+            result.put("lastUpdated", now);
+            redisTemplate.opsForValue().set(cacheKey, result, USER_JIRA_TASKS_CACHE_TTL);
+            redisTemplate.opsForValue().set(forceUpdateCacheKey, now, USER_JIRA_TASKS_FORCE_UPDATE_CACHE_TTL);
+            return result;
+        } else {
+            return cachedData;
+        }
+    }
+
+    private List<Map<String, Object>> getTasksFromJira() {
+        List<Map<String, Object>> jiraTasks = new ArrayList<>();
+        UserOAuthProvider userOAuthProvider = userOAuthProviderRepository.findByUserAndProvider(AppConfig.getCurrentUser(), OAuthProvider.JIRA);
+        if (userOAuthProvider == null) {
+            throw new BusinessException("Jira account not linked");
+        }
+
+        Map<String, Object> userJiraPrimaryProject = getUserPrimaryProject();
+        HttpHeaders headers = new HttpHeaders();
+        OAuthServiceProvider oAuthServiceProvider = oAuthProviderFactory.getProvider(userOAuthProvider.getProvider());
+        headers.setBearerAuth(userOAuthProvider.isExpired() ? oAuthServiceProvider.refreshOAuthProviderCredentials(userOAuthProvider) : trackeraHasher.decryptFromBase64(userOAuthProvider.getAccessToken(), false));
+        headers.setAccept(List.of(MediaType.APPLICATION_JSON));
+        HttpEntity<Void> entity = new HttpEntity<>(headers);
+        int page = 0;
+
+        do {
+            Map<String, Object> jiraResponse = fetchFromJira(userJiraPrimaryProject, entity);
+            if (jiraResponse.containsKey("code") && ((Integer) jiraResponse.get("code")) == 401) {
+                headers.setBearerAuth(oAuthServiceProvider.refreshOAuthProviderCredentials(userOAuthProvider));
+            } else {
+                page = page + Integer.parseInt(jiraResponse.get("maxResults").toString());
+                processJiraResponseTasks(jiraResponse, userJiraPrimaryProject, jiraTasks);
+                if (page >= Integer.parseInt(jiraResponse.get("total").toString())) {
+                    break;
+                }
+            }
+        } while (true);
+        return jiraTasks;
+    }
+
+    @Retryable(retryFor = Exception.class, backoff = @Backoff(delay = 1000, multiplier = 3))
+    private Map<String, Object> fetchFromJira(Map<String, Object> userJiraPrimaryProject, HttpEntity<Void> entity) {
+        try {
+            ResponseEntity<Map> responseEntity = AppUtils.getRestTemplate()
+                    .exchange(JIRA_API_BASE_URL.replace("{cloudId}", userJiraPrimaryProject.get("id").toString()) + "/search?jql=" + getJiraTasksSearchCondition() + "&fields=key,summary,status,timetracking,project,resolution", HttpMethod.GET, entity, Map.class);
+            if (!responseEntity.getStatusCode().equals(HttpStatus.OK) && !responseEntity.getStatusCode().equals(HttpStatus.UNAUTHORIZED)) {
+                throw new Exception("Failed to fetch tasks from Jira");
+            }
+            return (Map<String, Object>) responseEntity.getBody();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private void processJiraResponseTasks(Map<String, Object> jiraResponse, Map<String, Object> userJiraPrimaryProject, List<Map<String, Object>> jiraTasks) {
+        for (Map<String, Object> task : (List<Map<String, Object>>) jiraResponse.get("issues")) {
+            Map<String, Object> taskFields = (Map<String, Object>) task.get("fields");
+            Map<String, Object> taskProject = (Map<String, Object>) taskFields.get("project");
+            Map<String, Object> taskTimeTracking = (Map<String, Object>) taskFields.get("timetracking");
+
+            String originalEstimate = null;
+            String loggedHours = null;
+            String remainingHours = null;
+            JiraTaskEvaluation jiraTaskEvaluation = null;
+            String notes = null;
+
+            if (taskTimeTracking != null && !taskTimeTracking.isEmpty()) {
+                originalEstimate = (String) taskTimeTracking.get("originalEstimate");
+                loggedHours = (String) taskTimeTracking.get("timeSpent");
+                remainingHours = (String) taskTimeTracking.get("remainingEstimate");
+                if (taskTimeTracking.containsKey("timeSpentSeconds") && taskTimeTracking.containsKey("originalEstimateSeconds")) {
+                    int timeSpentSeconds = (Integer) taskTimeTracking.get("timeSpentSeconds");
+                    int originalEstimateSeconds = (Integer) taskTimeTracking.get("originalEstimateSeconds");
+                    if (timeSpentSeconds <= originalEstimateSeconds) {
+                        jiraTaskEvaluation = JiraTaskEvaluation.ON_TIME;
+                    } else {
+                        jiraTaskEvaluation = JiraTaskEvaluation.OVERESTIMATED;
+                        notes = "Overestimated by " + TrackeraTimeSpanUtil.formatDuration(BigDecimal.valueOf((timeSpentSeconds - originalEstimateSeconds) / 3600), true);
+                    }
+                }
+            }
+
+            Map<String, Object> timeTracking = new HashMap<>();
+            timeTracking.put("originalEstimate", originalEstimate);
+            timeTracking.put("loggedHours", loggedHours);
+            timeTracking.put("remainingHours", remainingHours);
+            timeTracking.put("evaluation", jiraTaskEvaluation);
+            timeTracking.put("notes", notes);
+
+            Map<String, Object> taskInfo = new HashMap<>();
+            taskInfo.put("taskName", taskFields.get("summary"));
+            taskInfo.put("taskUrl", userJiraPrimaryProject.get("url") + "/browse/" + task.get("key"));
+            taskInfo.put("status", ((Map<String, Object>) taskFields.get("status")).get("name"));
+            taskInfo.put("isResolved", taskFields.get("resolution") != null && !taskFields.get("resolution").toString().isEmpty());
+            taskInfo.put("project", Map.of("name", taskProject.get("name"), "icon", ((Map<String, Object>) taskProject.get("avatarUrls")).get("48x48")));
+            taskInfo.put("timeTracking", timeTracking);
+
+            jiraTasks.add(taskInfo);
+        }
+    }
+
+    private Map<String, Object> getUserPrimaryProject() {
+        UserPreferredSetting userPreferredSetting = userPreferredSettingRepository.findByUserAndKey(AppConfig.getCurrentUser(), "jiraPrimaryProject");
+        if (userPreferredSetting == null) {
+            throw new BusinessException("Jira primary project not set. Please set it in your preferences.");
+        }
+        try {
+            return AppUtils.getObjectMapper().readValue(userPreferredSetting.getValue(), Map.class);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private String getJiraTasksSearchCondition() {
+        String maxDate = String.valueOf(LocalDate.now().minusMonths(3).withDayOfMonth(1));
+        return "assignee=currentUser() AND (resolution IS EMPTY OR (resolutiondate >= '" + maxDate + "' AND timespent > 0)) ORDER BY created DESC";
+    }
+}

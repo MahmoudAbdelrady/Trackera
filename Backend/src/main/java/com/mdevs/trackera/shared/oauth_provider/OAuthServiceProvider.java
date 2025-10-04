@@ -1,14 +1,17 @@
 package com.mdevs.trackera.shared.oauth_provider;
 
 import com.mdevs.trackera.config.general.AppConfig;
+import com.mdevs.trackera.dto.auth.OAuthAccessCredentialsDTO;
 import com.mdevs.trackera.dto.auth.OAuthUserInfoDTO;
 import com.mdevs.trackera.dto.auth.OAuthRequestDTO;
 import com.mdevs.trackera.entity.User;
+import com.mdevs.trackera.entity.UserOAuthProvider;
 import com.mdevs.trackera.repository.UserOAuthProviderRepository;
 import com.mdevs.trackera.repository.UserRepository;
 import com.mdevs.trackera.shared.exceptions.types.BusinessException;
 import com.mdevs.trackera.shared.utils.JwtUtil;
 import com.mdevs.trackera.shared.utils.OAuthUtil;
+import com.mdevs.trackera.shared.utils.TrackeraHasher;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.http.HttpServletRequest;
 import org.apache.commons.lang3.StringUtils;
@@ -16,6 +19,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpHeaders;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -64,6 +68,22 @@ public abstract class OAuthServiceProvider {
         }
         return securityParams;
     }
+
+    public String refreshOAuthProviderCredentials(UserOAuthProvider userOAuthProvider) {
+        try {
+            TrackeraHasher trackeraHasher = AppConfig.getApplicationContext().getBean(TrackeraHasher.class);
+            OAuthAccessCredentialsDTO newTokens = refreshAccessToken(trackeraHasher.decryptFromBase64(userOAuthProvider.getRefreshToken(), false));
+
+            userOAuthProvider.setAccessToken(trackeraHasher.encryptToBase64(newTokens.getAccessToken(), false));
+            userOAuthProvider.setRefreshToken(trackeraHasher.encryptToBase64(newTokens.getRefreshToken(), false));
+            userOAuthProvider.setAccessTokenExpiry(LocalDateTime.now().plusSeconds(newTokens.getExpiresIn()));
+            AppConfig.getApplicationContext().getBean(UserOAuthProviderRepository.class).save(userOAuthProvider);
+
+            return newTokens.getAccessToken();
+        } catch (Exception e) {
+            throw new SecurityException(e.getMessage());
+        }
+    }
     //</editor-fold>
 
     //<editor-fold> methods to be implemented by subclasses
@@ -73,6 +93,6 @@ public abstract class OAuthServiceProvider {
 
     public abstract OAuthUserInfoDTO authenticate(OAuthRequestDTO authRequest);
 
-    public abstract String refreshAccessToken(String refreshToken);
+    protected abstract OAuthAccessCredentialsDTO refreshAccessToken(String refreshToken);
     //</editor-fold>
 }
