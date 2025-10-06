@@ -1,9 +1,6 @@
 package com.mdevs.trackera.shared.enums;
 
-import com.fasterxml.jackson.annotation.JsonValue;
 import lombok.Getter;
-
-import java.util.Map;
 
 @Getter
 public enum JiraTaskEvaluation implements BaseEnum {
@@ -14,10 +11,5 @@ public enum JiraTaskEvaluation implements BaseEnum {
 
     JiraTaskEvaluation(String label) {
         this.label = label;
-    }
-
-    @JsonValue
-    public Map<String, String> toJson() {
-        return Map.of("label", label, "value", this.name());
     }
 }
