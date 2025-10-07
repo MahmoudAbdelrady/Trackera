@@ -11,7 +11,7 @@ interface JiraTask extends TrackeraTableEntity {
   taskName: string;
   taskUrl: string;
   project: Record<string, string>;
-  status: string;
+  status: Record<string, string>;
   timeTracking: Record<string, any>;
 }
 

@@ -1,4 +1,4 @@
-type BadgeType = "main" | "success" | "warning" | "danger";
+type BadgeType = "main" | "success" | "warning" | "danger" | "default";
 
 interface TrackeraTableEntity {
   id: string | number;

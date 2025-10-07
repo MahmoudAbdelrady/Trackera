@@ -7,6 +7,10 @@
   width: fit-content;
   font-weight: 500;
 }
+.padded_item.default {
+  background-color: #ddd;
+  color: #5c5c5c;
+}
 .padded_item.main {
   background-color: #e4f0ff;
   color: #2563eb;

@@ -48,6 +48,14 @@ const JiraTasks = () => {
       },
     },
     {
+      title: "Status",
+      dataIndex: "status",
+      key: "status",
+      render: (_, { status }) => {
+        return <StatusBadge badgeProps={{ label: status.name, type: getStatusType(status.category) }} />;
+      },
+    },
+    {
       title: "Original Estimate",
       dataIndex: "originalEstimate",
       key: "originalEstimate",
@@ -80,14 +88,6 @@ const JiraTasks = () => {
       },
     },
     {
-      title: "Status",
-      dataIndex: "status",
-      key: "status",
-      render: (_, { status }) => {
-        return <StatusBadge badgeProps={{ label: status, type: "main" }} />;
-      },
-    },
-    {
       title: "Notes",
       dataIndex: "notes",
       key: "notes",
@@ -97,52 +97,18 @@ const JiraTasks = () => {
     },
   ];
 
-  // const currentTasks: JiraTask[] = [
-  //   {
-  //     id: 1,
-  //     taskName: "Implement authentication module",
-  //     storyPoints: 20,
-  //     originalEstimate: 20,
-  //     loggedHours: 12,
-  //     remainingHours: 8,
-  //     evaluation: "ON_TIME",
-  //     status: "Backend Implementation",
-  //   },
-  //   {
-  //     id: 2,
-  //     taskName: "Design database schema",
-  //     storyPoints: 15,
-  //     originalEstimate: 18,
-  //     loggedHours: 16,
-  //     remainingHours: 0,
-  //     evaluation: "OVERESTIMATED",
-  //     status: "Pending Testzone",
-  //     notes: "Overestimated by 2 hours",
-  //   },
-  // ];
-
-  // const overestimatedTasks: JiraTask[] = [
-  //   {
-  //     id: 3,
-  //     taskName: "Create user profile page",
-  //     storyPoints: 10,
-  //     originalEstimate: 15,
-  //     loggedHours: 20,
-  //     remainingHours: 0,
-  //     status: "Done",
-  //     notes: "Overestimated by 5 hours",
-  //   },
-  //   {
-  //     id: 4,
-  //     taskName: "Set up CI/CD pipeline",
-  //     storyPoints: 25,
-  //     originalEstimate: 21,
-  //     loggedHours: 18,
-  //     remainingHours: 2,
-  //     status: "Pending Staging",
-  //     notes: "Overestimated by 3 hours",
-  //   },
-  // ];
+  const getStatusType = (statusKey: string) => {
+    switch (statusKey) {
+      case "new":
+        return "default";
+      case "indeterminate":
+        return "main";
+      case "done":
+        return "success";
+      default:
+        return "default";
+    }
+  };
 
   const items: TabsProps["items"] = [
     {
