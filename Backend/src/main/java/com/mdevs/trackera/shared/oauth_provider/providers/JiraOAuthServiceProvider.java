@@ -80,22 +80,13 @@ public class JiraOAuthServiceProvider extends OAuthServiceProvider {
     @Override
     public OAuthAccessCredentialsDTO refreshAccessToken(String refreshToken) {
         try {
-            String tokenUrl = JIRA_AUTH_BASE_URL + "/oauth/token";
-
             Map<String, String> requestBody = new HashMap<>();
             requestBody.put("grant_type",  "refresh_token");
             requestBody.put("client_id", CLIENT_ID);
             requestBody.put("client_secret", CLIENT_SECRET);
             requestBody.put("refresh_token", refreshToken);
 
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
-
-            HttpEntity<Map<String, String>> entity = new HttpEntity<>(requestBody, headers);
-
-            ResponseEntity<OAuthAccessCredentialsDTO> response = AppUtils.getRestTemplate().exchange(tokenUrl, HttpMethod.POST, entity, OAuthAccessCredentialsDTO.class);
-
-            return response.getBody();
+            return getCredentialsFromJira(requestBody);
         } catch (RestClientException e) {
             LOGGER.error("Error while refreshing Jira access token: {}", e.getMessage(), e);
             throw new RuntimeException("Failed to authenticate with jira");
@@ -104,8 +95,6 @@ public class JiraOAuthServiceProvider extends OAuthServiceProvider {
 
     public OAuthAccessCredentialsDTO getJiraTokenResponse(String authCode, String codeVerifier) {
         try {
-            String tokenUrl = JIRA_AUTH_BASE_URL + "/oauth/token";
-
             Map<String, String> requestBody = new HashMap<>();
             requestBody.put("grant_type",  "authorization_code");
             requestBody.put("client_id", CLIENT_ID);
@@ -114,17 +103,21 @@ public class JiraOAuthServiceProvider extends OAuthServiceProvider {
             requestBody.put("code_verifier", codeVerifier);
             requestBody.put("redirect_uri", getRedirectUri());
 
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
-
-            HttpEntity<Map<String, String>> entity = new HttpEntity<>(requestBody, headers);
-
-            ResponseEntity<OAuthAccessCredentialsDTO> response = AppUtils.getRestTemplate().exchange(tokenUrl, HttpMethod.POST, entity, OAuthAccessCredentialsDTO.class);
-
-            return response.getBody();
+            return getCredentialsFromJira(requestBody);
         } catch (RestClientException e) {
             LOGGER.error("Error while getting Jira token response: {}", e.getMessage(), e);
             throw new RuntimeException(e.getMessage());
         }
+    }
+
+    private OAuthAccessCredentialsDTO getCredentialsFromJira(Map<String, String> requestBody) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        HttpEntity<Map<String, String>> entity = new HttpEntity<>(requestBody, headers);
+
+        ResponseEntity<OAuthAccessCredentialsDTO> response = AppUtils.getRestTemplate().exchange(JIRA_AUTH_BASE_URL + "/oauth/token", HttpMethod.POST, entity, OAuthAccessCredentialsDTO.class);
+
+        return response.getBody();
     }
 }
