@@ -50,9 +50,9 @@ public class JiraService {
 
     private static final String USER_JIRA_TASKS_FORCE_UPDATE_CACHE_KEY_PREFIX = "userJiraTasks:forceUpdate:";
 
-    private static final int JIRA_TASKS_FETCH_HOURS_DURATION = 1; // in hours
+    private static final int JIRA_TASKS_FETCH_HOURS_DURATION = 1;
 
-    private static final int JIRA_TASKS_FORCE_FETCH_MINUTES_DURATION = 15; // in minutes
+    private static final int JIRA_TASKS_FORCE_FETCH_MINUTES_DURATION = 15;
 
     private static final Duration USER_JIRA_TASKS_CACHE_TTL = Duration.ofHours(JIRA_TASKS_FETCH_HOURS_DURATION);
 
