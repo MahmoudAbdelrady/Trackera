@@ -189,6 +189,7 @@ public class AuthService {
             userOAuthProvider.setAccessToken(trackeraHasher.encryptToBase64(oAuthUserInfoDTO.getAccessCredentials().getAccessToken(), false));
             userOAuthProvider.setRefreshToken(trackeraHasher.encryptToBase64(oAuthUserInfoDTO.getAccessCredentials().getRefreshToken(), false));
             userOAuthProvider.setAccessTokenExpiry(LocalDateTime.now().plusSeconds(oAuthUserInfoDTO.getAccessCredentials().getExpiresIn()));
+            userOAuthProvider.setRevoked(false);
             userOAuthProviderRepository.save(userOAuthProvider);
         }
 
