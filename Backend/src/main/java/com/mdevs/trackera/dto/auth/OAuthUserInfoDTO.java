@@ -5,6 +5,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.Map;
+
 @Getter
 @Setter
 @NoArgsConstructor
@@ -22,10 +24,5 @@ public class OAuthUserInfoDTO {
 
     private OAuthAccessCredentialsDTO accessCredentials;
 
-    public OAuthUserInfoDTO(String email, String firstname, String lastname, String profilePicture) {
-        this.email = email;
-        this.firstname = firstname;
-        this.lastname = lastname;
-        this.profilePicture = profilePicture;
-    }
+    private Map<String, Object> additionalInfo;
 }

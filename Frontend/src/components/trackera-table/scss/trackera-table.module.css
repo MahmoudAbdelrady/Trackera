@@ -55,9 +55,7 @@
   text-decoration: underline;
 }
 .worklog_table_container .table_details .task_link .link_icon {
-  position: absolute;
-  right: -18px;
-  top: -8px;
+  margin-left: 5px;
   width: 15px;
   height: 15px;
   color: #2563eb;

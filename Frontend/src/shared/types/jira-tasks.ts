@@ -9,12 +9,10 @@ const jiraTaskEvaluationMetadata: Record<JiraTaskEvaluationType, StatusBadgeProp
 
 interface JiraTask extends TrackeraTableEntity {
   taskName: string;
-  taskUrl?: string;
-  loggedHours: number;
-  remainingHours: number;
-  evaluation?: JiraTaskEvaluationType;
-  status: string;
-  notes?: string;
+  taskUrl: string;
+  project: Record<string, string>;
+  status: Record<string, string>;
+  timeTracking: Record<string, any>;
 }
 
 export type { JiraTask, JiraTaskEvaluationType };

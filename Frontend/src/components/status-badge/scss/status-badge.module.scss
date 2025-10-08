@@ -8,6 +8,10 @@
   background-color: $mainColor;
   width: fit-content;
   font-weight: 500;
+  &.default {
+    background-color: $disabledBackgroundColor;
+    color: $subtitleColor;
+  }
   &.main {
     background-color: $mainColorLight2;
     color: $mainColor;

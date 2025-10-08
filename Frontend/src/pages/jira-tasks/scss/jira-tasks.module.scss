@@ -5,6 +5,9 @@
   @include end;
   gap: 10px;
   margin-bottom: 20px;
+  @media (max-width: 480px) {
+    flex-direction: column;
+  }
   .last_refresh {
     color: $subtitleColor;
     font-size: 14px;
@@ -15,4 +18,14 @@
   border: 1px solid $borderColor;
   background-color: #fff;
   border-radius: 8px;
+}
+
+.project_cell {
+  @include start;
+  gap: 8px;
+  img {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+  }
 }

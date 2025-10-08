@@ -5,6 +5,11 @@
   gap: 10px;
   margin-bottom: 20px;
 }
+@media (max-width: 480px) {
+  .refresh_container {
+    flex-direction: column;
+  }
+}
 .refresh_container .last_refresh {
   color: #5c5c5c;
   font-size: 14px;
@@ -15,4 +20,16 @@
   border: 1px solid #e5e7eb;
   background-color: #fff;
   border-radius: 8px;
+}
+
+.project_cell {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 8px;
+}
+.project_cell img {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
 }/*# sourceMappingURL=jira-tasks.module.css.map */
