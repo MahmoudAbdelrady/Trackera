@@ -50,9 +50,13 @@ public class JiraService {
 
     private static final String USER_JIRA_TASKS_FORCE_UPDATE_CACHE_KEY_PREFIX = "userJiraTasks:forceUpdate:";
 
-    private static final Duration USER_JIRA_TASKS_CACHE_TTL = Duration.ofHours(1);
+    private static final int JIRA_TASKS_FETCH_HOURS_DURATION = 1; // in hours
 
-    private static final Duration USER_JIRA_TASKS_FORCE_UPDATE_CACHE_TTL = Duration.ofMinutes(15);
+    private static final int JIRA_TASKS_FORCE_FETCH_MINUTES_DURATION = 15; // in minutes
+
+    private static final Duration USER_JIRA_TASKS_CACHE_TTL = Duration.ofHours(JIRA_TASKS_FETCH_HOURS_DURATION);
+
+    private static final Duration USER_JIRA_TASKS_FORCE_UPDATE_CACHE_TTL = Duration.ofMinutes(JIRA_TASKS_FORCE_FETCH_MINUTES_DURATION);
 
     private static final Logger LOGGER = LoggerFactory.getLogger(JiraService.class);
 
@@ -87,10 +91,10 @@ public class JiraService {
             shouldFetch = true;
         } else if (forceUpdate) {
             LocalDateTime lastForceUpdate = Optional.ofNullable(redisTemplate.opsForValue().get(forceUpdateCacheKey)).map(date -> LocalDateTime.parse(date.toString(), TrackeraTimeSpanUtil.getSimpleDateTimeFormatter())).orElse(null);
-            if (lastForceUpdate == null || lastForceUpdate.isBefore(now.minusMinutes(15))) {
+            if (lastForceUpdate == null || lastForceUpdate.isBefore(now.minusMinutes(JIRA_TASKS_FORCE_FETCH_MINUTES_DURATION))) {
                 shouldFetch = true;
             }
-        } else if ((LocalDateTime.parse(cachedData.get("lastUpdated").toString(), TrackeraTimeSpanUtil.getSimpleDateTimeFormatter())).isBefore(now.minusHours(1))) {
+        } else if ((LocalDateTime.parse(cachedData.get("lastUpdated").toString(), TrackeraTimeSpanUtil.getSimpleDateTimeFormatter())).isBefore(now.minusHours(JIRA_TASKS_FETCH_HOURS_DURATION))) {
             shouldFetch = true;
         }
 
