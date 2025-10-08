@@ -92,10 +92,10 @@ public class AuthService {
             Map<String, Object> providerInfo = new HashMap<>();
             providerInfo.put("provider", Map.of("code", p.getCode(), "name", p.getDisplayName()));
             boolean userOAuthProviderExists = userOAuthProvider != null;
-            providerInfo.put("isLinked", userOAuthProviderExists);
-            providerInfo.put("email", userOAuthProviderExists && !StringUtils.isEmpty(userOAuthProvider.getEmail()) ? userOAuthProvider.getEmail() : null);
+            providerInfo.put("isLinked", userOAuthProvider != null);
+            providerInfo.put("email", userOAuthProvider != null && !StringUtils.isEmpty(userOAuthProvider.getEmail()) ? userOAuthProvider.getEmail() : null);
             if (userOAuthProviderExists) {
-                providerInfo.put("isExpired", userOAuthProvider.isExpired());
+                providerInfo.put("isRevoked", userOAuthProvider.isRevoked());
             }
             return providerInfo;
         }).toList();

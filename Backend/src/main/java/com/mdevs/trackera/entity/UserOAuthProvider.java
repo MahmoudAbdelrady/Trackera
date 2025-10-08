@@ -33,6 +33,9 @@ public class UserOAuthProvider extends BaseEntity {
     @Column(nullable = false, columnDefinition = "TIMESTAMP(0)")
     private LocalDateTime accessTokenExpiry;
 
+    @Column(nullable = false)
+    private boolean isRevoked = false;
+
     public UserOAuthProvider(User user, OAuthProvider provider) {
         this.user = user;
         this.provider = provider;

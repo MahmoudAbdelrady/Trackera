@@ -15,14 +15,17 @@ import com.mdevs.trackera.shared.oauth_provider.OAuthServiceProvider;
 import com.mdevs.trackera.shared.utils.AppUtils;
 import com.mdevs.trackera.shared.utils.TrackeraHasher;
 import com.mdevs.trackera.shared.utils.TrackeraTimeSpanUtil;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.*;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.Duration;
@@ -41,6 +44,8 @@ public class JiraService {
     private final OAuthProviderFactory oAuthProviderFactory;
 
     private final TrackeraHasher trackeraHasher;
+
+    private final JiraService selfRef;
 
     public static final String JIRA_PRIMARY_PROJECT_SETTING_KEY = "jiraPrimaryProject";
 
@@ -62,12 +67,13 @@ public class JiraService {
 
     @Autowired
     public JiraService(RedisTemplate<String, Object> redisTemplate, UserOAuthProviderRepository userOAuthProviderRepository, UserPreferredSettingRepository userPreferredSettingRepository,
-                       OAuthProviderFactory oAuthProviderFactory, TrackeraHasher trackeraHasher) {
+                       OAuthProviderFactory oAuthProviderFactory, TrackeraHasher trackeraHasher, @Lazy JiraService selfRef) {
         this.redisTemplate = redisTemplate;
         this.userOAuthProviderRepository = userOAuthProviderRepository;
         this.userPreferredSettingRepository = userPreferredSettingRepository;
         this.oAuthProviderFactory = oAuthProviderFactory;
         this.trackeraHasher = trackeraHasher;
+        this.selfRef = selfRef;
     }
 
     public Map<String, Object> getUserTasks(boolean forceUpdate) {
@@ -124,18 +130,13 @@ public class JiraService {
         List<Map<String, Object>> jiraTasks = new ArrayList<>();
         UserOAuthProvider userOAuthProvider = validateJiraOAuthProvider();
         Map<String, Object> userJiraPrimaryProject = getUserPrimaryProject();
-        OAuthServiceProvider oAuthServiceProvider = oAuthProviderFactory.getProvider(userOAuthProvider.getProvider());
         String accessToken;
 
-        if (userOAuthProvider.isExpired()) {
-            accessToken = oAuthServiceProvider.refreshOAuthProviderCredentials(userOAuthProvider);
-        } else {
-            try {
-                accessToken = trackeraHasher.decryptFromBase64(userOAuthProvider.getAccessToken(), false);
-            } catch (Exception e) {
-                LOGGER.error("Error while decrypting Jira OAuth provider credentials", e);
-                throw new RuntimeException("Failed to fetch jira tasks");
-            }
+        try {
+            accessToken = userOAuthProvider.isExpired() ? validateAndGetNewAccessToken(userOAuthProvider) : trackeraHasher.decryptFromBase64(userOAuthProvider.getAccessToken(), false);
+        } catch (Exception e) {
+            LOGGER.error("Error while getting jira access token", e);
+            throw new RuntimeException("Failed to fetch jira tasks");
         }
 
         HttpHeaders headers = new HttpHeaders();
@@ -148,7 +149,12 @@ public class JiraService {
         do {
             jiraResponse = fetchFromJira(userJiraPrimaryProject, entity);
             if (jiraResponse.containsKey("code") && ((Integer) jiraResponse.get("code")) == 401) {
-                headers.setBearerAuth(oAuthServiceProvider.refreshOAuthProviderCredentials(userOAuthProvider));
+                try {
+                    headers.setBearerAuth(validateAndGetNewAccessToken(userOAuthProvider));
+                } catch (Exception e) {
+                    LOGGER.error("Error while refreshing jira access token", e);
+                    throw new RuntimeException("Failed to fetch jira tasks");
+                }
             } else {
                 page = page + Integer.parseInt(jiraResponse.get("maxResults").toString());
                 processJiraResponseTasks(jiraResponse, userJiraPrimaryProject, jiraTasks);
@@ -161,6 +167,9 @@ public class JiraService {
         UserOAuthProvider userOAuthProvider = userOAuthProviderRepository.findByUserAndProvider(AppConfig.getCurrentUser(), OAuthProvider.JIRA);
         if (userOAuthProvider == null) {
             throw new BusinessException("Jira account not linked");
+        }
+        if (userOAuthProvider.isRevoked()) {
+            throw new BusinessException("Jira account link has been revoked. Please relink your account.");
         }
         return userOAuthProvider;
     }
@@ -237,6 +246,27 @@ public class JiraService {
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public String validateAndGetNewAccessToken(UserOAuthProvider userOAuthProvider) {
+        String accessToken = selfRef.getNewAccessToken(userOAuthProvider);
+        if (StringUtils.isEmpty(accessToken)) {
+            throw new RuntimeException("Failed to refresh Jira access token");
+        }
+        return accessToken;
+    }
+
+    @Transactional
+    public String getNewAccessToken(UserOAuthProvider userOAuthProvider) {
+        String accessToken = null;
+        try {
+            accessToken = oAuthProviderFactory.getProvider(userOAuthProvider.getProvider()).refreshOAuthProviderCredentials(userOAuthProvider);
+        } catch (Exception e) {
+            LOGGER.error("Error while refreshing access token", e);
+            userOAuthProvider.setRevoked(true);
+            userOAuthProviderRepository.save(userOAuthProvider);
+        }
+        return accessToken;
     }
 
     private String getJiraTasksSearchCondition() {
