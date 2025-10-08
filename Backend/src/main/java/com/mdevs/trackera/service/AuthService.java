@@ -231,7 +231,7 @@ public class AuthService {
 
         if (oAuthProvider.equals(OAuthProvider.JIRA)) {
             try {
-                UserPreferredSetting preferredSetting = new UserPreferredSetting(authenticatedUser, JiraService.JIRA_PRIMARY_PROJECT_PREFERENCE_KEY, AppUtils.getObjectMapper().writeValueAsString(additionalInfo.get(JiraService.JIRA_PRIMARY_PROJECT_PREFERENCE_KEY)));
+                UserPreferredSetting preferredSetting = new UserPreferredSetting(authenticatedUser, JiraService.JIRA_PRIMARY_PROJECT_SETTING_KEY, AppUtils.getObjectMapper().writeValueAsString(additionalInfo.get(JiraService.JIRA_PRIMARY_PROJECT_SETTING_KEY)));
                 userPreferredSettingRepository.save(preferredSetting);
             } catch (JsonProcessingException e) {
                 throw new RuntimeException(e);
@@ -257,7 +257,7 @@ public class AuthService {
         if (userOAuthProviderRepository.countByUser(loggedUser) <= 1 && !loggedUser.isPasswordSet()) {
             throw new BusinessException("You cannot unlink the last linked account without setting a password");
         }
-        userPreferredSettingRepository.deleteByUserAndKey(loggedUser, JiraService.JIRA_PRIMARY_PROJECT_PREFERENCE_KEY);
+        userPreferredSettingRepository.deleteByUserAndKey(loggedUser, JiraService.JIRA_PRIMARY_PROJECT_SETTING_KEY);
         userOAuthProviderRepository.delete(userOAuthProvider);
         return oAuthProvider.getDisplayName() + " unlinked successfully";
     }

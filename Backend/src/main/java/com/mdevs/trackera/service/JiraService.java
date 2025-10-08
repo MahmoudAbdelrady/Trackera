@@ -42,7 +42,7 @@ public class JiraService {
 
     private final TrackeraHasher trackeraHasher;
 
-    public static final String JIRA_PRIMARY_PROJECT_PREFERENCE_KEY = "jiraPrimaryProject";
+    public static final String JIRA_PRIMARY_PROJECT_SETTING_KEY = "jiraPrimaryProject";
 
     public static final String JIRA_API_BASE_URL = "https://api.atlassian.com/ex/jira/{cloudId}/rest/api/3";
 
@@ -224,9 +224,9 @@ public class JiraService {
     }
 
     private Map<String, Object> getUserPrimaryProject() {
-        UserPreferredSetting userPreferredSetting = userPreferredSettingRepository.findByUserAndKey(AppConfig.getCurrentUser(), JIRA_PRIMARY_PROJECT_PREFERENCE_KEY);
+        UserPreferredSetting userPreferredSetting = userPreferredSettingRepository.findByUserAndKey(AppConfig.getCurrentUser(), JIRA_PRIMARY_PROJECT_SETTING_KEY);
         if (userPreferredSetting == null) {
-            throw new BusinessException("Jira primary project not set. Please set it in your preferences.");
+            throw new BusinessException("Jira primary project not set. Please set it in your settings.");
         }
         try {
             return AppUtils.getObjectMapper().readValue(userPreferredSetting.getValue(), Map.class);

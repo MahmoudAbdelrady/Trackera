@@ -67,7 +67,7 @@ public class JiraOAuthServiceProvider extends OAuthServiceProvider {
             }
             Long userId = securityParams.containsKey("userId") ? Long.parseLong(securityParams.get("userId")) : null;
             String[] names = userJiraInfo.get("displayName").toString().split(" ");
-            Map<String, Object> additionalInfo = new HashMap<>(Map.of(JiraService.JIRA_PRIMARY_PROJECT_PREFERENCE_KEY, Map.of("id", accessibleResourceDTO.getId(), "url", accessibleResourceDTO.getUrl())));
+            Map<String, Object> additionalInfo = new HashMap<>(Map.of(JiraService.JIRA_PRIMARY_PROJECT_SETTING_KEY, Map.of("id", accessibleResourceDTO.getId(), "url", accessibleResourceDTO.getUrl())));
 
             return new OAuthUserInfoDTO(userId, userJiraInfo.get("emailAddress").toString(), names[0], names.length > 1 ? String.join(" ", names) : null,
                     userJiraInfo.get("avatarUrls") != null ? ((Map<String, String>) userJiraInfo.get("avatarUrls")).get("48x48") : null, tokenResponse, additionalInfo);
