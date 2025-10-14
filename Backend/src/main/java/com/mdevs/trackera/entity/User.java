@@ -2,7 +2,6 @@ package com.mdevs.trackera.entity;
 
 import jakarta.persistence.*;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.apache.commons.lang3.StringUtils;
 import org.hibernate.annotations.ColumnDefault;
@@ -63,7 +62,7 @@ public class User extends BaseEntity implements UserDetails {
         return null;
     }
 
-    public boolean canChangePassword() {
+    public boolean canResetPassword() {
         return !isOAuth || isPasswordSet();
     }
 

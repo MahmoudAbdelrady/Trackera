@@ -36,6 +36,8 @@ import java.util.*;
 public class AuthService {
     private final UserRepository userRepository;
 
+    private final UserService userService;
+
     private final AuthenticationManager authenticationManager;
 
     private final SecurityTokenService securityTokenService;
@@ -69,8 +71,9 @@ public class AuthService {
     private String cookieMaxAge;
 
     @Autowired
-    public AuthService(UserRepository userRepository, AuthenticationManager authenticationManager, SecurityTokenService securityTokenService, OAuthProviderFactory oAuthProviderFactory, SecurityTokenRepository securityTokenRepository, UserInvalidTokenRepository userInvalidTokenRepository, UserOAuthProviderRepository userOAuthProviderRepository, UserPreferredSettingRepository userPreferredSettingRepository, JwtUtil jwtUtil, TrackeraHasher trackeraHasher, ModelMapper modelMapper, PasswordEncoder passwordEncoder) {
+    public AuthService(UserRepository userRepository, UserService userService, AuthenticationManager authenticationManager, SecurityTokenService securityTokenService, OAuthProviderFactory oAuthProviderFactory, SecurityTokenRepository securityTokenRepository, UserInvalidTokenRepository userInvalidTokenRepository, UserOAuthProviderRepository userOAuthProviderRepository, UserPreferredSettingRepository userPreferredSettingRepository, JwtUtil jwtUtil, TrackeraHasher trackeraHasher, ModelMapper modelMapper, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
+        this.userService = userService;
         this.authenticationManager = authenticationManager;
         this.securityTokenService = securityTokenService;
         this.oAuthProviderFactory = oAuthProviderFactory;
@@ -328,11 +331,8 @@ public class AuthService {
     public String sendResetPassword(String email) {
         validateUserEmail(email);
         User user = userRepository.findByEmail(email);
-        if (user != null && user.canChangePassword()) {
-            Map<String, String> templateParameters = new HashMap<>();
-            templateParameters.put("emailTypeDesc", "Please click the link below to reset your password.");
-            templateParameters.put("linkLabel", "Reset my password");
-            securityTokenService.createAndSendSecurityToken(user, SecurityToken.Type.PASSWORD_RESET, null, templateParameters, "/change-password", "trackera-verification-mail-template");
+        if (user != null && user.canResetPassword()) {
+            userService.sendResetPasswordEmail(user, "Please click the link below to reset your password.");
         } else {
             // simulate delay to prevent email enumeration attacks
             try {
@@ -356,19 +356,9 @@ public class AuthService {
             throw new UnauthorizedException("Url is expired or invalid");
         }
         User user = securityToken.getUser();
-        user.setPassword(getUserNewPassword(user, passwordDTO));
+        user.setPassword(userService.getUserNewPassword(user, passwordDTO));
         userRepository.save(user);
         securityTokenRepository.delete(securityToken);
         return "Password changed successfully";
-    }
-
-    public String getUserNewPassword(User user, PasswordDTO passwordDTO) {
-        if (!passwordDTO.getNewPassword().equals(passwordDTO.getConfirmNewPassword())) {
-            throw new BusinessException("Passwords do not match");
-        }
-        if (passwordEncoder.matches(passwordDTO.getNewPassword(), user.getPassword())) {
-            throw new BusinessException("New password cannot be the same as the current password");
-        }
-        return passwordEncoder.encode(passwordDTO.getNewPassword());
     }
 }

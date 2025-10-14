@@ -17,4 +17,6 @@ public class LoggedUserDTO {
     private String profilePicture;
 
     private String avatarColor;
+
+    private boolean isPasswordSet;
 }
