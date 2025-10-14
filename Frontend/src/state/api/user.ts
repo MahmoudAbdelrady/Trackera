@@ -5,6 +5,7 @@ export interface UserInfo {
   lastname: string;
   profilePicture: string | null;
   avatarColor: string;
+  passwordSet: boolean;
 }
 
 const fetchMe = async () => {

@@ -1,6 +1,6 @@
 import type { TrackeraTableEntity, StatusBadgeProps, InputFieldProps, PaginatedResponse } from "./global";
 
-import type { AuthLayoutProps, AuthFormProps, AuthResultFields, AuthResultProps, AuthFooterProps, OAuthBtnProps } from "./auth";
+import type { AuthLayoutProps, AuthFormProps, AuthResultFields, AuthResultProps, AuthFooterProps, OAuthBtnProps, UpdatePasswordFormFields } from "./auth";
 
 import type {
   WorkLogEvaluationType,
@@ -47,6 +47,7 @@ export type {
   ManageWorkLogModalProps,
   AuthFooterProps,
   OAuthBtnProps,
+  UpdatePasswordFormFields,
   WorkLogSummaryCard,
   WorkLogSearchFilter,
   WorkLogsFilterProps,

@@ -1,2 +1,20 @@
 @use "../../../shared/styles/colors" as *;
 @use "../../../shared/styles/mixins" as *;
+
+.settings_sections {
+  @include center;
+  flex-direction: column;
+  width: 100%;
+  gap: 15px;
+  .password_form {
+    @include start-rev;
+    flex-direction: column;
+    gap: 20px;
+    .password_form_field_box {
+      width: 100%;
+    }
+    .password_form_button {
+      align-self: flex-end;
+    }
+  }
+}
