@@ -332,7 +332,7 @@ public class AuthService {
         validateUserEmail(email);
         User user = userRepository.findByEmail(email);
         if (user != null && user.canResetPassword()) {
-            userService.sendResetPasswordEmail(user, "Please click the link below to reset your password.");
+            userService.sendResetPasswordEmail(user, "Please click the link below to reset your password.", true);
         } else {
             // simulate delay to prevent email enumeration attacks
             try {
@@ -352,7 +352,7 @@ public class AuthService {
     @Transactional
     public String changePassword(String token, PasswordDTO passwordDTO) {
         SecurityToken securityToken = securityTokenService.getSecurityToken(token);
-        if (!securityToken.getType().equals(SecurityToken.Type.PASSWORD_RESET)) {
+        if (securityToken.getType().equals(SecurityToken.Type.ACCOUNT_ACTIVATION)) {
             throw new UnauthorizedException("Url is expired or invalid");
         }
         User user = securityToken.getUser();

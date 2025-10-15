@@ -55,11 +55,11 @@ public class UserService implements UserDetailsService {
     @Transactional
     public String changePassword(PasswordDTO passwordDTO) {
         User user = Objects.requireNonNull(AppConfig.getCurrentUser());
-        if (!StringUtils.isEmpty(passwordDTO.getCurrentPassword()) && (!user.isPasswordSet() || !passwordEncoder.matches(user.getPassword(), passwordDTO.getCurrentPassword()))) {
+        if (!StringUtils.isEmpty(passwordDTO.getCurrentPassword()) && (!user.isPasswordSet() || !passwordEncoder.matches(passwordDTO.getCurrentPassword(), user.getPassword()))) {
             throw new BusinessException("Current password is incorrect.");
         }
         user.setPassword(getUserNewPassword(user, passwordDTO));
-        sendResetPasswordEmail(user, "Your password has been changed. If you did not perform this action, please reset your password immediately.");
+        sendResetPasswordEmail(user, "Your password has been changed. If you did not perform this action, please reset your password immediately.", false);
         userRepository.save(user);
         return "Password changed successfully.";
     }
@@ -74,10 +74,10 @@ public class UserService implements UserDetailsService {
         return passwordEncoder.encode(passwordDTO.getNewPassword());
     }
 
-    public void sendResetPasswordEmail(User user, String description) {
+    public void sendResetPasswordEmail(User user, String description, boolean isForReset) {
         Map<String, String> templateParameters = new HashMap<>();
         templateParameters.put("emailTypeDesc", description);
         templateParameters.put("linkLabel", "Reset my password");
-        securityTokenService.createAndSendSecurityToken(user, SecurityToken.Type.PASSWORD_RESET, null, templateParameters, "/change-password", "trackera-verification-mail-template");
+        securityTokenService.createAndSendSecurityToken(user, isForReset ? SecurityToken.Type.PASSWORD_RESET : SecurityToken.Type.PASSWORD_CHANGE, null, templateParameters, "/change-password", "trackera-verification-mail-template");
     }
 }
