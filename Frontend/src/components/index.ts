@@ -17,6 +17,7 @@ import WorklogInfo from "./worklogs/worklog-info/WorklogInfo";
 import StatusBadge from "./status-badge/StatusBadge";
 import SettingsSection from "./settings/settings-section/SettingsSection";
 import LinkedAccount from "./settings/linked-account/LinkedAccount";
+import UserEmail from "./settings/user-email/UserEmail";
 
 export {
   AuthLayout,
@@ -38,4 +39,5 @@ export {
   StatusBadge,
   SettingsSection,
   LinkedAccount,
+  UserEmail,
 };

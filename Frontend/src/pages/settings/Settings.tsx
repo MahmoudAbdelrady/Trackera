@@ -1,4 +1,4 @@
-import { Link, Lock } from "lucide-react";
+import { Link, Lock, Mail } from "lucide-react";
 import { AppLayout, InputField, LinkedAccount, LoadingSpinner } from "../../components";
 import { SettingsSection } from "../../components";
 import { showErrorToast, showSuccessToast } from "../../utils/toast-handler/showToast";
@@ -144,6 +144,12 @@ const Settings = () => {
               {userData?.passwordSet ? "Update Password" : "Set Password"}
             </Button>
           </form>
+        </SettingsSection>
+        <SettingsSection title="Emails" icon={<Mail />}>
+          <Button type="primary" htmlType="submit" className={classes.add_email_button}>
+            Add Email
+          </Button>
+          <div className={classes.emails_list}></div>
         </SettingsSection>
         <SettingsSection title="Linked Accounts" icon={<Link />}>
           {isFetchingAccounts ? (
