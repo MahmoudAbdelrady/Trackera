@@ -21,18 +21,17 @@ const ChangePassword = () => {
   const token = searchParams.get("token");
 
   const changePasswordFormik = useFormik({
-    initialValues: (Object.keys(updatePasswordSchema.fields) as (keyof UpdatePasswordFormFields)[]).reduce((acc, key) => {
+    initialValues: (Object.keys(updatePasswordSchema().fields) as (keyof UpdatePasswordFormFields)[]).reduce((acc, key) => {
       acc[key] = "";
       return acc;
     }, {} as UpdatePasswordFormFields),
-    validationSchema: updatePasswordSchema,
+    validationSchema: updatePasswordSchema(),
     onSubmit: async (values) => {
       setIsLoading(true);
       try {
         const { currentPassword, ...newPasswordInfo } = values;
         const response = await requestInstance.post(`/auth/change-password?token=${token}`, {
-          newPasswordInfo,
-          token,
+          ...newPasswordInfo,
         });
         setPasswordChangeResult({
           description: response.data,

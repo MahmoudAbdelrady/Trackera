@@ -69,11 +69,11 @@ const Settings = () => {
   }, [fetchOAuthAccounts]);
 
   const changePasswordFormik = useFormik({
-    initialValues: (Object.keys(updatePasswordSchema.fields) as (keyof ChangePasswordFormFields)[]).reduce((acc, key) => {
+    initialValues: (Object.keys(updatePasswordSchema(!!userData?.passwordSet).fields) as (keyof ChangePasswordFormFields)[]).reduce((acc, key) => {
       acc[key] = "";
       return acc;
     }, {} as ChangePasswordFormFields),
-    validationSchema: updatePasswordSchema,
+    validationSchema: updatePasswordSchema(!!userData?.passwordSet),
     onSubmit: async (values) => {
       setIsUpdatingPassword(true);
       try {
@@ -85,8 +85,7 @@ const Settings = () => {
         showSuccessToast(response.data);
       } catch (error: any) {
         showErrorToast(error);
-        changePasswordFormik.setFieldValue("newPassword", "");
-        changePasswordFormik.setFieldValue("confirmNewPassword", "");
+        changePasswordFormik.setFieldValue("currentPassword", "");
       }
       setIsUpdatingPassword(false);
     },
