@@ -18,6 +18,9 @@ import StatusBadge from "./status-badge/StatusBadge";
 import SettingsSection from "./settings/settings-section/SettingsSection";
 import LinkedAccount from "./settings/linked-account/LinkedAccount";
 import UserEmail from "./settings/user-email/UserEmail";
+import EmailSection from "./settings/sections/email-section/EmailSection";
+import ChangePasswordSection from "./settings/sections/change-password-section/ChangePasswordSection";
+import PreferencesSection from "./settings/sections/preferences-section/PreferencesSection";
 
 export {
   AuthLayout,
@@ -40,4 +43,7 @@ export {
   SettingsSection,
   LinkedAccount,
   UserEmail,
+  EmailSection,
+  ChangePasswordSection,
+  PreferencesSection,
 };

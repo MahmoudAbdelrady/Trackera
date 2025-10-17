@@ -1,0 +1,11 @@
+@use "../../../../../shared/styles/colors" as *;
+@use "../../../../../shared/styles/mixins" as *;
+
+.add_email_button {
+  align-self: flex-start;
+  padding: 18px 28px;
+  font-size: 16px;
+}
+.emails_list {
+  margin-top: 10px;
+}
