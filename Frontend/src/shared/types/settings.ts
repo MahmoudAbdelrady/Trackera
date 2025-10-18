@@ -12,4 +12,23 @@ interface LinkedAccountProps {
   onUnlink: () => void;
 }
 
-export type { SettingsSectionProps, LinkedAccountProps };
+interface EmailSectionProps {
+  userEmails: UserEmailType[];
+  isFetchingEmails: boolean;
+  setFetchUserEmails: (fetch: boolean) => void;
+}
+
+interface UserEmailType {
+  email: string;
+  primary: boolean;
+  verified: boolean;
+  oauthLinked: boolean;
+  tags: string[];
+}
+
+interface UserEmailProps {
+  userEmail: UserEmailType;
+  setFetchUserEmails: (fetch: boolean) => void;
+}
+
+export type { SettingsSectionProps, LinkedAccountProps, EmailSectionProps, UserEmailType, UserEmailProps };

@@ -6,9 +6,14 @@ import InputField from "../../../input-field/InputField";
 import { Mail } from "lucide-react";
 import inputFieldClasses from "../../../input-field/scss/input-field.module.css";
 import classes from "./scss/email-section.module.css";
-import { UserEmail } from "../../..";
+import { showErrorToast, showSuccessToast } from "../../../../utils/toast-handler/showToast";
+import requestInstance from "../../../../shared/axios/request-instance";
+import type { EmailSectionProps } from "../../../../shared/types";
+import UserEmail from "../../user-email/UserEmail";
+import LoadingSpinner from "../../../loading-spinner/LoadingSpinner";
 
-const EmailSection = () => {
+const EmailSection = (props: EmailSectionProps) => {
+  const { userEmails, isFetchingEmails, setFetchUserEmails } = props;
   const [showAddEmail, setShowAddEmail] = useState(false);
   const [isAddingEmail, setIsAddingEmail] = useState(false);
 
@@ -19,22 +24,18 @@ const EmailSection = () => {
     validationSchema: emailSchema,
     onSubmit: async (values) => {
       setIsAddingEmail(true);
+      try {
+        const response = await requestInstance.post("/user/emails", { email: values.email });
+        showSuccessToast(response.data);
+        setFetchUserEmails(true);
+        setShowAddEmail(false);
+        changeEmailFormik.resetForm();
+      } catch (error: any) {
+        showErrorToast(error);
+      }
       setIsAddingEmail(false);
     },
   });
-
-  const getEmailTag = (emailType: string) => {
-    switch (emailType) {
-      case "primary":
-        return "default";
-      case "verified":
-        return "success";
-      case "not_verified":
-        return "warning";
-      default:
-        return "default";
-    }
-  };
 
   return (
     <>
@@ -52,7 +53,10 @@ const EmailSection = () => {
           onOk={() => {
             changeEmailFormik.handleSubmit();
           }}
-          onCancel={() => setShowAddEmail(false)}
+          onCancel={() => {
+            setShowAddEmail(false);
+            changeEmailFormik.resetForm();
+          }}
         >
           <InputField
             icon={<Mail className={inputFieldClasses.input_icon} />}
@@ -72,9 +76,7 @@ const EmailSection = () => {
           Add Email
         </Button>
         <div className={classes.emails_list}>
-          <UserEmail />
-          <UserEmail />
-          <UserEmail />
+          {isFetchingEmails ? <LoadingSpinner /> : userEmails.map((userEmail, idx) => <UserEmail key={idx + 1} userEmail={userEmail} setFetchUserEmails={setFetchUserEmails} />)}
         </div>
       </>
     </>
