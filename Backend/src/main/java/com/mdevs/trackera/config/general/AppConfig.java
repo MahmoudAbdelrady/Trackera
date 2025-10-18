@@ -2,7 +2,9 @@ package com.mdevs.trackera.config.general;
 
 import com.mdevs.trackera.dto.auth.AuthFilterUserDTO;
 import com.mdevs.trackera.entity.User;
+import com.mdevs.trackera.repository.UserEmailRepository;
 import com.mdevs.trackera.repository.UserRepository;
+import com.mdevs.trackera.service.UserService;
 import lombok.Getter;
 import org.modelmapper.ModelMapper;
 import org.modelmapper.convention.MatchingStrategies;
@@ -78,7 +80,7 @@ public class AppConfig {
 
     public static User getCurrentUser() {
         Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        return (principal instanceof AuthFilterUserDTO) ? applicationContext.getBean(UserRepository.class).findByEmail(((AuthFilterUserDTO) principal).getEmail()) : null;
+        return (principal instanceof AuthFilterUserDTO) ? applicationContext.getBean(UserService.class).validateAndGetUserByEmail(((AuthFilterUserDTO) principal).getEmail()) : null;
     }
 
     public static LocalDate getMinQueryableDate() {

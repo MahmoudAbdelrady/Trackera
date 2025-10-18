@@ -12,8 +12,6 @@ public interface UserRepository extends BaseRepository<User> {
     @Query("SELECT u FROM User u LEFT JOIN u.oAuthProviders p WHERE u.email = :email OR p.email = :email")
     User findByEmailOrOAuthProvidersEmail(@Param("email") String email);
 
-    boolean existsByEmail(String email);
-
     @Query("SELECT CASE WHEN EXISTS (SELECT 1 FROM User u LEFT JOIN u.oAuthProviders p WHERE u.id != :id AND (u.email = :email OR p.email = :email)) THEN true ELSE false END")
     boolean existsByUserEmailOrOAuthProvidersEmailAndIdNot(@Param("email") String email, @Param("id") Long id);
 }
