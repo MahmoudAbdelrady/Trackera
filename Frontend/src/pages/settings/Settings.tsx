@@ -50,7 +50,7 @@ const Settings = () => {
     const fetchAccounts = async () => {
       setIsFetchingAccounts(true);
       try {
-        const response = await requestInstance.get("/auth/oauth-providers");
+        const response = await requestInstance.get("/user/oauth-providers");
         setOAuthAccounts(response.data);
       } catch (error: any) {
         showErrorToast(error);
@@ -86,7 +86,7 @@ const Settings = () => {
     <AppLayout>
       <div className={classes.settings_sections}>
         <SettingsSection title={`${userData?.passwordSet ? "Change" : "Set"} Password`} icon={<Lock />}>
-          <ChangePasswordSection />
+          <ChangePasswordSection setFetchUserEmails={setFetchUserEmails} />
         </SettingsSection>
         <SettingsSection title="Emails" icon={<Mail />}>
           <EmailSection userEmails={userEmails} isFetchingEmails={isFetchingEmails} setFetchUserEmails={setFetchUserEmails} />

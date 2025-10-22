@@ -121,7 +121,7 @@ const UserEmail = (props: UserEmailProps) => {
             {userEmail.primary && <StatusBadge badgeProps={{ label: "Primary", type: "main" }} />}
             {!userEmail.primary && <StatusBadge badgeProps={{ label: `${userEmail.verified ? "Verified" : "Not Verified"}`, type: `${userEmail.verified ? "success" : "warning"}` }} />}
             {userEmail.tags.map((tag, idx) => (
-              <StatusBadge key={idx + 1} badgeProps={{ label: tag, type: "default" }} />
+              <StatusBadge key={idx + 1} badgeProps={{ label: tag, type: tag === "Password Required" ? "warning" : "default" }} />
             ))}
           </div>
         </div>
