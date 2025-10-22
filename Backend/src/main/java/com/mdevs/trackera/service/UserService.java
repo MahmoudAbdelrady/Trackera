@@ -9,7 +9,9 @@ import com.mdevs.trackera.dto.user.UserEmailDTO;
 import com.mdevs.trackera.entity.SecurityToken;
 import com.mdevs.trackera.entity.User;
 import com.mdevs.trackera.entity.UserEmail;
+import com.mdevs.trackera.entity.UserOAuthProvider;
 import com.mdevs.trackera.repository.UserEmailRepository;
+import com.mdevs.trackera.repository.UserOAuthProviderRepository;
 import com.mdevs.trackera.repository.UserRepository;
 import com.mdevs.trackera.shared.EmailTemplates;
 import com.mdevs.trackera.shared.enums.EmailTag;
@@ -35,6 +37,8 @@ public class UserService implements UserDetailsService {
 
     private final UserEmailRepository userEmailRepository;
 
+    private final UserOAuthProviderRepository userOAuthProviderRepository;
+
     private final UserOAuthProviderService userOAuthProviderService;
 
     private final SecurityTokenService securityTokenService;
@@ -46,9 +50,10 @@ public class UserService implements UserDetailsService {
     public static final String EMAIL_REGEX = "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9-]+(?:\\.[a-zA-Z0-9-]+)*\\.[a-zA-Z]{2,}$";
 
     @Autowired
-    public UserService(UserRepository userRepository, UserEmailRepository userEmailRepository, UserOAuthProviderService userOAuthProviderService, SecurityTokenService securityTokenService, ModelMapper modelMapper, PasswordEncoder passwordEncoder) {
+    public UserService(UserRepository userRepository, UserEmailRepository userEmailRepository, UserOAuthProviderRepository userOAuthProviderRepository, UserOAuthProviderService userOAuthProviderService, SecurityTokenService securityTokenService, ModelMapper modelMapper, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.userEmailRepository = userEmailRepository;
+        this.userOAuthProviderRepository = userOAuthProviderRepository;
         this.userOAuthProviderService = userOAuthProviderService;
         this.securityTokenService = securityTokenService;
         this.modelMapper = modelMapper;
@@ -79,6 +84,23 @@ public class UserService implements UserDetailsService {
         return modelMapper.map(AppConfig.getCurrentUser(), LoggedUserDTO.class);
     }
 
+    public List<Map<String, Object>> getUserOAuthProviders() {
+        User loggedUser = AppConfig.getCurrentUser();
+        List<UserOAuthProvider> userOAuthProviders = userOAuthProviderRepository.findByUser(loggedUser);
+        return Arrays.stream(OAuthProvider.values()).map(p -> {
+            UserOAuthProvider userOAuthProvider = userOAuthProviders.stream().filter(uop -> uop.getProvider().equals(p)).findFirst().orElse(null);
+            Map<String, Object> providerInfo = new HashMap<>();
+            providerInfo.put("provider", Map.of("code", p.getCode(), "name", p.getDisplayName()));
+            boolean userOAuthProviderExists = userOAuthProvider != null;
+            providerInfo.put("isLinked", userOAuthProvider != null);
+            providerInfo.put("email", userOAuthProvider != null && !StringUtils.isEmpty(userOAuthProvider.getEmail()) ? userOAuthProvider.getEmail() : null);
+            if (userOAuthProviderExists) {
+                providerInfo.put("isRevoked", userOAuthProvider.isRevoked());
+            }
+            return providerInfo;
+        }).toList();
+    }
+
     public User create(SignUpDTO signUpDTO) {
         if (userEmailRepository.existsByEmail(signUpDTO.getEmail())) {
             throw new BusinessException("Email already exists");
@@ -97,6 +119,9 @@ public class UserService implements UserDetailsService {
     public void createUserEmail(User user, String email, boolean isPrimary, boolean isVerified, List<EmailTag> tags) {
         UserEmail userEmail = Optional.ofNullable(userEmailRepository.findByUserAndEmail(user, email)).orElse(new UserEmail(user, email, isPrimary, isVerified));
         userEmail.addTags(tags);
+        if (tags.stream().anyMatch(EmailTag::isOAuthTag)) {
+            userEmail.removeTag(EmailTag.PASSWORD_REQUIRED);
+        }
         userEmailRepository.save(userEmail);
     }
 
@@ -109,7 +134,7 @@ public class UserService implements UserDetailsService {
             if (!authenticatedUser.isOAuth()) {
                 throw new BusinessException("Password login required for this account");
             }
-            if (userOAuthProviderService.getByUserAndProvider(authenticatedUser, oAuthProvider) != null) {
+            if (userOAuthProviderService.getByUserAndProvider(authenticatedUser, oAuthProvider) == null) {
                 throw new BusinessException("This account is not linked with " + oAuthProvider.getDisplayName());
             }
         } else {
@@ -142,6 +167,10 @@ public class UserService implements UserDetailsService {
         user.setPassword(getUserNewPassword(user, passwordDTO));
         sendResetPasswordEmail(user, user.getEmail(), "Your password has been changed. If you did not perform this action, please reset your password immediately.", false);
         userRepository.save(user);
+        userEmailRepository.findAllByUser(user).forEach(ue -> {
+            ue.removeTag(EmailTag.PASSWORD_REQUIRED);
+            userEmailRepository.save(ue);
+        });
         return "Password changed successfully.";
     }
 
@@ -191,7 +220,44 @@ public class UserService implements UserDetailsService {
             throw new BusinessException("Email is already verified");
         }
         userEmail.setVerified(true);
+        if (!user.isPasswordSet()) {
+            userEmail.addTag(EmailTag.PASSWORD_REQUIRED);
+        }
         userEmailRepository.save(userEmail);
+    }
+
+    @Transactional
+    public void makeEmailPrimary(String email) {
+        User loggedUser = Objects.requireNonNull(AppConfig.getCurrentUser());
+        validateUserEmail(email);
+        UserEmail secondaryUserEmail = Optional.ofNullable(userEmailRepository.findByUserAndEmail(loggedUser, email)).orElseThrow(() -> new NotFoundException("Email not found"));
+        if (!secondaryUserEmail.isVerified()) {
+            throw new BusinessException("Cannot set unverified email as primary");
+        }
+
+        UserEmail currentPrimaryEmail = userEmailRepository.findByUserAndIsPrimaryTrue(loggedUser);
+        if (currentPrimaryEmail.getEmail().equals(secondaryUserEmail.getEmail())) {
+            throw new BusinessException("Email is already primary");
+        }
+
+        if (!loggedUser.isPasswordSet() && secondaryUserEmail.hasTag(EmailTag.PASSWORD_REQUIRED)) {
+            throw new BusinessException("You need to set a password before making this email your primary address.");
+        }
+
+        currentPrimaryEmail.setPrimary(false);
+        userEmailRepository.save(currentPrimaryEmail);
+
+        secondaryUserEmail.setPrimary(true);
+        loggedUser.setEmail(secondaryUserEmail.getEmail());
+        userRepository.save(loggedUser);
+        userEmailRepository.save(secondaryUserEmail);
+
+        TrackeraEmailTarget.builder()
+                .targetEmail(currentPrimaryEmail.getEmail())
+                .subject("Primary Email Changed")
+                .templateName(EmailTemplates.INFO_MAIL_TEMPLATE)
+                .parameters(Map.of("content", "Your primary email has been changed to " + secondaryUserEmail.getEmail() + ". If you did not perform this action, please contact support immediately."))
+                .build().send();
     }
 
     public void sendVerificationEmail(String email) {
@@ -234,36 +300,6 @@ public class UserService implements UserDetailsService {
                 .subject("Email Removed")
                 .templateName(EmailTemplates.INFO_MAIL_TEMPLATE)
                 .parameters(Map.of("content", "The email " + userEmail.getEmail() + " has been removed from your account. If you did not perform this action, please contact support immediately."))
-                .build().send();
-    }
-
-    @Transactional
-    public void makeEmailPrimary(String email) {
-        User loggedUser = Objects.requireNonNull(AppConfig.getCurrentUser());
-        validateUserEmail(email);
-        UserEmail secondaryUserEmail = Optional.ofNullable(userEmailRepository.findByUserAndEmail(loggedUser, email)).orElseThrow(() -> new NotFoundException("Email not found"));
-        if (!secondaryUserEmail.isVerified()) {
-            throw new BusinessException("Cannot set unverified email as primary");
-        }
-
-        UserEmail currentPrimaryEmail = userEmailRepository.findByUserAndIsPrimaryTrue(loggedUser);
-        if (currentPrimaryEmail.getEmail().equals(secondaryUserEmail.getEmail())) {
-            throw new BusinessException("Email is already primary");
-        }
-
-        currentPrimaryEmail.setPrimary(false);
-        userEmailRepository.save(currentPrimaryEmail);
-
-        secondaryUserEmail.setPrimary(true);
-        loggedUser.setEmail(secondaryUserEmail.getEmail());
-        userRepository.save(loggedUser);
-        userEmailRepository.save(secondaryUserEmail);
-
-        TrackeraEmailTarget.builder()
-                .targetEmail(currentPrimaryEmail.getEmail())
-                .subject("Primary Email Changed")
-                .templateName(EmailTemplates.INFO_MAIL_TEMPLATE)
-                .parameters(Map.of("content", "Your primary email has been changed to " + secondaryUserEmail.getEmail() + ". If you did not perform this action, please contact support immediately."))
                 .build().send();
     }
 

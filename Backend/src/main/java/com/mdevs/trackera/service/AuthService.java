@@ -83,23 +83,6 @@ public class AuthService {
         this.trackeraHasher = trackeraHasher;
     }
 
-    public List<Map<String, Object>> getUserOAuthProviders() {
-        User loggedUser = AppConfig.getCurrentUser();
-        List<UserOAuthProvider> userOAuthProviders = userOAuthProviderRepository.findByUser(loggedUser);
-        return Arrays.stream(OAuthProvider.values()).map(p -> {
-            UserOAuthProvider userOAuthProvider = userOAuthProviders.stream().filter(uop -> uop.getProvider().equals(p)).findFirst().orElse(null);
-            Map<String, Object> providerInfo = new HashMap<>();
-            providerInfo.put("provider", Map.of("code", p.getCode(), "name", p.getDisplayName()));
-            boolean userOAuthProviderExists = userOAuthProvider != null;
-            providerInfo.put("isLinked", userOAuthProvider != null);
-            providerInfo.put("email", userOAuthProvider != null && !StringUtils.isEmpty(userOAuthProvider.getEmail()) ? userOAuthProvider.getEmail() : null);
-            if (userOAuthProviderExists) {
-                providerInfo.put("isRevoked", userOAuthProvider.isRevoked());
-            }
-            return providerInfo;
-        }).toList();
-    }
-
     @Transactional
     public String signUp(SignUpDTO signUpDTO) {
         User user = userService.create(signUpDTO);
@@ -159,7 +142,7 @@ public class AuthService {
             isLinkingAccount = true;
             authenticatedUser = userRepository.findOne(oAuthUserInfoDTO.getUserId());
             userOAuthProvider = userOAuthProviderRepository.findByUserAndProvider(authenticatedUser, oAuthProvider);
-            if (userOAuthProvider != null && !userOAuthProvider.isExpired()) {
+            if (userOAuthProvider != null && !userOAuthProvider.isRevoked()) {
                 throw new BusinessException("The current account is already linked with " + oAuthProvider.getDisplayName());
             }
             if (userRepository.existsByUserEmailOrOAuthProvidersEmailAndIdNot(oAuthUserInfoDTO.getEmail(), authenticatedUser.getId())) {
@@ -284,7 +267,7 @@ public class AuthService {
             // do nothing
         }
 
-        if (user != null && user.canResetPassword()) {
+        if (user != null && user.canResetPassword() && user.getEmail().equals(email)) {
             userService.sendResetPasswordEmail(user, email, "Please click the link below to reset your password.", true);
         }
 

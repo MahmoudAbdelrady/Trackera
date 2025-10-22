@@ -25,6 +25,11 @@ public class UserController {
         return ResponseEntity.ok(userService.getMeInfo());
     }
 
+    @GetMapping("/oauth-providers")
+    public ResponseEntity<?> GetUserOAuthProviders() {
+        return new ResponseEntity<>(userService.getUserOAuthProviders(), HttpStatus.OK);
+    }
+
     @PostMapping("/change-password")
     public ResponseEntity<?> ChangePassword(@RequestBody @Valid PasswordDTO passwordDTO) {
         return new ResponseEntity<>(userService.changePassword(passwordDTO), HttpStatus.OK);
@@ -41,12 +46,6 @@ public class UserController {
         return new ResponseEntity<>("Email added successfully. Please check your email for verification.", HttpStatus.CREATED);
     }
 
-    @DeleteMapping("/emails")
-    public ResponseEntity<?> RemoveEmail(@RequestBody Map<String, Object> body) {
-        userService.removeEmail((String) body.get("email"));
-        return new ResponseEntity<>("Email removed successfully.", HttpStatus.OK);
-    }
-
     @PostMapping("/emails/primary")
     public ResponseEntity<?> MakeEmailPrimary(@RequestBody Map<String, Object> body) {
         userService.makeEmailPrimary((String) body.get("email"));
@@ -57,5 +56,11 @@ public class UserController {
     public ResponseEntity<?> SendVerificationEmail(@RequestBody Map<String, Object> body) {
         userService.sendVerificationEmail((String) body.get("email"));
         return new ResponseEntity<>("Verification email sent successfully. Please check your email.", HttpStatus.OK);
+    }
+
+    @DeleteMapping("/emails")
+    public ResponseEntity<?> RemoveEmail(@RequestBody Map<String, Object> body) {
+        userService.removeEmail((String) body.get("email"));
+        return new ResponseEntity<>("Email removed successfully.", HttpStatus.OK);
     }
 }

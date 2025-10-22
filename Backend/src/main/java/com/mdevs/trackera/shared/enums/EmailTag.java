@@ -6,7 +6,8 @@ import lombok.Getter;
 @Getter
 public enum EmailTag implements BaseEnum {
     LINKED_TO_GOOGLE("Linked to Google", true),
-    LINKED_TO_JIRA("Linked to Jira", true);
+    LINKED_TO_JIRA("Linked to Jira", true),
+    PASSWORD_REQUIRED("Password Required", false);
 
     private final String label;
 
