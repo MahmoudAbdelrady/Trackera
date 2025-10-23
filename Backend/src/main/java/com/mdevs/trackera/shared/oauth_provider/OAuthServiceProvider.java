@@ -35,7 +35,7 @@ public abstract class OAuthServiceProvider {
         UserOAuthProviderRepository userOAuthProviderRepository = AppConfig.getApplicationContext().getBean(UserOAuthProviderRepository.class);
 
         Claims claims = jwtUtil.validateAndGetTokenPayload(jwtTokenHeader.substring(7), true);
-        User user = userRepository.findByEmail(claims.get("email", String.class));
+        User user = userRepository.findByUuid(claims.get("id", String.class));
         if (userOAuthProviderRepository.existsByUserAndProvider(user, getOAuthProvider())) {
             throw new BusinessException("The current account is already linked with " + getOAuthProvider().getDisplayName());
         }

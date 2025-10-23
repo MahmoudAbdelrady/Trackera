@@ -20,4 +20,6 @@ public interface UserEmailRepository extends BaseRepository<UserEmail> {
     UserEmail findByUserAndIsPrimaryTrue(User user);
 
     List<UserEmail> findAllByUser(User user);
+
+    List<UserEmail> findAllByUserOrderByCreatedAt(User user);
 }

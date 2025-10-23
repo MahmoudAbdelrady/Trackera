@@ -10,5 +10,5 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 public class AuthFilterUserDTO {
-    private String email;
+    private String id;
 }

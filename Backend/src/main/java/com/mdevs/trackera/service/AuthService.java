@@ -178,8 +178,8 @@ public class AuthService {
     }
 
     private Map<String, Object> generateLoginInfo(User user, HttpServletResponse httpResponse) {
-        String accessToken = jwtUtil.generateToken(user.getEmail(), true);
-        String refreshToken = jwtUtil.generateToken(user.getEmail(), false);
+        String accessToken = jwtUtil.generateToken(user.getUuid(), true);
+        String refreshToken = jwtUtil.generateToken(user.getUuid(), false);
         httpResponse.addCookie(createTrackeraCookie(REFRESH_TOKEN_COOKIE_NAME, refreshToken, true, Integer.parseInt(cookieMaxAge)));
         return Map.of("token", accessToken);
     }
@@ -215,7 +215,7 @@ public class AuthService {
 
     public void saveInvalidToken(String token, boolean isAccessToken) {
         Claims accessTokenClaims = jwtUtil.getTokenPayload(token, isAccessToken);
-        User user = userRepository.findByEmail(accessTokenClaims.get("email", String.class));
+        User user = userRepository.findByUuid(accessTokenClaims.get("id", String.class));
         Date accessTokenClaimsExpiration = accessTokenClaims.getExpiration();
         UserInvalidToken invalidAccessToken = new UserInvalidToken(user, trackeraHasher.hash(token, false), accessTokenClaimsExpiration, isAccessToken);
         userInvalidTokenRepository.save(invalidAccessToken);
@@ -228,7 +228,7 @@ public class AuthService {
         } catch (SecurityException e) {
             throw new SecurityException("Login has expired. Please sign in again.");
         }
-        String newAccessToken = jwtUtil.generateToken(accessTokenClaims.get("email", String.class), true);
+        String newAccessToken = jwtUtil.generateToken(accessTokenClaims.get("id", String.class), true);
         return Map.of("token", newAccessToken);
     }
 

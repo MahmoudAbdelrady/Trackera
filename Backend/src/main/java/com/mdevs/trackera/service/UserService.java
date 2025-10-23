@@ -131,9 +131,6 @@ public class UserService implements UserDetailsService {
 
         if (authenticatedUser != null) { // means the user is logging in with an oAuth provider
             createOAuthProvider = false;
-            if (!authenticatedUser.isOAuth()) {
-                throw new BusinessException("Password login required for this account");
-            }
             if (userOAuthProviderService.getByUserAndProvider(authenticatedUser, oAuthProvider) == null) {
                 throw new BusinessException("This account is not linked with " + oAuthProvider.getDisplayName());
             }
@@ -193,7 +190,7 @@ public class UserService implements UserDetailsService {
 
     public List<UserEmailDTO> getUserEmails() {
         User loggedUser = Objects.requireNonNull(AppConfig.getCurrentUser());
-        List<UserEmail> userEmails = userEmailRepository.findAllByUser(loggedUser);
+        List<UserEmail> userEmails = userEmailRepository.findAllByUserOrderByCreatedAt(loggedUser);
         return userEmails.stream().sorted(Comparator.comparing(UserEmail::isPrimary).reversed()).map(userEmail -> {
             UserEmailDTO userEmailDTO = modelMapper.map(userEmail, UserEmailDTO.class);
             userEmailDTO.setOAuthLinked(userEmail.getTags().stream().anyMatch(EmailTag::isOAuthTag));

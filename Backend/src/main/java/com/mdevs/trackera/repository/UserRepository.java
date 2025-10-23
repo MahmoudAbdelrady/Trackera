@@ -9,6 +9,8 @@ import org.springframework.stereotype.Repository;
 public interface UserRepository extends BaseRepository<User> {
     User findByEmail(String email);
 
+    User findByUuid(String uuid);
+
     @Query("SELECT u FROM User u LEFT JOIN u.oAuthProviders p WHERE u.email = :email OR p.email = :email")
     User findByEmailOrOAuthProvidersEmail(@Param("email") String email);
 

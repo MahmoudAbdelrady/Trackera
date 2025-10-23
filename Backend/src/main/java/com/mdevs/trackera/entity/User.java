@@ -16,7 +16,7 @@ import java.util.List;
 
 @Audited
 @Entity
-@Table(indexes = {@Index(columnList = "EMAIL")})
+@Table(indexes = {@Index(columnList = "EMAIL"), @Index(columnList = "UUID")})
 @Getter
 @Setter
 public class User extends BaseEntity implements UserDetails {
