@@ -13,7 +13,7 @@ import UserEmail from "../../user-email/UserEmail";
 import LoadingSpinner from "../../../loading-spinner/LoadingSpinner";
 
 const EmailSection = (props: EmailSectionProps) => {
-  const { userEmails, isFetchingEmails, setFetchUserEmails } = props;
+  const { userEmails, isFetchingEmails, setFetchUserEmails, setFetchLinkedAccounts } = props;
   const [showAddEmail, setShowAddEmail] = useState(false);
   const [isAddingEmail, setIsAddingEmail] = useState(false);
 
@@ -76,7 +76,11 @@ const EmailSection = (props: EmailSectionProps) => {
           Add Email
         </Button>
         <div className={classes.emails_list}>
-          {isFetchingEmails ? <LoadingSpinner /> : userEmails.map((userEmail, idx) => <UserEmail key={idx + 1} userEmail={userEmail} setFetchUserEmails={setFetchUserEmails} />)}
+          {isFetchingEmails ? (
+            <LoadingSpinner />
+          ) : (
+            userEmails.map((userEmail, idx) => <UserEmail key={idx + 1} userEmail={userEmail} setFetchUserEmails={setFetchUserEmails} setFetchLinkedAccounts={setFetchLinkedAccounts} />)
+          )}
         </div>
       </>
     </>

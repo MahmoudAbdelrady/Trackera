@@ -16,6 +16,7 @@ interface EmailSectionProps {
   userEmails: UserEmailType[];
   isFetchingEmails: boolean;
   setFetchUserEmails: (fetch: boolean) => void;
+  setFetchLinkedAccounts: (fetch: boolean) => void;
 }
 
 interface UserEmailType {
@@ -29,6 +30,7 @@ interface UserEmailType {
 interface UserEmailProps {
   userEmail: UserEmailType;
   setFetchUserEmails: (fetch: boolean) => void;
+  setFetchLinkedAccounts: (fetch: boolean) => void;
 }
 
 export type { SettingsSectionProps, LinkedAccountProps, EmailSectionProps, UserEmailType, UserEmailProps };

@@ -89,7 +89,7 @@ const Settings = () => {
           <ChangePasswordSection setFetchUserEmails={setFetchUserEmails} />
         </SettingsSection>
         <SettingsSection title="Emails" icon={<Mail />}>
-          <EmailSection userEmails={userEmails} isFetchingEmails={isFetchingEmails} setFetchUserEmails={setFetchUserEmails} />
+          <EmailSection userEmails={userEmails} isFetchingEmails={isFetchingEmails} setFetchUserEmails={setFetchUserEmails} setFetchLinkedAccounts={setFetchOAuthAccounts} />
         </SettingsSection>
         <SettingsSection title="Linked Accounts" icon={<Link />}>
           {isFetchingAccounts ? (

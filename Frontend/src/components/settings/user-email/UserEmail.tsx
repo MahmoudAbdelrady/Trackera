@@ -8,7 +8,7 @@ import { showErrorToast, showSuccessToast } from "../../../utils/toast-handler/s
 import requestInstance from "../../../shared/axios/request-instance";
 
 const UserEmail = (props: UserEmailProps) => {
-  const { userEmail, setFetchUserEmails } = props;
+  const { userEmail, setFetchUserEmails, setFetchLinkedAccounts } = props;
   const [isPerformingAction, setIsPerformingAction] = useState<boolean>(false);
   const [showRemoveEmail, setShowRemoveEmail] = useState(false);
   const [isRemovingEmail, setIsRemovingEmail] = useState(false);
@@ -81,6 +81,7 @@ const UserEmail = (props: UserEmailProps) => {
       const response = await requestInstance.delete("/user/emails", { data: { email: userEmail.email } });
       showSuccessToast(response.data);
       setFetchUserEmails(true);
+      setFetchLinkedAccounts(true);
     } catch (error: any) {
       showErrorToast(error);
     }
