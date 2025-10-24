@@ -15,12 +15,13 @@ import ManageWorkLogModal from "./worklogs/modals/manage-worklog-modal/ManageWor
 import CollapsibleSection from "./collapsible-section/CollapsibleSection";
 import WorklogInfo from "./worklogs/worklog-info/WorklogInfo";
 import StatusBadge from "./status-badge/StatusBadge";
-import SettingsSection from "./settings/settings-section/SettingsSection";
+import SettingsSection from "./settings/sections/settings-section/SettingsSection";
 import LinkedAccount from "./settings/linked-account/LinkedAccount";
 import UserEmail from "./settings/user-email/UserEmail";
 import EmailSection from "./settings/sections/email-section/EmailSection";
 import ChangePasswordSection from "./settings/sections/change-password-section/ChangePasswordSection";
 import PreferencesSection from "./settings/sections/preferences-section/PreferencesSection";
+import UserPreference from "./settings/user-preference/UserPreference";
 
 export {
   AuthLayout,
@@ -46,4 +47,5 @@ export {
   EmailSection,
   ChangePasswordSection,
   PreferencesSection,
+  UserPreference,
 };

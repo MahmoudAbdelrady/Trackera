@@ -1,6 +1,7 @@
-.preference {
+.preferences_section {
   display: flex;
-  justify-content: flex-start;
-  align-items: center;
-  gap: 8px;
+  justify-content: center;
+  align-items: flex-start;
+  flex-direction: column;
+  gap: 10px;
 }/*# sourceMappingURL=preferences-section.module.css.map */

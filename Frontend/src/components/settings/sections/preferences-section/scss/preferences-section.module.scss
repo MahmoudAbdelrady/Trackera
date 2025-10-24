@@ -1,7 +1,8 @@
 @use "../../../../../shared/styles/colors" as *;
 @use "../../../../../shared/styles/mixins" as *;
 
-.preference {
-  @include start;
-  gap: 8px;
+.preferences_section {
+  @include start-rev;
+  flex-direction: column;
+  gap: 10px;
 }
