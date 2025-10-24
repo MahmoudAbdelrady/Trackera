@@ -25,11 +25,6 @@ public class AuthController {
         this.authService = authService;
     }
 
-    @GetMapping("/oauth-providers")
-    public ResponseEntity<?> GetUserOAuthProviders() {
-        return new ResponseEntity<>(authService.getUserOAuthProviders(), HttpStatus.OK);
-    }
-
     @PublicAPI
     @PostMapping("/signup")
     public ResponseEntity<?> SignUp(@RequestBody @Valid SignUpDTO signUpDTO) {

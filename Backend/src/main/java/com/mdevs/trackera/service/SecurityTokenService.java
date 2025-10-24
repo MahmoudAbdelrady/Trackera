@@ -44,7 +44,7 @@ public class SecurityTokenService {
     }
 
     @Transactional
-    public void createAndSendSecurityToken(User user, SecurityToken.Type type, String additionalInfo, Map<String, String> extraParameters, String pageUrl, String templateName) {
+    public void createAndSendSecurityToken(User user, String targetEmail, SecurityToken.Type type, String additionalInfo, Map<String, String> extraParameters, String pageUrl, String templateName) {
         if (securityTokenRepository.existsByUserAndTypeAndCreatedAtGreaterThanEqual(user, type, LocalDateTime.now().minusMinutes(MAX_SECURITY_TOKEN_MINUTES))) {
             return;
         }
@@ -63,10 +63,14 @@ public class SecurityTokenService {
             templateParameters.putAll(extraParameters);
         }
         TrackeraEmailTarget.builder()
-                .targetEmail(user.getEmail())
+                .targetEmail(targetEmail)
                 .subject(type.getLabel())
                 .templateName(templateName)
                 .parameters(templateParameters)
                 .build().send();
+    }
+
+    public void deleteNonExpiredSecurityToken(User user, SecurityToken.Type type) {
+        securityTokenRepository.deleteByUserAndTypeAndCreatedAtGreaterThanEqual(user, type, LocalDateTime.now().minusMinutes(MAX_SECURITY_TOKEN_MINUTES));
     }
 }

@@ -78,7 +78,7 @@ public class AppConfig {
 
     public static User getCurrentUser() {
         Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        return (principal instanceof AuthFilterUserDTO) ? applicationContext.getBean(UserRepository.class).findByEmail(((AuthFilterUserDTO) principal).getEmail()) : null;
+        return (principal instanceof AuthFilterUserDTO) ? applicationContext.getBean(UserRepository.class).findByUuid(((AuthFilterUserDTO) principal).getId()) : null;
     }
 
     public static LocalDate getMinQueryableDate() {

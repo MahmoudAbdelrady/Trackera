@@ -5,6 +5,7 @@ import com.mdevs.trackera.config.general.AppConfig;
 import com.mdevs.trackera.dto.auth.*;
 import com.mdevs.trackera.entity.*;
 import com.mdevs.trackera.repository.*;
+import com.mdevs.trackera.shared.EmailTemplates;
 import com.mdevs.trackera.shared.exceptions.types.BusinessException;
 import com.mdevs.trackera.shared.exceptions.types.UnauthorizedException;
 import com.mdevs.trackera.shared.oauth_provider.OAuthProvider;
@@ -17,7 +18,6 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.apache.commons.lang3.StringUtils;
-import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
@@ -25,7 +25,6 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -42,6 +41,10 @@ public class AuthService {
 
     private final SecurityTokenService securityTokenService;
 
+    private final UserOAuthProviderService userOAuthProviderService;
+
+    private final UserPreferredSettingService userPreferredSettingService;
+
     private final OAuthProviderFactory oAuthProviderFactory;
 
     private final SecurityTokenRepository securityTokenRepository;
@@ -50,17 +53,9 @@ public class AuthService {
 
     private final UserOAuthProviderRepository userOAuthProviderRepository;
 
-    private final UserPreferredSettingRepository userPreferredSettingRepository;
-
     private final JwtUtil jwtUtil;
 
     private final TrackeraHasher trackeraHasher;
-
-    private final ModelMapper modelMapper;
-
-    private final PasswordEncoder passwordEncoder;
-
-    private final static String EMAIL_REGEX = "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9-]+(?:\\.[a-zA-Z0-9-]+)*\\.[a-zA-Z]{2,}$";
 
     private final static String REFRESH_TOKEN_COOKIE_NAME = "refreshToken";
 
@@ -71,55 +66,30 @@ public class AuthService {
     private String cookieMaxAge;
 
     @Autowired
-    public AuthService(UserRepository userRepository, UserService userService, AuthenticationManager authenticationManager, SecurityTokenService securityTokenService, OAuthProviderFactory oAuthProviderFactory, SecurityTokenRepository securityTokenRepository, UserInvalidTokenRepository userInvalidTokenRepository, UserOAuthProviderRepository userOAuthProviderRepository, UserPreferredSettingRepository userPreferredSettingRepository, JwtUtil jwtUtil, TrackeraHasher trackeraHasher, ModelMapper modelMapper, PasswordEncoder passwordEncoder) {
+    public AuthService(UserRepository userRepository, UserService userService, AuthenticationManager authenticationManager, SecurityTokenService securityTokenService, UserOAuthProviderService userOAuthProviderService, UserPreferredSettingService userPreferredSettingService, OAuthProviderFactory oAuthProviderFactory,
+                       SecurityTokenRepository securityTokenRepository, UserInvalidTokenRepository userInvalidTokenRepository, UserOAuthProviderRepository userOAuthProviderRepository,
+                       JwtUtil jwtUtil, TrackeraHasher trackeraHasher) {
         this.userRepository = userRepository;
         this.userService = userService;
         this.authenticationManager = authenticationManager;
         this.securityTokenService = securityTokenService;
+        this.userOAuthProviderService = userOAuthProviderService;
+        this.userPreferredSettingService = userPreferredSettingService;
         this.oAuthProviderFactory = oAuthProviderFactory;
         this.securityTokenRepository = securityTokenRepository;
         this.userInvalidTokenRepository = userInvalidTokenRepository;
         this.userOAuthProviderRepository = userOAuthProviderRepository;
-        this.userPreferredSettingRepository = userPreferredSettingRepository;
         this.jwtUtil = jwtUtil;
         this.trackeraHasher = trackeraHasher;
-        this.modelMapper = modelMapper;
-        this.passwordEncoder = passwordEncoder;
-    }
-
-    public List<Map<String, Object>> getUserOAuthProviders() {
-        User loggedUser = AppConfig.getCurrentUser();
-        List<UserOAuthProvider> userOAuthProviders = userOAuthProviderRepository.findByUser(loggedUser);
-        return Arrays.stream(OAuthProvider.values()).map(p -> {
-            UserOAuthProvider userOAuthProvider = userOAuthProviders.stream().filter(uop -> uop.getProvider().equals(p)).findFirst().orElse(null);
-            Map<String, Object> providerInfo = new HashMap<>();
-            providerInfo.put("provider", Map.of("code", p.getCode(), "name", p.getDisplayName()));
-            boolean userOAuthProviderExists = userOAuthProvider != null;
-            providerInfo.put("isLinked", userOAuthProvider != null);
-            providerInfo.put("email", userOAuthProvider != null && !StringUtils.isEmpty(userOAuthProvider.getEmail()) ? userOAuthProvider.getEmail() : null);
-            if (userOAuthProviderExists) {
-                providerInfo.put("isRevoked", userOAuthProvider.isRevoked());
-            }
-            return providerInfo;
-        }).toList();
     }
 
     @Transactional
     public String signUp(SignUpDTO signUpDTO) {
-        if (userRepository.existsByEmail(signUpDTO.getEmail())) {
-            throw new BusinessException("Email already exists");
-        }
-        if (!signUpDTO.getPassword().equals(signUpDTO.getConfirmPassword())) {
-            throw new BusinessException("Passwords do not match");
-        }
-        User user = modelMapper.map(signUpDTO, User.class);
-        user.setPassword(passwordEncoder.encode(user.getPassword()));
-        userRepository.save(user);
-
+        User user = userService.create(signUpDTO);
         Map<String, String> templateParameters = new HashMap<>();
         templateParameters.put("emailTypeDesc", "Please click the link below to activate your account.");
         templateParameters.put("linkLabel", "Activate my account");
-        securityTokenService.createAndSendSecurityToken(user, SecurityToken.Type.ACCOUNT_ACTIVATION, null, templateParameters, null, "trackera-verification-mail-template");
+        securityTokenService.createAndSendSecurityToken(user, user.getEmail(), SecurityToken.Type.ACCOUNT_ACTIVATION, null, templateParameters, null, EmailTemplates.VERIFICATION_MAIL_TEMPLATE);
         return "Account created successfully. Please check your email for verification.";
     }
 
@@ -139,7 +109,7 @@ public class AuthService {
                     Map<String, String> templateParameters = new HashMap<>();
                     templateParameters.put("emailTypeDesc", "Please click the link below to activate your account.");
                     templateParameters.put("linkLabel", "Activate my account");
-                    securityTokenService.createAndSendSecurityToken(loggedUser, SecurityToken.Type.ACCOUNT_ACTIVATION, null, templateParameters, null, "trackera-verification-mail-template");
+                    securityTokenService.createAndSendSecurityToken(loggedUser, loginDTO.getEmail(), SecurityToken.Type.ACCOUNT_ACTIVATION, null, templateParameters, null, EmailTemplates.VERIFICATION_MAIL_TEMPLATE);
                     message = "Account not activated. An activation link has been sent to your email.";
                 }
                 result.put("isError", true);
@@ -172,61 +142,26 @@ public class AuthService {
             isLinkingAccount = true;
             authenticatedUser = userRepository.findOne(oAuthUserInfoDTO.getUserId());
             userOAuthProvider = userOAuthProviderRepository.findByUserAndProvider(authenticatedUser, oAuthProvider);
-            if (userOAuthProvider != null && !userOAuthProvider.isExpired()) {
+            if (userOAuthProvider != null && !userOAuthProvider.isRevoked()) {
                 throw new BusinessException("The current account is already linked with " + oAuthProvider.getDisplayName());
             }
             if (userRepository.existsByUserEmailOrOAuthProvidersEmailAndIdNot(oAuthUserInfoDTO.getEmail(), authenticatedUser.getId())) {
                 throw new BusinessException(oAuthProvider.getDisplayName() + " account's email already in use");
             }
         } else {
-            Map<String, Object> oAuthUserData = createOrGetOAuthUser(oAuthUserInfoDTO, oAuthProvider);
+            Map<String, Object> oAuthUserData = userService.createOrGetOAuthUser(oAuthUserInfoDTO, oAuthProvider);
             authenticatedUser = (User) oAuthUserData.get("user");
             createOrUpdateOAuthProvider = (boolean) oAuthUserData.get("createOAuthProvider");
         }
 
         if (createOrUpdateOAuthProvider) {
-            if (userOAuthProvider == null) {
-                userOAuthProvider = new UserOAuthProvider(authenticatedUser, oAuthProvider);
-            }
-            userOAuthProvider.setEmail(oAuthUserInfoDTO.getEmail());
-            userOAuthProvider.setAccessToken(trackeraHasher.encryptToBase64(oAuthUserInfoDTO.getAccessCredentials().getAccessToken(), false));
-            userOAuthProvider.setRefreshToken(trackeraHasher.encryptToBase64(oAuthUserInfoDTO.getAccessCredentials().getRefreshToken(), false));
-            userOAuthProvider.setAccessTokenExpiry(LocalDateTime.now().plusSeconds(oAuthUserInfoDTO.getAccessCredentials().getExpiresIn()));
-            userOAuthProvider.setRevoked(false);
-            userOAuthProviderRepository.save(userOAuthProvider);
+            userOAuthProviderService.createOrUpdate(authenticatedUser, oAuthUserInfoDTO, oAuthProvider, userOAuthProvider);
+            userService.createUserEmail(authenticatedUser, oAuthUserInfoDTO.getEmail(), oAuthUserInfoDTO.getEmail().equals(authenticatedUser.getEmail()), true, List.of(oAuthProvider.getEmailTag()));
         }
 
         handleOAuthProviderAdditionalInfo(authenticatedUser, oAuthProvider, oAuthUserInfoDTO.getAdditionalInfo());
 
         return isLinkingAccount ? Map.of("message", "Account linked successfully") : generateLoginInfo(authenticatedUser, httpResponse);
-    }
-
-    private Map<String, Object> createOrGetOAuthUser(OAuthUserInfoDTO oAuthUserInfo, OAuthProvider oAuthProvider) {
-        User authenticatedUser = userRepository.findByEmailOrOAuthProvidersEmail(oAuthUserInfo.getEmail());
-        boolean createOAuthProvider = true;
-
-        if (authenticatedUser != null) { // means the user is logging in with an oAuth provider
-            createOAuthProvider = false;
-            if (!authenticatedUser.isOAuth()) {
-                throw new BusinessException("Password login required for this account");
-            }
-            if (!userOAuthProviderRepository.existsByUserAndProvider(authenticatedUser, oAuthProvider)) {
-                throw new BusinessException("This account is not linked with " + oAuthProvider.getDisplayName());
-            }
-        } else {
-            authenticatedUser = new User();
-            authenticatedUser.setEmail(oAuthUserInfo.getEmail());
-            authenticatedUser.setFirstname(oAuthUserInfo.getFirstname());
-            authenticatedUser.setLastname(oAuthUserInfo.getLastname());
-            authenticatedUser.setProfilePicture(oAuthUserInfo.getProfilePicture());
-            authenticatedUser.setVerified(true);
-            userRepository.save(authenticatedUser);
-        }
-
-        return Map.of(
-                "user", authenticatedUser,
-                "createOAuthProvider", createOAuthProvider
-        );
     }
 
     private void handleOAuthProviderAdditionalInfo(User authenticatedUser, OAuthProvider oAuthProvider, Map<String, Object> additionalInfo) {
@@ -235,8 +170,7 @@ public class AuthService {
 
         if (oAuthProvider.equals(OAuthProvider.JIRA)) {
             try {
-                UserPreferredSetting preferredSetting = new UserPreferredSetting(authenticatedUser, JiraService.JIRA_PRIMARY_PROJECT_SETTING_KEY, AppUtils.getObjectMapper().writeValueAsString(additionalInfo.get(JiraService.JIRA_PRIMARY_PROJECT_SETTING_KEY)));
-                userPreferredSettingRepository.save(preferredSetting);
+                userPreferredSettingService.create(authenticatedUser, JiraService.JIRA_PRIMARY_PROJECT_SETTING_KEY, AppUtils.getObjectMapper().writeValueAsString(additionalInfo.get(JiraService.JIRA_PRIMARY_PROJECT_SETTING_KEY)));
             } catch (JsonProcessingException e) {
                 throw new RuntimeException(e);
             }
@@ -244,8 +178,8 @@ public class AuthService {
     }
 
     private Map<String, Object> generateLoginInfo(User user, HttpServletResponse httpResponse) {
-        String accessToken = jwtUtil.generateToken(user.getEmail(), true);
-        String refreshToken = jwtUtil.generateToken(user.getEmail(), false);
+        String accessToken = jwtUtil.generateToken(user.getUuid(), true);
+        String refreshToken = jwtUtil.generateToken(user.getUuid(), false);
         httpResponse.addCookie(createTrackeraCookie(REFRESH_TOKEN_COOKIE_NAME, refreshToken, true, Integer.parseInt(cookieMaxAge)));
         return Map.of("token", accessToken);
     }
@@ -254,15 +188,8 @@ public class AuthService {
     public String unlinkOAuthProvider(String provider) {
         OAuthProvider oAuthProvider = OAuthProvider.fromCode(provider);
         User loggedUser = Objects.requireNonNull(AppConfig.getCurrentUser());
-        UserOAuthProvider userOAuthProvider = userOAuthProviderRepository.findByUserAndProvider(loggedUser, oAuthProvider);
-        if (userOAuthProvider == null) {
-            throw new BusinessException("Your account is not linked with " + oAuthProvider.getDisplayName());
-        }
-        if (userOAuthProviderRepository.countByUser(loggedUser) <= 1 && !loggedUser.isPasswordSet()) {
-            throw new BusinessException("You cannot unlink the last linked account without setting a password");
-        }
-        userPreferredSettingRepository.deleteByUserAndKey(loggedUser, JiraService.JIRA_PRIMARY_PROJECT_SETTING_KEY);
-        userOAuthProviderRepository.delete(userOAuthProvider);
+        UserOAuthProvider deletedOAuthProvider = userOAuthProviderService.delete(loggedUser, oAuthProvider);
+        userService.removeEmailTag(loggedUser, deletedOAuthProvider.getEmail(), oAuthProvider.getEmailTag());
         return oAuthProvider.getDisplayName() + " unlinked successfully";
     }
 
@@ -288,7 +215,7 @@ public class AuthService {
 
     public void saveInvalidToken(String token, boolean isAccessToken) {
         Claims accessTokenClaims = jwtUtil.getTokenPayload(token, isAccessToken);
-        User user = userRepository.findByEmail(accessTokenClaims.get("email", String.class));
+        User user = userRepository.findByUuid(accessTokenClaims.get("id", String.class));
         Date accessTokenClaimsExpiration = accessTokenClaims.getExpiration();
         UserInvalidToken invalidAccessToken = new UserInvalidToken(user, trackeraHasher.hash(token, false), accessTokenClaimsExpiration, isAccessToken);
         userInvalidTokenRepository.save(invalidAccessToken);
@@ -301,7 +228,7 @@ public class AuthService {
         } catch (SecurityException e) {
             throw new SecurityException("Login has expired. Please sign in again.");
         }
-        String newAccessToken = jwtUtil.generateToken(accessTokenClaims.get("email", String.class), true);
+        String newAccessToken = jwtUtil.generateToken(accessTokenClaims.get("id", String.class), true);
         return Map.of("token", newAccessToken);
     }
 
@@ -311,12 +238,16 @@ public class AuthService {
         User user = securityToken.getUser();
 
         String message;
-        if (securityToken.getType().equals(SecurityToken.Type.ACCOUNT_ACTIVATION)) {
-            user.setVerified(true);
-            userRepository.save(user);
-            message = "Your account has been successfully activated";
-        } else {
-            throw new UnauthorizedException("Url is expired or invalid");
+        switch (securityToken.getType()) {
+            case ACCOUNT_ACTIVATION -> {
+                userService.verifyUser(user);
+                message = "Your account has been successfully activated";
+            }
+            case NEW_EMAIL_VERIFICATION -> {
+                userService.verifyEmail(user, securityToken.getAdditionalInfo());
+                message = "Your email has been successfully verified";
+            }
+            default -> throw new UnauthorizedException("Url is expired or invalid");
         }
         securityTokenRepository.delete(securityToken);
 
@@ -329,24 +260,18 @@ public class AuthService {
 
     @Transactional
     public String sendResetPassword(String email) {
-        validateUserEmail(email);
-        User user = userRepository.findByEmail(email);
-        if (user != null && user.canResetPassword()) {
-            userService.sendResetPasswordEmail(user, "Please click the link below to reset your password.", true);
-        } else {
-            // simulate delay to prevent email enumeration attacks
-            try {
-                Thread.sleep(1500);
-            } catch (InterruptedException ignored) {
-            }
+        User user = null;
+        try {
+            user = userService.validateAndGetUserByEmail(email);
+        } catch (Exception e) {
+            // do nothing
         }
-        return "If the email exists, a password reset link has been sent to your email.";
-    }
 
-    private void validateUserEmail(String email) {
-        if (StringUtils.isEmpty(email) || !email.matches(EMAIL_REGEX)) {
-            throw new BusinessException("Invalid email format");
+        if (user != null && user.canResetPassword() && user.getEmail().equals(email)) {
+            userService.sendResetPasswordEmail(user, email, "Please click the link below to reset your password.", true);
         }
+
+        return "If the email exists, a password reset link has been sent to your email.";
     }
 
     @Transactional

@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import requestInstance from "../../../shared/axios/request-instance";
 import type { AuthResultFields } from "../../../shared/types";
+import { useAuthStore } from "../../../state/store";
 
 const SecurityVerification = () => {
   const verificationTypeMessage: Record<string, string> = {
@@ -11,13 +12,13 @@ const SecurityVerification = () => {
     "Password Reset": "You can now log in with your new password.",
   };
 
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const [isVerifying, setIsVerifying] = useState<boolean>(true);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const token = searchParams.get("token");
 
-  const [verificationResult, setVerificationResult] =
-    useState<AuthResultFields>({});
+  const [verificationResult, setVerificationResult] = useState<AuthResultFields>({});
 
   useEffect(() => {
     if (!token) {
@@ -28,9 +29,7 @@ const SecurityVerification = () => {
     } else {
       const processToken = async () => {
         try {
-          const response = await requestInstance.post(
-            `/auth/process-token?token=${token}`
-          );
+          const response = await requestInstance.post(`/auth/process-token?token=${token}`);
           setVerificationResult({
             title: response.data.title,
             description: response.data.desc,
@@ -56,9 +55,9 @@ const SecurityVerification = () => {
         title={verificationResult.title!}
         description={verificationResult.description}
         message={verificationTypeMessage[verificationResult.title!]}
-        buttonText="Go to Login"
+        buttonText={`Back to ${isAuthenticated ? "Home" : "Login"}`}
         isError={verificationResult.isError}
-        onClick={() => navigate("/login")}
+        onClick={() => navigate(isAuthenticated ? "/" : "/login")}
       />
     </AuthLayout>
   );

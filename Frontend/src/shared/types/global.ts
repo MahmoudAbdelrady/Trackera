@@ -10,7 +10,7 @@ interface StatusBadgeProps {
 }
 
 interface InputFieldProps {
-  label: string;
+  label?: string;
   icon?: React.ReactNode;
   type: string;
   name: string;
