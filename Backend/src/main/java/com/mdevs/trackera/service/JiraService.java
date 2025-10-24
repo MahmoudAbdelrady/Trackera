@@ -2,6 +2,7 @@ package com.mdevs.trackera.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.mdevs.trackera.config.general.AppConfig;
+import com.mdevs.trackera.dto.jira.AccessibleResourceDTO;
 import com.mdevs.trackera.entity.User;
 import com.mdevs.trackera.entity.UserOAuthProvider;
 import com.mdevs.trackera.entity.UserPreferredSetting;
@@ -55,9 +56,13 @@ public class JiraService {
 
     private static final String USER_JIRA_TASKS_FORCE_UPDATE_CACHE_KEY_PREFIX = "userJiraTasks:forceUpdate:";
 
+    private static final String USER_JIRA_SITES_FETCH_CACHE_KEY_PREFIX = "userJiraSites:";
+
     private static final int JIRA_TASKS_FETCH_HOURS_DURATION = 1;
 
     private static final int JIRA_TASKS_FORCE_FETCH_MINUTES_DURATION = 15;
+
+    private static final int JIRA_SITES_FETCH_MINUTES_DURATION = 10;
 
     private static final Duration USER_JIRA_TASKS_CACHE_TTL = Duration.ofHours(JIRA_TASKS_FETCH_HOURS_DURATION);
 
@@ -272,5 +277,43 @@ public class JiraService {
     private String getJiraTasksSearchCondition() {
         String maxDate = String.valueOf(LocalDate.now().minusMonths(3).withDayOfMonth(1));
         return "assignee=currentUser() AND (resolution IS EMPTY OR (resolutiondate >= '" + maxDate + "' AND timespent > 0)) ORDER BY created DESC";
+    }
+
+    public List<AccessibleResourceDTO> getUserSites(User user) {
+        UserOAuthProvider userOAuthProvider = validateJiraOAuthProvider();
+        String cacheKey = USER_JIRA_SITES_FETCH_CACHE_KEY_PREFIX + user.getId();
+        if (redisTemplate.hasKey(cacheKey)) {
+            try {
+                return (List<AccessibleResourceDTO>) redisTemplate.opsForValue().get(cacheKey);
+            } catch (Exception e) {
+                LOGGER.error("Error while fetching cached Jira accessible resources for user with id: {}", user.getId(), e);
+                throw new RuntimeException("Something went wrong while fetching Jira accessible resources");
+            }
+        }
+
+        String accessToken;
+        try {
+            accessToken = userOAuthProvider.isExpired() ? validateAndGetNewAccessToken(userOAuthProvider) : trackeraHasher.decryptFromBase64(userOAuthProvider.getAccessToken(), false);
+        } catch (Exception e) {
+            LOGGER.error("Error while getting jira access token", e);
+            throw new RuntimeException("Failed to fetch jira accessible resources");
+        }
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(accessToken);
+        headers.setAccept(List.of(MediaType.APPLICATION_JSON));
+        HttpEntity<Void> entity = new HttpEntity<>(headers);
+        try {
+            ResponseEntity<AccessibleResourceDTO[]> responseEntity = AppUtils.getRestTemplate().exchange("https://api.atlassian.com/oauth/token/accessible-resources", HttpMethod.GET, entity, AccessibleResourceDTO[].class);
+            if (!responseEntity.getStatusCode().equals(HttpStatus.OK)) {
+                throw new RuntimeException("Failed to fetch accessible resources from Jira");
+            }
+
+            List<AccessibleResourceDTO> resources = Arrays.asList(Objects.requireNonNull(responseEntity.getBody()));
+            redisTemplate.opsForValue().set(cacheKey, resources, Duration.ofMinutes(JIRA_SITES_FETCH_MINUTES_DURATION));
+            return resources;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 }
