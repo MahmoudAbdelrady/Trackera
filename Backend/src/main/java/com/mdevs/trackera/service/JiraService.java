@@ -149,10 +149,11 @@ public class JiraService {
         headers.setAccept(List.of(MediaType.APPLICATION_JSON));
         HttpEntity<Void> entity = new HttpEntity<>(headers);
         Map<String, Object> jiraResponse;
+        String url = JIRA_API_BASE_URL.replace("{cloudId}", userJiraPrimaryProject.get("id").toString()) + "/search?jql=" + getJiraTasksSearchCondition() + "&fields=key,summary,status,timetracking,project,resolution";
         int page = 0;
 
         do {
-            jiraResponse = fetchFromJira(userJiraPrimaryProject, entity);
+            jiraResponse = callJiraApi(url, HttpMethod.GET, entity, Map.class, userOAuthProvider);
             if (jiraResponse.containsKey("code") && ((Integer) jiraResponse.get("code")) == 401) {
                 try {
                     headers.setBearerAuth(validateAndGetNewAccessToken(userOAuthProvider));
@@ -177,20 +178,6 @@ public class JiraService {
             throw new BusinessException("Jira account link has been revoked. Please relink your account.");
         }
         return userOAuthProvider;
-    }
-
-    @Retryable(retryFor = Exception.class, backoff = @Backoff(delay = 1000, multiplier = 3))
-    private Map<String, Object> fetchFromJira(Map<String, Object> userJiraPrimaryProject, HttpEntity<Void> entity) {
-        try {
-            ResponseEntity<Map> responseEntity = AppUtils.getRestTemplate()
-                    .exchange(JIRA_API_BASE_URL.replace("{cloudId}", userJiraPrimaryProject.get("id").toString()) + "/search?jql=" + getJiraTasksSearchCondition() + "&fields=key,summary,status,timetracking,project,resolution", HttpMethod.GET, entity, Map.class);
-            if (!responseEntity.getStatusCode().equals(HttpStatus.OK) && !responseEntity.getStatusCode().equals(HttpStatus.UNAUTHORIZED)) {
-                throw new RuntimeException("Failed to fetch tasks from Jira");
-            }
-            return (Map<String, Object>) responseEntity.getBody();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
     }
 
     private void processJiraResponseTasks(Map<String, Object> jiraResponse, Map<String, Object> userJiraPrimaryProject, List<Map<String, Object>> jiraTasks) {
@@ -303,17 +290,35 @@ public class JiraService {
         headers.setBearerAuth(accessToken);
         headers.setAccept(List.of(MediaType.APPLICATION_JSON));
         HttpEntity<Void> entity = new HttpEntity<>(headers);
+        List<AccessibleResourceDTO> resources = Arrays.asList(callJiraApi("https://api.atlassian.com/oauth/token/accessible-resources", HttpMethod.GET, entity, AccessibleResourceDTO[].class, userOAuthProvider));
+        redisTemplate.opsForValue().set(cacheKey, resources, Duration.ofMinutes(JIRA_SITES_FETCH_MINUTES_DURATION));
+        return resources;
+    }
+
+    @Retryable(retryFor = Exception.class, backoff = @Backoff(delay = 1000, multiplier = 3))
+    private <T> T callJiraApi(String url, HttpMethod method, HttpEntity<?> entity, Class<T> responseType, UserOAuthProvider userOAuthProvider) {
         try {
-            ResponseEntity<AccessibleResourceDTO[]> responseEntity = AppUtils.getRestTemplate().exchange("https://api.atlassian.com/oauth/token/accessible-resources", HttpMethod.GET, entity, AccessibleResourceDTO[].class);
-            if (!responseEntity.getStatusCode().equals(HttpStatus.OK)) {
-                throw new RuntimeException("Failed to fetch accessible resources from Jira");
+            ResponseEntity<T> response = AppUtils.getRestTemplate().exchange(url, method, entity, responseType);
+
+            if (response.getStatusCode() == HttpStatus.UNAUTHORIZED) {
+                String newAccessToken = validateAndGetNewAccessToken(userOAuthProvider);
+
+                HttpHeaders newHeaders = new HttpHeaders();
+                newHeaders.putAll(entity.getHeaders());
+                newHeaders.setBearerAuth(newAccessToken);
+
+                HttpEntity<?> newEntity = new HttpEntity<>(newHeaders);
+
+                response = AppUtils.getRestTemplate().exchange(url, method, newEntity, responseType);
             }
 
-            List<AccessibleResourceDTO> resources = Arrays.asList(Objects.requireNonNull(responseEntity.getBody()));
-            redisTemplate.opsForValue().set(cacheKey, resources, Duration.ofMinutes(JIRA_SITES_FETCH_MINUTES_DURATION));
-            return resources;
+            if (!response.getStatusCode().is2xxSuccessful()) {
+                throw new RuntimeException("Jira API request failed with status: " + response.getStatusCode());
+            }
+
+            return response.getBody();
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("Error while calling Jira API", e);
         }
     }
 }

@@ -4,10 +4,13 @@ import com.mdevs.trackera.dto.user.UserPreferenceDTO;
 import com.mdevs.trackera.entity.User;
 import com.mdevs.trackera.entity.UserPreferredSetting;
 import com.mdevs.trackera.repository.UserPreferredSettingRepository;
+import com.mdevs.trackera.shared.exceptions.types.BusinessException;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -20,9 +23,13 @@ public class UserPreferredSettingService {
         this.userPreferredSettingRepository = userPreferredSettingRepository;
     }
 
-    public List<Map<String, String>> getAllByUser(User user) {
-        return userPreferredSettingRepository.findAllByUser(user).stream()
-                .map(setting -> Map.of("key", setting.getKey(), "value", setting.getValue())).toList();
+    public List<Map<String, Object>> getAllByUser(User user) {
+        return userPreferredSettingRepository.findAllByUser(user).stream().map(setting -> {
+            Map<String, Object> settingInfo = new HashMap<>();
+            settingInfo.put("key", setting.getKey());
+            settingInfo.put("value", setting.getValue());
+            return settingInfo;
+        }).toList();
     }
 
     public void create(User user, String key, String value) {
@@ -45,5 +52,14 @@ public class UserPreferredSettingService {
 
     public void deleteByUserAndKey(User user, String key) {
         userPreferredSettingRepository.deleteByUserAndKey(user, key);
+    }
+
+    public void validatePreference(UserPreferenceDTO preferenceDTO) {
+        if (StringUtils.isEmpty(preferenceDTO.getKey())) {
+            throw new BusinessException("Preference key is required");
+        }
+        if (StringUtils.isEmpty(preferenceDTO.getValue())) {
+            throw new BusinessException("Preference value is required");
+        }
     }
 }

@@ -169,11 +169,7 @@ public class AuthService {
             return;
 
         if (oAuthProvider.equals(OAuthProvider.JIRA)) {
-            try {
-                userPreferredSettingService.create(authenticatedUser, JiraService.JIRA_PRIMARY_PROJECT_SETTING_KEY, AppUtils.getObjectMapper().writeValueAsString(additionalInfo.get(JiraService.JIRA_PRIMARY_PROJECT_SETTING_KEY)));
-            } catch (JsonProcessingException e) {
-                throw new RuntimeException(e);
-            }
+            userPreferredSettingService.create(authenticatedUser, JiraService.JIRA_PRIMARY_PROJECT_SETTING_KEY, AppUtils.convertObjectToJsonString(additionalInfo.get(JiraService.JIRA_PRIMARY_PROJECT_SETTING_KEY)));
         }
     }
 

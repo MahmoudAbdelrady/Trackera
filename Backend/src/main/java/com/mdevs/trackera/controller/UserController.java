@@ -72,7 +72,7 @@ public class UserController {
     }
 
     @PostMapping("/preferences")
-    public ResponseEntity<?> UpdatePreferences(@RequestBody @Valid List<UserPreferenceDTO> userPreferenceDTOList){
+    public ResponseEntity<?> UpdatePreferences(@RequestBody List<UserPreferenceDTO> userPreferenceDTOList){
         userService.updateUserPreferences(userPreferenceDTOList);
         return new ResponseEntity<>("Preferences updated successfully.", HttpStatus.OK);
     }

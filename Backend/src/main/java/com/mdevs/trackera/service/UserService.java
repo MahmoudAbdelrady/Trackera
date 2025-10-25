@@ -323,16 +323,12 @@ public class UserService implements UserDetailsService {
         }
     }
 
-    public List<Map<String, String>> getUserPreferences() {
-        List<Map<String, String>> preferences = userPreferredSettingService.getAllByUser(AppConfig.getCurrentUser());
-        for (Map<String, String> preference : preferences) {
+    public List<Map<String, Object>> getUserPreferences() {
+        List<Map<String, Object>> preferences = userPreferredSettingService.getAllByUser(AppConfig.getCurrentUser());
+        for (Map<String, Object> preference : preferences) {
             if (preference.get("key").equals(JiraService.JIRA_PRIMARY_PROJECT_SETTING_KEY)) {
-                try {
-                    Map<String, String> jiraProjectInfo = AppUtils.getObjectMapper().readValue(preference.get("value"), Map.class);
-                    preference.put("value", jiraProjectInfo.get("id"));
-                } catch (JsonProcessingException e) {
-                    throw new RuntimeException(e);
-                }
+                Map<String, Object> jiraProjectInfo = AppUtils.convertJsonStringToObject(preference.get("value").toString(), Map.class);
+                preference.put("value", jiraProjectInfo);
             }
         }
         return preferences;
@@ -341,10 +337,12 @@ public class UserService implements UserDetailsService {
     public void updateUserPreferences(List<UserPreferenceDTO> userPreferenceDTOList) {
         User loggedUser = Objects.requireNonNull(AppConfig.getCurrentUser());
         for (UserPreferenceDTO preferenceDTO : userPreferenceDTOList) {
+            userPreferredSettingService.validatePreference(preferenceDTO);
             if (preferenceDTO.getKey().equals(JiraService.JIRA_PRIMARY_PROJECT_SETTING_KEY)) {
                 AccessibleResourceDTO accessibleResourceDTO = jiraService.getUserSites(loggedUser).stream().filter(site -> site.getId().equals(preferenceDTO.getValue()))
                         .findFirst().orElseThrow(() -> new NotFoundException("Site not found"));
-                preferenceDTO.setValue(accessibleResourceDTO.getId());
+
+                preferenceDTO.setValue(AppUtils.convertObjectToJsonString(accessibleResourceDTO));
             }
         }
         userPreferredSettingService.updateAll(loggedUser, userPreferenceDTOList);
