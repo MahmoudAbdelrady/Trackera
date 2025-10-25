@@ -10,7 +10,6 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -28,7 +27,6 @@ public class JwtFilter extends OncePerRequestFilter {
 
     private final ApiConfig apiConfig;
 
-    @Autowired
     public JwtFilter(JwtUtil jwtUtil, ApiConfig apiConfig) {
         this.jwtUtil = jwtUtil;
         this.apiConfig = apiConfig;

@@ -2,7 +2,6 @@ package com.mdevs.trackera.controller;
 
 import com.mdevs.trackera.config.general.AppConfig;
 import com.mdevs.trackera.service.JiraService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -16,7 +15,6 @@ import java.util.Objects;
 public class JiraController {
     private final JiraService jiraService;
 
-    @Autowired
     public JiraController(JiraService jiraService) {
         this.jiraService = jiraService;
     }

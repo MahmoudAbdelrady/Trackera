@@ -6,7 +6,6 @@ import com.mdevs.trackera.entity.UserPreferredSetting;
 import com.mdevs.trackera.repository.UserPreferredSettingRepository;
 import com.mdevs.trackera.shared.exceptions.types.BusinessException;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,7 +17,6 @@ import java.util.Map;
 public class UserPreferredSettingService {
     private final UserPreferredSettingRepository userPreferredSettingRepository;
 
-    @Autowired
     public UserPreferredSettingService(UserPreferredSettingRepository userPreferredSettingRepository) {
         this.userPreferredSettingRepository = userPreferredSettingRepository;
     }

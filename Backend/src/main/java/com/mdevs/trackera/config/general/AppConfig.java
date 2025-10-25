@@ -6,7 +6,6 @@ import com.mdevs.trackera.repository.UserRepository;
 import lombok.Getter;
 import org.modelmapper.ModelMapper;
 import org.modelmapper.convention.MatchingStrategies;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
@@ -31,7 +30,6 @@ public class AppConfig {
     @Value("${trackera.mail.password}")
     private String emailPassword;
 
-    @Autowired
     public AppConfig(ApplicationContext applicationContext) {
         AppConfig.applicationContext = applicationContext;
     }

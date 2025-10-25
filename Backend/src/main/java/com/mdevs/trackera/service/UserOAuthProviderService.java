@@ -7,7 +7,6 @@ import com.mdevs.trackera.repository.UserOAuthProviderRepository;
 import com.mdevs.trackera.shared.exceptions.types.BusinessException;
 import com.mdevs.trackera.shared.oauth_provider.OAuthProvider;
 import com.mdevs.trackera.shared.utils.TrackeraHasher;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -20,7 +19,6 @@ public class UserOAuthProviderService {
 
     private final TrackeraHasher trackeraHasher;
 
-    @Autowired
     public UserOAuthProviderService(UserOAuthProviderRepository userOAuthProviderRepository, UserPreferredSettingService userPreferredSettingService, TrackeraHasher trackeraHasher) {
         this.userOAuthProviderRepository = userOAuthProviderRepository;
         this.userPreferredSettingService = userPreferredSettingService;

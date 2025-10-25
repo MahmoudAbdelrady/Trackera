@@ -8,7 +8,6 @@ import com.mdevs.trackera.shared.exceptions.types.UnauthorizedException;
 import com.mdevs.trackera.shared.utils.TrackeraHasher;
 import com.mdevs.trackera.shared.utils.mail.TrackeraEmailTarget;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,7 +23,6 @@ public class SecurityTokenService {
 
     public final static long MAX_SECURITY_TOKEN_MINUTES = 15;
 
-    @Autowired
     public SecurityTokenService(SecurityTokenRepository securityTokenRepository, TrackeraHasher trackeraHasher) {
         this.securityTokenRepository = securityTokenRepository;
         this.trackeraHasher = trackeraHasher;

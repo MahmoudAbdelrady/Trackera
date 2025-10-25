@@ -12,14 +12,12 @@ import com.mdevs.trackera.shared.enums.JiraTaskEvaluation;
 import com.mdevs.trackera.shared.exceptions.types.BusinessException;
 import com.mdevs.trackera.shared.oauth_provider.OAuthProvider;
 import com.mdevs.trackera.shared.oauth_provider.OAuthProviderFactory;
-import com.mdevs.trackera.shared.oauth_provider.OAuthServiceProvider;
 import com.mdevs.trackera.shared.utils.AppUtils;
 import com.mdevs.trackera.shared.utils.TrackeraHasher;
 import com.mdevs.trackera.shared.utils.TrackeraTimeSpanUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.*;
@@ -70,7 +68,6 @@ public class JiraService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(JiraService.class);
 
-    @Autowired
     public JiraService(RedisTemplate<String, Object> redisTemplate, UserOAuthProviderRepository userOAuthProviderRepository, UserPreferredSettingRepository userPreferredSettingRepository,
                        OAuthProviderFactory oAuthProviderFactory, TrackeraHasher trackeraHasher, @Lazy JiraService selfRef) {
         this.redisTemplate = redisTemplate;

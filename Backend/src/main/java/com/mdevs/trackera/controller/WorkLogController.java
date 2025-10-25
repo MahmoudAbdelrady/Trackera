@@ -4,7 +4,6 @@ import com.mdevs.trackera.dto.worklog.ManageWorkLogDTO;
 import com.mdevs.trackera.service.WorkLogService;
 import com.mdevs.trackera.shared.search_filter.SearchFilter;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,7 +18,6 @@ import java.util.Map;
 public class WorkLogController {
     private final WorkLogService workLogService;
 
-    @Autowired
     public WorkLogController(WorkLogService workLogService) {
         this.workLogService = workLogService;
     }

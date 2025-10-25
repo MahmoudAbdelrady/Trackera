@@ -5,7 +5,6 @@ import com.mdevs.trackera.repository.UserInvalidTokenRepository;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Component;
@@ -29,7 +28,6 @@ public class JwtUtil {
     @Value("${trackera.tokens.refresh}")
     private String refreshTokenSecretKey;
 
-    @Autowired
     public JwtUtil(UserInvalidTokenRepository userInvalidTokenRepository, TrackeraHasher trackeraHasher) {
         this.userInvalidTokenRepository = userInvalidTokenRepository;
         this.trackeraHasher = trackeraHasher;

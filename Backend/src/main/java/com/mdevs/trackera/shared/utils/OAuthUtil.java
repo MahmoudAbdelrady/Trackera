@@ -1,6 +1,5 @@
 package com.mdevs.trackera.shared.utils;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.nio.charset.StandardCharsets;
@@ -14,7 +13,6 @@ import java.util.StringJoiner;
 public class OAuthUtil {
     private final TrackeraHasher trackeraHasher;
 
-    @Autowired
     public OAuthUtil(TrackeraHasher trackeraHasher) {
         this.trackeraHasher = trackeraHasher;
     }

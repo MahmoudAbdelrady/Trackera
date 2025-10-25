@@ -1,6 +1,5 @@
 package com.mdevs.trackera.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.mdevs.trackera.config.general.AppConfig;
 import com.mdevs.trackera.dto.auth.*;
 import com.mdevs.trackera.entity.*;
@@ -18,7 +17,6 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -65,7 +63,6 @@ public class AuthService {
     @Value("${trackera.cookie.max-age}")
     private String cookieMaxAge;
 
-    @Autowired
     public AuthService(UserRepository userRepository, UserService userService, AuthenticationManager authenticationManager, SecurityTokenService securityTokenService, UserOAuthProviderService userOAuthProviderService, UserPreferredSettingService userPreferredSettingService, OAuthProviderFactory oAuthProviderFactory,
                        SecurityTokenRepository securityTokenRepository, UserInvalidTokenRepository userInvalidTokenRepository, UserOAuthProviderRepository userOAuthProviderRepository,
                        JwtUtil jwtUtil, TrackeraHasher trackeraHasher) {

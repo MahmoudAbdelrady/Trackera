@@ -3,7 +3,6 @@ package com.mdevs.trackera.job;
 import com.mdevs.trackera.entity.SecurityToken;
 import com.mdevs.trackera.repository.SecurityTokenRepository;
 import com.mdevs.trackera.service.SecurityTokenService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -22,7 +21,6 @@ public class SecurityTokenCleanUpJob {
 
     private final static Logger LOGGER = Logger.getLogger(SecurityTokenCleanUpJob.class.getName());
 
-    @Autowired
     public SecurityTokenCleanUpJob(SecurityTokenRepository securityTokenRepository, @Lazy SecurityTokenCleanUpJob securityTokenCleanUpJob) {
         this.securityTokenRepository = securityTokenRepository;
         this.selfRef = securityTokenCleanUpJob;
