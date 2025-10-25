@@ -1,4 +1,4 @@
-package com.mdevs.trackera.shared.utils;
+package com.mdevs.trackera.utils;
 
 import com.mdevs.trackera.entity.UserInvalidToken;
 import com.mdevs.trackera.repository.UserInvalidTokenRepository;

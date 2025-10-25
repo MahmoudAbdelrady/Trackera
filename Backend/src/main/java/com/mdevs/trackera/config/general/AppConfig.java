@@ -70,10 +70,6 @@ public class AppConfig {
         return applicationContext.getEnvironment().getProperty("trackera.frontend.url");
     }
 
-    public static String getBackendUrl() {
-        return applicationContext.getEnvironment().getProperty("trackera.backend.url");
-    }
-
     public static User getCurrentUser() {
         Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         return (principal instanceof AuthFilterUserDTO) ? applicationContext.getBean(UserRepository.class).findByUuid(((AuthFilterUserDTO) principal).getId()) : null;
@@ -81,5 +77,9 @@ public class AppConfig {
 
     public static LocalDate getMinQueryableDate() {
         return LocalDate.now().minusYears(2).withDayOfYear(1);
+    }
+
+    public static boolean isProductionEnv() {
+        return applicationContext.getEnvironment().getProperty("trackera.environment", "dev").equalsIgnoreCase("prod");
     }
 }

@@ -1,4 +1,4 @@
-package com.mdevs.trackera.shared.utils;
+package com.mdevs.trackera.utils;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;

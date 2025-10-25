@@ -1,6 +1,6 @@
 package com.mdevs.trackera.aspect;
 
-import com.mdevs.trackera.shared.utils.LoggingUtil;
+import com.mdevs.trackera.utils.LoggingUtil;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;

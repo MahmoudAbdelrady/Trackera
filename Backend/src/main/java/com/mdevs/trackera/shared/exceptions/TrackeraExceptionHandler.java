@@ -4,6 +4,7 @@ import com.mdevs.trackera.config.general.AppConfig;
 import com.mdevs.trackera.shared.exceptions.types.BusinessException;
 import com.mdevs.trackera.shared.exceptions.types.NotFoundException;
 import com.mdevs.trackera.shared.exceptions.types.UnauthorizedException;
+import com.mdevs.trackera.utils.ExceptionResponseMaker;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -65,7 +66,6 @@ public class TrackeraExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<?> handleGeneralException(Exception exception) {
-        String environment = AppConfig.getApplicationContext().getEnvironment().getProperty("trackera.environment");
-        return ExceptionResponseMaker.makeResponse(String.valueOf(environment).equals("dev") ? exception.getMessage() : "Something went wrong", HttpStatus.INTERNAL_SERVER_ERROR);
+        return ExceptionResponseMaker.makeResponse(AppConfig.isProductionEnv() ? "Something went wrong" : exception.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }

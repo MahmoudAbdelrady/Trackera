@@ -1,5 +1,6 @@
 package com.mdevs.trackera.dto.auth;
 
+import com.mdevs.trackera.service.UserService;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import lombok.Getter;
@@ -17,7 +18,7 @@ public class SignUpDTO {
     private String lastname;
 
     @NotBlank(message = "Email is required")
-    @Pattern(regexp = "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9-]+(?:\\.[a-zA-Z0-9-]+)*\\.[a-zA-Z]{2,}$", message = "Invalid email format")
+    @Pattern(regexp = UserService.EMAIL_REGEX, message = "Invalid email format")
     private String email;
 
     @NotBlank(message = "Password is required")

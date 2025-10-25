@@ -1,4 +1,4 @@
-package com.mdevs.trackera.shared.utils.mail;
+package com.mdevs.trackera.utils;
 
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;

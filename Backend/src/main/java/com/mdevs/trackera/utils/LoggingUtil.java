@@ -1,4 +1,4 @@
-package com.mdevs.trackera.shared.utils;
+package com.mdevs.trackera.utils;
 
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.slf4j.Logger;

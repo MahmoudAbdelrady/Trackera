@@ -2,7 +2,7 @@ package com.mdevs.trackera.shared;
 
 import com.mdevs.trackera.shared.enums.WorkLogColumn;
 import com.mdevs.trackera.shared.exceptions.types.BusinessException;
-import com.mdevs.trackera.shared.utils.TrackeraTimeSpanUtil;
+import com.mdevs.trackera.utils.TrackeraTimeSpanUtil;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;

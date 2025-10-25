@@ -9,12 +9,16 @@ import com.google.api.client.json.gson.GsonFactory;
 import com.mdevs.trackera.dto.auth.OAuthAccessCredentialsDTO;
 import com.mdevs.trackera.dto.auth.OAuthUserInfoDTO;
 import com.mdevs.trackera.dto.auth.OAuthRequestDTO;
+import com.mdevs.trackera.entity.User;
+import com.mdevs.trackera.service.UserOAuthProviderService;
 import com.mdevs.trackera.shared.oauth_provider.OAuthProvider;
 import com.mdevs.trackera.shared.oauth_provider.OAuthServiceProvider;
-import jakarta.servlet.http.HttpServletRequest;
+import com.mdevs.trackera.utils.OAuthUtil;
+import com.mdevs.trackera.utils.TrackeraHasher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -30,15 +34,19 @@ public class GoogleOAuthServiceProvider extends OAuthServiceProvider {
 
     private final static Logger LOGGER = LoggerFactory.getLogger(GoogleOAuthServiceProvider.class);
 
+    public GoogleOAuthServiceProvider(UserOAuthProviderService userOAuthProviderService, RedisTemplate<String, Object> redisTemplate, TrackeraHasher trackeraHasher, OAuthUtil oAuthUtil) {
+        super(userOAuthProviderService, redisTemplate, trackeraHasher, oAuthUtil);
+    }
+
     @Override
     protected OAuthProvider getOAuthProvider() {
         return OAuthProvider.GOOGLE;
     }
 
     @Override
-    public String generateAuthFlowUrl(HttpServletRequest httpRequest) {
+    public String generateAuthFlowUrl(User user) {
         try {
-            return getBaseOAuthBuilder("https://accounts.google.com/o/oauth2/v2/auth", CLIENT_ID, httpRequest, "openid", "email", "profile")
+            return getBaseOAuthBuilder("https://accounts.google.com/o/oauth2/v2/auth", CLIENT_ID, user, "openid", "email", "profile")
                     .queryParam("access_type", "offline")
                     .queryParam("include_granted_scopes", "true")
                     .queryParam("prompt", "consent")

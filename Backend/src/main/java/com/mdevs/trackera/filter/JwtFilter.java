@@ -3,7 +3,7 @@ package com.mdevs.trackera.filter;
 import com.mdevs.trackera.config.security.ApiConfig;
 import com.mdevs.trackera.dto.auth.AuthFilterUserDTO;
 import com.mdevs.trackera.shared.annotations.PublicAPI;
-import com.mdevs.trackera.shared.utils.JwtUtil;
+import com.mdevs.trackera.utils.JwtUtil;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;

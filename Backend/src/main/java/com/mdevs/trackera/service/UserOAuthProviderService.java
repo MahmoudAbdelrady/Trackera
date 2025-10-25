@@ -1,12 +1,13 @@
 package com.mdevs.trackera.service;
 
+import com.mdevs.trackera.dto.auth.OAuthAccessCredentialsDTO;
 import com.mdevs.trackera.dto.auth.OAuthUserInfoDTO;
 import com.mdevs.trackera.entity.User;
 import com.mdevs.trackera.entity.UserOAuthProvider;
 import com.mdevs.trackera.repository.UserOAuthProviderRepository;
 import com.mdevs.trackera.shared.exceptions.types.BusinessException;
 import com.mdevs.trackera.shared.oauth_provider.OAuthProvider;
-import com.mdevs.trackera.shared.utils.TrackeraHasher;
+import com.mdevs.trackera.utils.TrackeraHasher;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -28,17 +29,25 @@ public class UserOAuthProviderService {
     public void createOrUpdate(User user, OAuthUserInfoDTO oAuthUserInfoDTO, OAuthProvider oAuthProvider, UserOAuthProvider existingUserOAuthProvider) {
         if (existingUserOAuthProvider == null) {
             existingUserOAuthProvider = new UserOAuthProvider(user, oAuthProvider);
+            existingUserOAuthProvider.setEmail(oAuthUserInfoDTO.getEmail());
         }
-        existingUserOAuthProvider.setEmail(oAuthUserInfoDTO.getEmail());
-        existingUserOAuthProvider.setAccessToken(trackeraHasher.encryptToBase64(oAuthUserInfoDTO.getAccessCredentials().getAccessToken(), false));
-        existingUserOAuthProvider.setRefreshToken(trackeraHasher.encryptToBase64(oAuthUserInfoDTO.getAccessCredentials().getRefreshToken(), false));
-        existingUserOAuthProvider.setAccessTokenExpiry(LocalDateTime.now().plusSeconds(oAuthUserInfoDTO.getAccessCredentials().getExpiresIn()));
+        updateAccessCredentials(existingUserOAuthProvider, oAuthUserInfoDTO.getAccessCredentials());
+    }
+
+    public void updateAccessCredentials(UserOAuthProvider existingUserOAuthProvider, OAuthAccessCredentialsDTO oAuthAccessCredentialsDTO) {
+        existingUserOAuthProvider.setAccessToken(trackeraHasher.encryptToBase64(oAuthAccessCredentialsDTO.getAccessToken(), false));
+        existingUserOAuthProvider.setRefreshToken(trackeraHasher.encryptToBase64(oAuthAccessCredentialsDTO.getRefreshToken(), false));
+        existingUserOAuthProvider.setAccessTokenExpiry(LocalDateTime.now().plusSeconds(oAuthAccessCredentialsDTO.getExpiresIn()));
         existingUserOAuthProvider.setRevoked(false);
         userOAuthProviderRepository.save(existingUserOAuthProvider);
     }
 
-    public UserOAuthProvider getByUserAndProvider(User user, OAuthProvider oAuthProvider) {
-        return userOAuthProviderRepository.findByUserAndProvider(user, oAuthProvider);
+    public UserOAuthProvider ensureUserDoesNotHaveLinkedProvider(User user, OAuthProvider oAuthProvider) {
+        UserOAuthProvider userOAuthProvider = userOAuthProviderRepository.findByUserAndProvider(user, oAuthProvider);
+        if (userOAuthProvider != null && !userOAuthProvider.isRevoked()) {
+            throw new BusinessException("The current account is already linked with " + oAuthProvider.getDisplayName());
+        }
+        return userOAuthProvider;
     }
 
     public UserOAuthProvider delete(User user, OAuthProvider oAuthProvider) {

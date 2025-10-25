@@ -4,14 +4,18 @@ import com.mdevs.trackera.dto.auth.OAuthAccessCredentialsDTO;
 import com.mdevs.trackera.dto.auth.OAuthUserInfoDTO;
 import com.mdevs.trackera.dto.auth.OAuthRequestDTO;
 import com.mdevs.trackera.dto.jira.AccessibleResourceDTO;
+import com.mdevs.trackera.entity.User;
 import com.mdevs.trackera.service.JiraService;
+import com.mdevs.trackera.service.UserOAuthProviderService;
 import com.mdevs.trackera.shared.oauth_provider.OAuthProvider;
 import com.mdevs.trackera.shared.oauth_provider.OAuthServiceProvider;
-import com.mdevs.trackera.shared.utils.AppUtils;
-import jakarta.servlet.http.HttpServletRequest;
+import com.mdevs.trackera.utils.AppUtils;
+import com.mdevs.trackera.utils.OAuthUtil;
+import com.mdevs.trackera.utils.TrackeraHasher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.*;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClientException;
@@ -31,15 +35,19 @@ public class JiraOAuthServiceProvider extends OAuthServiceProvider {
 
     private final static Logger LOGGER = LoggerFactory.getLogger(JiraOAuthServiceProvider.class);
 
+    public JiraOAuthServiceProvider(UserOAuthProviderService userOAuthProviderService, RedisTemplate<String, Object> redisTemplate, TrackeraHasher trackeraHasher, OAuthUtil oAuthUtil) {
+        super(userOAuthProviderService, redisTemplate, trackeraHasher, oAuthUtil);
+    }
+
     @Override
     protected OAuthProvider getOAuthProvider() {
         return OAuthProvider.JIRA;
     }
 
     @Override
-    public String generateAuthFlowUrl(HttpServletRequest httpRequest) {
+    public String generateAuthFlowUrl(User user) {
         try {
-            return getBaseOAuthBuilder(JIRA_AUTH_BASE_URL + "/authorize", CLIENT_ID, httpRequest, "read:jira-work", "read:jira-user", "write:jira-work", "offline_access")
+            return getBaseOAuthBuilder(JIRA_AUTH_BASE_URL + "/authorize", CLIENT_ID, user, "read:jira-work", "read:jira-user", "write:jira-work", "offline_access")
                     .queryParam("audience", "api.atlassian.com")
                     .build().toString();
         } catch (Exception e) {

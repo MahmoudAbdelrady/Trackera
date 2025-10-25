@@ -3,7 +3,7 @@ package com.mdevs.trackera.controller;
 import com.mdevs.trackera.dto.auth.*;
 import com.mdevs.trackera.service.AuthService;
 import com.mdevs.trackera.shared.annotations.PublicAPI;
-import com.mdevs.trackera.shared.exceptions.ExceptionResponseMaker;
+import com.mdevs.trackera.utils.ExceptionResponseMaker;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -26,7 +26,8 @@ public class AuthController {
     @PublicAPI
     @PostMapping("/signup")
     public ResponseEntity<?> SignUp(@RequestBody @Valid SignUpDTO signUpDTO) {
-        return new ResponseEntity<>(authService.signUp(signUpDTO), HttpStatus.CREATED);
+        authService.signUp(signUpDTO);
+        return new ResponseEntity<>("Account created successfully. Please check your email for verification.", HttpStatus.CREATED);
     }
 
     @PublicAPI
@@ -39,7 +40,7 @@ public class AuthController {
     @PublicAPI
     @GetMapping("/oauth/{oAuthProvider}")
     public ResponseEntity<?> OAuth(@PathVariable String oAuthProvider, HttpServletRequest httpServletRequest) {
-        return new ResponseEntity<>(authService.oAuth(oAuthProvider, httpServletRequest), HttpStatus.OK);
+        return new ResponseEntity<>(Map.of("url", authService.oAuth(oAuthProvider, httpServletRequest)), HttpStatus.OK);
     }
 
     @PublicAPI

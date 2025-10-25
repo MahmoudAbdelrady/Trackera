@@ -13,6 +13,9 @@ public interface UserEmailRepository extends BaseRepository<UserEmail> {
     @Query("SELECT CASE WHEN EXISTS (SELECT ue FROM UserEmail ue WHERE ue.email = :email) THEN true ELSE false END")
     boolean existsByEmail(@Param("email") String email);
 
+    @Query("SELECT CASE WHEN EXISTS (SELECT ue FROM UserEmail ue WHERE ue.email = :email AND ue.user != :user) THEN true ELSE false END")
+    boolean existsByEmailAndUserNot(@Param("email") String email, @Param("user") User user);
+
     UserEmail findByEmail(String email);
 
     UserEmail findByUserAndEmail(User user, String email);

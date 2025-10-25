@@ -2,7 +2,7 @@ package com.mdevs.trackera.aspect;
 
 import com.mdevs.trackera.config.general.AppConfig;
 import com.mdevs.trackera.entity.User;
-import com.mdevs.trackera.shared.utils.LoggingUtil;
+import com.mdevs.trackera.utils.LoggingUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;

@@ -1,4 +1,4 @@
-package com.mdevs.trackera.shared.utils;
+package com.mdevs.trackera.utils;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;

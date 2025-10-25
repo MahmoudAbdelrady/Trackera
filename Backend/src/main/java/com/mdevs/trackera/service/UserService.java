@@ -20,8 +20,8 @@ import com.mdevs.trackera.shared.enums.EmailTag;
 import com.mdevs.trackera.shared.exceptions.types.BusinessException;
 import com.mdevs.trackera.shared.exceptions.types.NotFoundException;
 import com.mdevs.trackera.shared.oauth_provider.OAuthProvider;
-import com.mdevs.trackera.shared.utils.AppUtils;
-import com.mdevs.trackera.shared.utils.mail.TrackeraEmailTarget;
+import com.mdevs.trackera.utils.AppUtils;
+import com.mdevs.trackera.shared.TrackeraEmailTarget;
 import org.apache.commons.lang3.StringUtils;
 import org.modelmapper.ModelMapper;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -139,7 +139,7 @@ public class UserService implements UserDetailsService {
 
         if (authenticatedUser != null) { // means the user is logging in with an oAuth provider
             createOAuthProvider = false;
-            if (userOAuthProviderService.getByUserAndProvider(authenticatedUser, oAuthProvider) == null) {
+            if (userOAuthProviderService.ensureUserDoesNotHaveLinkedProvider(authenticatedUser, oAuthProvider) == null) {
                 throw new BusinessException("This account is not linked with " + oAuthProvider.getDisplayName());
             }
         } else {

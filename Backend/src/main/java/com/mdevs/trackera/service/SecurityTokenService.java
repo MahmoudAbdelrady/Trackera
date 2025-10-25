@@ -5,8 +5,8 @@ import com.mdevs.trackera.entity.SecurityToken;
 import com.mdevs.trackera.entity.User;
 import com.mdevs.trackera.repository.SecurityTokenRepository;
 import com.mdevs.trackera.shared.exceptions.types.UnauthorizedException;
-import com.mdevs.trackera.shared.utils.TrackeraHasher;
-import com.mdevs.trackera.shared.utils.mail.TrackeraEmailTarget;
+import com.mdevs.trackera.utils.TrackeraHasher;
+import com.mdevs.trackera.shared.TrackeraEmailTarget;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -43,7 +43,7 @@ public class SecurityTokenService {
 
     @Transactional
     public void createAndSendSecurityToken(User user, String targetEmail, SecurityToken.Type type, String additionalInfo, Map<String, String> extraParameters, String pageUrl, String templateName) {
-        if (securityTokenRepository.existsByUserAndTypeAndCreatedAtGreaterThanEqual(user, type, LocalDateTime.now().minusMinutes(MAX_SECURITY_TOKEN_MINUTES))) {
+        if (hasRecentActivationToken(user, type)) {
             return;
         }
 
@@ -66,6 +66,10 @@ public class SecurityTokenService {
                 .templateName(templateName)
                 .parameters(templateParameters)
                 .build().send();
+    }
+
+    public boolean hasRecentActivationToken(User user, SecurityToken.Type type) {
+        return securityTokenRepository.existsByUserAndTypeAndCreatedAtGreaterThanEqual(user, type, LocalDateTime.now().minusMinutes(MAX_SECURITY_TOKEN_MINUTES));
     }
 
     public void deleteNonExpiredSecurityToken(User user, SecurityToken.Type type) {

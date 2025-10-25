@@ -13,7 +13,7 @@ import com.mdevs.trackera.shared.exceptions.types.NotFoundException;
 import com.mdevs.trackera.shared.exceptions.types.UnauthorizedException;
 import com.mdevs.trackera.shared.search_filter.SearchFilter;
 import com.mdevs.trackera.shared.search_filter.WorkLogSearchFilterBuilder;
-import com.mdevs.trackera.shared.utils.TrackeraTimeSpanUtil;
+import com.mdevs.trackera.utils.TrackeraTimeSpanUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.modelmapper.ModelMapper;
 import org.slf4j.Logger;
