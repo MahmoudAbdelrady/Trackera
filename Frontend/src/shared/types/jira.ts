@@ -15,6 +15,13 @@ interface JiraTask extends TrackeraTableEntity {
   timeTracking: Record<string, any>;
 }
 
-export type { JiraTask, JiraTaskEvaluationType };
+interface JiraSite {
+  id: string;
+  url: string;
+  name: string;
+  avatarUrl: string;
+}
+
+export type { JiraTask, JiraTaskEvaluationType, JiraSite };
 
 export { jiraTaskEvaluationMetadata };

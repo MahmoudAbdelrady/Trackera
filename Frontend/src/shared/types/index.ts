@@ -20,9 +20,9 @@ import type {
 
 import { worklogEvaluationMetadata, statusMetadata } from "./worklog";
 
-import type { JiraTask, JiraTaskEvaluationType } from "./jira-tasks";
+import type { JiraTask, JiraTaskEvaluationType, JiraSite } from "./jira";
 
-import { jiraTaskEvaluationMetadata } from "./jira-tasks";
+import { jiraTaskEvaluationMetadata } from "./jira";
 
 import type { SettingsSectionProps, LinkedAccountProps, EmailSectionProps, UserEmailType, UserEmailProps } from "./settings";
 
@@ -53,6 +53,7 @@ export type {
   WorkLogsFilterProps,
   JiraTask,
   JiraTaskEvaluationType,
+  JiraSite,
   SettingsSectionProps,
   LinkedAccountProps,
   EmailSectionProps,
