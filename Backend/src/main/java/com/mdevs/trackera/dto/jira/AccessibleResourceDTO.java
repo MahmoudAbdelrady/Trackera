@@ -15,8 +15,4 @@ public class AccessibleResourceDTO {
     private String url;
 
     private String avatarUrl;
-
-    private String resourceType;
-
-    private String[] scopes;
 }

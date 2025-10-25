@@ -1,6 +1,7 @@
 package com.mdevs.trackera.controller;
 
 import com.mdevs.trackera.dto.auth.PasswordDTO;
+import com.mdevs.trackera.dto.user.UserPreferenceDTO;
 import com.mdevs.trackera.service.UserService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -8,6 +9,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -62,5 +64,16 @@ public class UserController {
     public ResponseEntity<?> RemoveEmail(@RequestBody Map<String, Object> body) {
         userService.removeEmail((String) body.get("email"));
         return new ResponseEntity<>("Email removed successfully.", HttpStatus.OK);
+    }
+
+    @GetMapping("/preferences")
+    public ResponseEntity<?> GetPreferences() {
+        return new ResponseEntity<>(userService.getUserPreferences(), HttpStatus.OK);
+    }
+
+    @PostMapping("/preferences")
+    public ResponseEntity<?> UpdatePreferences(@RequestBody List<UserPreferenceDTO> userPreferenceDTOList){
+        userService.updateUserPreferences(userPreferenceDTOList);
+        return new ResponseEntity<>("Preferences updated successfully.", HttpStatus.OK);
     }
 }

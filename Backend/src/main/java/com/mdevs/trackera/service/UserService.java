@@ -1,11 +1,14 @@
 package com.mdevs.trackera.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.mdevs.trackera.config.general.AppConfig;
 import com.mdevs.trackera.dto.auth.LoggedUserDTO;
 import com.mdevs.trackera.dto.auth.OAuthUserInfoDTO;
 import com.mdevs.trackera.dto.auth.PasswordDTO;
 import com.mdevs.trackera.dto.auth.SignUpDTO;
+import com.mdevs.trackera.dto.jira.AccessibleResourceDTO;
 import com.mdevs.trackera.dto.user.UserEmailDTO;
+import com.mdevs.trackera.dto.user.UserPreferenceDTO;
 import com.mdevs.trackera.entity.SecurityToken;
 import com.mdevs.trackera.entity.User;
 import com.mdevs.trackera.entity.UserEmail;
@@ -18,6 +21,7 @@ import com.mdevs.trackera.shared.enums.EmailTag;
 import com.mdevs.trackera.shared.exceptions.types.BusinessException;
 import com.mdevs.trackera.shared.exceptions.types.NotFoundException;
 import com.mdevs.trackera.shared.oauth_provider.OAuthProvider;
+import com.mdevs.trackera.shared.utils.AppUtils;
 import com.mdevs.trackera.shared.utils.mail.TrackeraEmailTarget;
 import org.apache.commons.lang3.StringUtils;
 import org.modelmapper.ModelMapper;
@@ -41,6 +45,10 @@ public class UserService implements UserDetailsService {
 
     private final UserOAuthProviderService userOAuthProviderService;
 
+    private final UserPreferredSettingService userPreferredSettingService;
+
+    private final JiraService jiraService;
+
     private final SecurityTokenService securityTokenService;
 
     private final ModelMapper modelMapper;
@@ -50,11 +58,14 @@ public class UserService implements UserDetailsService {
     public static final String EMAIL_REGEX = "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9-]+(?:\\.[a-zA-Z0-9-]+)*\\.[a-zA-Z]{2,}$";
 
     @Autowired
-    public UserService(UserRepository userRepository, UserEmailRepository userEmailRepository, UserOAuthProviderRepository userOAuthProviderRepository, UserOAuthProviderService userOAuthProviderService, SecurityTokenService securityTokenService, ModelMapper modelMapper, PasswordEncoder passwordEncoder) {
+    public UserService(UserRepository userRepository, UserEmailRepository userEmailRepository, UserOAuthProviderRepository userOAuthProviderRepository, UserOAuthProviderService userOAuthProviderService, UserPreferredSettingService userPreferredSettingService, JiraService jiraService,
+                       SecurityTokenService securityTokenService, ModelMapper modelMapper, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.userEmailRepository = userEmailRepository;
         this.userOAuthProviderRepository = userOAuthProviderRepository;
         this.userOAuthProviderService = userOAuthProviderService;
+        this.userPreferredSettingService = userPreferredSettingService;
+        this.jiraService = jiraService;
         this.securityTokenService = securityTokenService;
         this.modelMapper = modelMapper;
         this.passwordEncoder = passwordEncoder;
@@ -310,5 +321,30 @@ public class UserService implements UserDetailsService {
         if (StringUtils.isEmpty(email) || !email.matches(EMAIL_REGEX)) {
             throw new BusinessException("Invalid email format");
         }
+    }
+
+    public List<Map<String, Object>> getUserPreferences() {
+        List<Map<String, Object>> preferences = userPreferredSettingService.getAllByUser(AppConfig.getCurrentUser());
+        for (Map<String, Object> preference : preferences) {
+            if (preference.get("key").equals(JiraService.JIRA_PRIMARY_PROJECT_SETTING_KEY)) {
+                Map<String, Object> jiraProjectInfo = AppUtils.convertJsonStringToObject(preference.get("value").toString(), Map.class);
+                preference.put("value", jiraProjectInfo);
+            }
+        }
+        return preferences;
+    }
+
+    public void updateUserPreferences(List<UserPreferenceDTO> userPreferenceDTOList) {
+        User loggedUser = Objects.requireNonNull(AppConfig.getCurrentUser());
+        for (UserPreferenceDTO preferenceDTO : userPreferenceDTOList) {
+            userPreferredSettingService.validatePreference(preferenceDTO);
+            if (preferenceDTO.getKey().equals(JiraService.JIRA_PRIMARY_PROJECT_SETTING_KEY)) {
+                AccessibleResourceDTO accessibleResourceDTO = jiraService.getUserSites(loggedUser).stream().filter(site -> site.getId().equals(preferenceDTO.getValue()))
+                        .findFirst().orElseThrow(() -> new NotFoundException("Site not found"));
+
+                preferenceDTO.setValue(AppUtils.convertObjectToJsonString(accessibleResourceDTO));
+            }
+        }
+        userPreferredSettingService.updateAll(loggedUser, userPreferenceDTOList);
     }
 }

@@ -1,7 +1,18 @@
 @use "../../../../../shared/styles/colors" as *;
 @use "../../../../../shared/styles/mixins" as *;
 
-.preference {
-  @include start;
-  gap: 8px;
+.preferences_section {
+  @include start-rev;
+  flex-direction: column;
+  gap: 10px;
+  .loading_spinner {
+    width: 100%;
+  }
+  .preference_select {
+    min-width: 150px;
+  }
+  .update_button {
+    align-self: flex-end;
+    margin-top: 10px;
+  }
 }
