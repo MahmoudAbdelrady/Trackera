@@ -15,27 +15,17 @@ const InputField = (props: InputFieldProps) => {
     type: props.type,
   };
 
-  const handlePreventPasswordCopyPaste = (
-    event: React.ClipboardEvent<HTMLInputElement>
-  ) => {
+  const handlePreventPasswordCopyPaste = (event: React.ClipboardEvent<HTMLInputElement>) => {
     event.preventDefault();
   };
 
   return (
     <div className={classes.input_group}>
-      <div className={classes.input_label}>{props.label}</div>
-      <Form.Item
-        style={{ marginBottom: 0, width: "100%" }}
-        validateStatus={props.error ? "error" : ""}
-        help={props.error ? props.error : ""}
-      >
+      {props.label && <div className={classes.input_label}>{props.label}</div>}
+
+      <Form.Item style={{ marginBottom: 0, width: "100%" }} validateStatus={props.error ? "error" : ""} help={props.error ? props.error : ""}>
         {props.type === "password" ? (
-          <Input.Password
-            {...fieldProps}
-            onCut={handlePreventPasswordCopyPaste}
-            onCopy={handlePreventPasswordCopyPaste}
-            onPaste={handlePreventPasswordCopyPaste}
-          />
+          <Input.Password {...fieldProps} onCut={handlePreventPasswordCopyPaste} onCopy={handlePreventPasswordCopyPaste} onPaste={handlePreventPasswordCopyPaste} />
         ) : (
           <Input {...fieldProps} />
         )}

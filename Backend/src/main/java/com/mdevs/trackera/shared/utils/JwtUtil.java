@@ -35,14 +35,14 @@ public class JwtUtil {
         this.trackeraHasher = trackeraHasher;
     }
 
-    public String generateToken(String userEmail, boolean isAccessToken) {
+    public String generateToken(String userUuid, boolean isAccessToken) {
         Instant now = Instant.now();
         Instant expiration = now.plus(15, isAccessToken ? ChronoUnit.MINUTES : ChronoUnit.DAYS);
         String tokenSecretKey = isAccessToken ? accessTokenSecretKey : refreshTokenSecretKey;
         return Jwts.builder()
                 .subject("Token")
                 .issuer("Trackera")
-                .claim("email", userEmail)
+                .claim("id", userUuid)
                 .issuedAt(Date.from(now))
                 .expiration(Date.from(expiration))
                 .signWith(Keys.hmacShaKeyFor(tokenSecretKey.getBytes(StandardCharsets.UTF_8)))
@@ -51,8 +51,8 @@ public class JwtUtil {
 
     public Claims validateAndGetTokenPayload(String token, boolean isAccessToken) {
         Claims claims = getTokenPayload(token, isAccessToken);
-        String email = claims.get("email", String.class);
-        if (isTokenInvalid(email, token, isAccessToken)) {
+        String uuid = claims.get("id", String.class);
+        if (isTokenInvalid(uuid, token, isAccessToken)) {
             throw new SecurityException("Invalid or expired token");
         }
         return claims;
@@ -68,13 +68,13 @@ public class JwtUtil {
         }
     }
 
-    public boolean isTokenInvalid(String userEmail, String token, boolean isAccessToken) {
+    public boolean isTokenInvalid(String uuid, String token, boolean isAccessToken) {
         long maxId = 0;
         PageRequest pageRequest = PageRequest.of(0, 100);
         List<UserInvalidToken> userInvalidTokens;
         boolean isInvalid = false;
         do {
-            userInvalidTokens = userInvalidTokenRepository.findAllByUserAndTokenTypeOrderById(userEmail, isAccessToken, maxId, pageRequest);
+            userInvalidTokens = userInvalidTokenRepository.findAllByUserAndTokenTypeOrderById(uuid, isAccessToken, maxId, pageRequest);
             if (!userInvalidTokens.isEmpty()) {
                 isInvalid = userInvalidTokens.stream().anyMatch(it -> trackeraHasher.isMatch(token, it.getToken(), false));
                 maxId = userInvalidTokens.getLast().getId();

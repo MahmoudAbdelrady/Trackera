@@ -1,6 +1,6 @@
 import type { TrackeraTableEntity, StatusBadgeProps, InputFieldProps, PaginatedResponse } from "./global";
 
-import type { AuthLayoutProps, AuthFormProps, AuthResultFields, AuthResultProps, AuthFooterProps, OAuthBtnProps } from "./auth";
+import type { AuthLayoutProps, AuthFormProps, AuthResultFields, AuthResultProps, AuthFooterProps, OAuthBtnProps, UpdatePasswordFormFields } from "./auth";
 
 import type {
   WorkLogEvaluationType,
@@ -20,11 +20,11 @@ import type {
 
 import { worklogEvaluationMetadata, statusMetadata } from "./worklog";
 
-import type { JiraTask, JiraTaskEvaluationType } from "./jira-tasks";
+import type { JiraTask, JiraTaskEvaluationType, JiraSite } from "./jira";
 
-import { jiraTaskEvaluationMetadata } from "./jira-tasks";
+import { jiraTaskEvaluationMetadata } from "./jira";
 
-import type { SettingsSectionProps, LinkedAccountProps } from "./settings";
+import type { SettingsSectionProps, LinkedAccountProps, EmailSectionProps, UserEmailType, UserEmailProps } from "./settings";
 
 export type {
   TrackeraTableEntity,
@@ -47,13 +47,18 @@ export type {
   ManageWorkLogModalProps,
   AuthFooterProps,
   OAuthBtnProps,
+  UpdatePasswordFormFields,
   WorkLogSummaryCard,
   WorkLogSearchFilter,
   WorkLogsFilterProps,
   JiraTask,
   JiraTaskEvaluationType,
+  JiraSite,
   SettingsSectionProps,
   LinkedAccountProps,
+  EmailSectionProps,
+  UserEmailType,
+  UserEmailProps,
 };
 
 export { worklogEvaluationMetadata, statusMetadata, jiraTaskEvaluationMetadata };

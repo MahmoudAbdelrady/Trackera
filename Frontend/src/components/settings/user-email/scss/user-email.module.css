@@ -1,0 +1,53 @@
+.user_email {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+.user_email:not(:last-child) {
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: 25px;
+  margin-bottom: 25px;
+}
+.user_email .info {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+}
+.user_email .info .tags {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+.user_email .action_trigger {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  padding: 5px;
+  border-radius: 5px;
+  transition: 0.3s;
+}
+.user_email .action_trigger:hover {
+  background-color: #f3f4f6;
+}
+
+.email_item {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+}
+.email_item:hover.primary {
+  color: #2563eb;
+}
+.email_item:hover.resend {
+  color: #d97706;
+}
+.email_item:hover.remove {
+  color: #dc2626;
+}/*# sourceMappingURL=user-email.module.css.map */

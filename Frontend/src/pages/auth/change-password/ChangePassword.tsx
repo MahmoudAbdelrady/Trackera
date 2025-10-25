@@ -1,55 +1,38 @@
-import {
-  AuthForm,
-  AuthLayout,
-  AuthResult,
-  InputField,
-  LoadingSpinner,
-} from "../../../components";
+import { AuthForm, AuthLayout, AuthResult, InputField, LoadingSpinner } from "../../../components";
 import { Lock } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import inputFieldClasses from "../../../components/input-field/scss/input-field.module.css";
 import { useFormik } from "formik";
-import { resetPasswordSchema } from "../../../shared/yup-schemas";
+import { updatePasswordSchema } from "../../../shared/yup-schemas";
 import requestInstance from "../../../shared/axios/request-instance";
-import type { AuthResultFields } from "../../../shared/types";
+import type { AuthResultFields, UpdatePasswordFormFields } from "../../../shared/types";
 import { showErrorToast } from "../../../utils/toast-handler/showToast";
-
-interface ChangePasswordFormFields {
-  newPassword: string;
-  confirmNewPassword: string;
-}
+import { useAuthStore } from "../../../state/store";
 
 const ChangePassword = () => {
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const [isVerifying, setIsVerifying] = useState<boolean>(true);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [showAuthResult, setShowAuthResult] = useState<boolean>(false);
-  const [passwordChangeResult, setPasswordChangeResult] =
-    useState<AuthResultFields>({});
+  const [passwordChangeResult, setPasswordChangeResult] = useState<AuthResultFields>({});
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const token = searchParams.get("token");
 
   const changePasswordFormik = useFormik({
-    initialValues: (
-      Object.keys(
-        resetPasswordSchema.fields
-      ) as (keyof ChangePasswordFormFields)[]
-    ).reduce((acc, key) => {
+    initialValues: (Object.keys(updatePasswordSchema().fields) as (keyof UpdatePasswordFormFields)[]).reduce((acc, key) => {
       acc[key] = "";
       return acc;
-    }, {} as ChangePasswordFormFields),
-    validationSchema: resetPasswordSchema,
+    }, {} as UpdatePasswordFormFields),
+    validationSchema: updatePasswordSchema(),
     onSubmit: async (values) => {
       setIsLoading(true);
       try {
-        const response = await requestInstance.post(
-          `/auth/change-password?token=${token}`,
-          {
-            ...values,
-            token,
-          }
-        );
+        const { currentPassword, ...newPasswordInfo } = values;
+        const response = await requestInstance.post(`/auth/change-password?token=${token}`, {
+          ...newPasswordInfo,
+        });
         setPasswordChangeResult({
           description: response.data,
         });
@@ -103,19 +86,11 @@ const ChangePassword = () => {
       {showAuthResult ? (
         <AuthResult
           title="Password Change"
-          description={
-            passwordChangeResult.isError
-              ? "Error occurred while changing password"
-              : passwordChangeResult.description!
-          }
-          message={
-            passwordChangeResult.isError
-              ? passwordChangeResult.description!
-              : "You can now sign in with your new password"
-          }
-          buttonText="Back to Sign In"
+          description={passwordChangeResult.isError ? "Error occurred while changing password" : passwordChangeResult.description!}
+          message={passwordChangeResult.isError ? passwordChangeResult.description! : "You can now sign in with your new password"}
+          buttonText={`Back to ${isAuthenticated ? "Home" : "Sign In"}`}
           isError={passwordChangeResult.isError}
-          onClick={() => navigate("/login")}
+          onClick={() => navigate(`${isAuthenticated ? "/" : "/login"}`)}
         />
       ) : (
         <AuthForm
@@ -123,11 +98,7 @@ const ChangePassword = () => {
           description="Enter your new password"
           submitButtonText="Change Password"
           onSubmit={changePasswordFormik.handleSubmit}
-          isSubmitBtnDisabled={
-            !changePasswordFormik.isValid ||
-            !changePasswordFormik.dirty ||
-            isLoading
-          }
+          isSubmitBtnDisabled={!changePasswordFormik.isValid || !changePasswordFormik.dirty || isLoading}
           isSubmitBtnLoading={isLoading}
         >
           <InputField
@@ -140,12 +111,7 @@ const ChangePassword = () => {
             onBlur={changePasswordFormik.handleBlur}
             type="password"
             disabled={isLoading}
-            error={
-              changePasswordFormik.touched.newPassword &&
-              changePasswordFormik.errors.newPassword
-                ? changePasswordFormik.errors.newPassword
-                : undefined
-            }
+            error={changePasswordFormik.touched.newPassword && changePasswordFormik.errors.newPassword ? changePasswordFormik.errors.newPassword : undefined}
           />
           <InputField
             label="Confirm New Password"
@@ -157,12 +123,7 @@ const ChangePassword = () => {
             onBlur={changePasswordFormik.handleBlur}
             type="password"
             disabled={isLoading}
-            error={
-              changePasswordFormik.touched.confirmNewPassword &&
-              changePasswordFormik.errors.confirmNewPassword
-                ? changePasswordFormik.errors.confirmNewPassword
-                : undefined
-            }
+            error={changePasswordFormik.touched.confirmNewPassword && changePasswordFormik.errors.confirmNewPassword ? changePasswordFormik.errors.confirmNewPassword : undefined}
           />
         </AuthForm>
       )}

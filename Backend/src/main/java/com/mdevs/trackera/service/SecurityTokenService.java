@@ -4,7 +4,6 @@ import com.mdevs.trackera.config.general.AppConfig;
 import com.mdevs.trackera.entity.SecurityToken;
 import com.mdevs.trackera.entity.User;
 import com.mdevs.trackera.repository.SecurityTokenRepository;
-import com.mdevs.trackera.shared.exceptions.types.BusinessException;
 import com.mdevs.trackera.shared.exceptions.types.UnauthorizedException;
 import com.mdevs.trackera.shared.utils.TrackeraHasher;
 import com.mdevs.trackera.shared.utils.mail.TrackeraEmailTarget;
@@ -45,17 +44,10 @@ public class SecurityTokenService {
     }
 
     @Transactional
-    public void createAndSendSecurityToken(User user, SecurityToken.Type type, String additionalInfo, Map<String, String> extraParameters, String pageUrl, String templateName) {
-        boolean notValid = false;
+    public void createAndSendSecurityToken(User user, String targetEmail, SecurityToken.Type type, String additionalInfo, Map<String, String> extraParameters, String pageUrl, String templateName) {
         if (securityTokenRepository.existsByUserAndTypeAndCreatedAtGreaterThanEqual(user, type, LocalDateTime.now().minusMinutes(MAX_SECURITY_TOKEN_MINUTES))) {
-            if (!type.equals(SecurityToken.Type.PASSWORD_RESET)) {
-                throw new BusinessException(type.getLabel() + " request has already been made recently. Please check your email or try again later.");
-            }
-            notValid = true;
-        }
-
-        if (notValid)
             return;
+        }
 
         SecurityToken securityToken = new SecurityToken(user, type);
         if (!StringUtils.isEmpty(additionalInfo)) {
@@ -71,10 +63,14 @@ public class SecurityTokenService {
             templateParameters.putAll(extraParameters);
         }
         TrackeraEmailTarget.builder()
-                .targetEmail(user.getEmail())
+                .targetEmail(targetEmail)
                 .subject(type.getLabel())
                 .templateName(templateName)
                 .parameters(templateParameters)
                 .build().send();
+    }
+
+    public void deleteNonExpiredSecurityToken(User user, SecurityToken.Type type) {
+        securityTokenRepository.deleteByUserAndTypeAndCreatedAtGreaterThanEqual(user, type, LocalDateTime.now().minusMinutes(MAX_SECURITY_TOKEN_MINUTES));
     }
 }

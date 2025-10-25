@@ -51,7 +51,7 @@ public class JwtFilter extends OncePerRequestFilter {
             return;
         }
 
-        AuthFilterUserDTO authFilterUserDTO = new AuthFilterUserDTO(claims.get("email", String.class));
+        AuthFilterUserDTO authFilterUserDTO = new AuthFilterUserDTO(claims.get("id", String.class));
         Authentication authentication = new UsernamePasswordAuthenticationToken(authFilterUserDTO, null, List.of());
         SecurityContextHolder.getContext().setAuthentication(authentication);
         filterChain.doFilter(request, response);

@@ -33,11 +33,7 @@ const router = createBrowserRouter([
   },
   {
     path: "/change-password",
-    element: (
-      <GuestRoute>
-        <ChangePassword />
-      </GuestRoute>
-    ),
+    element: <ChangePassword />,
   },
   {
     path: "/security-verification",

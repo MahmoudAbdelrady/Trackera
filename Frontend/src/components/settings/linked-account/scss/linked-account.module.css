@@ -3,7 +3,7 @@
   justify-content: space-between;
   align-items: center;
 }
-@media (max-width: 340px) {
+@media (max-width: 768px) {
   .linked_account {
     display: flex;
     justify-content: center;
@@ -22,12 +22,8 @@
   align-items: flex-start;
   flex-direction: column;
 }
-@media (max-width: 340px) {
+@media (max-width: 768px) {
   .linked_account .account_info {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-direction: row;
     width: 100%;
   }
 }
@@ -55,12 +51,12 @@
   align-items: center;
   gap: 5px;
 }
-@media (max-width: 340px) {
+@media (max-width: 768px) {
   .linked_account .actions {
     width: 100%;
   }
 }
-@media (max-width: 340px) {
+@media (max-width: 768px) {
   .linked_account .actions .link_button {
     width: 100%;
   }

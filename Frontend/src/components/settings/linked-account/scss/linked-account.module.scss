@@ -3,7 +3,7 @@
 
 .linked_account {
   @include between;
-  @media (max-width: 340px) {
+  @media (max-width: 768px) {
     @include center;
     flex-direction: column;
     gap: 10px;
@@ -15,9 +15,7 @@
   .account_info {
     @include start-rev;
     flex-direction: column;
-    @media (max-width: 340px) {
-      @include between;
-      flex-direction: row;
+    @media (max-width: 768px) {
       width: 100%;
     }
     .platform {
@@ -42,11 +40,11 @@
   .actions {
     @include center;
     gap: 5px;
-    @media (max-width: 340px) {
+    @media (max-width: 768px) {
       width: 100%;
     }
     .link_button {
-      @media (max-width: 340px) {
+      @media (max-width: 768px) {
         width: 100%;
       }
     }

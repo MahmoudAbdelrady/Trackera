@@ -1,5 +1,5 @@
 import loginSchema from "./login";
-import resetPasswordSchema from "./reset-password";
+import updatePasswordSchema from "./update-password";
 import signUpSchema from "./sign-up";
 
-export { loginSchema, resetPasswordSchema, signUpSchema };
+export { loginSchema, updatePasswordSchema, signUpSchema };

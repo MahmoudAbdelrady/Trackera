@@ -1,11 +1,13 @@
-import { Link } from "lucide-react";
-import { AppLayout, LinkedAccount, LoadingSpinner } from "../../components";
+import { Link, Lock, Mail, Sliders } from "lucide-react";
+import { AppLayout, ChangePasswordSection, EmailSection, LinkedAccount, LoadingSpinner, PreferencesSection } from "../../components";
 import { SettingsSection } from "../../components";
-import classes from "./scss/settings.module.css";
 import { showErrorToast, showSuccessToast } from "../../utils/toast-handler/showToast";
 import requestInstance from "../../shared/axios/request-instance";
 import { useEffect, useState } from "react";
 import { useOAuthFlow } from "../../shared/hooks";
+import { userQueries } from "../../state/queries";
+import classes from "./scss/settings.module.css";
+import type { UserEmailType } from "../../shared/types";
 
 interface OAuthAccount {
   provider: Record<string, string>;
@@ -14,13 +16,19 @@ interface OAuthAccount {
 }
 
 const Settings = () => {
-  const [isFetching, setIsFetching] = useState(false);
+  const { data: userData } = userQueries.useMeQuery();
+  const [isFetchingAccounts, setIsFetchingAccounts] = useState(false);
   const [fetchOAuthAccounts, setFetchOAuthAccounts] = useState(true);
+  const [isFetchingEmails, setIsFetchingEmails] = useState(false);
+  const [fetchUserEmails, setFetchUserEmails] = useState(true);
+  const [userEmails, setUserEmails] = useState<UserEmailType[]>([]);
   const [oAuthAccounts, setOAuthAccounts] = useState<OAuthAccount[]>([]);
+
   const { linkProviderAccount } = useOAuthFlow({
     onSuccess: () => {
       showSuccessToast("Account linked successfully");
       setFetchOAuthAccounts(true);
+      setFetchUserEmails(true);
     },
     onError: (error) => {
       showErrorToast(error);
@@ -32,6 +40,7 @@ const Settings = () => {
       const response = await requestInstance.post(`/auth/unlink-oauth/${provider}`);
       showSuccessToast(response.data);
       setFetchOAuthAccounts(true);
+      setFetchUserEmails(true);
     } catch (error: any) {
       showErrorToast(error);
     }
@@ -39,14 +48,14 @@ const Settings = () => {
 
   useEffect(() => {
     const fetchAccounts = async () => {
-      setIsFetching(true);
+      setIsFetchingAccounts(true);
       try {
-        const response = await requestInstance.get("/auth/oauth-providers");
+        const response = await requestInstance.get("/user/oauth-providers");
         setOAuthAccounts(response.data);
       } catch (error: any) {
         showErrorToast(error);
       }
-      setIsFetching(false);
+      setIsFetchingAccounts(false);
     };
 
     if (fetchOAuthAccounts) {
@@ -55,11 +64,35 @@ const Settings = () => {
     }
   }, [fetchOAuthAccounts]);
 
+  useEffect(() => {
+    const fetchEmails = async () => {
+      setIsFetchingEmails(true);
+      try {
+        const response = await requestInstance.get("/user/emails");
+        setUserEmails(response.data);
+      } catch (error: any) {
+        showErrorToast(error);
+      }
+      setIsFetchingEmails(false);
+    };
+
+    if (fetchUserEmails) {
+      fetchEmails();
+      setFetchUserEmails(false);
+    }
+  }, [fetchUserEmails]);
+
   return (
     <AppLayout>
       <div className={classes.settings_sections}>
+        <SettingsSection title={`${userData?.passwordSet ? "Change" : "Set"} Password`} icon={<Lock />}>
+          <ChangePasswordSection setFetchUserEmails={setFetchUserEmails} />
+        </SettingsSection>
+        <SettingsSection title="Emails" icon={<Mail />}>
+          <EmailSection userEmails={userEmails} isFetchingEmails={isFetchingEmails} setFetchUserEmails={setFetchUserEmails} setFetchLinkedAccounts={setFetchOAuthAccounts} />
+        </SettingsSection>
         <SettingsSection title="Linked Accounts" icon={<Link />}>
-          {isFetching ? (
+          {isFetchingAccounts ? (
             <LoadingSpinner />
           ) : (
             oAuthAccounts.map((account, idx) => (
@@ -73,6 +106,9 @@ const Settings = () => {
               />
             ))
           )}
+        </SettingsSection>
+        <SettingsSection title="Preferences" icon={<Sliders />}>
+          <PreferencesSection />
         </SettingsSection>
       </div>
     </AppLayout>

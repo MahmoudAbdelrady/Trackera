@@ -5,6 +5,7 @@
   background-color: #fff;
   border-radius: 8px;
   border: 1px solid $borderColor;
+  width: 100%;
   .header {
     @include start;
     gap: 10px;

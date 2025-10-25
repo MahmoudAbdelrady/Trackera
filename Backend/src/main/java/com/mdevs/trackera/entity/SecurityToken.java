@@ -14,8 +14,9 @@ public class SecurityToken extends BaseEntity {
     @Getter
     public enum Type {
         ACCOUNT_ACTIVATION("Account Activation"),
-        CHANGE_PASSWORD("Change Password"),
-        PASSWORD_RESET("Password Reset");
+        PASSWORD_CHANGE("Password Change"),
+        PASSWORD_RESET("Password Reset"),
+        NEW_EMAIL_VERIFICATION("New Email Verification");
 
         private final String label;
 

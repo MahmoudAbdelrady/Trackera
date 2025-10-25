@@ -39,4 +39,10 @@ interface OAuthBtnProps {
   onClick: () => void;
 }
 
-export type { AuthLayoutProps, AuthFormProps, AuthResultFields, AuthResultProps, AuthFooterProps, OAuthBtnProps };
+interface UpdatePasswordFormFields {
+  currentPassword?: string;
+  newPassword: string;
+  confirmNewPassword: string;
+}
+
+export type { AuthLayoutProps, AuthFormProps, AuthResultFields, AuthResultProps, AuthFooterProps, OAuthBtnProps, UpdatePasswordFormFields };
