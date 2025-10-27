@@ -32,6 +32,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class UserService implements UserDetailsService {
@@ -80,7 +81,7 @@ public class UserService implements UserDetailsService {
     public User validateAndGetUserByEmail(String email) {
         UserEmail userEmail = userEmailRepository.findByEmail(email);
         if (userEmail == null) {
-            throw new UsernameNotFoundException("Account not found. Please create an account and try again.");
+            throw new NotFoundException("Account not found. Please create an account and try again.");
         }
         if (!userEmail.isPrimary() && !userEmail.isVerified()) {
             throw new SecurityException("Invalid email or password.");
@@ -94,12 +95,12 @@ public class UserService implements UserDetailsService {
 
     public List<Map<String, Object>> getUserOAuthProviders() {
         User loggedUser = AppConfig.getCurrentUser();
-        List<UserOAuthProvider> userOAuthProviders = userOAuthProviderRepository.findByUser(loggedUser);
+        Map<OAuthProvider, UserOAuthProvider> userOAuthProviderMap = userOAuthProviderRepository.findByUser(loggedUser).stream().collect(Collectors.toMap(UserOAuthProvider::getProvider, o -> o));
         return Arrays.stream(OAuthProvider.values()).map(p -> {
-            UserOAuthProvider userOAuthProvider = userOAuthProviders.stream().filter(uop -> uop.getProvider().equals(p)).findFirst().orElse(null);
+            UserOAuthProvider userOAuthProvider = userOAuthProviderMap.get(p);
+            boolean userOAuthProviderExists = userOAuthProvider != null;
             Map<String, Object> providerInfo = new HashMap<>();
             providerInfo.put("provider", Map.of("code", p.getCode(), "name", p.getDisplayName()));
-            boolean userOAuthProviderExists = userOAuthProvider != null;
             providerInfo.put("isLinked", userOAuthProviderExists);
             providerInfo.put("email", userOAuthProviderExists && !StringUtils.isEmpty(userOAuthProvider.getEmail()) ? userOAuthProvider.getEmail() : null);
             if (userOAuthProviderExists) {
@@ -166,27 +167,30 @@ public class UserService implements UserDetailsService {
     @Transactional
     public String changePassword(PasswordDTO passwordDTO) {
         User user = Objects.requireNonNull(AppConfig.getCurrentUser());
-        if (!StringUtils.isEmpty(passwordDTO.getCurrentPassword()) && (!user.isPasswordSet() || !passwordEncoder.matches(passwordDTO.getCurrentPassword(), user.getPassword()))) {
-            throw new BusinessException("Current password is incorrect.");
-        }
-        user.setPassword(getUserNewPassword(user, passwordDTO));
+        validateAndUpdateUserPassword(user, passwordDTO, false);
         sendResetPasswordEmail(user, user.getEmail(), "Your password has been changed. If you did not perform this action, please reset your password immediately.", false);
-        userRepository.save(user);
-        userEmailRepository.findAllByUser(user).forEach(ue -> {
+        userEmailRepository.findAllByUser(user).stream().filter(ue -> ue.hasTag(EmailTag.PASSWORD_REQUIRED)).forEach(ue -> {
             ue.removeTag(EmailTag.PASSWORD_REQUIRED);
             userEmailRepository.save(ue);
         });
         return "Password changed successfully.";
     }
 
-    public String getUserNewPassword(User user, PasswordDTO passwordDTO) {
+    public void validateAndUpdateUserPassword(User user, PasswordDTO passwordDTO, boolean isResetPassword) {
+        if (user.isPasswordSet()) {
+            if (!isResetPassword && (StringUtils.isEmpty(passwordDTO.getCurrentPassword()) || !passwordEncoder.matches(passwordDTO.getCurrentPassword(), user.getPassword()))) {
+                throw new BusinessException("Current password is incorrect.");
+            }
+            if (passwordEncoder.matches(passwordDTO.getNewPassword(), user.getPassword())) {
+                throw new BusinessException("New password cannot be the same as the current password");
+            }
+        }
         if (!passwordDTO.getNewPassword().equals(passwordDTO.getConfirmNewPassword())) {
             throw new BusinessException("Passwords do not match");
         }
-        if (passwordEncoder.matches(passwordDTO.getNewPassword(), user.getPassword())) {
-            throw new BusinessException("New password cannot be the same as the current password");
-        }
-        return passwordEncoder.encode(passwordDTO.getNewPassword());
+
+        user.setPassword(passwordEncoder.encode(passwordDTO.getNewPassword()));
+        userRepository.save(user);
     }
 
     public void sendResetPasswordEmail(User user, String targetEmail, String description, boolean isForReset) {

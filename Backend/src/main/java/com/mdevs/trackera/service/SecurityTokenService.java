@@ -28,7 +28,7 @@ public class SecurityTokenService {
         this.trackeraHasher = trackeraHasher;
     }
 
-    public SecurityToken getSecurityToken(String token) {
+    public SecurityToken validateAndGet(String token) {
         Map<String, String> tokenPayload = trackeraHasher.parseSecurityToken(token);
         if (tokenPayload == null || tokenPayload.isEmpty()) {
             throw new UnauthorizedException("Url is expired or invalid");

@@ -2,6 +2,7 @@ package com.mdevs.trackera.controller;
 
 import com.mdevs.trackera.dto.auth.*;
 import com.mdevs.trackera.service.AuthService;
+import com.mdevs.trackera.service.SecurityTokenService;
 import com.mdevs.trackera.shared.annotations.PublicAPI;
 import com.mdevs.trackera.utils.ExceptionResponseMaker;
 import jakarta.servlet.http.HttpServletRequest;
@@ -19,8 +20,11 @@ import java.util.Map;
 public class AuthController {
     private final AuthService authService;
 
-    public AuthController(AuthService authService) {
+    private final SecurityTokenService securityTokenService;
+
+    public AuthController(AuthService authService, SecurityTokenService securityTokenService) {
         this.authService = authService;
+        this.securityTokenService = securityTokenService;
     }
 
     @PublicAPI
@@ -79,7 +83,7 @@ public class AuthController {
     @PublicAPI
     @PostMapping("/validate-token")
     public ResponseEntity<?> ValidateSecurityToken(@RequestParam String token) {
-        authService.validateToken(token);
+        securityTokenService.validateAndGet(token);
         return ResponseEntity.ok().build();
     }
 
@@ -92,6 +96,7 @@ public class AuthController {
     @PublicAPI
     @PostMapping("/change-password")
     public ResponseEntity<?> ChangePassword(@RequestParam String token, @RequestBody @Valid PasswordDTO passwordDTO) {
-        return new ResponseEntity<>(authService.changePassword(token, passwordDTO), HttpStatus.OK);
+        authService.resetUserPassword(token, passwordDTO);
+        return new ResponseEntity<>("Password changed successfully", HttpStatus.OK);
     }
 }

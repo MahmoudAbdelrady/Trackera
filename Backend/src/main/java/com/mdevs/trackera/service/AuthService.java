@@ -55,9 +55,10 @@ public class AuthService {
 
     private final TrackeraHasher trackeraHasher;
 
-    public AuthService(UserRepository userRepository, UserEmailRepository userEmailRepository, UserService userService, AuthenticationManager authenticationManager, SecurityTokenService securityTokenService, UserOAuthProviderService userOAuthProviderService, UserPreferredSettingService userPreferredSettingService, OAuthProviderFactory oAuthProviderFactory,
-                       SecurityTokenRepository securityTokenRepository, UserInvalidTokenRepository userInvalidTokenRepository, UserOAuthProviderRepository userOAuthProviderRepository,
-                       JwtUtil jwtUtil, CookieFactory cookieFactory, TrackeraHasher trackeraHasher) {
+    public AuthService(UserRepository userRepository, UserEmailRepository userEmailRepository, UserService userService, AuthenticationManager authenticationManager, SecurityTokenService securityTokenService,
+                       UserOAuthProviderService userOAuthProviderService, UserPreferredSettingService userPreferredSettingService, OAuthProviderFactory oAuthProviderFactory,
+                       SecurityTokenRepository securityTokenRepository, UserInvalidTokenRepository userInvalidTokenRepository, UserOAuthProviderRepository userOAuthProviderRepository, JwtUtil jwtUtil,
+                       CookieFactory cookieFactory, TrackeraHasher trackeraHasher) {
         this.userRepository = userRepository;
         this.userEmailRepository = userEmailRepository;
         this.userService = userService;
@@ -92,7 +93,6 @@ public class AuthService {
         }
 
         User loggedUser = (User) authentication.getPrincipal();
-        Map<String, Object> result = new HashMap<>();
         if (!loggedUser.isVerified()) {
             String message;
             if (securityTokenService.hasRecentActivationToken(loggedUser, SecurityToken.Type.ACCOUNT_ACTIVATION)) {
@@ -102,13 +102,10 @@ public class AuthService {
                         EmailTemplateUtil.accountActivationTemplateParams(), null, EmailTemplates.VERIFICATION_MAIL_TEMPLATE);
                 message = "Account not activated. An activation link has been sent to your email.";
             }
-            result.put("isError", true);
-            result.put("message", message);
-        } else {
-            result = generateLoginInfo(loggedUser, httpResponse);
+            return Map.of("isError", true, "message", message);
         }
 
-        return result;
+        return generateLoginInfo(loggedUser, httpResponse);
     }
 
     public String oAuth(String oAuthProvider, HttpServletRequest httpRequest) {
@@ -189,7 +186,7 @@ public class AuthService {
         httpResponse.addCookie(cookieFactory.create(CookieFactory.REFRESH_TOKEN_COOKIE_NAME, null, true, "/trackera/auth", 0));
     }
 
-    public void saveInvalidToken(String token, boolean isAccessToken) {
+    private void saveInvalidToken(String token, boolean isAccessToken) {
         Claims accessTokenClaims = jwtUtil.getTokenPayload(token, isAccessToken);
         User user = userRepository.findByUuid(accessTokenClaims.get("id", String.class));
         Date accessTokenClaimsExpiration = accessTokenClaims.getExpiration();
@@ -202,7 +199,7 @@ public class AuthService {
         try {
             accessTokenClaims = jwtUtil.validateAndGetTokenPayload(refreshToken, false);
         } catch (SecurityException e) {
-            throw new SecurityException("Login has expired. Please sign in again.");
+            throw new SecurityException("Session expired.");
         }
         String newAccessToken = jwtUtil.generateToken(accessTokenClaims.get("id", String.class), true);
         return Map.of("token", newAccessToken);
@@ -210,7 +207,7 @@ public class AuthService {
 
     @Transactional
     public AuthResultDTO processToken(String token) {
-        SecurityToken securityToken = securityTokenService.getSecurityToken(token);
+        SecurityToken securityToken = securityTokenService.validateAndGet(token);
         User user = securityToken.getUser();
 
         String message;
@@ -230,36 +227,29 @@ public class AuthService {
         return new AuthResultDTO(securityToken.getType().getLabel(), message);
     }
 
-    public void validateToken(String token) {
-        securityTokenService.getSecurityToken(token);
-    }
-
     @Transactional
     public String sendResetPassword(String email) {
-        User user = null;
+        User user;
         try {
             user = userService.validateAndGetUserByEmail(email);
+            if (user.canResetPassword() && user.getEmail().equals(email)) {
+                userService.sendResetPasswordEmail(user, email, "Please click the link below to reset your password.", true);
+            }
         } catch (Exception e) {
             // do nothing
-        }
-
-        if (user != null && user.canResetPassword() && user.getEmail().equals(email)) {
-            userService.sendResetPasswordEmail(user, email, "Please click the link below to reset your password.", true);
         }
 
         return "If the email exists, a password reset link has been sent to your email.";
     }
 
     @Transactional
-    public String changePassword(String token, PasswordDTO passwordDTO) {
-        SecurityToken securityToken = securityTokenService.getSecurityToken(token);
-        if (securityToken.getType().equals(SecurityToken.Type.ACCOUNT_ACTIVATION)) {
+    public void resetUserPassword(String token, PasswordDTO passwordDTO) {
+        SecurityToken securityToken = securityTokenService.validateAndGet(token);
+        if (!securityToken.getType().equals(SecurityToken.Type.PASSWORD_RESET)) {
             throw new UnauthorizedException("Url is expired or invalid");
         }
         User user = securityToken.getUser();
-        user.setPassword(userService.getUserNewPassword(user, passwordDTO));
-        userRepository.save(user);
+        userService.validateAndUpdateUserPassword(user, passwordDTO, true);
         securityTokenRepository.delete(securityToken);
-        return "Password changed successfully";
     }
 }

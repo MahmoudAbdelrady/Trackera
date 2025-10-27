@@ -51,17 +51,17 @@ public class UserOAuthProviderService {
     }
 
     public UserOAuthProvider delete(User user, OAuthProvider oAuthProvider) {
-        UserOAuthProvider userOAuthProvider = userOAuthProviderRepository.findByUserAndProvider(user, oAuthProvider);
-        if (userOAuthProvider == null) {
+        UserOAuthProvider deletedOAuthProvider = userOAuthProviderRepository.findByUserAndProvider(user, oAuthProvider);
+        if (deletedOAuthProvider == null) {
             throw new BusinessException("Your account is not linked with " + oAuthProvider.getDisplayName());
         }
         if (userOAuthProviderRepository.countByUser(user) <= 1 && !user.isPasswordSet()) {
             throw new BusinessException("You must have at least one sign-in method linked to your account");
         }
-        userOAuthProviderRepository.delete(userOAuthProvider);
+        userOAuthProviderRepository.delete(deletedOAuthProvider);
         if (oAuthProvider.equals(OAuthProvider.JIRA)) {
             userPreferredSettingService.deleteByUserAndKey(user, JiraService.JIRA_PRIMARY_PROJECT_SETTING_KEY);
         }
-        return userOAuthProvider;
+        return deletedOAuthProvider;
     }
 }
