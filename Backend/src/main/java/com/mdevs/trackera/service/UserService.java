@@ -56,8 +56,8 @@ public class UserService implements UserDetailsService {
 
     public static final String EMAIL_REGEX = "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9-]+(?:\\.[a-zA-Z0-9-]+)*\\.[a-zA-Z]{2,}$";
 
-    public UserService(UserRepository userRepository, UserEmailRepository userEmailRepository, UserOAuthProviderRepository userOAuthProviderRepository, UserOAuthProviderService userOAuthProviderService, UserPreferredSettingService userPreferredSettingService, JiraService jiraService,
-                       SecurityTokenService securityTokenService, ModelMapper modelMapper, PasswordEncoder passwordEncoder) {
+    public UserService(UserRepository userRepository, UserEmailRepository userEmailRepository, UserOAuthProviderRepository userOAuthProviderRepository, UserOAuthProviderService userOAuthProviderService,
+                       UserPreferredSettingService userPreferredSettingService, JiraService jiraService, SecurityTokenService securityTokenService, ModelMapper modelMapper, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.userEmailRepository = userEmailRepository;
         this.userOAuthProviderRepository = userOAuthProviderRepository;
@@ -81,12 +81,16 @@ public class UserService implements UserDetailsService {
     public User validateAndGetUserByEmail(String email) {
         UserEmail userEmail = userEmailRepository.findByEmail(email);
         if (userEmail == null) {
-            throw new NotFoundException("Account not found. Please create an account and try again.");
+            throw new NotFoundException("Account not found.");
         }
         if (!userEmail.isPrimary() && !userEmail.isVerified()) {
-            throw new SecurityException("Invalid email or password.");
+            throw new SecurityException("Email is not verified.");
         }
         return userEmail.getUser();
+    }
+
+    public UserEmail getUserEmailOrThrow(User user, String email) {
+        return Optional.ofNullable(userEmailRepository.findByUserAndEmail(user, email)).orElseThrow(() -> new NotFoundException("Email not found"));
     }
 
     public LoggedUserDTO getMeInfo() {
@@ -95,16 +99,17 @@ public class UserService implements UserDetailsService {
 
     public List<Map<String, Object>> getUserOAuthProviders() {
         User loggedUser = AppConfig.getCurrentUser();
-        Map<OAuthProvider, UserOAuthProvider> userOAuthProviderMap = userOAuthProviderRepository.findByUser(loggedUser).stream().collect(Collectors.toMap(UserOAuthProvider::getProvider, o -> o));
-        return Arrays.stream(OAuthProvider.values()).map(p -> {
-            UserOAuthProvider userOAuthProvider = userOAuthProviderMap.get(p);
-            boolean userOAuthProviderExists = userOAuthProvider != null;
+        Map<OAuthProvider, UserOAuthProvider> linkedProviders = userOAuthProviderRepository.findByUser(loggedUser).stream().collect(Collectors.toMap(UserOAuthProvider::getProvider, o -> o));
+
+        return Arrays.stream(OAuthProvider.values()).map(provider -> {
+            UserOAuthProvider userProvider = linkedProviders.get(provider);
+            boolean isLinked = userProvider != null;
             Map<String, Object> providerInfo = new HashMap<>();
-            providerInfo.put("provider", Map.of("code", p.getCode(), "name", p.getDisplayName()));
-            providerInfo.put("isLinked", userOAuthProviderExists);
-            providerInfo.put("email", userOAuthProviderExists && !StringUtils.isEmpty(userOAuthProvider.getEmail()) ? userOAuthProvider.getEmail() : null);
-            if (userOAuthProviderExists) {
-                providerInfo.put("isRevoked", userOAuthProvider.isRevoked());
+            providerInfo.put("provider", Map.of("name", provider.getDisplayName(), "code", provider.getCode()));
+            providerInfo.put("isLinked", isLinked);
+            if (isLinked) {
+                providerInfo.put("email", userProvider.getEmail());
+                providerInfo.put("isRevoked", userProvider.isRevoked());
             }
             return providerInfo;
         }).toList();
@@ -125,7 +130,7 @@ public class UserService implements UserDetailsService {
         return user;
     }
 
-    public void createUserEmail(User user, String email, boolean isPrimary, boolean isVerified, List<EmailTag> tags) {
+    public void createOrUpdateUserEmail(User user, String email, boolean isPrimary, boolean isVerified, List<EmailTag> tags) {
         UserEmail userEmail = Optional.ofNullable(userEmailRepository.findByUserAndEmail(user, email)).orElse(new UserEmail(user, email, isPrimary, isVerified));
         userEmail.addTags(tags);
         if (tags.stream().anyMatch(EmailTag::isOAuthTag)) {
@@ -136,13 +141,10 @@ public class UserService implements UserDetailsService {
 
     public Map<String, Object> createOrGetOAuthUser(OAuthUserInfoDTO oAuthUserInfo, OAuthProvider oAuthProvider) {
         User authenticatedUser = Optional.ofNullable(userEmailRepository.findByEmail(oAuthUserInfo.getEmail())).map(UserEmail::getUser).orElse(null);
-        boolean createOAuthProvider = true;
+        boolean shouldLinkOAuthProvider = authenticatedUser == null;
 
         if (authenticatedUser != null) { // means the user is logging in with an oAuth provider
-            createOAuthProvider = false;
-            if (userOAuthProviderService.ensureUserDoesNotHaveLinkedProvider(authenticatedUser, oAuthProvider) == null) {
-                throw new BusinessException("This account is not linked with " + oAuthProvider.getDisplayName());
-            }
+            userOAuthProviderService.ensureUserHasActiveLinkedProvider(authenticatedUser, oAuthProvider);
         } else {
             authenticatedUser = new User();
             authenticatedUser.setEmail(oAuthUserInfo.getEmail());
@@ -155,7 +157,7 @@ public class UserService implements UserDetailsService {
 
         return Map.of(
                 "user", authenticatedUser,
-                "createOAuthProvider", createOAuthProvider
+                "shouldLinkOAuthProvider", shouldLinkOAuthProvider
         );
     }
 
@@ -168,11 +170,11 @@ public class UserService implements UserDetailsService {
     public String changePassword(PasswordDTO passwordDTO) {
         User user = Objects.requireNonNull(AppConfig.getCurrentUser());
         validateAndUpdateUserPassword(user, passwordDTO, false);
-        sendResetPasswordEmail(user, user.getEmail(), "Your password has been changed. If you did not perform this action, please reset your password immediately.", false);
         userEmailRepository.findAllByUser(user).stream().filter(ue -> ue.hasTag(EmailTag.PASSWORD_REQUIRED)).forEach(ue -> {
             ue.removeTag(EmailTag.PASSWORD_REQUIRED);
             userEmailRepository.save(ue);
         });
+        sendPasswordFlowEmail(user, user.getEmail(), false);
         return "Password changed successfully.";
     }
 
@@ -193,7 +195,11 @@ public class UserService implements UserDetailsService {
         userRepository.save(user);
     }
 
-    public void sendResetPasswordEmail(User user, String targetEmail, String description, boolean isForReset) {
+    public void sendPasswordFlowEmail(User user, String targetEmail, boolean isForReset) {
+        String description = isForReset
+                ? "Please click the link below to reset your password."
+                : "Your password has been changed. If you did not perform this action, please reset your password immediately.";
+
         Map<String, String> templateParameters = new HashMap<>();
         templateParameters.put("emailTypeDesc", description);
         templateParameters.put("linkLabel", "Reset my password");
@@ -205,7 +211,7 @@ public class UserService implements UserDetailsService {
         List<UserEmail> userEmails = userEmailRepository.findAllByUserOrderByCreatedAt(loggedUser);
         return userEmails.stream().sorted(Comparator.comparing(UserEmail::isPrimary).reversed()).map(userEmail -> {
             UserEmailDTO userEmailDTO = modelMapper.map(userEmail, UserEmailDTO.class);
-            userEmailDTO.setOAuthLinked(userEmail.getTags().stream().anyMatch(EmailTag::isOAuthTag));
+            userEmailDTO.setOAuthLinked(userEmail.getTags().stream().anyMatch(EmailTag::isOAuthTag)); // for showing a warning if trying to remove emails linked with providers
             return  userEmailDTO;
         }).toList();
     }
@@ -216,15 +222,15 @@ public class UserService implements UserDetailsService {
         validateUserEmail(email);
         UserEmail existingUserEmail = userEmailRepository.findByEmail(email);
         if (existingUserEmail != null) {
-            throw new BusinessException(existingUserEmail.getUser().getId().equals(loggedUser.getId()) ? "Email already exists" : "Email is already associated with another account");
+            throw new BusinessException(existingUserEmail.getUser().getId().equals(loggedUser.getId()) ? "Email already exists" : "Email is already in use");
         }
-        createUserEmail(loggedUser, email, false, false, List.of());
+        createOrUpdateUserEmail(loggedUser, email, false, false, List.of());
         sendEmailVerificationSecurityToken(loggedUser, email);
     }
 
     public void verifyEmail(User user, String email) {
         validateUserEmail(email);
-        UserEmail userEmail = Optional.ofNullable(userEmailRepository.findByUserAndEmail(user, email)).orElseThrow(() -> new NotFoundException("Email not found"));
+        UserEmail userEmail = getUserEmailOrThrow(user, email);
         if (userEmail.isVerified()) {
             throw new BusinessException("Email is already verified");
         }
@@ -239,7 +245,7 @@ public class UserService implements UserDetailsService {
     public void makeEmailPrimary(String email) {
         User loggedUser = Objects.requireNonNull(AppConfig.getCurrentUser());
         validateUserEmail(email);
-        UserEmail secondaryUserEmail = Optional.ofNullable(userEmailRepository.findByUserAndEmail(loggedUser, email)).orElseThrow(() -> new NotFoundException("Email not found"));
+        UserEmail secondaryUserEmail = getUserEmailOrThrow(loggedUser, email);
         if (!secondaryUserEmail.isVerified()) {
             throw new BusinessException("Cannot set unverified email as primary");
         }
@@ -272,7 +278,7 @@ public class UserService implements UserDetailsService {
     public void sendVerificationEmail(String email) {
         User loggedUser = Objects.requireNonNull(AppConfig.getCurrentUser());
         validateUserEmail(email);
-        UserEmail userEmail = Optional.ofNullable(userEmailRepository.findByUserAndEmail(loggedUser, email)).orElseThrow(() -> new NotFoundException("Email not found"));
+        UserEmail userEmail = getUserEmailOrThrow(loggedUser, email);
         if (userEmail.isVerified()) {
             throw new BusinessException("Email is already verified");
         }
@@ -290,12 +296,11 @@ public class UserService implements UserDetailsService {
     public void removeEmail(String email) {
         User loggedUser = Objects.requireNonNull(AppConfig.getCurrentUser());
         validateUserEmail(email);
-        UserEmail userEmail = Optional.ofNullable(userEmailRepository.findByUserAndEmail(loggedUser, email)).orElseThrow(() -> new NotFoundException("Email not found"));
+        UserEmail userEmail = getUserEmailOrThrow(loggedUser, email);
         if (userEmail.isPrimary()) {
             throw new BusinessException("Cannot remove primary email");
         }
 
-        userEmailRepository.delete(userEmail);
         if (!userEmail.isVerified()) {
             securityTokenService.deleteNonExpiredSecurityToken(loggedUser, SecurityToken.Type.NEW_EMAIL_VERIFICATION);
         } else {
@@ -304,6 +309,7 @@ public class UserService implements UserDetailsService {
                     .forEach(provider -> userOAuthProviderService.delete(loggedUser, provider));
         }
 
+        userEmailRepository.delete(userEmail);
         TrackeraEmailTarget.builder()
                 .targetEmail(userEmail.getEmail())
                 .subject("Email Removed")
@@ -313,7 +319,7 @@ public class UserService implements UserDetailsService {
     }
 
     public void removeEmailTag(User user, String email, EmailTag tag) {
-        UserEmail userEmail = Optional.ofNullable(userEmailRepository.findByUserAndEmail(user, email)).orElseThrow(() -> new NotFoundException("Email not found"));
+        UserEmail userEmail = getUserEmailOrThrow(user, email);
         userEmail.removeTag(tag);
         userEmailRepository.save(userEmail);
     }

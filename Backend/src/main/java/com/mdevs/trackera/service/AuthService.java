@@ -117,7 +117,7 @@ public class AuthService {
 
         Claims claims = jwtUtil.validateAndGetTokenPayload(jwtTokenHeader.substring(7), true);
         User user = userRepository.findByUuid(claims.get("id", String.class));
-        userOAuthProviderService.ensureUserDoesNotHaveLinkedProvider(user, provider);
+        userOAuthProviderService.ensureUserDoesNotHaveActiveLinkedProvider(user, provider);
         return oAuthProviderFactory.getProvider(provider).generateAuthFlowUrl(user);
     }
 
@@ -143,8 +143,8 @@ public class AuthService {
     private User handleOAuthLoginOrSignupFlow(OAuthProvider provider, OAuthUserInfoDTO oAuthUserInfo) {
         Map<String, Object> userData = userService.createOrGetOAuthUser(oAuthUserInfo, provider);
         User user = (User) userData.get("user");
-        boolean createOAuthProvider = (boolean) userData.get("createOAuthProvider");
-        if (createOAuthProvider) {
+        boolean shouldLinkOAuthProvider = (boolean) userData.get("shouldLinkOAuthProvider");
+        if (shouldLinkOAuthProvider) {
             processOAuthData(user, provider, oAuthUserInfo, null);
         }
         return user;
@@ -152,7 +152,7 @@ public class AuthService {
 
     private void processOAuthData(User user, OAuthProvider provider, OAuthUserInfoDTO userInfo, UserOAuthProvider existingProvider) {
         userOAuthProviderService.createOrUpdate(user, userInfo, provider, existingProvider);
-        userService.createUserEmail(user, userInfo.getEmail(), userInfo.getEmail().equals(user.getEmail()), true, List.of(provider.getEmailTag()));
+        userService.createOrUpdateUserEmail(user, userInfo.getEmail(), userInfo.getEmail().equals(user.getEmail()), true, List.of(provider.getEmailTag()));
         if (provider.equals(OAuthProvider.JIRA)) {
             String primaryProjectSetting = AppUtils.convertObjectToJsonString(userInfo.getAdditionalInfo().get(JiraService.JIRA_PRIMARY_PROJECT_SETTING_KEY));
             userPreferredSettingService.create(user, JiraService.JIRA_PRIMARY_PROJECT_SETTING_KEY, primaryProjectSetting);
@@ -233,7 +233,7 @@ public class AuthService {
         try {
             user = userService.validateAndGetUserByEmail(email);
             if (user.canResetPassword() && user.getEmail().equals(email)) {
-                userService.sendResetPasswordEmail(user, email, "Please click the link below to reset your password.", true);
+                userService.sendPasswordFlowEmail(user, email, true);
             }
         } catch (Exception e) {
             // do nothing

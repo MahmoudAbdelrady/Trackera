@@ -42,12 +42,18 @@ public class UserOAuthProviderService {
         userOAuthProviderRepository.save(existingUserOAuthProvider);
     }
 
-    public UserOAuthProvider ensureUserDoesNotHaveLinkedProvider(User user, OAuthProvider oAuthProvider) {
+    public void ensureUserDoesNotHaveActiveLinkedProvider(User user, OAuthProvider oAuthProvider) {
         UserOAuthProvider userOAuthProvider = userOAuthProviderRepository.findByUserAndProvider(user, oAuthProvider);
         if (userOAuthProvider != null && !userOAuthProvider.isRevoked()) {
             throw new BusinessException("The current account is already linked with " + oAuthProvider.getDisplayName());
         }
-        return userOAuthProvider;
+    }
+
+    public void ensureUserHasActiveLinkedProvider(User user, OAuthProvider provider) {
+        UserOAuthProvider linked = userOAuthProviderRepository.findByUserAndProvider(user, provider);
+        if (linked == null || linked.isRevoked()) {
+            throw new BusinessException("This account is not linked with " + provider.getDisplayName());
+        }
     }
 
     public UserOAuthProvider delete(User user, OAuthProvider oAuthProvider) {
