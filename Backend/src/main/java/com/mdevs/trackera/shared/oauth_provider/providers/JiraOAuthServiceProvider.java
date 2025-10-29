@@ -6,7 +6,6 @@ import com.mdevs.trackera.dto.auth.OAuthRequestDTO;
 import com.mdevs.trackera.dto.jira.AccessibleResourceDTO;
 import com.mdevs.trackera.entity.User;
 import com.mdevs.trackera.service.JiraService;
-import com.mdevs.trackera.service.UserOAuthProviderService;
 import com.mdevs.trackera.shared.oauth_provider.OAuthProvider;
 import com.mdevs.trackera.shared.oauth_provider.OAuthServiceProvider;
 import com.mdevs.trackera.utils.AppUtils;
@@ -35,8 +34,8 @@ public class JiraOAuthServiceProvider extends OAuthServiceProvider {
 
     private final static Logger LOGGER = LoggerFactory.getLogger(JiraOAuthServiceProvider.class);
 
-    public JiraOAuthServiceProvider(UserOAuthProviderService userOAuthProviderService, RedisTemplate<String, Object> redisTemplate, TrackeraHasher trackeraHasher, OAuthUtil oAuthUtil) {
-        super(userOAuthProviderService, redisTemplate, trackeraHasher, oAuthUtil);
+    public JiraOAuthServiceProvider(RedisTemplate<String, Object> redisTemplate, TrackeraHasher trackeraHasher, OAuthUtil oAuthUtil) {
+        super(redisTemplate, trackeraHasher, oAuthUtil);
     }
 
     @Override

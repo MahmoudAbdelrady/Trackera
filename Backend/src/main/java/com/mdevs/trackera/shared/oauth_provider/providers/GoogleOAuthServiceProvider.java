@@ -10,7 +10,6 @@ import com.mdevs.trackera.dto.auth.OAuthAccessCredentialsDTO;
 import com.mdevs.trackera.dto.auth.OAuthUserInfoDTO;
 import com.mdevs.trackera.dto.auth.OAuthRequestDTO;
 import com.mdevs.trackera.entity.User;
-import com.mdevs.trackera.service.UserOAuthProviderService;
 import com.mdevs.trackera.shared.oauth_provider.OAuthProvider;
 import com.mdevs.trackera.shared.oauth_provider.OAuthServiceProvider;
 import com.mdevs.trackera.utils.OAuthUtil;
@@ -34,8 +33,8 @@ public class GoogleOAuthServiceProvider extends OAuthServiceProvider {
 
     private final static Logger LOGGER = LoggerFactory.getLogger(GoogleOAuthServiceProvider.class);
 
-    public GoogleOAuthServiceProvider(UserOAuthProviderService userOAuthProviderService, RedisTemplate<String, Object> redisTemplate, TrackeraHasher trackeraHasher, OAuthUtil oAuthUtil) {
-        super(userOAuthProviderService, redisTemplate, trackeraHasher, oAuthUtil);
+    public GoogleOAuthServiceProvider(RedisTemplate<String, Object> redisTemplate, TrackeraHasher trackeraHasher, OAuthUtil oAuthUtil) {
+        super(redisTemplate, trackeraHasher, oAuthUtil);
     }
 
     @Override

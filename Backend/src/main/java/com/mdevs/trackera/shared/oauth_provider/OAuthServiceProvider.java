@@ -18,8 +18,6 @@ import java.util.Map;
 
 @RequiredArgsConstructor
 public abstract class OAuthServiceProvider {
-    private final UserOAuthProviderService userOAuthProviderService;
-
     private final RedisTemplate<String, Object> redisTemplate;
 
     private final TrackeraHasher trackeraHasher;
@@ -53,11 +51,9 @@ public abstract class OAuthServiceProvider {
         return securityParams;
     }
 
-    public String refreshOAuthProviderCredentials(UserOAuthProvider userOAuthProvider) {
+    public OAuthAccessCredentialsDTO refreshOAuthProviderCredentials(UserOAuthProvider userOAuthProvider) {
         try {
-            OAuthAccessCredentialsDTO newTokens = refreshAccessToken(trackeraHasher.decryptFromBase64(userOAuthProvider.getRefreshToken(), false));
-            userOAuthProviderService.updateAccessCredentials(userOAuthProvider, newTokens);
-            return newTokens.getAccessToken();
+            return refreshAccessToken(trackeraHasher.decryptFromBase64(userOAuthProvider.getRefreshToken(), false));
         } catch (Exception e) {
             throw new SecurityException(e.getMessage());
         }
