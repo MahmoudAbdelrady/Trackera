@@ -12,7 +12,6 @@ import com.mdevs.trackera.utils.TrackeraHasher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 
@@ -59,8 +58,6 @@ public class UserOAuthProviderService {
         return trackeraHasher.decryptFromBase64(userOAuthProvider.getAccessToken(), false);
     }
 
-
-    @Transactional
     public UserOAuthProvider refreshAndUpdateCredentials(UserOAuthProvider userOAuthProvider) {
         try {
             OAuthAccessCredentialsDTO newCredentials = oAuthProviderFactory.getProvider(userOAuthProvider.getProvider()).refreshOAuthProviderCredentials(userOAuthProvider);
@@ -71,7 +68,6 @@ public class UserOAuthProviderService {
         }
         return userOAuthProvider;
     }
-
 
     public UserOAuthProvider updateAccessCredentials(UserOAuthProvider existingUserOAuthProvider, OAuthAccessCredentialsDTO oAuthAccessCredentialsDTO) {
         existingUserOAuthProvider.setAccessToken(trackeraHasher.encryptToBase64(oAuthAccessCredentialsDTO.getAccessToken(), false));
@@ -105,7 +101,6 @@ public class UserOAuthProviderService {
         }
         return userOAuthProvider;
     }
-
 
     public UserOAuthProvider delete(User user, OAuthProvider oAuthProvider) {
         UserOAuthProvider deletedOAuthProvider = userOAuthProviderRepository.findByUserAndProvider(user, oAuthProvider);

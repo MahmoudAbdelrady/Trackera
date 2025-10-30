@@ -5,6 +5,7 @@ import com.mdevs.trackera.entity.User;
 import com.mdevs.trackera.entity.UserPreferredSetting;
 import com.mdevs.trackera.repository.UserPreferredSettingRepository;
 import com.mdevs.trackera.shared.exceptions.types.BusinessException;
+import com.mdevs.trackera.utils.AppUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,6 +29,17 @@ public class UserPreferredSettingService {
             settingInfo.put("value", setting.getValue());
             return settingInfo;
         }).toList();
+    }
+
+    public <T> T getPreferenceValue(User user, String key, Class<T> valueType) {
+        UserPreferredSetting setting = userPreferredSettingRepository.findByUserAndKey(user, key);
+        if (setting == null) {
+            return null;
+        }
+
+        String value = setting.getValue();
+
+        return valueType == String.class ? valueType.cast(value) : AppUtils.convertJsonStringToObject(value, valueType);
     }
 
     public void create(User user, String key, String value) {

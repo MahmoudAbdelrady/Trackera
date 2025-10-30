@@ -1,12 +1,9 @@
 package com.mdevs.trackera.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.mdevs.trackera.config.general.AppConfig;
 import com.mdevs.trackera.dto.jira.AccessibleResourceDTO;
 import com.mdevs.trackera.entity.User;
 import com.mdevs.trackera.entity.UserOAuthProvider;
-import com.mdevs.trackera.entity.UserPreferredSetting;
-import com.mdevs.trackera.repository.UserPreferredSettingRepository;
 import com.mdevs.trackera.shared.enums.JiraTaskEvaluation;
 import com.mdevs.trackera.shared.exceptions.types.BusinessException;
 import com.mdevs.trackera.shared.oauth_provider.OAuthProvider;
@@ -32,7 +29,7 @@ public class JiraService {
 
     private final UserOAuthProviderService userOAuthProviderService;
 
-    private final UserPreferredSettingRepository userPreferredSettingRepository;
+    private final UserPreferredSettingService userPreferredSettingService;
 
     public static final String JIRA_PRIMARY_PROJECT_SETTING_KEY = "jiraPrimaryProject";
 
@@ -56,10 +53,10 @@ public class JiraService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(JiraService.class);
 
-    public JiraService(RedisTemplate<String, Object> redisTemplate, UserOAuthProviderService userOAuthProviderService, UserPreferredSettingRepository userPreferredSettingRepository) {
+    public JiraService(RedisTemplate<String, Object> redisTemplate, UserOAuthProviderService userOAuthProviderService, UserPreferredSettingService userPreferredSettingService) {
         this.redisTemplate = redisTemplate;
         this.userOAuthProviderService = userOAuthProviderService;
-        this.userPreferredSettingRepository = userPreferredSettingRepository;
+        this.userPreferredSettingService = userPreferredSettingService;
     }
 
     public Map<String, Object> getUserTasks(boolean forceUpdate) {
@@ -74,7 +71,7 @@ public class JiraService {
         boolean shouldFetch = shouldFetchTasks(cachedData, forceUpdateCacheKey, now, forceUpdate);
 
         if (shouldFetch) {
-            return fetchAndCacheTasks(cacheKey, forceUpdateCacheKey, now);
+            return fetchAndCacheTasks(currentUser, cacheKey, forceUpdateCacheKey, now);
         }
 
         return cachedData;
@@ -102,20 +99,19 @@ public class JiraService {
         return !lastUpdated.isAfter(now.minusHours(JIRA_TASKS_FETCH_HOURS_DURATION));
     }
 
-    private Map<String, Object> fetchAndCacheTasks(String cacheKey, String forceUpdateCacheKey, LocalDateTime now) {
-        String lastUpdated = TrackeraTimeSpanUtil.getSimpleDateTimeFormatter().format(now);
-
-        List<Map<String, Object>> jiraTasks = getTasksFromJira();
+    private Map<String, Object> fetchAndCacheTasks(User user, String cacheKey, String forceUpdateCacheKey, LocalDateTime now) {
+        List<Map<String, Object>> jiraTasks = getTasksFromJira(user);
         List<Map<String, Object>> currentTasks = jiraTasks.stream().filter(task -> !(Boolean) task.get("isResolved")).toList();
         List<Map<String, Object>> overestimatedTasks = jiraTasks.stream().filter(task -> ((Map<String, Object>) task.get("timeTracking")).get("evaluation") == JiraTaskEvaluation.OVERESTIMATED).toList();
+        String lastUpdated = TrackeraTimeSpanUtil.getSimpleDateTimeFormatter().format(now);
 
-        Map<String, Object> result = Map.of(
-                "lastUpdated", lastUpdated,
-                "tasks", Map.of(
-                        "currentTasks", Map.of("total", currentTasks.size(), "data", currentTasks),
-                        "overestimatedTasks", Map.of("total", overestimatedTasks.size(), "data", overestimatedTasks)
-                )
-        );
+        Map<String, Object> allTasks = new HashMap<>();
+        allTasks.put("currentTasks", Map.of("total", currentTasks.size(), "data", currentTasks));
+        allTasks.put("overestimatedTasks", Map.of("total", overestimatedTasks.size(), "data", overestimatedTasks));
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("lastUpdated", lastUpdated);
+        result.put("tasks", allTasks);
 
         redisTemplate.opsForValue().set(cacheKey, result, USER_JIRA_TASKS_CACHE_TTL);
         redisTemplate.opsForValue().set(forceUpdateCacheKey, lastUpdated, USER_JIRA_TASKS_FORCE_UPDATE_CACHE_TTL);
@@ -123,28 +119,31 @@ public class JiraService {
         return result;
     }
 
-    private List<Map<String, Object>> getTasksFromJira() {
+    private List<Map<String, Object>> getTasksFromJira(User user) {
         List<Map<String, Object>> jiraTasks = new ArrayList<>();
-        UserOAuthProvider userOAuthProvider = userOAuthProviderService.validateAndGetOAuthProvider(Objects.requireNonNull(AppConfig.getCurrentUser()), OAuthProvider.JIRA);
-        Map<String, Object> userJiraPrimaryProject = getUserPrimaryProject();
-        String accessToken = userOAuthProviderService.resolveValidAccessToken(userOAuthProvider);
+        UserOAuthProvider userOAuthProvider = userOAuthProviderService.validateAndGetOAuthProvider(user, OAuthProvider.JIRA);
+        Map<String, Object> userJiraPrimaryProject = userPreferredSettingService.getPreferenceValue(user, JIRA_PRIMARY_PROJECT_SETTING_KEY, Map.class);
+        if (userJiraPrimaryProject == null) {
+            throw new BusinessException("Jira primary project not set. Please set it in your settings.");
+        }
 
+        String accessToken = userOAuthProviderService.resolveValidAccessToken(userOAuthProvider);
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(accessToken);
         headers.setAccept(List.of(MediaType.APPLICATION_JSON));
-        HttpEntity<Void> entity = new HttpEntity<>(headers);
         Map<String, Object> jiraResponse;
         String url = JIRA_API_BASE_URL.replace("{cloudId}", userJiraPrimaryProject.get("id").toString()) + "/search/jql?jql=" + getJiraTasksSearchCondition() + "&fields=key,summary,status,timetracking,project,resolution";
-        int startAt = 0;
-        int total;
+        String nextPageToken = null;
+        boolean isLast;
 
         do {
-            jiraResponse = callJiraApi(url + "&startAt=" + startAt, HttpMethod.GET, entity, userOAuthProvider, Map.class);
+            String pagedUrl = url + (nextPageToken != null ? "&nextPageToken=" + nextPageToken : "");
+            jiraResponse = callJiraApi(pagedUrl, HttpMethod.GET, headers, userOAuthProvider, Map.class);
             processJiraResponseTasks(jiraResponse, userJiraPrimaryProject, jiraTasks);
-            int maxResults = (int) jiraResponse.get("maxResults");
-            total = (int) jiraResponse.get("total");
-            startAt += maxResults;
-        } while (startAt < total);
+            isLast = (boolean) jiraResponse.get("isLast");
+            nextPageToken = (String) jiraResponse.get("nextPageToken");
+        } while (!isLast);
+
         return jiraTasks;
     }
 
@@ -196,18 +195,6 @@ public class JiraService {
         }
     }
 
-    private Map<String, Object> getUserPrimaryProject() {
-        UserPreferredSetting userPreferredSetting = userPreferredSettingRepository.findByUserAndKey(AppConfig.getCurrentUser(), JIRA_PRIMARY_PROJECT_SETTING_KEY);
-        if (userPreferredSetting == null) {
-            throw new BusinessException("Jira primary project not set. Please set it in your settings.");
-        }
-        try {
-            return AppUtils.getObjectMapper().readValue(userPreferredSetting.getValue(), Map.class);
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
     private String getJiraTasksSearchCondition() {
         String maxDate = String.valueOf(LocalDate.now().minusMonths(3).withDayOfMonth(1));
         return "assignee=currentUser() AND (resolution IS EMPTY OR (resolutiondate >= '" + maxDate + "' AND timespent > 0)) ORDER BY created DESC";
@@ -230,15 +217,15 @@ public class JiraService {
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(accessToken);
         headers.setAccept(List.of(MediaType.APPLICATION_JSON));
-        HttpEntity<Void> entity = new HttpEntity<>(headers);
-        List<AccessibleResourceDTO> resources = Arrays.asList(callJiraApi("https://api.atlassian.com/oauth/token/accessible-resources", HttpMethod.GET, entity, userOAuthProvider, AccessibleResourceDTO[].class));
+        List<AccessibleResourceDTO> resources = Arrays.asList(callJiraApi("https://api.atlassian.com/oauth/token/accessible-resources", HttpMethod.GET, headers, userOAuthProvider, AccessibleResourceDTO[].class));
         redisTemplate.opsForValue().set(cacheKey, resources, Duration.ofMinutes(JIRA_SITES_FETCH_MINUTES_DURATION));
         return resources;
     }
 
     @Retryable(retryFor = Exception.class, backoff = @Backoff(delay = 1000, multiplier = 3))
-    private <T> T callJiraApi(String url, HttpMethod method, HttpEntity<?> entity, UserOAuthProvider userOAuthProvider, Class<T> responseType) {
+    private <T> T callJiraApi(String url, HttpMethod method, HttpHeaders headers, UserOAuthProvider userOAuthProvider, Class<T> responseType) {
         try {
+            HttpEntity<Void> entity = new HttpEntity<>(headers);
             ResponseEntity<T> response = AppUtils.getRestTemplate().exchange(url, method, entity, responseType);
 
             if (response.getStatusCode() == HttpStatus.UNAUTHORIZED) {
@@ -247,10 +234,9 @@ public class JiraService {
                 HttpHeaders newHeaders = new HttpHeaders();
                 newHeaders.putAll(entity.getHeaders());
                 newHeaders.setBearerAuth(newAccessToken);
+                entity = new HttpEntity<>(newHeaders);
 
-                HttpEntity<?> newEntity = new HttpEntity<>(newHeaders);
-
-                response = AppUtils.getRestTemplate().exchange(url, method, newEntity, responseType);
+                response = AppUtils.getRestTemplate().exchange(url, method, entity, responseType);
             }
 
             if (!response.getStatusCode().is2xxSuccessful()) {
