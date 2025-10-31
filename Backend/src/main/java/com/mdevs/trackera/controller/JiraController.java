@@ -26,6 +26,6 @@ public class JiraController {
 
     @GetMapping("/sites")
     public ResponseEntity<?> GetUserSites() {
-        return ResponseEntity.ok(jiraService.getUserSites(Objects.requireNonNull(AppConfig.getCurrentUser())));
+        return ResponseEntity.ok(jiraService.getUserSites(AppConfig.getAuthenticatedCurrentUser()));
     }
 }

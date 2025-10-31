@@ -1,8 +1,8 @@
 package com.mdevs.trackera.entity;
 
-import com.mdevs.trackera.shared.enums.BaseEnum;
+import com.mdevs.trackera.shared.enums.WorkLogEvaluation;
+import com.mdevs.trackera.shared.enums.WorkLogStatus;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -20,39 +20,6 @@ import java.time.LocalDate;
 @Setter
 @NoArgsConstructor
 public class WorkLog extends BaseEntity {
-    @Getter
-    @AllArgsConstructor
-    public enum Evaluation implements BaseEnum {
-        EXCELLENT("Excellent"),
-        GOOD("Good"),
-        MODERATE("Moderate"),
-        POOR("Poor");
-
-        private final String label;
-
-        public static Evaluation fromTotalHours(BigDecimal totalHours) {
-            if (totalHours.compareTo(BigDecimal.valueOf(8)) >= 0) {
-                return EXCELLENT;
-            } else if (totalHours.compareTo(BigDecimal.valueOf(7.5)) >= 0) {
-                return GOOD;
-            } else if (totalHours.compareTo(BigDecimal.valueOf(7)) >= 0) {
-                return MODERATE;
-            } else {
-                return POOR;
-            }
-        }
-    }
-
-    @Getter
-    @AllArgsConstructor
-    public enum Status implements BaseEnum {
-        SYNCED("Synced"),
-        PARTIALLY("Partially"),
-        NOT_SYNCED("Not Synced");
-
-        private final String label;
-    }
-
     @Column(nullable = false)
     private String name;
 
@@ -63,17 +30,17 @@ public class WorkLog extends BaseEntity {
     private LocalDate workDate;
 
     @Transient
-    private Evaluation evaluation;
+    private WorkLogEvaluation evaluation;
 
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
-    private Status status;
+    private WorkLogStatus status;
 
     @ManyToOne(fetch =  FetchType.LAZY, optional = false)
     private User user;
 
-    public Evaluation getEvaluation() {
-        return Evaluation.fromTotalHours(totalHours);
+    public WorkLogEvaluation getEvaluation() {
+        return WorkLogEvaluation.fromTotalHours(totalHours);
     }
 
     public void setTotalHours(BigDecimal totalHours) {

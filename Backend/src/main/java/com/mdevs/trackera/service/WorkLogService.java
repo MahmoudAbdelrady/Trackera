@@ -1,6 +1,7 @@
 package com.mdevs.trackera.service;
 
 import com.mdevs.trackera.config.general.AppConfig;
+import com.mdevs.trackera.dto.OperatorSearchDTO;
 import com.mdevs.trackera.dto.worklog.*;
 import com.mdevs.trackera.entity.WorkLog;
 import com.mdevs.trackera.entity.WorkLogDetail;
@@ -8,12 +9,17 @@ import com.mdevs.trackera.repository.WorkLogDetailRepository;
 import com.mdevs.trackera.repository.WorkLogRepository;
 import com.mdevs.trackera.shared.FileHandler;
 import com.mdevs.trackera.shared.enums.WorkLogColumn;
+import com.mdevs.trackera.shared.enums.WorkLogStatus;
 import com.mdevs.trackera.shared.exceptions.types.BusinessException;
 import com.mdevs.trackera.shared.exceptions.types.NotFoundException;
 import com.mdevs.trackera.shared.exceptions.types.UnauthorizedException;
 import com.mdevs.trackera.shared.search_filter.SearchFilter;
+import com.mdevs.trackera.shared.search_filter.SearchOperator;
 import com.mdevs.trackera.shared.search_filter.WorkLogSearchFilterBuilder;
 import com.mdevs.trackera.utils.TrackeraTimeSpanUtil;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+import jakarta.persistence.TypedQuery;
 import org.apache.commons.lang3.StringUtils;
 import org.modelmapper.ModelMapper;
 import org.slf4j.Logger;
@@ -43,6 +49,9 @@ public class WorkLogService {
 
     private final ModelMapper modelMapper;
 
+    @PersistenceContext
+    private EntityManager entityManager;
+
     private final static Pattern DURATION_PATTERN = Pattern.compile("(?:(\\d+)h)?\\s*(?:(\\d+)m)?");
 
     private final static Logger LOGGER = LoggerFactory.getLogger(WorkLogService.class);
@@ -63,6 +72,116 @@ public class WorkLogService {
             return workLogInfoDTO;
         }).toList();
         return new PageImpl<>(workLogInfoDTOList, pageable, workLogList.getTotalElements());
+    }
+
+    public Page<WorkLogInfoDTO> searchAllWorkLogsV2(WorkLogSearchFilterDTO searchFilterDTO, Pageable pageable) {
+        Map<String, Object> queryParameters = new HashMap<>();
+        String searchQuery = buildSearchQuery(searchFilterDTO, queryParameters);
+        TypedQuery<WorkLog> typedQuery = entityManager.createQuery(searchQuery, WorkLog.class);
+        queryParameters.forEach(typedQuery::setParameter);
+        typedQuery.setFirstResult(pageable.getPageNumber() * pageable.getPageSize());
+        typedQuery.setMaxResults(pageable.getPageSize());
+
+        List<WorkLog> workLogList = typedQuery.getResultList();
+        List<WorkLogInfoDTO> workLogInfoDTOList = workLogList.stream().map(workLog -> {
+            WorkLogInfoDTO workLogInfoDTO = modelMapper.map(workLog, WorkLogInfoDTO.class);
+            workLogInfoDTO.setId(workLog.getUuid());
+            workLogInfoDTO.setTotalHours(TrackeraTimeSpanUtil.formatDuration(workLog.getTotalHours(), false));
+            return workLogInfoDTO;
+        }).toList();
+
+        String countQueryStr = searchQuery.replaceFirst("SELECT wl FROM WorkLog wl", "SELECT COUNT(wl) FROM WorkLog wl");
+        TypedQuery<Long> countQuery = entityManager.createQuery(countQueryStr, Long.class);
+        queryParameters.forEach(countQuery::setParameter);
+        Long totalRecords = countQuery.getSingleResult();
+
+        return new PageImpl<>(workLogInfoDTOList, pageable, totalRecords);
+    }
+
+    private String buildSearchQuery(WorkLogSearchFilterDTO searchFilters, Map<String, Object> queryParameters) {
+        StringBuilder queryBuilder = new StringBuilder("SELECT wl FROM WorkLog wl WHERE wl.user.id = :userId");
+        queryParameters.put("userId", AppConfig.getAuthenticatedCurrentUser().getId());
+
+        if (!StringUtils.isEmpty(searchFilters.getLogName())) {
+            queryBuilder.append(" AND LOWER(wl.name) LIKE LOWER(CONCAT('%', :logName, '%'))");
+            queryParameters.put("logName", searchFilters.getLogName());
+        }
+        if (searchFilters.getDateFrom() != null || searchFilters.getDateTo() != null) {
+            validateDateFilters(searchFilters);
+            if (searchFilters.getDateFrom() != null) {
+                queryBuilder.append(" AND wl.workDate >= :dateFrom");
+                queryParameters.put("dateFrom", searchFilters.getDateFrom());
+            }
+            if (searchFilters.getDateTo() != null) {
+                queryBuilder.append(" AND wl.workDate <= :dateTo");
+                queryParameters.put("dateTo", searchFilters.getDateTo());
+            }
+        }
+        if (searchFilters.getTotalHours() != null && searchFilters.getEvaluation() != null) {
+            throw new BusinessException("Cannot filter by both evaluation and total hours");
+        }
+        if (searchFilters.getTotalHours() != null) {
+            validateOperatorFilter(searchFilters.getTotalHours());
+            queryBuilder.append(" AND wl.totalHours ").append(searchFilters.getTotalHours().getOperator().getQuerySymbol()).append(" :totalHours");
+            queryParameters.put("totalHours", searchFilters.getTotalHours().getValue());
+            if (searchFilters.getTotalHours().getOperator().equals(SearchOperator.BETWEEN)) {
+                queryBuilder.append(" AND :totalHoursSecond");
+                queryParameters.put("totalHoursSecond", searchFilters.getTotalHours().getSecondValue());
+            }
+        }
+        if (searchFilters.getEvaluation() != null) {
+            switch (searchFilters.getEvaluation()) {
+                case EXCELLENT -> {
+                    queryBuilder.append(" AND wl.totalHours >= :excellentHours");
+                    queryParameters.put("excellentHours", 8);
+                }
+                case GOOD -> {
+                    queryBuilder.append(" AND wl.totalHours >= :goodHoursMin AND wl.totalHours < :goodHoursMax");
+                    queryParameters.put("goodHoursMin", 7.5);
+                    queryParameters.put("goodHoursMax", 8);
+                }
+                case MODERATE -> {
+                    queryBuilder.append(" AND wl.totalHours >= :moderateHoursMin AND wl.totalHours < :moderateHoursMax");
+                    queryParameters.put("moderateHoursMin", 7);
+                    queryParameters.put("moderateHoursMax", 7.5);
+                }
+                case POOR -> {
+                    queryBuilder.append(" AND wl.totalHours < :poorHours");
+                    queryParameters.put("poorHours", 7);
+                }
+            }
+        }
+        if (searchFilters.getStatus() != null) {
+            validateOperatorFilter(searchFilters.getStatus());
+            queryBuilder.append(" AND wl.status ").append(searchFilters.getStatus().getOperator().getQuerySymbol()).append(" :status");
+            queryParameters.put("status", searchFilters.getStatus().getValue().name());
+        }
+        return queryBuilder.toString();
+    }
+
+    private void validateDateFilters(WorkLogSearchFilterDTO searchFilters) {
+        LocalDate dateFrom = searchFilters.getDateFrom();
+        LocalDate dateTo = searchFilters.getDateTo();
+        if (dateFrom != null && dateTo != null && dateFrom.isAfter(dateTo)) {
+            throw new BusinessException("'Date From' must be before 'Date To'");
+        }
+
+        if (dateFrom != null && dateFrom.isBefore(AppConfig.getMinQueryableDate())) {
+            throw new BusinessException("'Date From' cannot be before " + AppConfig.getMinQueryableDate());
+        }
+
+        if (dateTo != null && dateTo.isBefore(AppConfig.getMinQueryableDate())) {
+            throw new BusinessException("'Date To' cannot be before " + AppConfig.getMinQueryableDate());
+        }
+    }
+
+    private <T> void validateOperatorFilter(OperatorSearchDTO<T> operatorSearchFilter) {
+        if (operatorSearchFilter.getOperator() == null) {
+            throw new BusinessException("Operator is required for the filter");
+        }
+        if (operatorSearchFilter.getOperator().equals(SearchOperator.BETWEEN) && operatorSearchFilter.getSecondValue() == null) {
+            throw new BusinessException("Extra value is required for BETWEEN operator");
+        }
     }
 
     public WorkLogInfoDTO getWorkLogByUUID(String uuid) {
@@ -110,11 +229,10 @@ public class WorkLogService {
     }
 
     @Transactional
-    public String deleteWorkLog(String uuid) {
+    public void deleteWorkLog(String uuid) {
         WorkLog workLog = validateWorkLogExistsAndHasPermission(uuid);
         workLogDetailRepository.deleteAllByWorkLog(workLog);
         workLogRepository.delete(workLog);
-        return "Worklog deleted successfully";
     }
 
     public List<WorkLogSummaryDTO> getCurrentMonthSummary() {
@@ -159,34 +277,7 @@ public class WorkLogService {
         List<Map<String, Object>> rowErrors = new ArrayList<>();
         double totalTime = 0;
         for (Map<WorkLogColumn, String> row : parsedData) {
-            StringJoiner rowErrorMessages = new StringJoiner("; ");
-
-            String taskName = validateAndGetCell(row, WorkLogColumn.TASK_NAME, rowErrorMessages);
-            LocalTime fromHour = validateAndGetCell(row, WorkLogColumn.FROM_HOUR, rowErrorMessages);
-            LocalTime toHour = validateAndGetCell(row, WorkLogColumn.TO_HOUR, rowErrorMessages);
-            Double taskLogDuration = validateAndGetCell(row, WorkLogColumn.DURATION, this::parseDuration, rowErrorMessages);
-            String taskDescription = validateAndGetCell(row, WorkLogColumn.DESCRIPTION, rowErrorMessages);
-
-            if (rowErrorMessages.length() > 0) {
-                Map<String, Object> error = new HashMap<>();
-                error.put("row", row.get(WorkLogColumn.ROW_NUMBER));
-                error.put("error", rowErrorMessages.toString());
-                rowErrors.add(error);
-                continue;
-            }
-
-            double taskLogDurationValue = taskLogDuration != null ? taskLogDuration : 0;
-            totalTime += taskLogDurationValue;
-
-            WorkLogDetail workLogDetail = new WorkLogDetail();
-            workLogDetail.setTaskName(taskName);
-            workLogDetail.setTaskUrl(null); // @TODO --> Should be based on the user's selected project
-            workLogDetail.setStartTime(fromHour);
-            workLogDetail.setEndTime(toHour);
-            workLogDetail.setDuration(BigDecimal.valueOf(taskLogDurationValue / 60.0));
-            workLogDetail.setDescription(taskDescription);
-            workLogDetail.setSynced(false);
-            allWorkLogDetails.add(workLogDetail);
+            totalTime += Optional.ofNullable(processWorkLogRow(row, allWorkLogDetails, rowErrors)).orElse(0.0);
         }
 
         Map<String, Object> result = new HashMap<>();
@@ -199,6 +290,38 @@ public class WorkLogService {
             result.put("workLogDetails", allWorkLogDetails);
         }
         return result;
+    }
+
+    private Double processWorkLogRow(Map<WorkLogColumn, String> row, List<WorkLogDetail> allWorkLogDetails, List<Map<String, Object>> rowErrors) {
+        StringJoiner rowErrorMessages = new StringJoiner("; ");
+
+        String taskName = validateAndGetCell(row, WorkLogColumn.TASK_NAME, rowErrorMessages);
+        LocalTime fromHour = validateAndGetCell(row, WorkLogColumn.FROM_HOUR, rowErrorMessages);
+        LocalTime toHour = validateAndGetCell(row, WorkLogColumn.TO_HOUR, rowErrorMessages);
+        Double taskLogDuration = validateAndGetCell(row, WorkLogColumn.DURATION, this::parseDuration, rowErrorMessages);
+        String taskDescription = validateAndGetCell(row, WorkLogColumn.DESCRIPTION, rowErrorMessages);
+
+        if (rowErrorMessages.length() > 0) {
+            Map<String, Object> error = new HashMap<>();
+            error.put("row", row.get(WorkLogColumn.ROW_NUMBER));
+            error.put("error", rowErrorMessages.toString());
+            rowErrors.add(error);
+            return null;
+        }
+
+        double taskLogDurationValue = taskLogDuration != null ? taskLogDuration : 0;
+
+        WorkLogDetail workLogDetail = new WorkLogDetail();
+        workLogDetail.setTaskName(taskName);
+        workLogDetail.setTaskUrl(null); // @TODO --> Should be based on the user's selected project
+        workLogDetail.setStartTime(fromHour);
+        workLogDetail.setEndTime(toHour);
+        workLogDetail.setDuration(BigDecimal.valueOf(taskLogDurationValue / 60.0));
+        workLogDetail.setDescription(taskDescription);
+        workLogDetail.setSynced(false);
+        allWorkLogDetails.add(workLogDetail);
+
+        return taskLogDurationValue;
     }
 
     private <T> T validateAndGetCell(Map<WorkLogColumn, String> row, WorkLogColumn columnType, StringJoiner errorMessages) {
@@ -261,7 +384,7 @@ public class WorkLogService {
             workLog.setUser(AppConfig.getCurrentUser());
             workLog.setTotalHours(BigDecimal.valueOf(totalTime));
             workLog.setWorkDate(manageWorkLogDTO.getLogDate());
-            workLog.setStatus(WorkLog.Status.NOT_SYNCED);
+            workLog.setStatus(WorkLogStatus.NOT_SYNCED);
             if (!StringUtils.isEmpty(manageWorkLogDTO.getLogName())) {
                 workLog.setName(manageWorkLogDTO.getLogName());
             } else {
@@ -293,7 +416,7 @@ public class WorkLogService {
         if (workLog == null) {
             throw new NotFoundException("WorkLog not found");
         }
-        if (workLog.getUser().getId() != Objects.requireNonNull(AppConfig.getCurrentUser()).getId()) {
+        if (!workLog.getUser().getId().equals(AppConfig.getAuthenticatedCurrentUser().getId())) {
             throw new UnauthorizedException("You are not authorized to access this worklog");
         }
         return workLog;
@@ -307,7 +430,7 @@ public class WorkLogService {
             BigDecimal totalTime = BigDecimal.valueOf(Double.parseDouble(worklogGroup.get("totalTime").toString()));
             workLogTaskDTO.setTotalHours(TrackeraTimeSpanUtil.formatDuration(totalTime, false));
             workLogTaskDTO.setTotalTime(totalTime); // for sorting purpose
-            workLogTaskDTO.setStatus(WorkLog.Status.valueOf(worklogGroup.get("status").toString()));
+            workLogTaskDTO.setStatus(WorkLogStatus.valueOf(worklogGroup.get("status").toString()));
             return workLogTaskDTO;
         }).toList();
     }
@@ -325,7 +448,7 @@ public class WorkLogService {
             workLogEntryDTO.setToTime(TrackeraTimeSpanUtil.getDateTime12hFormatter().format(workLogDetail.getEndTime()));
             workLogEntryDTO.setDuration(TrackeraTimeSpanUtil.formatDuration(workLogDetail.getDuration(), false));
             workLogEntryDTO.setDescription(workLogDetail.getDescription());
-            workLogEntryDTO.setStatus(workLogDetail.isSynced() ? WorkLog.Status.SYNCED : WorkLog.Status.NOT_SYNCED);
+            workLogEntryDTO.setStatus(workLogDetail.isSynced() ? WorkLogStatus.SYNCED : WorkLogStatus.NOT_SYNCED);
             return workLogEntryDTO;
         }).toList();
     }
@@ -361,7 +484,7 @@ public class WorkLogService {
             throw new NotFoundException("WorkLog entry not found");
         }
         WorkLog workLog = workLogEntry.getWorkLog();
-        if (workLog.getUser().getId() != Objects.requireNonNull(AppConfig.getCurrentUser()).getId()) {
+        if (!workLog.getUser().getId().equals(AppConfig.getAuthenticatedCurrentUser().getId())) {
             throw new UnauthorizedException("You are not authorized to access this entry");
         }
 

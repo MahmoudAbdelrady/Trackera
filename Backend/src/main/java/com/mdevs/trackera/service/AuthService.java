@@ -169,7 +169,7 @@ public class AuthService {
     @Transactional
     public String unlinkOAuthProvider(String provider) {
         OAuthProvider oAuthProvider = OAuthProvider.fromCode(provider);
-        User loggedUser = Objects.requireNonNull(AppConfig.getCurrentUser());
+        User loggedUser = AppConfig.getAuthenticatedCurrentUser();
         UserOAuthProvider deletedOAuthProvider = userOAuthProviderService.delete(loggedUser, oAuthProvider);
         userService.removeEmailTag(loggedUser, deletedOAuthProvider.getEmail(), oAuthProvider.getEmailTag());
         return oAuthProvider.getDisplayName() + " unlinked successfully";

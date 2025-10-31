@@ -17,6 +17,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.LocalDate;
+import java.util.Objects;
 import java.util.Properties;
 
 @Configuration
@@ -74,6 +75,11 @@ public class AppConfig {
         Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         return (principal instanceof AuthFilterUserDTO) ? applicationContext.getBean(UserRepository.class).findByUuid(((AuthFilterUserDTO) principal).getId()) : null;
     }
+
+    public static User getAuthenticatedCurrentUser() {
+        return Objects.requireNonNull(getCurrentUser(), "Authenticated user not found");
+    }
+
 
     public static LocalDate getMinQueryableDate() {
         return LocalDate.now().minusYears(2).withDayOfYear(1);

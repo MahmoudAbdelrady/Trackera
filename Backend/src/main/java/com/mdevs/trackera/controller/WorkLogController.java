@@ -1,6 +1,7 @@
 package com.mdevs.trackera.controller;
 
 import com.mdevs.trackera.dto.worklog.ManageWorkLogDTO;
+import com.mdevs.trackera.dto.worklog.WorkLogSearchFilterDTO;
 import com.mdevs.trackera.service.WorkLogService;
 import com.mdevs.trackera.shared.search_filter.SearchFilter;
 import jakarta.validation.Valid;
@@ -27,6 +28,11 @@ public class WorkLogController {
         return new ResponseEntity<>(workLogService.searchAllWorkLogs(searchFilters, pageable), HttpStatus.OK);
     }
 
+    @PostMapping("/search/v2")
+    public ResponseEntity<?> SearchAllWorkLogs2(@RequestBody(required = false)WorkLogSearchFilterDTO searchFilterDTO, Pageable pageable) {
+        return new ResponseEntity<>(workLogService.searchAllWorkLogsV2(searchFilterDTO, pageable), HttpStatus.OK);
+    }
+
     @GetMapping("/{uuid}")
     public ResponseEntity<?> GetWorkLogByUUID(@PathVariable String uuid) {
         return new ResponseEntity<>(workLogService.getWorkLogByUUID(uuid), HttpStatus.OK);
@@ -46,7 +52,8 @@ public class WorkLogController {
 
     @DeleteMapping("/{uuid}")
     public ResponseEntity<?> DeleteWorkLog(@PathVariable String uuid) {
-        return new ResponseEntity<>(workLogService.deleteWorkLog(uuid), HttpStatus.OK);
+        workLogService.deleteWorkLog(uuid);
+        return new ResponseEntity<>("Worklog deleted successfully", HttpStatus.OK);
     }
 
     @GetMapping("/summary")

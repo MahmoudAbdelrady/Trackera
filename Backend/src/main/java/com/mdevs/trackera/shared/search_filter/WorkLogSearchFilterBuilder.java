@@ -2,6 +2,7 @@ package com.mdevs.trackera.shared.search_filter;
 
 import com.mdevs.trackera.config.general.AppConfig;
 import com.mdevs.trackera.entity.WorkLog;
+import com.mdevs.trackera.shared.enums.WorkLogEvaluation;
 import com.mdevs.trackera.shared.exceptions.types.BusinessException;
 import jakarta.persistence.criteria.Expression;
 import jakarta.persistence.criteria.Predicate;
@@ -91,13 +92,13 @@ public class WorkLogSearchFilterBuilder {
     }
 
     private List<SearchFilter> validateEvaluationFilter(SearchFilter filter) {
-        if (!EnumUtils.isValidEnum(WorkLog.Evaluation.class, filter.getValue().toString())) {
+        if (!EnumUtils.isValidEnum(WorkLogEvaluation.class, filter.getValue().toString())) {
             throw new BusinessException("Invalid evaluation type: " + filter.getValue());
         }
         if (this.filters.stream().anyMatch(f -> f.getFieldName().equals("totalHours"))) {
             throw new BusinessException("Cannot filter by both evaluation and total hours");
         }
-        WorkLog.Evaluation evaluationFilter = WorkLog.Evaluation.valueOf(filter.getValue().toString());
+        WorkLogEvaluation evaluationFilter = WorkLogEvaluation.valueOf(filter.getValue().toString());
         filter.setFieldName("totalHours");
         switch (evaluationFilter) {
             case EXCELLENT -> {
@@ -150,7 +151,7 @@ public class WorkLogSearchFilterBuilder {
             }
 
             predicates.add(criteriaBuilder.greaterThanOrEqualTo(root.get("workDate"), AppConfig.getMinQueryableDate()));
-            predicates.add(criteriaBuilder.equal(root.get("user").get("id"), Objects.requireNonNull(AppConfig.getCurrentUser()).getId()));
+            predicates.add(criteriaBuilder.equal(root.get("user").get("id"), AppConfig.getAuthenticatedCurrentUser().getId()));
 
             if (query != null) {
                 query.orderBy(criteriaBuilder.desc(root.get("workDate")));

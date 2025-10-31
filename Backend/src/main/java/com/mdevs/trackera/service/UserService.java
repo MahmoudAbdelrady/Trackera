@@ -168,7 +168,7 @@ public class UserService implements UserDetailsService {
 
     @Transactional
     public String changePassword(PasswordDTO passwordDTO) {
-        User user = Objects.requireNonNull(AppConfig.getCurrentUser());
+        User user = AppConfig.getAuthenticatedCurrentUser();
         validateAndUpdateUserPassword(user, passwordDTO, false);
         userEmailRepository.findAllByUser(user).stream().filter(ue -> ue.hasTag(EmailTag.PASSWORD_REQUIRED)).forEach(ue -> {
             ue.removeTag(EmailTag.PASSWORD_REQUIRED);
@@ -207,7 +207,7 @@ public class UserService implements UserDetailsService {
     }
 
     public List<UserEmailDTO> getUserEmails() {
-        User loggedUser = Objects.requireNonNull(AppConfig.getCurrentUser());
+        User loggedUser = AppConfig.getAuthenticatedCurrentUser();
         List<UserEmail> userEmails = userEmailRepository.findAllByUserOrderByCreatedAt(loggedUser);
         return userEmails.stream().sorted(Comparator.comparing(UserEmail::isPrimary).reversed()).map(userEmail -> {
             UserEmailDTO userEmailDTO = modelMapper.map(userEmail, UserEmailDTO.class);
@@ -218,7 +218,7 @@ public class UserService implements UserDetailsService {
 
     @Transactional
     public void addEmail(String email) {
-        User loggedUser = Objects.requireNonNull(AppConfig.getCurrentUser());
+        User loggedUser = AppConfig.getAuthenticatedCurrentUser();
         validateUserEmail(email);
         UserEmail existingUserEmail = userEmailRepository.findByEmail(email);
         if (existingUserEmail != null) {
@@ -243,7 +243,7 @@ public class UserService implements UserDetailsService {
 
     @Transactional
     public void makeEmailPrimary(String email) {
-        User loggedUser = Objects.requireNonNull(AppConfig.getCurrentUser());
+        User loggedUser = AppConfig.getAuthenticatedCurrentUser();
         validateUserEmail(email);
         UserEmail secondaryUserEmail = getUserEmailOrThrow(loggedUser, email);
         if (!secondaryUserEmail.isVerified()) {
@@ -276,7 +276,7 @@ public class UserService implements UserDetailsService {
     }
 
     public void sendVerificationEmail(String email) {
-        User loggedUser = Objects.requireNonNull(AppConfig.getCurrentUser());
+        User loggedUser = AppConfig.getAuthenticatedCurrentUser();
         validateUserEmail(email);
         UserEmail userEmail = getUserEmailOrThrow(loggedUser, email);
         if (userEmail.isVerified()) {
@@ -294,7 +294,7 @@ public class UserService implements UserDetailsService {
 
     @Transactional
     public void removeEmail(String email) {
-        User loggedUser = Objects.requireNonNull(AppConfig.getCurrentUser());
+        User loggedUser = AppConfig.getAuthenticatedCurrentUser();
         validateUserEmail(email);
         UserEmail userEmail = getUserEmailOrThrow(loggedUser, email);
         if (userEmail.isPrimary()) {
@@ -342,7 +342,7 @@ public class UserService implements UserDetailsService {
     }
 
     public void updateUserPreferences(List<UserPreferenceDTO> userPreferenceDTOList) {
-        User loggedUser = Objects.requireNonNull(AppConfig.getCurrentUser());
+        User loggedUser = AppConfig.getAuthenticatedCurrentUser();
         for (UserPreferenceDTO preferenceDTO : userPreferenceDTOList) {
             userPreferredSettingService.validatePreference(preferenceDTO);
             if (preferenceDTO.getKey().equals(JiraService.JIRA_PRIMARY_PROJECT_SETTING_KEY)) {

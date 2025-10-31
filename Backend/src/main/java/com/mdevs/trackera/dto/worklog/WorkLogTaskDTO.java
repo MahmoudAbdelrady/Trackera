@@ -1,6 +1,6 @@
 package com.mdevs.trackera.dto.worklog;
 
-import com.mdevs.trackera.entity.WorkLog;
+import com.mdevs.trackera.shared.enums.WorkLogStatus;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -19,7 +19,7 @@ public class WorkLogTaskDTO {
 
     private BigDecimal totalTime;
 
-    private WorkLog.Status status;
+    private WorkLogStatus status;
 
     public WorkLogTaskDTO(String taskName, String taskUrl) {
         this.taskName = taskName;

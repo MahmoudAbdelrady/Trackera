@@ -60,14 +60,14 @@ public class JiraService {
     }
 
     public Map<String, Object> getUserTasks(boolean forceUpdate) {
-        User currentUser = Objects.requireNonNull(AppConfig.getCurrentUser());
+        User currentUser = AppConfig.getAuthenticatedCurrentUser();
         userOAuthProviderService.validateAndGetOAuthProvider(currentUser, OAuthProvider.JIRA);
 
         String cacheKey = USER_JIRA_TASKS_CACHE_KEY_PREFIX + currentUser.getId();
         String forceUpdateCacheKey = USER_JIRA_TASKS_FORCE_UPDATE_CACHE_KEY_PREFIX + currentUser.getId();
         LocalDateTime now = LocalDateTime.now();
 
-        Map<String, Object> cachedData = fetchTasksFromCache(currentUser, cacheKey);
+        Map<String, Object> cachedData = fetchFromCache(currentUser, cacheKey, Map.class);
         boolean shouldFetch = shouldFetchTasks(cachedData, forceUpdateCacheKey, now, forceUpdate);
 
         if (shouldFetch) {
@@ -77,11 +77,12 @@ public class JiraService {
         return cachedData;
     }
 
-    private Map<String, Object> fetchTasksFromCache(User user, String cacheKey) {
+    private <T> T fetchFromCache(User user, String cacheKey, Class<T> resultType) {
         try {
-            return (Map<String, Object>) redisTemplate.opsForValue().get(cacheKey);
+            Object cachedData = redisTemplate.opsForValue().get(cacheKey);
+            return cachedData != null ? resultType.cast(cachedData) : null;
         } catch (Exception e) {
-            LOGGER.error("Error while fetching cached Jira tasks for user with id: {}, and cache key: {}", user.getId(), cacheKey, e);
+            LOGGER.error("Error while fetching cached Jira data for user with id: {}, and cache key: {}", user.getId(), cacheKey, e);
             return null;
         }
     }
@@ -92,11 +93,11 @@ public class JiraService {
         if (forceUpdate) {
             LocalDateTime lastForceUpdate = Optional.ofNullable(redisTemplate.opsForValue().get(forceUpdateCacheKey))
                     .map(date -> LocalDateTime.parse(date.toString(), TrackeraTimeSpanUtil.getSimpleDateTimeFormatter())).orElse(null);
-            return lastForceUpdate == null || !lastForceUpdate.isAfter(now.minusMinutes(JIRA_TASKS_FORCE_FETCH_MINUTES_DURATION));
+            return lastForceUpdate == null || lastForceUpdate.isBefore(now.minusMinutes(JIRA_TASKS_FORCE_FETCH_MINUTES_DURATION));
         }
 
         LocalDateTime lastUpdated = LocalDateTime.parse(cachedData.get("lastUpdated").toString(), TrackeraTimeSpanUtil.getSimpleDateTimeFormatter());
-        return !lastUpdated.isAfter(now.minusHours(JIRA_TASKS_FETCH_HOURS_DURATION));
+        return lastUpdated.isBefore(now.minusHours(JIRA_TASKS_FETCH_HOURS_DURATION));
     }
 
     private Map<String, Object> fetchAndCacheTasks(User user, String cacheKey, String forceUpdateCacheKey, LocalDateTime now) {
@@ -165,8 +166,8 @@ public class JiraService {
                 loggedHours = (String) taskTimeTracking.get("timeSpent");
                 remainingHours = (String) taskTimeTracking.get("remainingEstimate");
                 if (taskTimeTracking.containsKey("timeSpentSeconds") && taskTimeTracking.containsKey("originalEstimateSeconds")) {
-                    int timeSpentSeconds = (Integer) taskTimeTracking.get("timeSpentSeconds");
-                    int originalEstimateSeconds = (Integer) taskTimeTracking.get("originalEstimateSeconds");
+                    int timeSpentSeconds = ((Number) taskTimeTracking.get("timeSpentSeconds")).intValue();
+                    int originalEstimateSeconds = ((Number) taskTimeTracking.get("originalEstimateSeconds")).intValue();
                     if (timeSpentSeconds <= originalEstimateSeconds) {
                         jiraTaskEvaluation = JiraTaskEvaluation.ON_TIME;
                     } else {
@@ -203,22 +204,18 @@ public class JiraService {
     public List<AccessibleResourceDTO> getUserSites(User user) {
         UserOAuthProvider userOAuthProvider = userOAuthProviderService.validateAndGetOAuthProvider(user, OAuthProvider.JIRA);
         String cacheKey = USER_JIRA_SITES_FETCH_CACHE_KEY_PREFIX + user.getId();
-        if (redisTemplate.hasKey(cacheKey)) {
-            try {
-                return (List<AccessibleResourceDTO>) redisTemplate.opsForValue().get(cacheKey);
-            } catch (Exception e) {
-                LOGGER.error("Error while fetching cached Jira accessible resources for user with id: {}", user.getId(), e);
-                throw new RuntimeException("Something went wrong while fetching Jira accessible resources");
-            }
+        List<AccessibleResourceDTO> resources = fetchFromCache(user, cacheKey, List.class);
+        if (resources != null) {
+            return resources;
         }
 
         String accessToken = userOAuthProviderService.resolveValidAccessToken(userOAuthProvider);
-
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(accessToken);
         headers.setAccept(List.of(MediaType.APPLICATION_JSON));
-        List<AccessibleResourceDTO> resources = Arrays.asList(callJiraApi("https://api.atlassian.com/oauth/token/accessible-resources", HttpMethod.GET, headers, userOAuthProvider, AccessibleResourceDTO[].class));
+        resources = Arrays.asList(callJiraApi("https://api.atlassian.com/oauth/token/accessible-resources", HttpMethod.GET, headers, userOAuthProvider, AccessibleResourceDTO[].class));
         redisTemplate.opsForValue().set(cacheKey, resources, Duration.ofMinutes(JIRA_SITES_FETCH_MINUTES_DURATION));
+
         return resources;
     }
 

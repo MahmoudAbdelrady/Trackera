@@ -1,6 +1,7 @@
 package com.mdevs.trackera.dto.worklog;
 
-import com.mdevs.trackera.entity.WorkLog;
+import com.mdevs.trackera.shared.enums.WorkLogEvaluation;
+import com.mdevs.trackera.shared.enums.WorkLogStatus;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -17,7 +18,7 @@ public class WorkLogInfoDTO {
 
     private LocalDate workDate;
 
-    private WorkLog.Evaluation evaluation;
+    private WorkLogEvaluation evaluation;
 
-    private WorkLog.Status status;
+    private WorkLogStatus status;
 }
