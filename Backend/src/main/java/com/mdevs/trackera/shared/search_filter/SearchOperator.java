@@ -17,4 +17,13 @@ public enum SearchOperator {
     IN("IN");
 
     private final String querySymbol;
+
+    public static SearchOperator fromSymbol(String symbol) {
+        for (SearchOperator operator : values()) {
+            if (operator.getQuerySymbol().equalsIgnoreCase(symbol)) {
+                return operator;
+            }
+        }
+        throw new IllegalArgumentException("Invalid search operator: " + symbol);
+    }
 }

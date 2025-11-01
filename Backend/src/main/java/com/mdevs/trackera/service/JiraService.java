@@ -156,15 +156,15 @@ public class JiraService {
             Map<String, Object> taskTimeTracking = (Map<String, Object>) taskFields.get("timetracking");
 
             String originalEstimate = null;
-            String loggedHours = null;
-            String remainingHours = null;
+            String loggedTime = null;
+            String remainingTime = null;
             JiraTaskEvaluation jiraTaskEvaluation = null;
             String notes = null;
 
             if (taskTimeTracking != null && !taskTimeTracking.isEmpty()) {
                 originalEstimate = (String) taskTimeTracking.get("originalEstimate");
-                loggedHours = (String) taskTimeTracking.get("timeSpent");
-                remainingHours = (String) taskTimeTracking.get("remainingEstimate");
+                loggedTime = (String) taskTimeTracking.get("timeSpent");
+                remainingTime = (String) taskTimeTracking.get("remainingEstimate");
                 if (taskTimeTracking.containsKey("timeSpentSeconds") && taskTimeTracking.containsKey("originalEstimateSeconds")) {
                     int timeSpentSeconds = ((Number) taskTimeTracking.get("timeSpentSeconds")).intValue();
                     int originalEstimateSeconds = ((Number) taskTimeTracking.get("originalEstimateSeconds")).intValue();
@@ -172,15 +172,15 @@ public class JiraService {
                         jiraTaskEvaluation = JiraTaskEvaluation.ON_TIME;
                     } else {
                         jiraTaskEvaluation = JiraTaskEvaluation.OVERESTIMATED;
-                        notes = "Overestimated by " + TrackeraTimeSpanUtil.formatDuration(BigDecimal.valueOf((timeSpentSeconds - originalEstimateSeconds) / 3600), true);
+                        notes = "Overestimated by " + TrackeraTimeSpanUtil.formatDuration((timeSpentSeconds - originalEstimateSeconds) / 60, true);
                     }
                 }
             }
 
             Map<String, Object> timeTracking = new HashMap<>();
             timeTracking.put("originalEstimate", originalEstimate);
-            timeTracking.put("loggedHours", loggedHours);
-            timeTracking.put("remainingHours", remainingHours);
+            timeTracking.put("loggedTime", loggedTime);
+            timeTracking.put("remainingTime", remainingTime);
             timeTracking.put("evaluation", jiraTaskEvaluation);
             timeTracking.put("notes", notes);
 

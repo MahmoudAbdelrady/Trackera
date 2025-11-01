@@ -49,8 +49,8 @@ public class TrackeraTimeSpanUtil {
         return DURATION_DECIMAL_FORMAT;
     }
 
-    public static String formatDuration(BigDecimal totalHours, boolean includeDays) {
-        DurationParts parts = extractDurationParts(totalHours, includeDays);
+    public static String formatDuration(Integer totalMinutes, boolean includeDays) {
+        DurationParts parts = extractDurationParts(totalMinutes, includeDays);
 
         if ((!includeDays || parts.days == 0) && parts.hours == 0 && parts.minutes == 0) {
             return "0h";
@@ -64,30 +64,33 @@ public class TrackeraTimeSpanUtil {
         return result.toString().trim();
     }
 
-    private static DurationParts extractDurationParts(BigDecimal totalHours, boolean includeDays) {
-        if (totalHours == null || totalHours.compareTo(BigDecimal.ZERO) <= 0) {
+    private static DurationParts extractDurationParts(Integer totalMinutes, boolean includeDays) {
+        if (totalMinutes == null || totalMinutes <= 0) {
             return new DurationParts(0, 0, 0);
         }
-
-        BigDecimal totalMinutesBD = totalHours.multiply(BigDecimal.valueOf(60)).setScale(0, RoundingMode.HALF_UP);
-
-        long totalMinutes = totalMinutesBD.longValueExact();
 
         int days = 0;
         int hours;
         int minutes;
 
         if (includeDays) {
-            long minutesPerDay = 8L * 60L;
-            days = (int) (totalMinutes / minutesPerDay);
-            long rem = totalMinutes % minutesPerDay;
-            hours = (int) (rem / 60);
-            minutes = (int) (rem % 60);
+            int minutesPerDay = 8 * 60;
+            days = totalMinutes / minutesPerDay;
+            int rem = totalMinutes % minutesPerDay;
+            hours = rem / 60;
+            minutes = rem % 60;
         } else {
-            hours = (int) (totalMinutes / 60);
-            minutes = (int) (totalMinutes % 60);
+            hours = totalMinutes / 60;
+            minutes = totalMinutes % 60;
         }
 
         return new DurationParts(days, hours, minutes);
+    }
+
+    public static Integer hoursToMinutes(BigDecimal hours) {
+        if (hours == null) {
+            return 0;
+        }
+        return hours.multiply(BigDecimal.valueOf(60)).setScale(0, RoundingMode.HALF_UP).intValue();
     }
 }

@@ -14,7 +14,7 @@ public class WorkLogInfoDTO {
 
     private String name;
 
-    private String totalHours;
+    private String totalTime;
 
     private LocalDate workDate;
 
