@@ -4,16 +4,7 @@ import classes from "./scss/home.module.css";
 import { Switch, Tooltip, type TableProps } from "antd";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import {
-  worklogEvaluationMetadata,
-  statusMetadata,
-  type WorkLogSummaryCard,
-  type PaginatedResponse,
-  type Worklog,
-  type WorkLogEvaluationType,
-  type WorkLogStatusType,
-  type WorkLogSearchFilter,
-} from "../../shared/types";
+import { worklogEvaluationMetadata, statusMetadata, type WorkLogSummaryCard, type PaginatedResponse, type Worklog, type WorkLogEvaluationType, type WorkLogStatusType } from "../../shared/types";
 import { createPaginationConfig } from "../../utils";
 import trackeraTableClasses from "../../components/trackera-table/scss/trackera-table.module.css";
 import worklogModalClasses from "../../components/worklogs/modals/worklog-modal/scss/worklog-modal.module.css";
@@ -30,7 +21,7 @@ const Home = () => {
   const [workLogsResponse, setWorkLogsResponse] = useState<PaginatedResponse<Worklog> | null>(null);
   const [workLogSummary, setWorkLogSummary] = useState<WorkLogSummaryCard[]>([]);
   const [selectedWorkLog, setSelectedWorkLog] = useState<Worklog | undefined>(undefined);
-  const [searchFilters, setSearchFilters] = useState<WorkLogSearchFilter[]>([]);
+  const [searchFilters, setSearchFilters] = useState<Record<string, any>>({});
 
   useEffect(() => {
     if (fetchWorkLog) {
@@ -88,9 +79,9 @@ const Home = () => {
       key: "name",
     },
     {
-      title: "Total Hours",
-      dataIndex: "totalHours",
-      key: "totalHours",
+      title: "Total Time",
+      dataIndex: "totalTime",
+      key: "totalTime",
     },
     {
       title: "Date",

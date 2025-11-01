@@ -63,7 +63,7 @@ const WorklogDetails = () => {
       title: "Total Hours",
       dataIndex: "totalHours",
       key: "totalHours",
-      sorter: (a, b) => a.totalTime - b.totalTime,
+      sorter: (a, b) => a.totalMinutes - b.totalMinutes,
     },
     {
       title: "Status",
