@@ -39,8 +39,8 @@ public class UserOAuthProviderService {
     public void createOrUpdate(User user, OAuthUserInfoDTO oAuthUserInfoDTO, OAuthProvider oAuthProvider, UserOAuthProvider existingUserOAuthProvider, UserEmail userEmail) {
         if (existingUserOAuthProvider == null) {
             existingUserOAuthProvider = new UserOAuthProvider(user, oAuthProvider);
-            existingUserOAuthProvider.setProviderEmail(userEmail);
         }
+        existingUserOAuthProvider.setProviderEmail(userEmail);
         updateAccessCredentials(existingUserOAuthProvider, oAuthUserInfoDTO.getAccessCredentials());
     }
 
