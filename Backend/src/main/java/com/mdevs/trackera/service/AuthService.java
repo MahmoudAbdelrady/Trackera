@@ -152,7 +152,7 @@ public class AuthService {
     }
 
     private void processOAuthData(User user, OAuthProvider provider, OAuthUserInfoDTO userInfo, UserOAuthProvider existingProvider) {
-        UserEmail userEmail = userEmailRepository.findByUserAndEmail(user, userInfo.getEmail());
+        UserEmail userEmail = Optional.ofNullable(userEmailRepository.findByUserAndEmail(user, userInfo.getEmail())).orElse(userService.createUserEmail(user, userInfo.getEmail(), true));
         userOAuthProviderService.createOrUpdate(user, userInfo, provider, existingProvider, userEmail);
         if (provider.equals(OAuthProvider.JIRA)) {
             String primaryProjectSetting = AppUtils.convertObjectToJsonString(userInfo.getAdditionalInfo().get(JiraService.JIRA_PRIMARY_PROJECT_SETTING_KEY));
