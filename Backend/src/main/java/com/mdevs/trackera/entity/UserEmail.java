@@ -6,8 +6,10 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.ColumnDefault;
+import org.hibernate.envers.Audited;
 
 @Entity
+@Audited
 @Table(indexes = {@Index(columnList = "USER_ID, EMAIL"), @Index(columnList = "EMAIL")})
 @NoArgsConstructor
 @AllArgsConstructor

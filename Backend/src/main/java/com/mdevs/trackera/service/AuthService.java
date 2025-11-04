@@ -232,7 +232,8 @@ public class AuthService {
 
     @Transactional
     public String sendResetPassword(String email) {
-        User user = userRepository.findByEmail(email);
+        UserEmail userEmail = userEmailRepository.findPrimaryEmail(email);
+        User user = Optional.ofNullable(userEmail).map(UserEmail::getUser).orElse(null);
         if (user != null && user.canResetPassword()) {
             userService.sendPasswordFlowEmail(user, true);
         }
