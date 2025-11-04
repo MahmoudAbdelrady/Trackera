@@ -20,9 +20,10 @@ public interface UserEmailRepository extends BaseRepository<UserEmail> {
 
     UserEmail findByUserAndEmail(User user, String email);
 
-    UserEmail findByUserAndIsPrimaryTrue(User user);
-
     List<UserEmail> findAllByUser(User user);
 
     List<UserEmail> findAllByUserOrderByCreatedAt(User user);
+
+    @Query("SELECT ue FROM UserEmail ue JOIN User u on u.primaryEmail = ue WHERE ue.email = :email")
+    UserEmail findPrimaryEmail(@Param("email") String email);
 }

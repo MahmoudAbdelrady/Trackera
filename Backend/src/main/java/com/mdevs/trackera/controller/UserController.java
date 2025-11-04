@@ -32,36 +32,20 @@ public class UserController {
 
     @PostMapping("/change-password")
     public ResponseEntity<?> ChangePassword(@RequestBody @Valid PasswordDTO passwordDTO) {
-        return new ResponseEntity<>(userService.changePassword(passwordDTO), HttpStatus.OK);
+        userService.changePassword(passwordDTO);
+        return new ResponseEntity<>("Password changed successfully.", HttpStatus.OK);
     }
 
-    @GetMapping("/emails")
-    public ResponseEntity<?> GetUserEmails() {
-        return new ResponseEntity<>(userService.getUserEmails(), HttpStatus.OK);
-    }
-
-    @PostMapping("/emails")
-    public ResponseEntity<?> AddEmail(@RequestBody Map<String, Object> body) {
-        userService.addEmail((String) body.get("email"));
+    @PostMapping("/change-email")
+    public ResponseEntity<?> ChangeEmail(@RequestBody Map<String, Object> body) {
+        userService.changeEmail((String) body.get("email"));
         return new ResponseEntity<>("Email added successfully. Please check your email for verification.", HttpStatus.CREATED);
     }
 
-    @PostMapping("/emails/primary")
-    public ResponseEntity<?> MakeEmailPrimary(@RequestBody Map<String, Object> body) {
-        userService.makeEmailPrimary((String) body.get("email"));
-        return new ResponseEntity<>("Email set as primary successfully.", HttpStatus.OK);
-    }
-
     @PostMapping("/emails/send-verification")
-    public ResponseEntity<?> SendVerificationEmail(@RequestBody Map<String, Object> body) {
-        userService.sendVerificationEmail((String) body.get("email"));
+    public ResponseEntity<?> SendVerificationEmail() {
+        userService.sendVerificationEmail();
         return new ResponseEntity<>("Verification email sent successfully. Please check your email.", HttpStatus.OK);
-    }
-
-    @DeleteMapping("/emails")
-    public ResponseEntity<?> RemoveEmail(@RequestBody Map<String, Object> body) {
-        userService.removeEmail((String) body.get("email"));
-        return new ResponseEntity<>("Email removed successfully.", HttpStatus.OK);
     }
 
     @GetMapping("/preferences")

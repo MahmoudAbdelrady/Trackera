@@ -3,6 +3,7 @@ package com.mdevs.trackera.service;
 import com.mdevs.trackera.dto.auth.OAuthAccessCredentialsDTO;
 import com.mdevs.trackera.dto.auth.OAuthUserInfoDTO;
 import com.mdevs.trackera.entity.User;
+import com.mdevs.trackera.entity.UserEmail;
 import com.mdevs.trackera.entity.UserOAuthProvider;
 import com.mdevs.trackera.repository.UserOAuthProviderRepository;
 import com.mdevs.trackera.shared.exceptions.types.BusinessException;
@@ -21,23 +22,27 @@ public class UserOAuthProviderService {
 
     private final UserPreferredSettingService userPreferredSettingService;
 
+    private final UserService userService;
+
     private final OAuthProviderFactory oAuthProviderFactory;
 
     private final TrackeraHasher trackeraHasher;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(UserOAuthProviderService.class);
 
-    public UserOAuthProviderService(UserOAuthProviderRepository userOAuthProviderRepository, UserPreferredSettingService userPreferredSettingService, OAuthProviderFactory oAuthProviderFactory, TrackeraHasher trackeraHasher) {
+    public UserOAuthProviderService(UserOAuthProviderRepository userOAuthProviderRepository, UserPreferredSettingService userPreferredSettingService, UserService userService,
+                                    OAuthProviderFactory oAuthProviderFactory, TrackeraHasher trackeraHasher) {
         this.userOAuthProviderRepository = userOAuthProviderRepository;
         this.userPreferredSettingService = userPreferredSettingService;
+        this.userService = userService;
         this.oAuthProviderFactory = oAuthProviderFactory;
         this.trackeraHasher = trackeraHasher;
     }
 
-    public void createOrUpdate(User user, OAuthUserInfoDTO oAuthUserInfoDTO, OAuthProvider oAuthProvider, UserOAuthProvider existingUserOAuthProvider) {
+    public void createOrUpdate(User user, OAuthUserInfoDTO oAuthUserInfoDTO, OAuthProvider oAuthProvider, UserOAuthProvider existingUserOAuthProvider, UserEmail userEmail) {
         if (existingUserOAuthProvider == null) {
             existingUserOAuthProvider = new UserOAuthProvider(user, oAuthProvider);
-            existingUserOAuthProvider.setEmail(oAuthUserInfoDTO.getEmail());
+            existingUserOAuthProvider.setProviderEmail(userEmail != null ? userEmail : userService.createUserEmail(user, oAuthUserInfoDTO.getEmail(), true));
         }
         updateAccessCredentials(existingUserOAuthProvider, oAuthUserInfoDTO.getAccessCredentials());
     }

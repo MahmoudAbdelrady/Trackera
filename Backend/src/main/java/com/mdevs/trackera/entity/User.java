@@ -16,7 +16,7 @@ import java.util.List;
 
 @Audited
 @Entity
-@Table(indexes = {@Index(columnList = "EMAIL"), @Index(columnList = "UUID")})
+@Table(indexes = {@Index(columnList = "UUID")})
 @Getter
 @Setter
 public class User extends BaseEntity implements UserDetails {
@@ -26,8 +26,11 @@ public class User extends BaseEntity implements UserDetails {
     @Column(nullable = false)
     private String lastname;
 
-    @Column(nullable = false, unique = true)
-    private String email;
+    @OneToOne(optional = false)
+    private UserEmail primaryEmail;
+
+    @OneToOne
+    private UserEmail pendingEmail;
 
     private String password;
 

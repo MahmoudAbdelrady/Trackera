@@ -78,7 +78,7 @@ public class AuthService {
     @Transactional
     public void signUp(SignUpDTO signUpDTO) {
         User user = userService.create(signUpDTO);
-        securityTokenService.createAndSendSecurityToken(user, user.getEmail(), SecurityToken.Type.ACCOUNT_ACTIVATION, null,
+        securityTokenService.createAndSendSecurityToken(user, user.getPrimaryEmail().getEmail(), SecurityToken.Type.ACCOUNT_ACTIVATION, null,
                 EmailTemplateUtil.accountActivationTemplateParams(), null, EmailTemplates.VERIFICATION_MAIL_TEMPLATE);
     }
 
@@ -133,7 +133,8 @@ public class AuthService {
     private User handleOAuthLinkingFlow(OAuthProvider provider, OAuthUserInfoDTO oAuthUserInfo) {
         User user = userRepository.findOne(oAuthUserInfo.getUserId());
         UserOAuthProvider existingProvider = userOAuthProviderRepository.findByUserAndProvider(user, provider);
-        if (userEmailRepository.existsByEmailAndUserNot(oAuthUserInfo.getEmail(), user)) {
+        UserEmail existingUserEmail = userEmailRepository.findByEmail(oAuthUserInfo.getEmail());
+        if (existingUserEmail != null && !existingUserEmail.getUser().getId().equals(user.getId())) {
             throw new BusinessException(provider.getDisplayName() + " account's email already in use");
         }
         processOAuthData(user, provider, oAuthUserInfo, existingProvider);
@@ -151,8 +152,8 @@ public class AuthService {
     }
 
     private void processOAuthData(User user, OAuthProvider provider, OAuthUserInfoDTO userInfo, UserOAuthProvider existingProvider) {
-        userOAuthProviderService.createOrUpdate(user, userInfo, provider, existingProvider);
-        userService.createOrUpdateUserEmail(user, userInfo.getEmail(), userInfo.getEmail().equals(user.getEmail()), true, List.of(provider.getEmailTag()));
+        UserEmail userEmail = userEmailRepository.findByUserAndEmail(user, userInfo.getEmail());
+        userOAuthProviderService.createOrUpdate(user, userInfo, provider, existingProvider, userEmail);
         if (provider.equals(OAuthProvider.JIRA)) {
             String primaryProjectSetting = AppUtils.convertObjectToJsonString(userInfo.getAdditionalInfo().get(JiraService.JIRA_PRIMARY_PROJECT_SETTING_KEY));
             userPreferredSettingService.create(user, JiraService.JIRA_PRIMARY_PROJECT_SETTING_KEY, primaryProjectSetting);
@@ -171,7 +172,9 @@ public class AuthService {
         OAuthProvider oAuthProvider = OAuthProvider.fromCode(provider);
         User loggedUser = AppConfig.getAuthenticatedCurrentUser();
         UserOAuthProvider deletedOAuthProvider = userOAuthProviderService.delete(loggedUser, oAuthProvider);
-        userService.removeEmailTag(loggedUser, deletedOAuthProvider.getEmail(), oAuthProvider.getEmailTag());
+        if (!deletedOAuthProvider.getProviderEmail().getId().equals(loggedUser.getPrimaryEmail().getId())) {
+            userEmailRepository.delete(deletedOAuthProvider.getProviderEmail());
+        }
         return oAuthProvider.getDisplayName() + " unlinked successfully";
     }
 
@@ -217,7 +220,7 @@ public class AuthService {
                 message = "Your account has been successfully activated";
             }
             case NEW_EMAIL_VERIFICATION -> {
-                userService.verifyEmail(user, securityToken.getAdditionalInfo());
+                userService.verifyAndChangePrimaryEmail(user, securityToken.getAdditionalInfo());
                 message = "Your email has been successfully verified";
             }
             default -> throw new UnauthorizedException("Url is expired or invalid");
@@ -229,14 +232,9 @@ public class AuthService {
 
     @Transactional
     public String sendResetPassword(String email) {
-        User user;
-        try {
-            user = userService.validateAndGetUserByEmail(email);
-            if (user.canResetPassword() && user.getEmail().equals(email)) {
-                userService.sendPasswordFlowEmail(user, email, true);
-            }
-        } catch (Exception e) {
-            // do nothing
+        User user = userRepository.findByEmail(email);
+        if (user != null && user.canResetPassword()) {
+            userService.sendPasswordFlowEmail(user, true);
         }
 
         return "If the email exists, a password reset link has been sent to your email.";
