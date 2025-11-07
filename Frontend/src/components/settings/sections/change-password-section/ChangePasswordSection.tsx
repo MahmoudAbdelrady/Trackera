@@ -16,7 +16,7 @@ interface ChangePasswordFormFields {
   confirmNewPassword: string;
 }
 
-const ChangePasswordSection = ({ setFetchUserEmails }: { setFetchUserEmails: (fetch: boolean) => void }) => {
+const ChangePasswordSection = () => {
   const { data: userData, refetch: refetchUser } = userQueries.useMeQuery();
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
   const changePasswordFormik = useFormik({
@@ -34,7 +34,6 @@ const ChangePasswordSection = ({ setFetchUserEmails }: { setFetchUserEmails: (fe
         changePasswordFormik.resetForm();
         await refetchUser();
         showSuccessToast(response.data);
-        setFetchUserEmails(true);
       } catch (error: any) {
         showErrorToast(error);
         changePasswordFormik.setFieldValue("currentPassword", "");

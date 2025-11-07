@@ -7,7 +7,6 @@ import { useEffect, useState } from "react";
 import { useOAuthFlow } from "../../shared/hooks";
 import { userQueries } from "../../state/queries";
 import classes from "./scss/settings.module.css";
-import type { UserEmailType } from "../../shared/types";
 
 interface OAuthAccount {
   provider: Record<string, string>;
@@ -19,16 +18,12 @@ const Settings = () => {
   const { data: userData } = userQueries.useMeQuery();
   const [isFetchingAccounts, setIsFetchingAccounts] = useState(false);
   const [fetchOAuthAccounts, setFetchOAuthAccounts] = useState(true);
-  const [isFetchingEmails, setIsFetchingEmails] = useState(false);
-  const [fetchUserEmails, setFetchUserEmails] = useState(true);
-  const [userEmails, setUserEmails] = useState<UserEmailType[]>([]);
   const [oAuthAccounts, setOAuthAccounts] = useState<OAuthAccount[]>([]);
 
   const { linkProviderAccount } = useOAuthFlow({
     onSuccess: () => {
       showSuccessToast("Account linked successfully");
       setFetchOAuthAccounts(true);
-      setFetchUserEmails(true);
     },
     onError: (error) => {
       showErrorToast(error);
@@ -40,7 +35,6 @@ const Settings = () => {
       const response = await requestInstance.post(`/auth/unlink-oauth/${provider}`);
       showSuccessToast(response.data);
       setFetchOAuthAccounts(true);
-      setFetchUserEmails(true);
     } catch (error: any) {
       showErrorToast(error);
     }
@@ -64,32 +58,14 @@ const Settings = () => {
     }
   }, [fetchOAuthAccounts]);
 
-  useEffect(() => {
-    const fetchEmails = async () => {
-      setIsFetchingEmails(true);
-      try {
-        const response = await requestInstance.get("/user/emails");
-        setUserEmails(response.data);
-      } catch (error: any) {
-        showErrorToast(error);
-      }
-      setIsFetchingEmails(false);
-    };
-
-    if (fetchUserEmails) {
-      fetchEmails();
-      setFetchUserEmails(false);
-    }
-  }, [fetchUserEmails]);
-
   return (
     <AppLayout>
       <div className={classes.settings_sections}>
         <SettingsSection title={`${userData?.passwordSet ? "Change" : "Set"} Password`} icon={<Lock />}>
-          <ChangePasswordSection setFetchUserEmails={setFetchUserEmails} />
+          <ChangePasswordSection />
         </SettingsSection>
         <SettingsSection title="Emails" icon={<Mail />}>
-          <EmailSection userEmails={userEmails} isFetchingEmails={isFetchingEmails} setFetchUserEmails={setFetchUserEmails} setFetchLinkedAccounts={setFetchOAuthAccounts} />
+          <EmailSection />
         </SettingsSection>
         <SettingsSection title="Linked Accounts" icon={<Link />}>
           {isFetchingAccounts ? (

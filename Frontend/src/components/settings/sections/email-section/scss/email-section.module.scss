@@ -1,11 +1,35 @@
 @use "../../../../../shared/styles/colors" as *;
 @use "../../../../../shared/styles/mixins" as *;
 
-.add_email_button {
-  align-self: flex-start;
-  padding: 18px 28px;
-  font-size: 16px;
-}
-.emails_list {
-  margin-top: 10px;
+.user_emails {
+  .email_item {
+    @include between;
+    &:not(:first-child) {
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid $borderColor;
+    }
+    @media (max-width: 892px) {
+      flex-direction: column;
+      align-items: flex-end;
+    }
+    .info {
+      @include start;
+      width: 100%;
+      gap: 10px;
+    }
+    .actions {
+      @include end;
+      gap: 10px;
+      margin-left: 20px;
+      width: 100%;
+      @media (max-width: 892px) {
+        margin-left: 0;
+        margin-top: 20px;
+        .action_btn {
+          width: 100%;
+        }
+      }
+    }
+  }
 }
