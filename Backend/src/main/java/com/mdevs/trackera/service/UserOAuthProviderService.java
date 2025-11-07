@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 @Service
 public class UserOAuthProviderService {
@@ -79,11 +80,9 @@ public class UserOAuthProviderService {
         return userOAuthProviderRepository.save(existingUserOAuthProvider);
     }
 
-    public void ensureUserHasActiveLinkedProvider(User user, OAuthProvider provider) {
-        UserOAuthProvider linked = userOAuthProviderRepository.findByUserAndProvider(user, provider);
-        if (linked == null || linked.isRevoked()) {
-            throw new BusinessException("This account is not linked with " + provider.getDisplayName());
-        }
+    public UserOAuthProvider getUserLinkedProvider(User user, String email, OAuthProvider provider) {
+        return Optional.ofNullable(userOAuthProviderRepository.findByUserAndEmailAndProvider(user, email, provider))
+                .orElseThrow(() -> new BusinessException("No linked " + provider.getDisplayName() + " account matches the provided email."));
     }
 
     public void ensureUserDoesNotHaveActiveLinkedProvider(User user, OAuthProvider oAuthProvider) {

@@ -6,6 +6,7 @@ import com.mdevs.trackera.dto.auth.OAuthUserInfoDTO;
 import com.mdevs.trackera.dto.auth.PasswordDTO;
 import com.mdevs.trackera.dto.auth.SignUpDTO;
 import com.mdevs.trackera.dto.jira.AccessibleResourceDTO;
+import com.mdevs.trackera.dto.user.UserEmailDTO;
 import com.mdevs.trackera.dto.user.UserPreferenceDTO;
 import com.mdevs.trackera.entity.SecurityToken;
 import com.mdevs.trackera.entity.User;
@@ -80,12 +81,14 @@ public class UserService implements UserDetailsService {
         return Optional.ofNullable(userEmailRepository.findPrimaryEmail(email)).map(UserEmail::getUser).orElseThrow(() -> new NotFoundException("Account not found."));
     }
 
-    public UserEmail getUserEmailOrThrow(User user, String email) {
-        return Optional.ofNullable(userEmailRepository.findByUserAndEmail(user, email)).orElseThrow(() -> new NotFoundException("Email not found"));
-    }
-
     public LoggedUserDTO getMeInfo() {
-        return modelMapper.map(AppConfig.getCurrentUser(), LoggedUserDTO.class);
+        User loggedUser = AppConfig.getAuthenticatedCurrentUser();
+        LoggedUserDTO loggedUserDTO = modelMapper.map(AppConfig.getCurrentUser(), LoggedUserDTO.class);
+        loggedUserDTO.setPrimaryEmail(new UserEmailDTO(loggedUser.getPrimaryEmail()));
+        if (loggedUser.getPendingEmail() != null) {
+            loggedUserDTO.setPendingEmail(new UserEmailDTO(loggedUser.getPendingEmail()));
+        }
+        return loggedUserDTO;
     }
 
     public List<Map<String, Object>> getUserOAuthProviders() {
@@ -99,7 +102,7 @@ public class UserService implements UserDetailsService {
             providerInfo.put("provider", Map.of("name", provider.getDisplayName(), "code", provider.getCode()));
             providerInfo.put("isLinked", isLinked);
             if (isLinked) {
-                providerInfo.put("email", userProvider.getProviderEmail());
+                providerInfo.put("email", userProvider.getProviderEmail().getEmail());
                 providerInfo.put("isRevoked", userProvider.isRevoked());
             }
             return providerInfo;
@@ -131,13 +134,17 @@ public class UserService implements UserDetailsService {
 
     @Transactional
     public Map<String, Object> createOrGetOAuthUser(OAuthUserInfoDTO oAuthUserInfo, OAuthProvider oAuthProvider) {
-        UserEmail userEmail = userEmailRepository.findByEmail(oAuthUserInfo.getEmail());
+        UserEmail userEmail = userEmailRepository.findTop1ByEmailOrderByCreatedAtDesc(oAuthUserInfo.getEmail());
         User authenticatedUser = Optional.ofNullable(userEmail).map(UserEmail::getUser).orElse(null);
         boolean shouldLinkOAuthProvider = authenticatedUser == null;
 
         if (authenticatedUser != null) { // means the user is logging in with an oAuth provider
-            userOAuthProviderService.ensureUserHasActiveLinkedProvider(authenticatedUser, oAuthProvider);
-            if (!userEmail.isVerified()) {
+            UserOAuthProvider userOAuthProvider = userOAuthProviderService.getUserLinkedProvider(authenticatedUser, oAuthUserInfo.getEmail(), oAuthProvider);
+            if (userOAuthProvider.isExpired() || userOAuthProvider.isRevoked()) {
+                userOAuthProviderService.updateAccessCredentials(userOAuthProvider, oAuthUserInfo.getAccessCredentials());
+            }
+            UserEmail unVerifiedEmail = userEmailRepository.findUnverifiedByUserAndEmail(authenticatedUser, oAuthUserInfo.getEmail());
+            if (unVerifiedEmail != null) {
                 if (authenticatedUser.getPrimaryEmail().getId().equals(userEmail.getId())) {
                     userEmail.setVerified(true);
                     userEmailRepository.save(userEmail);
@@ -209,9 +216,16 @@ public class UserService implements UserDetailsService {
     public void changeEmail(String email) {
         User loggedUser = AppConfig.getAuthenticatedCurrentUser();
         validateUserEmail(email);
-        UserEmail existingUserEmail = userEmailRepository.findByEmail(email);
+        UserEmail existingUserEmail = userEmailRepository.findTop1ByEmailOrderByCreatedAtDesc(email);
         if (existingUserEmail != null) {
-            throw new BusinessException(existingUserEmail.getUser().getId().equals(loggedUser.getId()) ? "Email is already associated with your account" : "Email is already in use");
+            if (existingUserEmail.getUser().getId().equals(loggedUser.getId())) {
+                boolean isPrimaryOrPendingEmail = existingUserEmail.getEmail().equals(loggedUser.getPrimaryEmail().getEmail()) || (loggedUser.getPendingEmail() != null && existingUserEmail.getEmail().equals(loggedUser.getPendingEmail().getEmail()));
+                if (isPrimaryOrPendingEmail) {
+                    throw new BusinessException("Email is already associated with your account");
+                }
+            } else {
+                throw new BusinessException("Email is already in use");
+            }
         }
         securityTokenService.deleteNonExpiredSecurityToken(loggedUser, SecurityToken.Type.NEW_EMAIL_VERIFICATION);
         if (loggedUser.getPendingEmail() != null) {
@@ -227,8 +241,8 @@ public class UserService implements UserDetailsService {
     @Transactional
     public void verifyAndChangePrimaryEmail(User user, String email) {
         validateUserEmail(email);
-        UserEmail pendingEmail = userEmailRepository.findByUserAndEmail(user, email);
-        if (pendingEmail == null || !pendingEmail.getId().equals(user.getPendingEmail().getId())) {
+        UserEmail pendingEmail = user.getPendingEmail();
+        if (pendingEmail == null || !pendingEmail.getEmail().equals(email)) {
             throw new BusinessException("Verification link expired due to a new email change");
         }
 
@@ -251,7 +265,7 @@ public class UserService implements UserDetailsService {
                 .build().send();
     }
 
-    public void sendVerificationEmail() {
+    public void sendEmailVerification() {
         User loggedUser = AppConfig.getAuthenticatedCurrentUser();
         if (loggedUser.getPendingEmail() == null) {
             throw new BusinessException("No email change awaiting verification");
@@ -264,6 +278,20 @@ public class UserService implements UserDetailsService {
         templateParameters.put("emailTypeDesc", "Please verify your new email address by clicking the link below:");
         templateParameters.put("linkLabel", "Verify my email");
         securityTokenService.createAndSendSecurityToken(user, email, SecurityToken.Type.NEW_EMAIL_VERIFICATION, email, templateParameters, null, EmailTemplates.VERIFICATION_MAIL_TEMPLATE);
+    }
+
+    @Transactional
+    public void removePendingEmail() {
+        User loggedUser = AppConfig.getAuthenticatedCurrentUser();
+        if (loggedUser.getPendingEmail() == null) {
+            throw new BusinessException("No pending email to remove");
+        }
+
+        UserEmail pendingEmail = loggedUser.getPendingEmail();
+        loggedUser.setPendingEmail(null);
+        userRepository.save(loggedUser);
+        userEmailRepository.delete(pendingEmail);
+        securityTokenService.deleteNonExpiredSecurityToken(loggedUser, SecurityToken.Type.NEW_EMAIL_VERIFICATION);
     }
 
     public void validateUserEmail(String email) {

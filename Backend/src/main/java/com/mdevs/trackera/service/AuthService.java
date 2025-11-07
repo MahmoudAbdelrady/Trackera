@@ -133,11 +133,14 @@ public class AuthService {
     private User handleOAuthLinkingFlow(OAuthProvider provider, OAuthUserInfoDTO oAuthUserInfo) {
         User user = userRepository.findOne(oAuthUserInfo.getUserId());
         UserOAuthProvider existingProvider = userOAuthProviderRepository.findByUserAndProvider(user, provider);
-        UserEmail existingUserEmail = userEmailRepository.findByEmail(oAuthUserInfo.getEmail());
-        if (existingUserEmail != null && !existingUserEmail.getUser().getId().equals(user.getId())) {
+        if (userEmailRepository.existsByEmailAndUserNot(oAuthUserInfo.getEmail(), user)) {
             throw new BusinessException(provider.getDisplayName() + " account's email already in use");
         }
         processOAuthData(user, provider, oAuthUserInfo, existingProvider);
+        if (user.getPendingEmail() != null && user.getPendingEmail().getEmail().equals(oAuthUserInfo.getEmail())) {
+            userService.verifyAndChangePrimaryEmail(user, oAuthUserInfo.getEmail());
+            securityTokenService.deleteNonExpiredSecurityToken(user, SecurityToken.Type.NEW_EMAIL_VERIFICATION);
+        }
         return user;
     }
 
@@ -152,7 +155,7 @@ public class AuthService {
     }
 
     private void processOAuthData(User user, OAuthProvider provider, OAuthUserInfoDTO userInfo, UserOAuthProvider existingProvider) {
-        UserEmail userEmail = Optional.ofNullable(userEmailRepository.findByUserAndEmail(user, userInfo.getEmail())).orElse(userService.createUserEmail(user, userInfo.getEmail(), true));
+        UserEmail userEmail = userService.createUserEmail(user, userInfo.getEmail(), true);
         userOAuthProviderService.createOrUpdate(user, userInfo, provider, existingProvider, userEmail);
         if (provider.equals(OAuthProvider.JIRA)) {
             String primaryProjectSetting = AppUtils.convertObjectToJsonString(userInfo.getAdditionalInfo().get(JiraService.JIRA_PRIMARY_PROJECT_SETTING_KEY));

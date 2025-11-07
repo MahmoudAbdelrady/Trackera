@@ -39,13 +39,19 @@ public class UserController {
     @PostMapping("/change-email")
     public ResponseEntity<?> ChangeEmail(@RequestBody Map<String, Object> body) {
         userService.changeEmail((String) body.get("email"));
-        return new ResponseEntity<>("Email added successfully. Please check your email for verification.", HttpStatus.CREATED);
+        return new ResponseEntity<>("We’ve sent a verification link to your new email. Please verify to complete the change.", HttpStatus.CREATED);
     }
 
-    @PostMapping("/emails/send-verification")
-    public ResponseEntity<?> SendVerificationEmail() {
-        userService.sendVerificationEmail();
+    @PostMapping("/send-email-verification")
+    public ResponseEntity<?> SendEmailVerification() {
+        userService.sendEmailVerification();
         return new ResponseEntity<>("Verification email sent successfully. Please check your email.", HttpStatus.OK);
+    }
+
+    @DeleteMapping("/remove-pending-email")
+    public ResponseEntity<?> RemovePendingEmail() {
+        userService.removePendingEmail();
+        return new ResponseEntity<>("Pending email removed successfully.", HttpStatus.OK);
     }
 
     @GetMapping("/preferences")

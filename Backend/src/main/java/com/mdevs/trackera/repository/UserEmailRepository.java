@@ -18,12 +18,17 @@ public interface UserEmailRepository extends BaseRepository<UserEmail> {
 
     UserEmail findByEmail(String email);
 
+    UserEmail findTop1ByEmailOrderByCreatedAtDesc(String email);
+
     UserEmail findByUserAndEmail(User user, String email);
 
     List<UserEmail> findAllByUser(User user);
 
     List<UserEmail> findAllByUserOrderByCreatedAt(User user);
 
-    @Query("SELECT ue FROM UserEmail ue JOIN User u on u.primaryEmail = ue WHERE ue.email = :email")
+    @Query("SELECT ue FROM UserEmail ue WHERE ue.user.primaryEmail = ue AND ue.email = :email")
     UserEmail findPrimaryEmail(@Param("email") String email);
+
+    @Query("SELECT ue FROM UserEmail ue WHERE ue.user = :user AND ue.email = :email AND ue.verified = false")
+    UserEmail findUnverifiedByUserAndEmail(@Param("user") User user, @Param("email") String email);
 }

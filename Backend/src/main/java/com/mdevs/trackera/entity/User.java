@@ -26,7 +26,7 @@ public class User extends BaseEntity implements UserDetails {
     @Column(nullable = false)
     private String lastname;
 
-    @OneToOne(optional = false)
+    @OneToOne
     private UserEmail primaryEmail;
 
     @OneToOne
