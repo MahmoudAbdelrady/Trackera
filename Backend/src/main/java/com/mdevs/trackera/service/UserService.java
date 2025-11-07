@@ -148,10 +148,10 @@ public class UserService implements UserDetailsService {
                 if (authenticatedUser.getPrimaryEmail().getId().equals(userEmail.getId())) {
                     userEmail.setVerified(true);
                     userEmailRepository.save(userEmail);
-                    securityTokenService.deleteNonExpiredSecurityToken(authenticatedUser, SecurityToken.Type.ACCOUNT_ACTIVATION);
                 } else {
                     verifyAndChangePrimaryEmail(authenticatedUser, userEmail.getEmail());
                 }
+                securityTokenService.deleteNonExpiredSecurityToken(authenticatedUser, SecurityToken.Type.ACCOUNT_ACTIVATION);
             }
         } else {
             authenticatedUser = new User();
