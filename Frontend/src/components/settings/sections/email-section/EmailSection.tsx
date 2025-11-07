@@ -1,89 +1,147 @@
 import { useFormik } from "formik";
 import { useState } from "react";
 import { emailSchema } from "../../../../shared/yup-schemas";
-import { Button, Modal } from "antd";
+import { Button } from "antd";
 import InputField from "../../../input-field/InputField";
 import { Mail } from "lucide-react";
 import inputFieldClasses from "../../../input-field/scss/input-field.module.css";
 import classes from "./scss/email-section.module.css";
 import { showErrorToast, showSuccessToast } from "../../../../utils/toast-handler/showToast";
 import requestInstance from "../../../../shared/axios/request-instance";
-import type { EmailSectionProps } from "../../../../shared/types";
-import UserEmail from "../../user-email/UserEmail";
-import LoadingSpinner from "../../../loading-spinner/LoadingSpinner";
+import { userQueries } from "../../../../state/queries";
+import StatusBadge from "../../../status-badge/StatusBadge";
 
-const EmailSection = (props: EmailSectionProps) => {
-  const { userEmails, isFetchingEmails, setFetchUserEmails, setFetchLinkedAccounts } = props;
-  const [showAddEmail, setShowAddEmail] = useState(false);
-  const [isAddingEmail, setIsAddingEmail] = useState(false);
+const EmailSection = () => {
+  const [isPerformingAction, setIsPerformingAction] = useState(false);
+  const [showChangeEmail, setShowChangeEmail] = useState(false);
+  const meQuery = userQueries.useMeQuery();
+  const { data: userData } = meQuery;
 
   const changeEmailFormik = useFormik({
     initialValues: {
-      email: "",
+      email: userData?.primaryEmail.email || "",
     },
     validationSchema: emailSchema,
     onSubmit: async (values) => {
-      setIsAddingEmail(true);
+      setIsPerformingAction(true);
       try {
-        const response = await requestInstance.post("/user/emails", { email: values.email });
+        const response = await requestInstance.post("/user/change-email", { email: values.email });
         showSuccessToast(response.data);
-        setFetchUserEmails(true);
-        setShowAddEmail(false);
+        setShowChangeEmail(false);
         changeEmailFormik.resetForm();
+        meQuery.refetch();
       } catch (error: any) {
         showErrorToast(error);
       }
-      setIsAddingEmail(false);
+      setIsPerformingAction(false);
     },
   });
 
+  const resendVerificationEmail = async () => {
+    setIsPerformingAction(true);
+    try {
+      const response = await requestInstance.post("/user/send-email-verification");
+      showSuccessToast(response.data);
+    } catch (error: any) {
+      showErrorToast(error);
+    }
+    setIsPerformingAction(false);
+  };
+
+  const removePendingEmail = async () => {
+    setIsPerformingAction(true);
+    try {
+      const response = await requestInstance.delete("/user/remove-pending-email");
+      showSuccessToast(response.data);
+      meQuery.refetch();
+    } catch (error: any) {
+      showErrorToast(error);
+    }
+    setIsPerformingAction(false);
+  };
+
   return (
-    <>
-      {showAddEmail && (
-        <Modal
-          title="Add New Email"
-          open={true}
-          centered={true}
-          closable={!isAddingEmail}
-          keyboard={!isAddingEmail}
-          maskClosable={!isAddingEmail}
-          okText={"Add"}
-          okButtonProps={{ loading: isAddingEmail, disabled: !changeEmailFormik.isValid || !changeEmailFormik.dirty || isAddingEmail }}
-          cancelButtonProps={{ disabled: isAddingEmail }}
-          onOk={() => {
-            changeEmailFormik.handleSubmit();
-          }}
-          onCancel={() => {
-            setShowAddEmail(false);
-            changeEmailFormik.resetForm();
-          }}
-        >
-          <InputField
-            icon={<Mail className={inputFieldClasses.input_icon} />}
-            placeholder="Enter your email"
-            name="email"
-            value={changeEmailFormik.values.email}
-            onChange={changeEmailFormik.handleChange}
-            onBlur={changeEmailFormik.handleBlur}
-            type="email"
-            disabled={isAddingEmail}
-            error={changeEmailFormik.touched.email && changeEmailFormik.errors.email ? changeEmailFormik.errors.email : undefined}
-          />
-        </Modal>
-      )}
-      <>
-        <Button type="primary" htmlType="submit" className={classes.add_email_button} onClick={() => setShowAddEmail(true)}>
-          Add Email
-        </Button>
-        <div className={classes.emails_list}>
-          {isFetchingEmails ? (
-            <LoadingSpinner />
+    <div className={classes.user_emails}>
+      <div className={classes.email_item}>
+        <div className={classes.info}>
+          {showChangeEmail ? (
+            <InputField
+              icon={<Mail className={inputFieldClasses.input_icon} />}
+              placeholder="Enter your email"
+              name="email"
+              value={changeEmailFormik.values.email}
+              onChange={changeEmailFormik.handleChange}
+              onBlur={changeEmailFormik.handleBlur}
+              type="email"
+              disabled={isPerformingAction}
+              error={changeEmailFormik.touched.email && changeEmailFormik.errors.email ? changeEmailFormik.errors.email : undefined}
+            />
           ) : (
-            userEmails.map((userEmail, idx) => <UserEmail key={idx + 1} userEmail={userEmail} setFetchUserEmails={setFetchUserEmails} setFetchLinkedAccounts={setFetchLinkedAccounts} />)
+            <>
+              <span>{userData?.primaryEmail.email}</span>
+              <StatusBadge badgeProps={{ label: "Primary", type: "main" }} />
+            </>
           )}
         </div>
-      </>
-    </>
+        <div className={classes.actions}>
+          {showChangeEmail ? (
+            <>
+              <Button
+                type="primary"
+                htmlType="submit"
+                className={classes.action_btn}
+                loading={isPerformingAction}
+                disabled={isPerformingAction || !changeEmailFormik.isValid}
+                onClick={() => {
+                  changeEmailFormik.handleSubmit();
+                }}
+              >
+                Save Changes
+              </Button>
+              <Button
+                type="default"
+                className={classes.action_btn}
+                onClick={() => {
+                  setShowChangeEmail(false);
+                  changeEmailFormik.resetForm();
+                }}
+              >
+                Cancel
+              </Button>
+            </>
+          ) : (
+            !userData?.pendingEmail && (
+              <Button type="primary" htmlType="submit" className={classes.action_btn} onClick={() => setShowChangeEmail(true)}>
+                Change Email
+              </Button>
+            )
+          )}
+        </div>
+      </div>
+      {userData?.pendingEmail && (
+        <div className={classes.email_item}>
+          <div className={classes.info}>
+            <span>{userData?.pendingEmail.email}</span>
+            <StatusBadge badgeProps={{ label: "Pending", type: "warning" }} />
+          </div>
+          <div className={classes.actions}>
+            <Button
+              type="primary"
+              htmlType="submit"
+              className={classes.action_btn}
+              loading={isPerformingAction}
+              disabled={isPerformingAction || !changeEmailFormik.isValid}
+              onClick={resendVerificationEmail}
+            >
+              Resend Verification
+            </Button>
+            <Button type="default" danger className={classes.action_btn} onClick={removePendingEmail} loading={isPerformingAction} disabled={isPerformingAction}>
+              Delete
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
   );
 };
 

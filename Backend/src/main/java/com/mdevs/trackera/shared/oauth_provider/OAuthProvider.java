@@ -1,23 +1,19 @@
 package com.mdevs.trackera.shared.oauth_provider;
 
-import com.mdevs.trackera.shared.enums.EmailTag;
 import lombok.Getter;
 
 @Getter
 public enum OAuthProvider {
-    GOOGLE("google", "Google", EmailTag.LINKED_TO_GOOGLE),
-    JIRA("jira", "Jira", EmailTag.LINKED_TO_JIRA);
+    GOOGLE("google", "Google"),
+    JIRA("jira", "Jira");
 
     private final String code;
 
     private final String displayName;
 
-    private final EmailTag emailTag;
-
-    OAuthProvider(String code, String displayName, EmailTag emailTag) {
+    OAuthProvider(String code, String displayName) {
         this.code = code;
         this.displayName = displayName;
-        this.emailTag = emailTag;
     }
 
     public static OAuthProvider fromCode(String value) {

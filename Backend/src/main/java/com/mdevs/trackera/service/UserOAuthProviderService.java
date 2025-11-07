@@ -3,6 +3,7 @@ package com.mdevs.trackera.service;
 import com.mdevs.trackera.dto.auth.OAuthAccessCredentialsDTO;
 import com.mdevs.trackera.dto.auth.OAuthUserInfoDTO;
 import com.mdevs.trackera.entity.User;
+import com.mdevs.trackera.entity.UserEmail;
 import com.mdevs.trackera.entity.UserOAuthProvider;
 import com.mdevs.trackera.repository.UserOAuthProviderRepository;
 import com.mdevs.trackera.shared.exceptions.types.BusinessException;
@@ -14,6 +15,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 @Service
 public class UserOAuthProviderService {
@@ -27,18 +29,19 @@ public class UserOAuthProviderService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(UserOAuthProviderService.class);
 
-    public UserOAuthProviderService(UserOAuthProviderRepository userOAuthProviderRepository, UserPreferredSettingService userPreferredSettingService, OAuthProviderFactory oAuthProviderFactory, TrackeraHasher trackeraHasher) {
+    public UserOAuthProviderService(UserOAuthProviderRepository userOAuthProviderRepository, UserPreferredSettingService userPreferredSettingService,
+                                    OAuthProviderFactory oAuthProviderFactory, TrackeraHasher trackeraHasher) {
         this.userOAuthProviderRepository = userOAuthProviderRepository;
         this.userPreferredSettingService = userPreferredSettingService;
         this.oAuthProviderFactory = oAuthProviderFactory;
         this.trackeraHasher = trackeraHasher;
     }
 
-    public void createOrUpdate(User user, OAuthUserInfoDTO oAuthUserInfoDTO, OAuthProvider oAuthProvider, UserOAuthProvider existingUserOAuthProvider) {
+    public void createOrUpdate(User user, OAuthUserInfoDTO oAuthUserInfoDTO, OAuthProvider oAuthProvider, UserOAuthProvider existingUserOAuthProvider, UserEmail userEmail) {
         if (existingUserOAuthProvider == null) {
             existingUserOAuthProvider = new UserOAuthProvider(user, oAuthProvider);
-            existingUserOAuthProvider.setEmail(oAuthUserInfoDTO.getEmail());
         }
+        existingUserOAuthProvider.setProviderEmail(userEmail);
         updateAccessCredentials(existingUserOAuthProvider, oAuthUserInfoDTO.getAccessCredentials());
     }
 
@@ -77,11 +80,9 @@ public class UserOAuthProviderService {
         return userOAuthProviderRepository.save(existingUserOAuthProvider);
     }
 
-    public void ensureUserHasActiveLinkedProvider(User user, OAuthProvider provider) {
-        UserOAuthProvider linked = userOAuthProviderRepository.findByUserAndProvider(user, provider);
-        if (linked == null || linked.isRevoked()) {
-            throw new BusinessException("This account is not linked with " + provider.getDisplayName());
-        }
+    public UserOAuthProvider getUserLinkedProvider(User user, String email, OAuthProvider provider) {
+        return Optional.ofNullable(userOAuthProviderRepository.findByUserAndEmailAndProvider(user, email, provider))
+                .orElseThrow(() -> new BusinessException("No linked " + provider.getDisplayName() + " account matches the provided email."));
     }
 
     public void ensureUserDoesNotHaveActiveLinkedProvider(User user, OAuthProvider oAuthProvider) {

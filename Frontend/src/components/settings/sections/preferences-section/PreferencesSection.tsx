@@ -36,7 +36,7 @@ const PreferencesSection = () => {
 
         setInitialPreferences(initialPrefs);
         setUpdatedPreferences(initialPrefs);
-        setJiraSites([initialPrefs[PREFERENCE_KEYS.JIRA_PRIMARY_PROJECT]]);
+        setJiraSites([initialPrefs[PREFERENCE_KEYS.JIRA_PRIMARY_PROJECT] || []]);
       } catch (error) {
         showErrorToast(error);
       }

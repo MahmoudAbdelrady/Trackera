@@ -16,7 +16,7 @@ const WorklogInfo = ({ worklogInfo }: { worklogInfo: Worklog }) => {
           <Tooltip title="Total Hours">
             <Clock className={classes.info_icon} />
           </Tooltip>
-          <span className={classes.info_label}>{worklogInfo?.totalHours}</span>
+          <span className={classes.info_label}>{worklogInfo?.totalTime}</span>
         </div>
         <div className={classes.info_box}>
           <Tooltip title="Date">

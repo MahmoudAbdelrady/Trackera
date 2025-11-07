@@ -9,7 +9,7 @@ import lombok.Setter;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(indexes = {@Index(columnList = "USER_ID, PROVIDER"), @Index(columnList = "EMAIL")})
+@Table(indexes = {@Index(columnList = "USER_ID, PROVIDER")})
 @Getter
 @Setter
 @NoArgsConstructor
@@ -21,8 +21,8 @@ public class UserOAuthProvider extends BaseEntity {
     @Enumerated(EnumType.STRING)
     private OAuthProvider provider;
 
-    @Column(nullable = false)
-    private String email;
+    @ManyToOne(optional = false)
+    private UserEmail providerEmail;
 
     @Column(nullable = false, columnDefinition = "LONGTEXT")
     private String accessToken;
