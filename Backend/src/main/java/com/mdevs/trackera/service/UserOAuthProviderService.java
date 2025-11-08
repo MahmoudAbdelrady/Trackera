@@ -9,7 +9,7 @@ import com.mdevs.trackera.repository.UserOAuthProviderRepository;
 import com.mdevs.trackera.shared.exceptions.types.BusinessException;
 import com.mdevs.trackera.shared.oauth_provider.OAuthProvider;
 import com.mdevs.trackera.shared.oauth_provider.OAuthProviderFactory;
-import com.mdevs.trackera.utils.TrackeraHasher;
+import com.mdevs.trackera.utils.CryptoUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -25,16 +25,16 @@ public class UserOAuthProviderService {
 
     private final OAuthProviderFactory oAuthProviderFactory;
 
-    private final TrackeraHasher trackeraHasher;
+    private final CryptoUtil cryptoUtil;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(UserOAuthProviderService.class);
 
     public UserOAuthProviderService(UserOAuthProviderRepository userOAuthProviderRepository, UserPreferredSettingService userPreferredSettingService,
-                                    OAuthProviderFactory oAuthProviderFactory, TrackeraHasher trackeraHasher) {
+                                    OAuthProviderFactory oAuthProviderFactory, CryptoUtil cryptoUtil) {
         this.userOAuthProviderRepository = userOAuthProviderRepository;
         this.userPreferredSettingService = userPreferredSettingService;
         this.oAuthProviderFactory = oAuthProviderFactory;
-        this.trackeraHasher = trackeraHasher;
+        this.cryptoUtil = cryptoUtil;
     }
 
     public void createOrUpdate(User user, OAuthUserInfoDTO oAuthUserInfoDTO, OAuthProvider oAuthProvider, UserOAuthProvider existingUserOAuthProvider, UserEmail userEmail) {
@@ -58,7 +58,7 @@ public class UserOAuthProviderService {
             throw new RuntimeException("Failed to authenticate with " + userOAuthProvider.getProvider());
         }
 
-        return trackeraHasher.decryptFromBase64(userOAuthProvider.getAccessToken(), false);
+        return cryptoUtil.decryptFromBase64(userOAuthProvider.getAccessToken(), false);
     }
 
     public UserOAuthProvider refreshAndUpdateCredentials(UserOAuthProvider userOAuthProvider) {
@@ -73,14 +73,14 @@ public class UserOAuthProviderService {
     }
 
     public UserOAuthProvider updateAccessCredentials(UserOAuthProvider existingUserOAuthProvider, OAuthAccessCredentialsDTO oAuthAccessCredentialsDTO) {
-        existingUserOAuthProvider.setAccessToken(trackeraHasher.encryptToBase64(oAuthAccessCredentialsDTO.getAccessToken(), false));
-        existingUserOAuthProvider.setRefreshToken(trackeraHasher.encryptToBase64(oAuthAccessCredentialsDTO.getRefreshToken(), false));
+        existingUserOAuthProvider.setAccessToken(cryptoUtil.encryptToBase64(oAuthAccessCredentialsDTO.getAccessToken(), false));
+        existingUserOAuthProvider.setRefreshToken(cryptoUtil.encryptToBase64(oAuthAccessCredentialsDTO.getRefreshToken(), false));
         existingUserOAuthProvider.setAccessTokenExpiry(LocalDateTime.now().plusSeconds(oAuthAccessCredentialsDTO.getExpiresIn()));
         existingUserOAuthProvider.setRevoked(false);
         return userOAuthProviderRepository.save(existingUserOAuthProvider);
     }
 
-    public UserOAuthProvider getUserLinkedProvider(User user, String email, OAuthProvider provider) {
+    public UserOAuthProvider getUserLinkedProviderOrThrow(User user, String email, OAuthProvider provider) {
         return Optional.ofNullable(userOAuthProviderRepository.findByUserAndEmailAndProvider(user, email, provider))
                 .orElseThrow(() -> new BusinessException("No linked " + provider.getDisplayName() + " account matches the provided email."));
     }

@@ -20,7 +20,7 @@ import java.util.List;
 public class JwtUtil {
     private final UserInvalidTokenRepository userInvalidTokenRepository;
 
-    private final TrackeraHasher trackeraHasher;
+    private final CryptoUtil cryptoUtil;
 
     @Value("${trackera.tokens.access}")
     private String accessTokenSecretKey;
@@ -28,9 +28,9 @@ public class JwtUtil {
     @Value("${trackera.tokens.refresh}")
     private String refreshTokenSecretKey;
 
-    public JwtUtil(UserInvalidTokenRepository userInvalidTokenRepository, TrackeraHasher trackeraHasher) {
+    public JwtUtil(UserInvalidTokenRepository userInvalidTokenRepository, CryptoUtil cryptoUtil) {
         this.userInvalidTokenRepository = userInvalidTokenRepository;
-        this.trackeraHasher = trackeraHasher;
+        this.cryptoUtil = cryptoUtil;
     }
 
     public String generateToken(String userUuid, boolean isAccessToken) {
@@ -74,7 +74,7 @@ public class JwtUtil {
         do {
             userInvalidTokens = userInvalidTokenRepository.findAllByUserAndTokenTypeOrderById(uuid, isAccessToken, maxId, pageRequest);
             if (!userInvalidTokens.isEmpty()) {
-                isInvalid = userInvalidTokens.stream().anyMatch(it -> trackeraHasher.isMatch(token, it.getToken(), false));
+                isInvalid = userInvalidTokens.stream().anyMatch(it -> cryptoUtil.isMatch(token, it.getToken(), false));
                 maxId = userInvalidTokens.getLast().getId();
             }
         } while (!userInvalidTokens.isEmpty() && !isInvalid);

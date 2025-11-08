@@ -152,7 +152,7 @@ public class WorkLogService {
     public List<WorkLogSummaryDTO> getCurrentMonthSummary() {
         LocalDate now = LocalDate.now();
         DecimalFormat durationDecimalFormat = TrackeraTimeSpanUtil.getDurationDecimalFormat();
-        int totalLogged = workLogRepository.sumTotalMinutesByUserAndWorkDateBetween(AppConfig.getCurrentUser(), now.withDayOfMonth(1), now.withDayOfMonth(now.lengthOfMonth()));
+        int totalLogged = workLogRepository.sumTotalMinutesByUserAndWorkDateBetween(AppConfig.getAuthenticatedCurrentUser(), now.withDayOfMonth(1), now.withDayOfMonth(now.lengthOfMonth()));
         int targetMinutes = 200 * 60; // @TODO --> Should be based on user settings and user can choose decimal target hours
         int remainingMinutes = Math.max(targetMinutes - totalLogged, 0);
         return List.of(
@@ -163,7 +163,7 @@ public class WorkLogService {
     }
 
     private void validateWorkLog(ManageWorkLogDTO manageWorkLogDTO, Long existingWorkLogId) {
-        if (workLogRepository.existsByUserAndWorkDateAndWorkLogNot(AppConfig.getCurrentUser(), manageWorkLogDTO.getLogDate(), existingWorkLogId)) {
+        if (workLogRepository.existsByUserAndWorkDateAndWorkLogNot(AppConfig.getAuthenticatedCurrentUser(), manageWorkLogDTO.getLogDate(), existingWorkLogId)) {
             throw new BusinessException("WorkLog for the date " + manageWorkLogDTO.getLogDate() + " already exists.");
         }
         if (manageWorkLogDTO.getLogDate().isAfter(LocalDate.now())) {
@@ -295,7 +295,7 @@ public class WorkLogService {
     public WorkLog saveWorkLog(ManageWorkLogDTO manageWorkLogDTO, int totalMinutes) {
         try {
             WorkLog workLog = new WorkLog();
-            workLog.setUser(AppConfig.getCurrentUser());
+            workLog.setUser(AppConfig.getAuthenticatedCurrentUser());
             workLog.setTotalMinutes(totalMinutes);
             workLog.setWorkDate(manageWorkLogDTO.getLogDate());
             workLog.setStatus(WorkLogStatus.NOT_SYNCED);
@@ -326,7 +326,7 @@ public class WorkLogService {
     }
 
     private WorkLog validateWorkLogExistsAndHasPermission(String uuid) {
-        WorkLog workLog = workLogRepository.findByUserAndUuid(AppConfig.getCurrentUser(), uuid);
+        WorkLog workLog = workLogRepository.findByUserAndUuid(AppConfig.getAuthenticatedCurrentUser(), uuid);
         if (workLog == null) {
             throw new NotFoundException("WorkLog not found");
         }

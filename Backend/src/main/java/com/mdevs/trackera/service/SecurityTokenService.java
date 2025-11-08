@@ -5,7 +5,7 @@ import com.mdevs.trackera.entity.SecurityToken;
 import com.mdevs.trackera.entity.User;
 import com.mdevs.trackera.repository.SecurityTokenRepository;
 import com.mdevs.trackera.shared.exceptions.types.UnauthorizedException;
-import com.mdevs.trackera.utils.TrackeraHasher;
+import com.mdevs.trackera.utils.CryptoUtil;
 import com.mdevs.trackera.shared.TrackeraEmailTarget;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
@@ -19,17 +19,17 @@ import java.util.Map;
 public class SecurityTokenService {
     private final SecurityTokenRepository securityTokenRepository;
 
-    private final TrackeraHasher trackeraHasher;
+    private final CryptoUtil cryptoUtil;
 
     public final static long MAX_SECURITY_TOKEN_MINUTES = 15;
 
-    public SecurityTokenService(SecurityTokenRepository securityTokenRepository, TrackeraHasher trackeraHasher) {
+    public SecurityTokenService(SecurityTokenRepository securityTokenRepository, CryptoUtil cryptoUtil) {
         this.securityTokenRepository = securityTokenRepository;
-        this.trackeraHasher = trackeraHasher;
+        this.cryptoUtil = cryptoUtil;
     }
 
     public SecurityToken validateAndGet(String token) {
-        Map<String, String> tokenPayload = trackeraHasher.parseSecurityToken(token);
+        Map<String, String> tokenPayload = cryptoUtil.parseSecurityToken(token);
         if (tokenPayload == null || tokenPayload.isEmpty()) {
             throw new UnauthorizedException("Url is expired or invalid");
         }
@@ -52,7 +52,7 @@ public class SecurityTokenService {
             securityToken.setAdditionalInfo(additionalInfo);
         }
         securityTokenRepository.save(securityToken);
-        String token = trackeraHasher.hashForSecurityToken(securityToken.getId());
+        String token = cryptoUtil.hashForSecurityToken(securityToken.getId());
 
         Map<String, String> templateParameters = new HashMap<>();
         templateParameters.put("emailType", type.getLabel());

@@ -13,7 +13,7 @@ import java.security.SecureRandom;
 import java.util.*;
 
 @Component
-public class TrackeraHasher {
+public class CryptoUtil {
 
     @Value("${trackera.hasher_secret_key}")
     private String hasherSecretKey;

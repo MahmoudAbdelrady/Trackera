@@ -11,7 +11,6 @@ import com.mdevs.trackera.shared.oauth_provider.OAuthProvider;
 import com.mdevs.trackera.shared.oauth_provider.OAuthProviderFactory;
 import com.mdevs.trackera.utils.*;
 import io.jsonwebtoken.Claims;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.apache.commons.lang3.StringUtils;
@@ -39,8 +38,6 @@ public class AuthService {
 
     private final UserOAuthProviderService userOAuthProviderService;
 
-    private final UserPreferredSettingService userPreferredSettingService;
-
     private final OAuthProviderFactory oAuthProviderFactory;
 
     private final SecurityTokenRepository securityTokenRepository;
@@ -51,28 +48,26 @@ public class AuthService {
 
     private final JwtUtil jwtUtil;
 
-    private final CookieFactory cookieFactory;
+    private final CookieHelper cookieHelper;
 
-    private final TrackeraHasher trackeraHasher;
+    private final CryptoUtil cryptoUtil;
 
     public AuthService(UserRepository userRepository, UserEmailRepository userEmailRepository, UserService userService, AuthenticationManager authenticationManager, SecurityTokenService securityTokenService,
-                       UserOAuthProviderService userOAuthProviderService, UserPreferredSettingService userPreferredSettingService, OAuthProviderFactory oAuthProviderFactory,
-                       SecurityTokenRepository securityTokenRepository, UserInvalidTokenRepository userInvalidTokenRepository, UserOAuthProviderRepository userOAuthProviderRepository, JwtUtil jwtUtil,
-                       CookieFactory cookieFactory, TrackeraHasher trackeraHasher) {
+                       UserOAuthProviderService userOAuthProviderService, OAuthProviderFactory oAuthProviderFactory, SecurityTokenRepository securityTokenRepository, UserInvalidTokenRepository userInvalidTokenRepository,
+                       UserOAuthProviderRepository userOAuthProviderRepository, JwtUtil jwtUtil, CookieHelper cookieHelper, CryptoUtil cryptoUtil) {
         this.userRepository = userRepository;
         this.userEmailRepository = userEmailRepository;
         this.userService = userService;
         this.authenticationManager = authenticationManager;
         this.securityTokenService = securityTokenService;
         this.userOAuthProviderService = userOAuthProviderService;
-        this.userPreferredSettingService = userPreferredSettingService;
         this.oAuthProviderFactory = oAuthProviderFactory;
         this.securityTokenRepository = securityTokenRepository;
         this.userInvalidTokenRepository = userInvalidTokenRepository;
         this.userOAuthProviderRepository = userOAuthProviderRepository;
         this.jwtUtil = jwtUtil;
-        this.cookieFactory = cookieFactory;
-        this.trackeraHasher = trackeraHasher;
+        this.cookieHelper = cookieHelper;
+        this.cryptoUtil = cryptoUtil;
     }
 
     @Transactional
@@ -137,18 +132,15 @@ public class AuthService {
             throw new BusinessException(provider.getDisplayName() + " account's email already in use");
         }
         processOAuthData(user, provider, oAuthUserInfo, existingProvider);
-        if (user.getPendingEmail() != null && user.getPendingEmail().getEmail().equals(oAuthUserInfo.getEmail())) {
-            userService.verifyAndChangePrimaryEmail(user, oAuthUserInfo.getEmail());
-            securityTokenService.deleteNonExpiredSecurityToken(user, SecurityToken.Type.NEW_EMAIL_VERIFICATION);
-        }
+        userService.verifyEmailIfMatchesOAuth(oAuthUserInfo, user);
         return user;
     }
 
     private User handleOAuthLoginOrSignupFlow(OAuthProvider provider, OAuthUserInfoDTO oAuthUserInfo) {
         Map<String, Object> userData = userService.createOrGetOAuthUser(oAuthUserInfo, provider);
         User user = (User) userData.get("user");
-        boolean shouldLinkOAuthProvider = (boolean) userData.get("shouldLinkOAuthProvider");
-        if (shouldLinkOAuthProvider) {
+        boolean isNewUser = (boolean) userData.get("isNewUser");
+        if (isNewUser) {
             processOAuthData(user, provider, oAuthUserInfo, null);
         }
         return user;
@@ -157,16 +149,13 @@ public class AuthService {
     private void processOAuthData(User user, OAuthProvider provider, OAuthUserInfoDTO userInfo, UserOAuthProvider existingProvider) {
         UserEmail userEmail = userService.createUserEmail(user, userInfo.getEmail(), true);
         userOAuthProviderService.createOrUpdate(user, userInfo, provider, existingProvider, userEmail);
-        if (provider.equals(OAuthProvider.JIRA)) {
-            String primaryProjectSetting = AppUtils.convertObjectToJsonString(userInfo.getAdditionalInfo().get(JiraService.JIRA_PRIMARY_PROJECT_SETTING_KEY));
-            userPreferredSettingService.create(user, JiraService.JIRA_PRIMARY_PROJECT_SETTING_KEY, primaryProjectSetting);
-        }
+        oAuthProviderFactory.getProvider(provider).handlePostLinkingActions(user, userInfo);
     }
 
     private Map<String, Object> generateLoginInfo(User user, HttpServletResponse httpResponse) {
         String accessToken = jwtUtil.generateToken(user.getUuid(), true);
         String refreshToken = jwtUtil.generateToken(user.getUuid(), false);
-        httpResponse.addCookie(cookieFactory.create(CookieFactory.REFRESH_TOKEN_COOKIE_NAME, refreshToken, true, "/trackera/auth", CookieFactory.getRefreshTokenCookieMaxAge()));
+        httpResponse.addCookie(cookieHelper.create(CookieHelper.REFRESH_TOKEN_COOKIE_NAME, refreshToken, true, "/trackera/auth", CookieHelper.getRefreshTokenCookieMaxAge()));
         return Map.of("token", accessToken);
     }
 
@@ -175,7 +164,7 @@ public class AuthService {
         OAuthProvider oAuthProvider = OAuthProvider.fromCode(provider);
         User loggedUser = AppConfig.getAuthenticatedCurrentUser();
         UserOAuthProvider deletedOAuthProvider = userOAuthProviderService.delete(loggedUser, oAuthProvider);
-        if (!deletedOAuthProvider.getProviderEmail().getId().equals(loggedUser.getPrimaryEmail().getId())) {
+        if (!deletedOAuthProvider.getProviderEmail().getEmail().equals(loggedUser.getPrimaryEmail().getEmail())) {
             userEmailRepository.delete(deletedOAuthProvider.getProviderEmail());
         }
         return oAuthProvider.getDisplayName() + " unlinked successfully";
@@ -184,19 +173,19 @@ public class AuthService {
     @Transactional
     public void logout(HttpServletRequest httpRequest, HttpServletResponse httpResponse) {
         String accessToken = httpRequest.getHeader(HttpHeaders.AUTHORIZATION).substring(7);
-        String refreshToken = httpRequest.getCookies() != null ? Arrays.stream(httpRequest.getCookies()).filter(cookie -> cookie.getName().equals(CookieFactory.REFRESH_TOKEN_COOKIE_NAME)).map(Cookie::getValue).findFirst().orElse(null) : null;
+        String refreshToken = cookieHelper.extractCookieValue(httpRequest, CookieHelper.REFRESH_TOKEN_COOKIE_NAME);
         saveInvalidToken(accessToken, true);
         if (!StringUtils.isEmpty(refreshToken)) {
             saveInvalidToken(refreshToken, false);
         }
-        httpResponse.addCookie(cookieFactory.create(CookieFactory.REFRESH_TOKEN_COOKIE_NAME, null, true, "/trackera/auth", 0));
+        httpResponse.addCookie(cookieHelper.create(CookieHelper.REFRESH_TOKEN_COOKIE_NAME, null, true, "/trackera/auth", 0));
     }
 
     private void saveInvalidToken(String token, boolean isAccessToken) {
         Claims accessTokenClaims = jwtUtil.getTokenPayload(token, isAccessToken);
         User user = userRepository.findByUuid(accessTokenClaims.get("id", String.class));
         Date accessTokenClaimsExpiration = accessTokenClaims.getExpiration();
-        UserInvalidToken invalidAccessToken = new UserInvalidToken(user, trackeraHasher.hash(token, false), accessTokenClaimsExpiration, isAccessToken);
+        UserInvalidToken invalidAccessToken = new UserInvalidToken(user, cryptoUtil.hash(token, false), accessTokenClaimsExpiration, isAccessToken);
         userInvalidTokenRepository.save(invalidAccessToken);
     }
 
@@ -234,14 +223,12 @@ public class AuthService {
     }
 
     @Transactional
-    public String sendResetPassword(String email) {
+    public void sendResetPassword(String email) {
         UserEmail userEmail = userEmailRepository.findPrimaryEmail(email);
         User user = Optional.ofNullable(userEmail).map(UserEmail::getUser).orElse(null);
         if (user != null && user.canResetPassword()) {
             userService.sendPasswordFlowEmail(user, true);
         }
-
-        return "If the email exists, a password reset link has been sent to your email.";
     }
 
     @Transactional

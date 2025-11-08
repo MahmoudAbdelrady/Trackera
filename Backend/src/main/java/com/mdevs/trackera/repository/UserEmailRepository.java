@@ -6,8 +6,6 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.util.List;
-
 @Repository
 public interface UserEmailRepository extends BaseRepository<UserEmail> {
     @Query("SELECT CASE WHEN EXISTS (SELECT ue FROM UserEmail ue WHERE ue.email = :email) THEN true ELSE false END")
@@ -16,15 +14,7 @@ public interface UserEmailRepository extends BaseRepository<UserEmail> {
     @Query("SELECT CASE WHEN EXISTS (SELECT ue FROM UserEmail ue WHERE ue.email = :email AND ue.user != :user) THEN true ELSE false END")
     boolean existsByEmailAndUserNot(@Param("email") String email, @Param("user") User user);
 
-    UserEmail findByEmail(String email);
-
     UserEmail findTop1ByEmailOrderByCreatedAtDesc(String email);
-
-    UserEmail findByUserAndEmail(User user, String email);
-
-    List<UserEmail> findAllByUser(User user);
-
-    List<UserEmail> findAllByUserOrderByCreatedAt(User user);
 
     @Query("SELECT ue FROM UserEmail ue WHERE ue.user.primaryEmail = ue AND ue.email = :email")
     UserEmail findPrimaryEmail(@Param("email") String email);

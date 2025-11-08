@@ -70,20 +70,12 @@ public class UserService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        try {
-            return validateAndGetUserByEmail(email);
-        } catch (Exception e) {
-            throw new UsernameNotFoundException(e.getMessage());
-        }
-    }
-
-    public User validateAndGetUserByEmail(String email) {
-        return Optional.ofNullable(userEmailRepository.findPrimaryEmail(email)).map(UserEmail::getUser).orElseThrow(() -> new NotFoundException("Account not found."));
+        return Optional.ofNullable(userEmailRepository.findPrimaryEmail(email)).map(UserEmail::getUser).orElseThrow(() -> new UsernameNotFoundException("Account not found."));
     }
 
     public LoggedUserDTO getMeInfo() {
         User loggedUser = AppConfig.getAuthenticatedCurrentUser();
-        LoggedUserDTO loggedUserDTO = modelMapper.map(AppConfig.getCurrentUser(), LoggedUserDTO.class);
+        LoggedUserDTO loggedUserDTO = modelMapper.map(AppConfig.getAuthenticatedCurrentUser(), LoggedUserDTO.class);
         loggedUserDTO.setPrimaryEmail(new UserEmailDTO(loggedUser.getPrimaryEmail()));
         if (loggedUser.getPendingEmail() != null) {
             loggedUserDTO.setPendingEmail(new UserEmailDTO(loggedUser.getPendingEmail()));
@@ -92,7 +84,7 @@ public class UserService implements UserDetailsService {
     }
 
     public List<Map<String, Object>> getUserOAuthProviders() {
-        User loggedUser = AppConfig.getCurrentUser();
+        User loggedUser = AppConfig.getAuthenticatedCurrentUser();
         Map<OAuthProvider, UserOAuthProvider> linkedProviders = userOAuthProviderRepository.findByUser(loggedUser).stream().collect(Collectors.toMap(UserOAuthProvider::getProvider, o -> o));
 
         return Arrays.stream(OAuthProvider.values()).map(provider -> {
@@ -136,40 +128,56 @@ public class UserService implements UserDetailsService {
     public Map<String, Object> createOrGetOAuthUser(OAuthUserInfoDTO oAuthUserInfo, OAuthProvider oAuthProvider) {
         UserEmail userEmail = userEmailRepository.findTop1ByEmailOrderByCreatedAtDesc(oAuthUserInfo.getEmail());
         User authenticatedUser = Optional.ofNullable(userEmail).map(UserEmail::getUser).orElse(null);
-        boolean shouldLinkOAuthProvider = authenticatedUser == null;
+        boolean isNewUser = authenticatedUser == null;
 
-        if (authenticatedUser != null) { // means the user is logging in with an oAuth provider
-            UserOAuthProvider userOAuthProvider = userOAuthProviderService.getUserLinkedProvider(authenticatedUser, oAuthUserInfo.getEmail(), oAuthProvider);
-            if (userOAuthProvider.isExpired() || userOAuthProvider.isRevoked()) {
-                userOAuthProviderService.updateAccessCredentials(userOAuthProvider, oAuthUserInfo.getAccessCredentials());
-            }
-            UserEmail unVerifiedEmail = userEmailRepository.findUnverifiedByUserAndEmail(authenticatedUser, oAuthUserInfo.getEmail());
-            if (unVerifiedEmail != null) {
-                if (authenticatedUser.getPrimaryEmail().getId().equals(userEmail.getId())) {
-                    userEmail.setVerified(true);
-                    userEmailRepository.save(userEmail);
-                } else {
-                    verifyAndChangePrimaryEmail(authenticatedUser, userEmail.getEmail());
-                }
-                securityTokenService.deleteNonExpiredSecurityToken(authenticatedUser, SecurityToken.Type.ACCOUNT_ACTIVATION);
-            }
+        if (authenticatedUser != null) {
+            handleExistingUserOAuthLogin(oAuthUserInfo, oAuthProvider, authenticatedUser);
         } else {
-            authenticatedUser = new User();
-            authenticatedUser.setFirstname(oAuthUserInfo.getFirstname());
-            authenticatedUser.setLastname(oAuthUserInfo.getLastname());
-            authenticatedUser.setProfilePicture(oAuthUserInfo.getProfilePicture());
-            authenticatedUser.setVerified(true);
-            userRepository.save(authenticatedUser);
-
-            UserEmail oAuthUserEmail = createUserEmail(authenticatedUser, oAuthUserInfo.getEmail(), true);
-            authenticatedUser.setPrimaryEmail(oAuthUserEmail);
-            userRepository.save(authenticatedUser);
+            authenticatedUser = createUserFromOAuth(oAuthUserInfo);
         }
 
         return Map.of(
                 "user", authenticatedUser,
-                "shouldLinkOAuthProvider", shouldLinkOAuthProvider
+                "isNewUser", isNewUser
         );
+    }
+
+    @Transactional
+    public void handleExistingUserOAuthLogin(OAuthUserInfoDTO oAuthUserInfo, OAuthProvider oAuthProvider, User authenticatedUser) {
+        UserOAuthProvider userOAuthProvider = userOAuthProviderService.getUserLinkedProviderOrThrow(authenticatedUser, oAuthUserInfo.getEmail(), oAuthProvider);
+        if (userOAuthProvider.isExpired() || userOAuthProvider.isRevoked()) {
+            userOAuthProviderService.updateAccessCredentials(userOAuthProvider, oAuthUserInfo.getAccessCredentials());
+        }
+        verifyEmailIfMatchesOAuth(oAuthUserInfo, authenticatedUser);
+    }
+
+    @Transactional
+    public void verifyEmailIfMatchesOAuth(OAuthUserInfoDTO oAuthUserInfo, User authenticatedUser) {
+        if (!authenticatedUser.getPrimaryEmail().isVerified() && authenticatedUser.getPrimaryEmail().getEmail().equals(oAuthUserInfo.getEmail())) {
+            UserEmail unVerifiedEmail = authenticatedUser.getPrimaryEmail();
+            unVerifiedEmail.setVerified(true);
+            userEmailRepository.save(unVerifiedEmail);
+            securityTokenService.deleteNonExpiredSecurityToken(authenticatedUser, SecurityToken.Type.ACCOUNT_ACTIVATION);
+        } else if (authenticatedUser.getPendingEmail() != null && authenticatedUser.getPendingEmail().getEmail().equals(oAuthUserInfo.getEmail())) {
+            verifyAndChangePrimaryEmail(authenticatedUser, oAuthUserInfo.getEmail());
+            securityTokenService.deleteNonExpiredSecurityToken(authenticatedUser, SecurityToken.Type.NEW_EMAIL_VERIFICATION);
+        }
+    }
+
+    @Transactional
+    public User createUserFromOAuth(OAuthUserInfoDTO oAuthUserInfo) {
+        User authenticatedUser;
+        authenticatedUser = new User();
+        authenticatedUser.setFirstname(oAuthUserInfo.getFirstname());
+        authenticatedUser.setLastname(oAuthUserInfo.getLastname());
+        authenticatedUser.setProfilePicture(oAuthUserInfo.getProfilePicture());
+        authenticatedUser.setVerified(true);
+        userRepository.save(authenticatedUser);
+
+        UserEmail oAuthUserEmail = createUserEmail(authenticatedUser, oAuthUserInfo.getEmail(), true);
+        authenticatedUser.setPrimaryEmail(oAuthUserEmail);
+        userRepository.save(authenticatedUser);
+        return authenticatedUser;
     }
 
     public void verifyUser(User user) {
@@ -216,25 +224,23 @@ public class UserService implements UserDetailsService {
     public void changeEmail(String email) {
         User loggedUser = AppConfig.getAuthenticatedCurrentUser();
         validateUserEmail(email);
+
         UserEmail existingUserEmail = userEmailRepository.findTop1ByEmailOrderByCreatedAtDesc(email);
         if (existingUserEmail != null) {
-            if (existingUserEmail.getUser().getId().equals(loggedUser.getId())) {
-                boolean isPrimaryOrPendingEmail = existingUserEmail.getEmail().equals(loggedUser.getPrimaryEmail().getEmail()) || (loggedUser.getPendingEmail() != null && existingUserEmail.getEmail().equals(loggedUser.getPendingEmail().getEmail()));
-                if (isPrimaryOrPendingEmail) {
-                    throw new BusinessException("Email is already associated with your account");
-                }
-            } else {
-                throw new BusinessException("Email is already in use");
-            }
+            throw new BusinessException(existingUserEmail.getUser().getId().equals(loggedUser.getId()) ? "Email is already associated with your account" : "Email is already in use");
         }
         securityTokenService.deleteNonExpiredSecurityToken(loggedUser, SecurityToken.Type.NEW_EMAIL_VERIFICATION);
-        if (loggedUser.getPendingEmail() != null) {
+
+        UserEmail oldPendingEmail = loggedUser.getPendingEmail();
+        if (oldPendingEmail != null) {
             loggedUser.setPendingEmail(null);
-            userEmailRepository.delete(loggedUser.getPendingEmail());
+            userEmailRepository.delete(oldPendingEmail);
         }
+
         UserEmail newEmail = createUserEmail(loggedUser, email, false);
         loggedUser.setPendingEmail(newEmail);
         userRepository.save(loggedUser);
+
         sendEmailVerificationSecurityToken(loggedUser, email);
     }
 
@@ -301,7 +307,7 @@ public class UserService implements UserDetailsService {
     }
 
     public List<Map<String, Object>> getUserPreferences() {
-        List<Map<String, Object>> preferences = userPreferredSettingService.getAllByUser(AppConfig.getCurrentUser());
+        List<Map<String, Object>> preferences = userPreferredSettingService.getAllByUser(AppConfig.getAuthenticatedCurrentUser());
         for (Map<String, Object> preference : preferences) {
             if (preference.get("key").equals(JiraService.JIRA_PRIMARY_PROJECT_SETTING_KEY)) {
                 Map<String, Object> jiraProjectInfo = AppUtils.convertJsonStringToObject(preference.get("value").toString(), Map.class);

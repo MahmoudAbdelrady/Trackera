@@ -80,7 +80,6 @@ public class AppConfig {
         return Objects.requireNonNull(getCurrentUser(), "Authenticated user not found");
     }
 
-
     public static LocalDate getMinQueryableDate() {
         return LocalDate.now().minusYears(2).withDayOfYear(1);
     }

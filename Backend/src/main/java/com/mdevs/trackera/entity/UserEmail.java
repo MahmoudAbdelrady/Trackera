@@ -19,7 +19,7 @@ public class UserEmail extends BaseEntity {
     @ManyToOne(optional = false)
     private User user;
 
-    @Column(nullable = false)
+    @Column(nullable = false, unique = true)
     private String email;
 
     @Column(nullable = false)

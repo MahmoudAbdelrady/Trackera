@@ -6,9 +6,9 @@ import com.mdevs.trackera.dto.auth.OAuthUserInfoDTO;
 import com.mdevs.trackera.dto.auth.OAuthRequestDTO;
 import com.mdevs.trackera.entity.User;
 import com.mdevs.trackera.entity.UserOAuthProvider;
-import com.mdevs.trackera.service.UserOAuthProviderService;
+import com.mdevs.trackera.service.UserPreferredSettingService;
 import com.mdevs.trackera.utils.OAuthUtil;
-import com.mdevs.trackera.utils.TrackeraHasher;
+import com.mdevs.trackera.utils.CryptoUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -20,9 +20,11 @@ import java.util.Map;
 public abstract class OAuthServiceProvider {
     private final RedisTemplate<String, Object> redisTemplate;
 
-    private final TrackeraHasher trackeraHasher;
+    private final CryptoUtil cryptoUtil;
 
     private final OAuthUtil oAuthUtil;
+
+    protected final UserPreferredSettingService userPreferredSettingService;
 
     //<editor-fold> common methods
     protected String getRedirectUri() {
@@ -53,7 +55,7 @@ public abstract class OAuthServiceProvider {
 
     public OAuthAccessCredentialsDTO refreshOAuthProviderCredentials(UserOAuthProvider userOAuthProvider) {
         try {
-            return refreshAccessToken(trackeraHasher.decryptFromBase64(userOAuthProvider.getRefreshToken(), false));
+            return refreshAccessToken(cryptoUtil.decryptFromBase64(userOAuthProvider.getRefreshToken(), false));
         } catch (Exception e) {
             throw new SecurityException(e.getMessage());
         }
@@ -68,5 +70,7 @@ public abstract class OAuthServiceProvider {
     public abstract OAuthUserInfoDTO authenticate(OAuthRequestDTO authRequest);
 
     protected abstract OAuthAccessCredentialsDTO refreshAccessToken(String refreshToken);
+
+    public abstract void handlePostLinkingActions(User user, OAuthUserInfoDTO userInfo);
     //</editor-fold>
 }

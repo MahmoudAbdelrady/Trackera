@@ -90,7 +90,8 @@ public class AuthController {
     @PublicAPI
     @PostMapping("/send-reset-password")
     public ResponseEntity<?> SendResetPassword(@RequestBody Map<String, String> body) {
-        return new ResponseEntity<>(authService.sendResetPassword(body.get("email")), HttpStatus.OK);
+        authService.sendResetPassword(body.get("email"));
+        return new ResponseEntity<>("If the email exists, a password reset link has been sent to your email.", HttpStatus.OK);
     }
 
     @PublicAPI
