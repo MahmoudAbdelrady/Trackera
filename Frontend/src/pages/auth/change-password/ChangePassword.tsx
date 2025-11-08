@@ -30,7 +30,7 @@ const ChangePassword = () => {
       setIsLoading(true);
       try {
         const { currentPassword, ...newPasswordInfo } = values;
-        const response = await requestInstance.post(`/auth/change-password?token=${token}`, {
+        const response = await requestInstance.post(`/auth/password?token=${token}`, {
           ...newPasswordInfo,
         });
         setPasswordChangeResult({
@@ -64,7 +64,7 @@ const ChangePassword = () => {
     } else {
       const validateToken = async () => {
         try {
-          await requestInstance.post(`/auth/validate-token?token=${token}`);
+          await requestInstance.post(`/auth/token/validate?token=${token}`);
         } catch (error: any) {
           setPasswordChangeResult({
             description: error.response?.data?.message,

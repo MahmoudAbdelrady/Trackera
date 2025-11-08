@@ -10,6 +10,7 @@ import { showErrorToast, showSuccessToast } from "../../../../utils/toast-handle
 import requestInstance from "../../../../shared/axios/request-instance";
 import { userQueries } from "../../../../state/queries";
 import StatusBadge from "../../../status-badge/StatusBadge";
+import { isEqual } from "lodash";
 
 const EmailSection = () => {
   const [isPerformingAction, setIsPerformingAction] = useState(false);
@@ -19,13 +20,13 @@ const EmailSection = () => {
 
   const changeEmailFormik = useFormik({
     initialValues: {
-      email: userData?.primaryEmail.email || "",
+      email: userData?.primaryEmail || "",
     },
     validationSchema: emailSchema,
     onSubmit: async (values) => {
       setIsPerformingAction(true);
       try {
-        const response = await requestInstance.post("/user/change-email", { email: values.email });
+        const response = await requestInstance.post("/user/email/request-change", { email: values.email });
         showSuccessToast(response.data);
         setShowChangeEmail(false);
         changeEmailFormik.resetForm();
@@ -40,7 +41,7 @@ const EmailSection = () => {
   const resendVerificationEmail = async () => {
     setIsPerformingAction(true);
     try {
-      const response = await requestInstance.post("/user/send-email-verification");
+      const response = await requestInstance.post("/user/email/send-verification");
       showSuccessToast(response.data);
     } catch (error: any) {
       showErrorToast(error);
@@ -51,7 +52,7 @@ const EmailSection = () => {
   const removePendingEmail = async () => {
     setIsPerformingAction(true);
     try {
-      const response = await requestInstance.delete("/user/remove-pending-email");
+      const response = await requestInstance.delete("/user/email/pending");
       showSuccessToast(response.data);
       meQuery.refetch();
     } catch (error: any) {
@@ -78,7 +79,7 @@ const EmailSection = () => {
             />
           ) : (
             <>
-              <span>{userData?.primaryEmail.email}</span>
+              <span>{userData?.primaryEmail}</span>
               <StatusBadge badgeProps={{ label: "Primary", type: "main" }} />
             </>
           )}
@@ -91,7 +92,7 @@ const EmailSection = () => {
                 htmlType="submit"
                 className={classes.action_btn}
                 loading={isPerformingAction}
-                disabled={isPerformingAction || !changeEmailFormik.isValid}
+                disabled={isPerformingAction || !changeEmailFormik.isValid || isEqual(changeEmailFormik.initialValues, changeEmailFormik.values)}
                 onClick={() => {
                   changeEmailFormik.handleSubmit();
                 }}
@@ -121,7 +122,7 @@ const EmailSection = () => {
       {userData?.pendingEmail && (
         <div className={classes.email_item}>
           <div className={classes.info}>
-            <span>{userData?.pendingEmail.email}</span>
+            <span>{userData?.pendingEmail}</span>
             <StatusBadge badgeProps={{ label: "Pending", type: "warning" }} />
           </div>
           <div className={classes.actions}>

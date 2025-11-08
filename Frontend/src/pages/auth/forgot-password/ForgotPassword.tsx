@@ -1,10 +1,4 @@
-import {
-  AuthFooter,
-  AuthForm,
-  AuthLayout,
-  AuthResult,
-  InputField,
-} from "../../../components";
+import { AuthFooter, AuthForm, AuthLayout, AuthResult, InputField } from "../../../components";
 import { Mail } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -22,14 +16,11 @@ interface ForgotPasswordFormFields {
 const ForgotPassword = () => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [showAuthResult, setShowAuthResult] = useState<boolean>(false);
-  const [passwordResetResult, setPasswordResetResult] =
-    useState<AuthResultFields>({});
+  const [passwordResetResult, setPasswordResetResult] = useState<AuthResultFields>({});
   const navigate = useNavigate();
 
   const forgotPasswordFormik = useFormik({
-    initialValues: (
-      Object.keys(emailSchema.fields) as (keyof ForgotPasswordFormFields)[]
-    ).reduce((acc, key) => {
+    initialValues: (Object.keys(emailSchema.fields) as (keyof ForgotPasswordFormFields)[]).reduce((acc, key) => {
       acc[key] = "";
       return acc;
     }, {} as ForgotPasswordFormFields),
@@ -37,10 +28,7 @@ const ForgotPassword = () => {
     onSubmit: async (values) => {
       setIsLoading(true);
       try {
-        const response = await requestInstance.post(
-          "/auth/send-reset-password",
-          values
-        );
+        const response = await requestInstance.post("/auth/password/request-reset", values);
         setPasswordResetResult({
           description: response.data,
         });
@@ -56,31 +44,16 @@ const ForgotPassword = () => {
   return (
     <AuthLayout>
       {showAuthResult ? (
-        <AuthResult
-          title="Password Reset"
-          message={passwordResetResult.description!}
-          buttonText="Back to Sign In"
-          onClick={() => navigate("/login")}
-        />
+        <AuthResult title="Password Reset" message={passwordResetResult.description!} buttonText="Back to Sign In" onClick={() => navigate("/login")} />
       ) : (
         <AuthForm
           title="Reset your password"
           description="Enter your email to receive a password reset link"
           submitButtonText="Send Reset Link"
           onSubmit={forgotPasswordFormik.handleSubmit}
-          isSubmitBtnDisabled={
-            !forgotPasswordFormik.isValid ||
-            !forgotPasswordFormik.dirty ||
-            isLoading
-          }
+          isSubmitBtnDisabled={!forgotPasswordFormik.isValid || !forgotPasswordFormik.dirty || isLoading}
           isSubmitBtnLoading={isLoading}
-          footer={
-            <AuthFooter
-              footerText="Remember your password?"
-              footerLink="/login"
-              footerLinkText="Sign in"
-            />
-          }
+          footer={<AuthFooter footerText="Remember your password?" footerLink="/login" footerLinkText="Sign in" />}
         >
           <InputField
             label="Email"
@@ -92,12 +65,7 @@ const ForgotPassword = () => {
             onBlur={forgotPasswordFormik.handleBlur}
             type="email"
             disabled={isLoading}
-            error={
-              forgotPasswordFormik.touched.email &&
-              forgotPasswordFormik.errors.email
-                ? forgotPasswordFormik.errors.email
-                : undefined
-            }
+            error={forgotPasswordFormik.touched.email && forgotPasswordFormik.errors.email ? forgotPasswordFormik.errors.email : undefined}
           />
         </AuthForm>
       )}

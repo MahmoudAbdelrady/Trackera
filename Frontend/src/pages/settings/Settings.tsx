@@ -32,7 +32,7 @@ const Settings = () => {
 
   const unlinkProviderAccount = async (provider: string) => {
     try {
-      const response = await requestInstance.post(`/auth/unlink-oauth/${provider}`);
+      const response = await requestInstance.post(`/auth/oauth/unlink/${provider}`);
       showSuccessToast(response.data);
       setFetchOAuthAccounts(true);
     } catch (error: any) {

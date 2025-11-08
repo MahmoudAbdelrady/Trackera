@@ -28,7 +28,7 @@ const ChangePasswordSection = () => {
     onSubmit: async (values) => {
       setIsUpdatingPassword(true);
       try {
-        const response = await requestInstance.post("/user/change-password", {
+        const response = await requestInstance.post("/user/password", {
           ...values,
         });
         changePasswordFormik.resetForm();
