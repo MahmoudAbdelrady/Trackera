@@ -40,16 +40,12 @@ public class User extends BaseEntity implements UserDetails {
     private String avatarColor;
 
     @Column(nullable = false)
-    @ColumnDefault("0")
+    @ColumnDefault("false")
     private boolean isVerified = false;
 
     @Formula("EXISTS (SELECT 1 FROM USEROAUTHPROVIDERS uap WHERE uap.USER_ID = ID)")
     @NotAudited
     private boolean isOAuth;
-
-    @OneToMany(fetch = FetchType.LAZY, mappedBy = "user")
-    @NotAudited
-    private List<UserOAuthProvider> oAuthProviders;
 
     public User() {
         this.avatarColor = String.format("#%06x", (int) (Math.random() * 0xffffff));

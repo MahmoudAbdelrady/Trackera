@@ -1,6 +1,5 @@
 package com.mdevs.trackera.dto.auth;
 
-import com.mdevs.trackera.dto.user.UserEmailDTO;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -15,9 +14,9 @@ public class LoggedUserDTO {
 
     private String lastname;
 
-    private UserEmailDTO primaryEmail;
+    private String primaryEmail;
 
-    private UserEmailDTO pendingEmail;
+    private String pendingEmail;
 
     private String profilePicture;
 

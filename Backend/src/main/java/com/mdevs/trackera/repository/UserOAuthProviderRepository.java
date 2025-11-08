@@ -1,6 +1,7 @@
 package com.mdevs.trackera.repository;
 
 import com.mdevs.trackera.entity.User;
+import com.mdevs.trackera.entity.UserEmail;
 import com.mdevs.trackera.entity.UserOAuthProvider;
 import com.mdevs.trackera.shared.oauth_provider.OAuthProvider;
 import org.springframework.data.jpa.repository.Query;
@@ -19,4 +20,7 @@ public interface UserOAuthProviderRepository extends BaseRepository<UserOAuthPro
     List<UserOAuthProvider> findByUser(User user);
 
     int countByUser(User user);
+
+    @Query("SELECT CASE WHEN NOT EXISTS (SELECT uop FROM UserOAuthProvider uop WHERE uop.user = :user AND uop.providerEmail = :userEmail) THEN true ELSE false END")
+    boolean notExistsByUserAndProviderEmail(@Param("user") User user, @Param("userEmail") UserEmail userEmail);
 }

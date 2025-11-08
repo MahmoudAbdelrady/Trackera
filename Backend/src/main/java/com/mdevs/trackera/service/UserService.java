@@ -6,7 +6,6 @@ import com.mdevs.trackera.dto.auth.OAuthUserInfoDTO;
 import com.mdevs.trackera.dto.auth.PasswordDTO;
 import com.mdevs.trackera.dto.auth.SignUpDTO;
 import com.mdevs.trackera.dto.jira.AccessibleResourceDTO;
-import com.mdevs.trackera.dto.user.UserEmailDTO;
 import com.mdevs.trackera.dto.user.UserPreferenceDTO;
 import com.mdevs.trackera.entity.SecurityToken;
 import com.mdevs.trackera.entity.User;
@@ -41,6 +40,8 @@ public class UserService implements UserDetailsService {
 
     private final UserOAuthProviderRepository userOAuthProviderRepository;
 
+    private final UserEmailService userEmailService;
+
     private final UserOAuthProviderService userOAuthProviderService;
 
     private final UserPreferredSettingService userPreferredSettingService;
@@ -55,11 +56,13 @@ public class UserService implements UserDetailsService {
 
     public static final String EMAIL_REGEX = "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9-]+(?:\\.[a-zA-Z0-9-]+)*\\.[a-zA-Z]{2,}$";
 
-    public UserService(UserRepository userRepository, UserEmailRepository userEmailRepository, UserOAuthProviderRepository userOAuthProviderRepository, UserOAuthProviderService userOAuthProviderService,
-                       UserPreferredSettingService userPreferredSettingService, JiraService jiraService, SecurityTokenService securityTokenService, ModelMapper modelMapper, PasswordEncoder passwordEncoder) {
+    public UserService(UserRepository userRepository, UserEmailRepository userEmailRepository, UserOAuthProviderRepository userOAuthProviderRepository, UserEmailService userEmailService,
+                       UserOAuthProviderService userOAuthProviderService, UserPreferredSettingService userPreferredSettingService, JiraService jiraService, SecurityTokenService securityTokenService,
+                       ModelMapper modelMapper, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.userEmailRepository = userEmailRepository;
         this.userOAuthProviderRepository = userOAuthProviderRepository;
+        this.userEmailService = userEmailService;
         this.userOAuthProviderService = userOAuthProviderService;
         this.userPreferredSettingService = userPreferredSettingService;
         this.jiraService = jiraService;
@@ -70,15 +73,15 @@ public class UserService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        return Optional.ofNullable(userEmailRepository.findPrimaryEmail(email)).map(UserEmail::getUser).orElseThrow(() -> new UsernameNotFoundException("Account not found."));
+        return Optional.ofNullable(userRepository.findByPrimaryEmail(email)).orElseThrow(() -> new UsernameNotFoundException("Account not found."));
     }
 
     public LoggedUserDTO getMeInfo() {
         User loggedUser = AppConfig.getAuthenticatedCurrentUser();
         LoggedUserDTO loggedUserDTO = modelMapper.map(AppConfig.getAuthenticatedCurrentUser(), LoggedUserDTO.class);
-        loggedUserDTO.setPrimaryEmail(new UserEmailDTO(loggedUser.getPrimaryEmail()));
+        loggedUserDTO.setPrimaryEmail(loggedUser.getPrimaryEmail().getEmail());
         if (loggedUser.getPendingEmail() != null) {
-            loggedUserDTO.setPendingEmail(new UserEmailDTO(loggedUser.getPendingEmail()));
+            loggedUserDTO.setPendingEmail(loggedUser.getPendingEmail().getEmail());
         }
         return loggedUserDTO;
     }
@@ -114,23 +117,17 @@ public class UserService implements UserDetailsService {
         user.setPassword(passwordEncoder.encode(user.getPassword()));
         userRepository.save(user);
 
-        UserEmail userEmail = createUserEmail(user, signUpDTO.getEmail(), false);
+        UserEmail userEmail = userEmailService.create(user, signUpDTO.getEmail());
         user.setPrimaryEmail(userEmail);
         return userRepository.save(user);
     }
 
-    public UserEmail createUserEmail(User user, String email, boolean isVerified) {
-        UserEmail userEmail = new UserEmail(user, email, isVerified);
-        return userEmailRepository.save(userEmail);
-    }
-
     @Transactional
     public Map<String, Object> createOrGetOAuthUser(OAuthUserInfoDTO oAuthUserInfo, OAuthProvider oAuthProvider) {
-        UserEmail userEmail = userEmailRepository.findTop1ByEmailOrderByCreatedAtDesc(oAuthUserInfo.getEmail());
-        User authenticatedUser = Optional.ofNullable(userEmail).map(UserEmail::getUser).orElse(null);
+        User authenticatedUser = Optional.ofNullable(userEmailRepository.findByEmail(oAuthUserInfo.getEmail())).map(UserEmail::getUser).orElse(null);
         boolean isNewUser = authenticatedUser == null;
 
-        if (authenticatedUser != null) {
+        if (!isNewUser) {
             handleExistingUserOAuthLogin(oAuthUserInfo, oAuthProvider, authenticatedUser);
         } else {
             authenticatedUser = createUserFromOAuth(oAuthUserInfo);
@@ -148,20 +145,7 @@ public class UserService implements UserDetailsService {
         if (userOAuthProvider.isExpired() || userOAuthProvider.isRevoked()) {
             userOAuthProviderService.updateAccessCredentials(userOAuthProvider, oAuthUserInfo.getAccessCredentials());
         }
-        verifyEmailIfMatchesOAuth(oAuthUserInfo, authenticatedUser);
-    }
-
-    @Transactional
-    public void verifyEmailIfMatchesOAuth(OAuthUserInfoDTO oAuthUserInfo, User authenticatedUser) {
-        if (!authenticatedUser.getPrimaryEmail().isVerified() && authenticatedUser.getPrimaryEmail().getEmail().equals(oAuthUserInfo.getEmail())) {
-            UserEmail unVerifiedEmail = authenticatedUser.getPrimaryEmail();
-            unVerifiedEmail.setVerified(true);
-            userEmailRepository.save(unVerifiedEmail);
-            securityTokenService.deleteNonExpiredSecurityToken(authenticatedUser, SecurityToken.Type.ACCOUNT_ACTIVATION);
-        } else if (authenticatedUser.getPendingEmail() != null && authenticatedUser.getPendingEmail().getEmail().equals(oAuthUserInfo.getEmail())) {
-            verifyAndChangePrimaryEmail(authenticatedUser, oAuthUserInfo.getEmail());
-            securityTokenService.deleteNonExpiredSecurityToken(authenticatedUser, SecurityToken.Type.NEW_EMAIL_VERIFICATION);
-        }
+        handleOAuthEmailMatching(oAuthUserInfo, authenticatedUser);
     }
 
     @Transactional
@@ -174,10 +158,21 @@ public class UserService implements UserDetailsService {
         authenticatedUser.setVerified(true);
         userRepository.save(authenticatedUser);
 
-        UserEmail oAuthUserEmail = createUserEmail(authenticatedUser, oAuthUserInfo.getEmail(), true);
+        UserEmail oAuthUserEmail = userEmailService.create(authenticatedUser, oAuthUserInfo.getEmail());
         authenticatedUser.setPrimaryEmail(oAuthUserEmail);
         userRepository.save(authenticatedUser);
         return authenticatedUser;
+    }
+
+    @Transactional
+    public void handleOAuthEmailMatching(OAuthUserInfoDTO oAuthUserInfo, User authenticatedUser) {
+        if (!authenticatedUser.isVerified() && authenticatedUser.getPrimaryEmail().getEmail().equals(oAuthUserInfo.getEmail())) {
+            verifyUser(authenticatedUser);
+            securityTokenService.deleteNonExpiredSecurityToken(authenticatedUser, SecurityToken.Type.ACCOUNT_ACTIVATION);
+        } else if (authenticatedUser.getPendingEmail() != null && authenticatedUser.getPendingEmail().getEmail().equals(oAuthUserInfo.getEmail())) {
+            verifyAndChangePrimaryEmail(authenticatedUser, oAuthUserInfo.getEmail());
+            securityTokenService.deleteNonExpiredSecurityToken(authenticatedUser, SecurityToken.Type.NEW_EMAIL_VERIFICATION);
+        }
     }
 
     public void verifyUser(User user) {
@@ -221,27 +216,37 @@ public class UserService implements UserDetailsService {
     }
 
     @Transactional
-    public void changeEmail(String email) {
+    public void requestEmailChange(String email) {
         User loggedUser = AppConfig.getAuthenticatedCurrentUser();
         validateUserEmail(email);
 
-        UserEmail existingUserEmail = userEmailRepository.findTop1ByEmailOrderByCreatedAtDesc(email);
+        UserEmail existingUserEmail = userEmailRepository.findByEmail(email);
         if (existingUserEmail != null) {
-            throw new BusinessException(existingUserEmail.getUser().getId().equals(loggedUser.getId()) ? "Email is already associated with your account" : "Email is already in use");
+            validateEmailAvailability(loggedUser, existingUserEmail);
         }
         securityTokenService.deleteNonExpiredSecurityToken(loggedUser, SecurityToken.Type.NEW_EMAIL_VERIFICATION);
 
         UserEmail oldPendingEmail = loggedUser.getPendingEmail();
         if (oldPendingEmail != null) {
             loggedUser.setPendingEmail(null);
-            userEmailRepository.delete(oldPendingEmail);
+            userEmailService.deleteIfNotLinkedToOAuth(oldPendingEmail);
         }
 
-        UserEmail newEmail = createUserEmail(loggedUser, email, false);
-        loggedUser.setPendingEmail(newEmail);
+        loggedUser.setPendingEmail(existingUserEmail != null ? existingUserEmail : userEmailService.create(loggedUser, email));
         userRepository.save(loggedUser);
 
         sendEmailVerificationSecurityToken(loggedUser, email);
+    }
+
+    private void validateEmailAvailability(User loggedUser, UserEmail existingUserEmail) {
+        if (!existingUserEmail.getUser().getId().equals(loggedUser.getId())) {
+            throw new BusinessException("Email is already in use");
+        }
+
+        boolean isPrimaryOrPending = loggedUser.getPrimaryEmail().getId().equals(existingUserEmail.getId()) || (loggedUser.getPendingEmail() != null && loggedUser.getPendingEmail().getId().equals(existingUserEmail.getId()));
+        if (isPrimaryOrPending) {
+            throw new BusinessException("Email is already associated with your account");
+        }
     }
 
     @Transactional
@@ -249,19 +254,15 @@ public class UserService implements UserDetailsService {
         validateUserEmail(email);
         UserEmail pendingEmail = user.getPendingEmail();
         if (pendingEmail == null || !pendingEmail.getEmail().equals(email)) {
-            throw new BusinessException("Verification link expired due to a new email change");
+            throw new BusinessException("No matching pending email found for verification");
         }
 
         UserEmail currentPrimary = user.getPrimaryEmail();
-
-        pendingEmail.setVerified(true);
-        userEmailRepository.save(pendingEmail);
-
         user.setPrimaryEmail(pendingEmail);
         user.setPendingEmail(null);
         userRepository.save(user);
 
-        userEmailRepository.delete(currentPrimary);
+        userEmailService.deleteIfNotLinkedToOAuth(currentPrimary);
 
         TrackeraEmailTarget.builder()
                 .targetEmail(currentPrimary.getEmail())
@@ -296,7 +297,8 @@ public class UserService implements UserDetailsService {
         UserEmail pendingEmail = loggedUser.getPendingEmail();
         loggedUser.setPendingEmail(null);
         userRepository.save(loggedUser);
-        userEmailRepository.delete(pendingEmail);
+
+        userEmailService.deleteIfNotLinkedToOAuth(pendingEmail);
         securityTokenService.deleteNonExpiredSecurityToken(loggedUser, SecurityToken.Type.NEW_EMAIL_VERIFICATION);
     }
 

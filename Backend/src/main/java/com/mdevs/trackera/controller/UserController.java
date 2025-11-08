@@ -30,25 +30,25 @@ public class UserController {
         return new ResponseEntity<>(userService.getUserOAuthProviders(), HttpStatus.OK);
     }
 
-    @PostMapping("/change-password")
+    @PostMapping("/password")
     public ResponseEntity<?> ChangePassword(@RequestBody @Valid PasswordDTO passwordDTO) {
         userService.changePassword(passwordDTO);
         return new ResponseEntity<>("Password changed successfully.", HttpStatus.OK);
     }
 
-    @PostMapping("/change-email")
-    public ResponseEntity<?> ChangeEmail(@RequestBody Map<String, Object> body) {
-        userService.changeEmail((String) body.get("email"));
+    @PostMapping("/email/request-change")
+    public ResponseEntity<?> RequestEmailChange(@RequestBody Map<String, Object> body) {
+        userService.requestEmailChange((String) body.get("email"));
         return new ResponseEntity<>("We’ve sent a verification link to your new email. Please verify to complete the change.", HttpStatus.CREATED);
     }
 
-    @PostMapping("/send-email-verification")
+    @PostMapping("/email/send-verification")
     public ResponseEntity<?> SendEmailVerification() {
         userService.sendEmailVerification();
         return new ResponseEntity<>("Verification email sent successfully. Please check your email.", HttpStatus.OK);
     }
 
-    @DeleteMapping("/remove-pending-email")
+    @DeleteMapping("/email/pending")
     public ResponseEntity<?> RemovePendingEmail() {
         userService.removePendingEmail();
         return new ResponseEntity<>("Pending email removed successfully.", HttpStatus.OK);

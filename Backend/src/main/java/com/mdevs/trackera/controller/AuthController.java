@@ -53,7 +53,7 @@ public class AuthController {
         return new ResponseEntity<>(authService.oAuthCallback(oAuthProvider, oAuthRequestDTO, httpServletResponse), HttpStatus.OK);
     }
 
-    @PostMapping("/unlink-oauth/{oAuthProvider}")
+    @PostMapping("/oauth/unlink/{oAuthProvider}")
     public ResponseEntity<?> UnlinkOAuthProvider(@PathVariable String oAuthProvider) {
         return new ResponseEntity<>(authService.unlinkOAuthProvider(oAuthProvider), HttpStatus.OK);
     }
@@ -65,38 +65,38 @@ public class AuthController {
     }
 
     @PublicAPI
-    @PostMapping("/refresh-jwt")
+    @PostMapping("/jwt/refresh")
     public ResponseEntity<?> RefreshJwt(@CookieValue(value = "refreshToken") String refreshToken) {
         return new ResponseEntity<>(authService.refreshJwt(refreshToken), HttpStatus.OK);
     }
 
     @PublicAPI
-    @PostMapping("/process-token")
-    public ResponseEntity<?> ProcessSecurityToken(@RequestParam String token) {
+    @PostMapping("/token/consume")
+    public ResponseEntity<?> ConsumeSecurityToken(@RequestParam String token) {
         try {
-            return new ResponseEntity<>(authService.processToken(token), HttpStatus.OK);
+            return new ResponseEntity<>(authService.consumeToken(token), HttpStatus.OK);
         } catch (ObjectOptimisticLockingFailureException ex) {
             return new ResponseEntity<>(new AuthResultDTO("Token validated successfully", null), HttpStatus.OK); // @TODO --> Remove in production
         }
     }
 
     @PublicAPI
-    @PostMapping("/validate-token")
+    @PostMapping("/token/validate")
     public ResponseEntity<?> ValidateSecurityToken(@RequestParam String token) {
         securityTokenService.validateAndGet(token);
         return ResponseEntity.ok().build();
     }
 
     @PublicAPI
-    @PostMapping("/send-reset-password")
-    public ResponseEntity<?> SendResetPassword(@RequestBody Map<String, String> body) {
-        authService.sendResetPassword(body.get("email"));
+    @PostMapping("/password/request-reset")
+    public ResponseEntity<?> RequestResetPassword(@RequestBody Map<String, String> body) {
+        authService.requestResetPassword(body.get("email"));
         return new ResponseEntity<>("If the email exists, a password reset link has been sent to your email.", HttpStatus.OK);
     }
 
     @PublicAPI
-    @PostMapping("/change-password")
-    public ResponseEntity<?> ChangePassword(@RequestParam String token, @RequestBody @Valid PasswordDTO passwordDTO) {
+    @PostMapping("/password")
+    public ResponseEntity<?> ResetPassword(@RequestParam String token, @RequestBody @Valid PasswordDTO passwordDTO) {
         authService.resetUserPassword(token, passwordDTO);
         return new ResponseEntity<>("Password changed successfully", HttpStatus.OK);
     }

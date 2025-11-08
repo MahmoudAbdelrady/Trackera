@@ -32,6 +32,8 @@ public class AuthService {
 
     private final UserService userService;
 
+    private final UserEmailService userEmailService;
+
     private final AuthenticationManager authenticationManager;
 
     private final SecurityTokenService securityTokenService;
@@ -52,12 +54,13 @@ public class AuthService {
 
     private final CryptoUtil cryptoUtil;
 
-    public AuthService(UserRepository userRepository, UserEmailRepository userEmailRepository, UserService userService, AuthenticationManager authenticationManager, SecurityTokenService securityTokenService,
-                       UserOAuthProviderService userOAuthProviderService, OAuthProviderFactory oAuthProviderFactory, SecurityTokenRepository securityTokenRepository, UserInvalidTokenRepository userInvalidTokenRepository,
-                       UserOAuthProviderRepository userOAuthProviderRepository, JwtUtil jwtUtil, CookieHelper cookieHelper, CryptoUtil cryptoUtil) {
+    public AuthService(UserRepository userRepository, UserEmailRepository userEmailRepository, UserService userService, UserEmailService userEmailService, AuthenticationManager authenticationManager,
+                       SecurityTokenService securityTokenService, UserOAuthProviderService userOAuthProviderService, OAuthProviderFactory oAuthProviderFactory, SecurityTokenRepository securityTokenRepository,
+                       UserInvalidTokenRepository userInvalidTokenRepository, UserOAuthProviderRepository userOAuthProviderRepository, JwtUtil jwtUtil, CookieHelper cookieHelper, CryptoUtil cryptoUtil) {
         this.userRepository = userRepository;
         this.userEmailRepository = userEmailRepository;
         this.userService = userService;
+        this.userEmailService = userEmailService;
         this.authenticationManager = authenticationManager;
         this.securityTokenService = securityTokenService;
         this.userOAuthProviderService = userOAuthProviderService;
@@ -127,12 +130,12 @@ public class AuthService {
 
     private User handleOAuthLinkingFlow(OAuthProvider provider, OAuthUserInfoDTO oAuthUserInfo) {
         User user = userRepository.findOne(oAuthUserInfo.getUserId());
-        UserOAuthProvider existingProvider = userOAuthProviderRepository.findByUserAndProvider(user, provider);
         if (userEmailRepository.existsByEmailAndUserNot(oAuthUserInfo.getEmail(), user)) {
             throw new BusinessException(provider.getDisplayName() + " account's email already in use");
         }
+        UserOAuthProvider existingProvider = userOAuthProviderRepository.findByUserAndProvider(user, provider); // for handling re-linking in case of revoked link
         processOAuthData(user, provider, oAuthUserInfo, existingProvider);
-        userService.verifyEmailIfMatchesOAuth(oAuthUserInfo, user);
+        userService.handleOAuthEmailMatching(oAuthUserInfo, user);
         return user;
     }
 
@@ -147,7 +150,7 @@ public class AuthService {
     }
 
     private void processOAuthData(User user, OAuthProvider provider, OAuthUserInfoDTO userInfo, UserOAuthProvider existingProvider) {
-        UserEmail userEmail = userService.createUserEmail(user, userInfo.getEmail(), true);
+        UserEmail userEmail = userEmailService.getOrCreate(user, userInfo.getEmail());
         userOAuthProviderService.createOrUpdate(user, userInfo, provider, existingProvider, userEmail);
         oAuthProviderFactory.getProvider(provider).handlePostLinkingActions(user, userInfo);
     }
@@ -164,8 +167,9 @@ public class AuthService {
         OAuthProvider oAuthProvider = OAuthProvider.fromCode(provider);
         User loggedUser = AppConfig.getAuthenticatedCurrentUser();
         UserOAuthProvider deletedOAuthProvider = userOAuthProviderService.delete(loggedUser, oAuthProvider);
-        if (!deletedOAuthProvider.getProviderEmail().getEmail().equals(loggedUser.getPrimaryEmail().getEmail())) {
-            userEmailRepository.delete(deletedOAuthProvider.getProviderEmail());
+        UserEmail oAuthProviderEmail = deletedOAuthProvider.getProviderEmail();
+        if (!oAuthProviderEmail.getId().equals(loggedUser.getPrimaryEmail().getId()) && (loggedUser.getPendingEmail() == null || !loggedUser.getPendingEmail().getId().equals(oAuthProviderEmail.getId()))) {
+            userEmailRepository.delete(oAuthProviderEmail);
         }
         return oAuthProvider.getDisplayName() + " unlinked successfully";
     }
@@ -201,7 +205,7 @@ public class AuthService {
     }
 
     @Transactional
-    public AuthResultDTO processToken(String token) {
+    public AuthResultDTO consumeToken(String token) {
         SecurityToken securityToken = securityTokenService.validateAndGet(token);
         User user = securityToken.getUser();
 
@@ -223,9 +227,8 @@ public class AuthService {
     }
 
     @Transactional
-    public void sendResetPassword(String email) {
-        UserEmail userEmail = userEmailRepository.findPrimaryEmail(email);
-        User user = Optional.ofNullable(userEmail).map(UserEmail::getUser).orElse(null);
+    public void requestResetPassword(String email) {
+        User user = userRepository.findByPrimaryEmail(email);
         if (user != null && user.canResetPassword()) {
             userService.sendPasswordFlowEmail(user, true);
         }
