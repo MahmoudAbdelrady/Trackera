@@ -4,6 +4,7 @@ import com.mdevs.trackera.config.general.AppConfig;
 import com.mdevs.trackera.entity.SecurityToken;
 import com.mdevs.trackera.entity.User;
 import com.mdevs.trackera.repository.SecurityTokenRepository;
+import com.mdevs.trackera.shared.SecurityTokenBuilder;
 import com.mdevs.trackera.shared.exceptions.types.UnauthorizedException;
 import com.mdevs.trackera.utils.CryptoUtil;
 import com.mdevs.trackera.shared.TrackeraEmailTarget;
@@ -42,28 +43,28 @@ public class SecurityTokenService {
     }
 
     @Transactional
-    public void createAndSendSecurityToken(User user, String targetEmail, SecurityToken.Type type, String additionalInfo, Map<String, String> extraParameters, String pageUrl, String templateName) {
-        if (hasRecentActivationToken(user, type)) {
+    public void createAndSendSecurityToken(SecurityTokenBuilder builder) {
+        if (hasRecentActivationToken(builder.getUser(), builder.getType())) {
             return;
         }
 
-        SecurityToken securityToken = new SecurityToken(user, type);
-        if (!StringUtils.isEmpty(additionalInfo)) {
-            securityToken.setAdditionalInfo(additionalInfo);
+        SecurityToken securityToken = new SecurityToken(builder.getUser(), builder.getType());
+        if (!StringUtils.isEmpty(builder.getAdditionalInfo())) {
+            securityToken.setAdditionalInfo(builder.getAdditionalInfo());
         }
         securityTokenRepository.save(securityToken);
         String token = cryptoUtil.hashForSecurityToken(securityToken.getId());
 
         Map<String, String> templateParameters = new HashMap<>();
-        templateParameters.put("emailType", type.getLabel());
-        templateParameters.put("verificationLink", AppConfig.getFrontendUrl() + (pageUrl != null ? pageUrl : "/security-verification") + "?token=" + token);
-        if (extraParameters != null && !extraParameters.isEmpty()) {
-            templateParameters.putAll(extraParameters);
+        templateParameters.put("emailType", builder.getType().getLabel());
+        templateParameters.put("verificationLink", AppConfig.getFrontendUrl() + (builder.getPageUrl() != null ? builder.getPageUrl() : "/security-verification") + "?token=" + token);
+        if (builder.getExtraParameters() != null && !builder.getExtraParameters().isEmpty()) {
+            templateParameters.putAll(builder.getExtraParameters());
         }
         TrackeraEmailTarget.builder()
-                .targetEmail(targetEmail)
-                .subject(type.getLabel())
-                .templateName(templateName)
+                .targetEmail(builder.getTargetEmail())
+                .subject(builder.getType().getLabel())
+                .templateName(builder.getTemplateName())
                 .parameters(templateParameters)
                 .build().send();
     }

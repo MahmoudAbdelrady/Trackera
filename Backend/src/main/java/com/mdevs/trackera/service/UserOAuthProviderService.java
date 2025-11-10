@@ -21,28 +21,25 @@ import java.util.Optional;
 public class UserOAuthProviderService {
     private final UserOAuthProviderRepository userOAuthProviderRepository;
 
-    private final UserPreferredSettingService userPreferredSettingService;
-
     private final OAuthProviderFactory oAuthProviderFactory;
 
     private final CryptoUtil cryptoUtil;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(UserOAuthProviderService.class);
 
-    public UserOAuthProviderService(UserOAuthProviderRepository userOAuthProviderRepository, UserPreferredSettingService userPreferredSettingService,
-                                    OAuthProviderFactory oAuthProviderFactory, CryptoUtil cryptoUtil) {
+    public UserOAuthProviderService(UserOAuthProviderRepository userOAuthProviderRepository, OAuthProviderFactory oAuthProviderFactory, CryptoUtil cryptoUtil) {
         this.userOAuthProviderRepository = userOAuthProviderRepository;
-        this.userPreferredSettingService = userPreferredSettingService;
         this.oAuthProviderFactory = oAuthProviderFactory;
         this.cryptoUtil = cryptoUtil;
     }
 
-    public void createOrUpdate(User user, OAuthUserInfoDTO oAuthUserInfoDTO, OAuthProvider oAuthProvider, UserOAuthProvider existingUserOAuthProvider, UserEmail userEmail) {
-        if (existingUserOAuthProvider == null) {
-            existingUserOAuthProvider = new UserOAuthProvider(user, oAuthProvider);
+    public void createOrUpdate(User user, OAuthUserInfoDTO oAuthUserInfoDTO, OAuthProvider oAuthProvider, UserEmail userEmail) {
+        UserOAuthProvider existingProvider = userOAuthProviderRepository.findByUserAndProvider(user, oAuthProvider); // for handling re-linking in case of revoked link
+        if (existingProvider == null) {
+            existingProvider = new UserOAuthProvider(user, oAuthProvider);
         }
-        existingUserOAuthProvider.setProviderEmail(userEmail);
-        updateAccessCredentials(existingUserOAuthProvider, oAuthUserInfoDTO.getAccessCredentials());
+        existingProvider.setProviderEmail(userEmail);
+        updateAccessCredentials(existingProvider, oAuthUserInfoDTO.getAccessCredentials());
     }
 
     public String resolveValidAccessToken(UserOAuthProvider userOAuthProvider) {
@@ -112,9 +109,6 @@ public class UserOAuthProviderService {
             throw new BusinessException("You must have at least one sign-in method linked to your account");
         }
         userOAuthProviderRepository.delete(deletedOAuthProvider);
-        if (oAuthProvider.equals(OAuthProvider.JIRA)) {
-            userPreferredSettingService.deleteByUserAndKey(user, JiraService.JIRA_PRIMARY_PROJECT_SETTING_KEY);
-        }
         return deletedOAuthProvider;
     }
 }

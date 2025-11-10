@@ -15,11 +15,13 @@ import com.mdevs.trackera.repository.UserEmailRepository;
 import com.mdevs.trackera.repository.UserOAuthProviderRepository;
 import com.mdevs.trackera.repository.UserRepository;
 import com.mdevs.trackera.shared.EmailTemplates;
+import com.mdevs.trackera.shared.SecurityTokenBuilder;
 import com.mdevs.trackera.shared.exceptions.types.BusinessException;
 import com.mdevs.trackera.shared.exceptions.types.NotFoundException;
 import com.mdevs.trackera.shared.oauth_provider.OAuthProvider;
 import com.mdevs.trackera.utils.AppUtils;
 import com.mdevs.trackera.shared.TrackeraEmailTarget;
+import com.mdevs.trackera.utils.EmailTemplateUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.modelmapper.ModelMapper;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -128,7 +130,7 @@ public class UserService implements UserDetailsService {
         boolean isNewUser = authenticatedUser == null;
 
         if (!isNewUser) {
-            handleExistingUserOAuthLogin(oAuthUserInfo, oAuthProvider, authenticatedUser);
+            handleExistingUserOAuthLogin(authenticatedUser, oAuthUserInfo, oAuthProvider);
         } else {
             authenticatedUser = createUserFromOAuth(oAuthUserInfo);
         }
@@ -140,7 +142,7 @@ public class UserService implements UserDetailsService {
     }
 
     @Transactional
-    public void handleExistingUserOAuthLogin(OAuthUserInfoDTO oAuthUserInfo, OAuthProvider oAuthProvider, User authenticatedUser) {
+    public void handleExistingUserOAuthLogin(User authenticatedUser, OAuthUserInfoDTO oAuthUserInfo, OAuthProvider oAuthProvider) {
         UserOAuthProvider userOAuthProvider = userOAuthProviderService.getUserLinkedProviderOrThrow(authenticatedUser, oAuthUserInfo.getEmail(), oAuthProvider);
         if (userOAuthProvider.isExpired() || userOAuthProvider.isRevoked()) {
             userOAuthProviderService.updateAccessCredentials(userOAuthProvider, oAuthUserInfo.getAccessCredentials());
@@ -150,8 +152,7 @@ public class UserService implements UserDetailsService {
 
     @Transactional
     public User createUserFromOAuth(OAuthUserInfoDTO oAuthUserInfo) {
-        User authenticatedUser;
-        authenticatedUser = new User();
+        User authenticatedUser = new User();
         authenticatedUser.setFirstname(oAuthUserInfo.getFirstname());
         authenticatedUser.setLastname(oAuthUserInfo.getLastname());
         authenticatedUser.setProfilePicture(oAuthUserInfo.getProfilePicture());
@@ -205,14 +206,15 @@ public class UserService implements UserDetailsService {
     }
 
     public void sendPasswordFlowEmail(User user, boolean isForReset) {
-        String description = isForReset
-                ? "Please click the link below to reset your password."
-                : "Your password has been changed. If you did not perform this action, please reset your password immediately.";
-
-        Map<String, String> templateParameters = new HashMap<>();
-        templateParameters.put("emailTypeDesc", description);
-        templateParameters.put("linkLabel", "Reset my password");
-        securityTokenService.createAndSendSecurityToken(user, user.getPrimaryEmail().getEmail(), isForReset ? SecurityToken.Type.PASSWORD_RESET : SecurityToken.Type.PASSWORD_CHANGE, null, templateParameters, "/change-password", EmailTemplates.VERIFICATION_MAIL_TEMPLATE);
+        SecurityTokenBuilder securityTokenBuilder = SecurityTokenBuilder.builder()
+                .user(user)
+                .targetEmail(user.getPrimaryEmail().getEmail())
+                .type(isForReset ? SecurityToken.Type.PASSWORD_RESET : SecurityToken.Type.PASSWORD_CHANGE)
+                .templateName(EmailTemplates.VERIFICATION_MAIL_TEMPLATE)
+                .extraParameters(EmailTemplateUtil.getTemplateParams(isForReset ? SecurityToken.Type.PASSWORD_RESET : SecurityToken.Type.PASSWORD_CHANGE))
+                .pageUrl("/change-password")
+                .build();
+        securityTokenService.createAndSendSecurityToken(securityTokenBuilder);
     }
 
     @Transactional
@@ -281,10 +283,15 @@ public class UserService implements UserDetailsService {
     }
 
     public void sendEmailVerificationSecurityToken(User user, String email) {
-        Map<String, String> templateParameters = new HashMap<>();
-        templateParameters.put("emailTypeDesc", "Please verify your new email address by clicking the link below:");
-        templateParameters.put("linkLabel", "Verify my email");
-        securityTokenService.createAndSendSecurityToken(user, email, SecurityToken.Type.NEW_EMAIL_VERIFICATION, email, templateParameters, null, EmailTemplates.VERIFICATION_MAIL_TEMPLATE);
+        SecurityTokenBuilder securityTokenBuilder = SecurityTokenBuilder.builder()
+                .user(user)
+                .targetEmail(email)
+                .type(SecurityToken.Type.NEW_EMAIL_VERIFICATION)
+                .additionalInfo(email)
+                .templateName(EmailTemplates.VERIFICATION_MAIL_TEMPLATE)
+                .extraParameters(EmailTemplateUtil.getTemplateParams(SecurityToken.Type.NEW_EMAIL_VERIFICATION))
+                .build();
+        securityTokenService.createAndSendSecurityToken(securityTokenBuilder);
     }
 
     @Transactional

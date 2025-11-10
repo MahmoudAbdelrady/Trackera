@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.ColumnDefault;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(indexes = {@Index(columnList = "IS_ACCESS_TOKEN, USER_ID"), @Index(columnList = "EXPIRY_DATE")})
@@ -23,7 +23,7 @@ public class UserInvalidToken extends BaseEntity {
     private String token;
 
     @Column(nullable = false, columnDefinition = "TIMESTAMP(0)")
-    private Date expiryDate;
+    private LocalDateTime expiryDate;
 
     @Column(nullable = false)
     @ColumnDefault("1")

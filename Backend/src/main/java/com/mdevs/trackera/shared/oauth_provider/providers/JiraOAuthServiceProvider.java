@@ -134,4 +134,9 @@ public class JiraOAuthServiceProvider extends OAuthServiceProvider {
         String primaryProjectSetting = AppUtils.convertObjectToJsonString(userInfo.getAdditionalInfo().get(JiraService.JIRA_PRIMARY_PROJECT_SETTING_KEY));
         userPreferredSettingService.create(user, JiraService.JIRA_PRIMARY_PROJECT_SETTING_KEY, primaryProjectSetting);
     }
+
+    @Override
+    public void handlePostUnLinkingActions(User user) {
+        userPreferredSettingService.deleteByUserAndKey(user, JiraService.JIRA_PRIMARY_PROJECT_SETTING_KEY);
+    }
 }

@@ -5,6 +5,7 @@ import com.mdevs.trackera.dto.auth.*;
 import com.mdevs.trackera.entity.*;
 import com.mdevs.trackera.repository.*;
 import com.mdevs.trackera.shared.EmailTemplates;
+import com.mdevs.trackera.shared.SecurityTokenBuilder;
 import com.mdevs.trackera.shared.exceptions.types.BusinessException;
 import com.mdevs.trackera.shared.exceptions.types.UnauthorizedException;
 import com.mdevs.trackera.shared.oauth_provider.OAuthProvider;
@@ -22,6 +23,8 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.*;
 
 @Service
@@ -46,8 +49,6 @@ public class AuthService {
 
     private final UserInvalidTokenRepository userInvalidTokenRepository;
 
-    private final UserOAuthProviderRepository userOAuthProviderRepository;
-
     private final JwtUtil jwtUtil;
 
     private final CookieHelper cookieHelper;
@@ -56,7 +57,7 @@ public class AuthService {
 
     public AuthService(UserRepository userRepository, UserEmailRepository userEmailRepository, UserService userService, UserEmailService userEmailService, AuthenticationManager authenticationManager,
                        SecurityTokenService securityTokenService, UserOAuthProviderService userOAuthProviderService, OAuthProviderFactory oAuthProviderFactory, SecurityTokenRepository securityTokenRepository,
-                       UserInvalidTokenRepository userInvalidTokenRepository, UserOAuthProviderRepository userOAuthProviderRepository, JwtUtil jwtUtil, CookieHelper cookieHelper, CryptoUtil cryptoUtil) {
+                       UserInvalidTokenRepository userInvalidTokenRepository, JwtUtil jwtUtil, CookieHelper cookieHelper, CryptoUtil cryptoUtil) {
         this.userRepository = userRepository;
         this.userEmailRepository = userEmailRepository;
         this.userService = userService;
@@ -67,7 +68,6 @@ public class AuthService {
         this.oAuthProviderFactory = oAuthProviderFactory;
         this.securityTokenRepository = securityTokenRepository;
         this.userInvalidTokenRepository = userInvalidTokenRepository;
-        this.userOAuthProviderRepository = userOAuthProviderRepository;
         this.jwtUtil = jwtUtil;
         this.cookieHelper = cookieHelper;
         this.cryptoUtil = cryptoUtil;
@@ -76,8 +76,14 @@ public class AuthService {
     @Transactional
     public void signUp(SignUpDTO signUpDTO) {
         User user = userService.create(signUpDTO);
-        securityTokenService.createAndSendSecurityToken(user, user.getPrimaryEmail().getEmail(), SecurityToken.Type.ACCOUNT_ACTIVATION, null,
-                EmailTemplateUtil.accountActivationTemplateParams(), null, EmailTemplates.VERIFICATION_MAIL_TEMPLATE);
+        SecurityTokenBuilder securityTokenBuilder = SecurityTokenBuilder.builder()
+                .user(user)
+                .targetEmail(user.getPrimaryEmail().getEmail())
+                .type(SecurityToken.Type.ACCOUNT_ACTIVATION)
+                .templateName(EmailTemplates.VERIFICATION_MAIL_TEMPLATE)
+                .extraParameters(EmailTemplateUtil.getTemplateParams(SecurityToken.Type.ACCOUNT_ACTIVATION))
+                .build();
+        securityTokenService.createAndSendSecurityToken(securityTokenBuilder);
     }
 
     @Transactional
@@ -96,8 +102,14 @@ public class AuthService {
             if (securityTokenService.hasRecentActivationToken(loggedUser, SecurityToken.Type.ACCOUNT_ACTIVATION)) {
                 message = "Account not activated. Please check your email for the activation link.";
             } else {
-                securityTokenService.createAndSendSecurityToken(loggedUser, loginDTO.getEmail(), SecurityToken.Type.ACCOUNT_ACTIVATION, null,
-                        EmailTemplateUtil.accountActivationTemplateParams(), null, EmailTemplates.VERIFICATION_MAIL_TEMPLATE);
+                SecurityTokenBuilder securityTokenBuilder = SecurityTokenBuilder.builder()
+                        .user(loggedUser)
+                        .targetEmail(loginDTO.getEmail())
+                        .type(SecurityToken.Type.ACCOUNT_ACTIVATION)
+                        .templateName(EmailTemplates.VERIFICATION_MAIL_TEMPLATE)
+                        .extraParameters(EmailTemplateUtil.getTemplateParams(SecurityToken.Type.ACCOUNT_ACTIVATION))
+                        .build();
+                securityTokenService.createAndSendSecurityToken(securityTokenBuilder);
                 message = "Account not activated. An activation link has been sent to your email.";
             }
             return Map.of("isError", true, "message", message);
@@ -133,8 +145,7 @@ public class AuthService {
         if (userEmailRepository.existsByEmailAndUserNot(oAuthUserInfo.getEmail(), user)) {
             throw new BusinessException(provider.getDisplayName() + " account's email already in use");
         }
-        UserOAuthProvider existingProvider = userOAuthProviderRepository.findByUserAndProvider(user, provider); // for handling re-linking in case of revoked link
-        processOAuthData(user, provider, oAuthUserInfo, existingProvider);
+        processOAuthData(user, provider, oAuthUserInfo);
         userService.handleOAuthEmailMatching(oAuthUserInfo, user);
         return user;
     }
@@ -144,15 +155,15 @@ public class AuthService {
         User user = (User) userData.get("user");
         boolean isNewUser = (boolean) userData.get("isNewUser");
         if (isNewUser) {
-            processOAuthData(user, provider, oAuthUserInfo, null);
+            processOAuthData(user, provider, oAuthUserInfo);
         }
         return user;
     }
 
-    private void processOAuthData(User user, OAuthProvider provider, OAuthUserInfoDTO userInfo, UserOAuthProvider existingProvider) {
-        UserEmail userEmail = userEmailService.getOrCreate(user, userInfo.getEmail());
-        userOAuthProviderService.createOrUpdate(user, userInfo, provider, existingProvider, userEmail);
-        oAuthProviderFactory.getProvider(provider).handlePostLinkingActions(user, userInfo);
+    private void processOAuthData(User user, OAuthProvider provider, OAuthUserInfoDTO oAuthUserInfoDTO) {
+        UserEmail userEmail = userEmailService.getOrCreate(user, oAuthUserInfoDTO.getEmail());
+        userOAuthProviderService.createOrUpdate(user, oAuthUserInfoDTO, provider, userEmail);
+        oAuthProviderFactory.getProvider(provider).handlePostLinkingActions(user, oAuthUserInfoDTO);
     }
 
     private Map<String, Object> generateLoginInfo(User user, HttpServletResponse httpResponse) {
@@ -167,6 +178,7 @@ public class AuthService {
         OAuthProvider oAuthProvider = OAuthProvider.fromCode(provider);
         User loggedUser = AppConfig.getAuthenticatedCurrentUser();
         UserOAuthProvider deletedOAuthProvider = userOAuthProviderService.delete(loggedUser, oAuthProvider);
+        oAuthProviderFactory.getProvider(oAuthProvider).handlePostUnLinkingActions(loggedUser);
         UserEmail oAuthProviderEmail = deletedOAuthProvider.getProviderEmail();
         if (!oAuthProviderEmail.getId().equals(loggedUser.getPrimaryEmail().getId()) && (loggedUser.getPendingEmail() == null || !loggedUser.getPendingEmail().getId().equals(oAuthProviderEmail.getId()))) {
             userEmailRepository.delete(oAuthProviderEmail);
@@ -186,21 +198,21 @@ public class AuthService {
     }
 
     private void saveInvalidToken(String token, boolean isAccessToken) {
-        Claims accessTokenClaims = jwtUtil.getTokenPayload(token, isAccessToken);
-        User user = userRepository.findByUuid(accessTokenClaims.get("id", String.class));
-        Date accessTokenClaimsExpiration = accessTokenClaims.getExpiration();
-        UserInvalidToken invalidAccessToken = new UserInvalidToken(user, cryptoUtil.hash(token, false), accessTokenClaimsExpiration, isAccessToken);
+        Claims tokenClaims = jwtUtil.getTokenPayload(token, isAccessToken);
+        User user = userRepository.findByUuid(tokenClaims.get("id", String.class));
+        LocalDateTime tokenExpiryDate = tokenClaims.getExpiration().toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
+        UserInvalidToken invalidAccessToken = new UserInvalidToken(user, cryptoUtil.hash(token, false), tokenExpiryDate, isAccessToken);
         userInvalidTokenRepository.save(invalidAccessToken);
     }
 
     public Map<String, Object> refreshJwt(String refreshToken) {
-        Claims accessTokenClaims;
+        Claims refreshTokenClaims;
         try {
-            accessTokenClaims = jwtUtil.validateAndGetTokenPayload(refreshToken, false);
+            refreshTokenClaims = jwtUtil.validateAndGetTokenPayload(refreshToken, false);
         } catch (SecurityException e) {
             throw new SecurityException("Session expired.");
         }
-        String newAccessToken = jwtUtil.generateToken(accessTokenClaims.get("id", String.class), true);
+        String newAccessToken = jwtUtil.generateToken(refreshTokenClaims.get("id", String.class), true);
         return Map.of("token", newAccessToken);
     }
 

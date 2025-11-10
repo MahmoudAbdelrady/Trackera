@@ -92,4 +92,9 @@ public class GoogleOAuthServiceProvider extends OAuthServiceProvider {
     public void handlePostLinkingActions(User user, OAuthUserInfoDTO userInfo) {
 
     }
+
+    @Override
+    public void handlePostUnLinkingActions(User user) {
+
+    }
 }

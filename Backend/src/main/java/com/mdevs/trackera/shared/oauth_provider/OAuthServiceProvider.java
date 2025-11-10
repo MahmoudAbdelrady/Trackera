@@ -72,5 +72,7 @@ public abstract class OAuthServiceProvider {
     protected abstract OAuthAccessCredentialsDTO refreshAccessToken(String refreshToken);
 
     public abstract void handlePostLinkingActions(User user, OAuthUserInfoDTO userInfo);
+
+    public abstract void handlePostUnLinkingActions(User user);
     //</editor-fold>
 }
