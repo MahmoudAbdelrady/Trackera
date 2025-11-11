@@ -155,7 +155,7 @@ public class AuthService {
             throw new BusinessException(provider.getDisplayName() + " account's email already in use");
         }
         processOAuthData(user, provider, oAuthUserInfo);
-        userService.handleOAuthEmailMatching(oAuthUserInfo, user);
+        userService.handleOAuthEmailMatching(user, oAuthUserInfo);
     }
 
     private User handleOAuthLoginOrSignupFlow(OAuthProvider provider, OAuthUserInfoDTO oAuthUserInfo) {

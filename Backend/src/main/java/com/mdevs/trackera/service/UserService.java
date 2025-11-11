@@ -144,7 +144,7 @@ public class UserService implements UserDetailsService {
         if (userOAuthProvider.isExpired() || userOAuthProvider.isRevoked()) {
             userOAuthProviderService.updateAccessCredentials(userOAuthProvider, oAuthUserInfo.getAccessCredentials());
         }
-        handleOAuthEmailMatching(oAuthUserInfo, authenticatedUser);
+        handleOAuthEmailMatching(authenticatedUser, oAuthUserInfo);
     }
 
     @Transactional
@@ -163,7 +163,7 @@ public class UserService implements UserDetailsService {
     }
 
     @Transactional
-    public void handleOAuthEmailMatching(OAuthUserInfoDTO oAuthUserInfo, User authenticatedUser) {
+    public void handleOAuthEmailMatching(User authenticatedUser, OAuthUserInfoDTO oAuthUserInfo) {
         if (!authenticatedUser.isVerified() && authenticatedUser.getPrimaryEmail().getEmail().equals(oAuthUserInfo.getEmail())) {
             verifyUser(authenticatedUser);
             securityTokenService.deleteNonExpiredSecurityToken(authenticatedUser, SecurityToken.Type.ACCOUNT_ACTIVATION);
