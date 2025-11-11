@@ -2,10 +2,12 @@ package com.mdevs.trackera.service;
 
 import com.mdevs.trackera.config.general.AppConfig;
 import com.mdevs.trackera.dto.jira.AccessibleResourceDTO;
+import com.mdevs.trackera.dto.user.UserPreferenceDTO;
 import com.mdevs.trackera.entity.User;
 import com.mdevs.trackera.entity.UserOAuthProvider;
 import com.mdevs.trackera.shared.enums.JiraTaskEvaluation;
 import com.mdevs.trackera.shared.exceptions.types.BusinessException;
+import com.mdevs.trackera.shared.exceptions.types.NotFoundException;
 import com.mdevs.trackera.shared.oauth_provider.OAuthProvider;
 import com.mdevs.trackera.utils.AppUtils;
 import com.mdevs.trackera.utils.TrackeraTimeSpanUtil;
@@ -17,7 +19,6 @@ import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 
-import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -244,5 +245,17 @@ public class JiraService {
         } catch (Exception e) {
             throw new RuntimeException("Error while calling Jira API", e);
         }
+    }
+
+    public void loadJiraPreference(Map<String, Object> preference) {
+        Map<String, Object> jiraProjectInfo = AppUtils.convertJsonStringToObject(preference.get("value").toString(), Map.class);
+        preference.put("value", jiraProjectInfo);
+    }
+
+    public void handleJiraPreference(UserPreferenceDTO preferenceDTO, User loggedUser) {
+        AccessibleResourceDTO accessibleResourceDTO = getUserSites(loggedUser).stream().filter(site -> site.getId().equals(preferenceDTO.getValue()))
+                .findFirst().orElseThrow(() -> new NotFoundException("Site not found"));
+
+        preferenceDTO.setValue(AppUtils.convertObjectToJsonString(accessibleResourceDTO));
     }
 }

@@ -24,7 +24,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.*;
 
 @Service
@@ -54,6 +53,8 @@ public class AuthService {
     private final CookieHelper cookieHelper;
 
     private final CryptoUtil cryptoUtil;
+
+    private static final int REFRESH_TOKEN_ROTATION_THRESHOLD_DAYS = 3;
 
     public AuthService(UserRepository userRepository, UserEmailRepository userEmailRepository, UserService userService, UserEmailService userEmailService, AuthenticationManager authenticationManager,
                        SecurityTokenService securityTokenService, UserOAuthProviderService userOAuthProviderService, OAuthProviderFactory oAuthProviderFactory, SecurityTokenRepository securityTokenRepository,
@@ -135,19 +136,26 @@ public class AuthService {
     public Map<String, Object> oAuthCallback(String provider, OAuthRequestDTO oAuthRequestDTO, HttpServletResponse httpResponse) {
         OAuthProvider oAuthProvider = OAuthProvider.fromCode(provider);
         OAuthUserInfoDTO oAuthUserInfoDTO = oAuthProviderFactory.getProvider(oAuthProvider).authenticate(oAuthRequestDTO);
-        boolean isLinkingFlow = oAuthUserInfoDTO.getUserId() != null;
-        User user = isLinkingFlow ? handleOAuthLinkingFlow(oAuthProvider, oAuthUserInfoDTO) : handleOAuthLoginOrSignupFlow(oAuthProvider, oAuthUserInfoDTO);
-        return isLinkingFlow ? Map.of("message", "Account linked successfully") : generateLoginInfo(user, httpResponse);
+
+        Map<String, Object> result;
+        if (oAuthUserInfoDTO.getUserId() != null) {
+            handleOAuthLinkingFlow(oAuthProvider, oAuthUserInfoDTO);
+            result = Map.of("message", "Account linked successfully");
+        } else {
+            User user = handleOAuthLoginOrSignupFlow(oAuthProvider, oAuthUserInfoDTO);
+            result = generateLoginInfo(user, httpResponse);
+        }
+
+        return result;
     }
 
-    private User handleOAuthLinkingFlow(OAuthProvider provider, OAuthUserInfoDTO oAuthUserInfo) {
+    private void handleOAuthLinkingFlow(OAuthProvider provider, OAuthUserInfoDTO oAuthUserInfo) {
         User user = userRepository.findOne(oAuthUserInfo.getUserId());
         if (userEmailRepository.existsByEmailAndUserNot(oAuthUserInfo.getEmail(), user)) {
             throw new BusinessException(provider.getDisplayName() + " account's email already in use");
         }
         processOAuthData(user, provider, oAuthUserInfo);
         userService.handleOAuthEmailMatching(oAuthUserInfo, user);
-        return user;
     }
 
     private User handleOAuthLoginOrSignupFlow(OAuthProvider provider, OAuthUserInfoDTO oAuthUserInfo) {
@@ -179,10 +187,7 @@ public class AuthService {
         User loggedUser = AppConfig.getAuthenticatedCurrentUser();
         UserOAuthProvider deletedOAuthProvider = userOAuthProviderService.delete(loggedUser, oAuthProvider);
         oAuthProviderFactory.getProvider(oAuthProvider).handlePostUnLinkingActions(loggedUser);
-        UserEmail oAuthProviderEmail = deletedOAuthProvider.getProviderEmail();
-        if (!oAuthProviderEmail.getId().equals(loggedUser.getPrimaryEmail().getId()) && (loggedUser.getPendingEmail() == null || !loggedUser.getPendingEmail().getId().equals(oAuthProviderEmail.getId()))) {
-            userEmailRepository.delete(oAuthProviderEmail);
-        }
+        userEmailService.deleteIfUnused(deletedOAuthProvider.getProviderEmail());
         return oAuthProvider.getDisplayName() + " unlinked successfully";
     }
 
@@ -200,19 +205,22 @@ public class AuthService {
     private void saveInvalidToken(String token, boolean isAccessToken) {
         Claims tokenClaims = jwtUtil.getTokenPayload(token, isAccessToken);
         User user = userRepository.findByUuid(tokenClaims.get("id", String.class));
-        LocalDateTime tokenExpiryDate = tokenClaims.getExpiration().toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
+        LocalDateTime tokenExpiryDate = AppUtils.convertDateToLocalDateTime(tokenClaims.getExpiration());
         UserInvalidToken invalidAccessToken = new UserInvalidToken(user, cryptoUtil.hash(token, false), tokenExpiryDate, isAccessToken);
         userInvalidTokenRepository.save(invalidAccessToken);
     }
 
-    public Map<String, Object> refreshJwt(String refreshToken) {
-        Claims refreshTokenClaims;
-        try {
-            refreshTokenClaims = jwtUtil.validateAndGetTokenPayload(refreshToken, false);
-        } catch (SecurityException e) {
-            throw new SecurityException("Session expired.");
-        }
+    public Map<String, Object> refreshJwt(String refreshToken, HttpServletResponse httpResponse) {
+        Claims refreshTokenClaims = jwtUtil.validateAndGetTokenPayload(refreshToken, false);
         String newAccessToken = jwtUtil.generateToken(refreshTokenClaims.get("id", String.class), true);
+
+        LocalDateTime refreshTokenExpiry = AppUtils.convertDateToLocalDateTime(refreshTokenClaims.getExpiration());
+        if (refreshTokenExpiry.isBefore(LocalDateTime.now().plusDays(REFRESH_TOKEN_ROTATION_THRESHOLD_DAYS))) {
+            String newRefreshToken = jwtUtil.generateToken(refreshTokenClaims.get("id", String.class), false);
+            httpResponse.addCookie(cookieHelper.create(CookieHelper.REFRESH_TOKEN_COOKIE_NAME, newRefreshToken, true, "/trackera/auth", CookieHelper.getRefreshTokenCookieMaxAge()));
+            saveInvalidToken(refreshToken, false);
+        }
+
         return Map.of("token", newAccessToken);
     }
 

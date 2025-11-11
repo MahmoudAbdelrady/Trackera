@@ -66,8 +66,8 @@ public class AuthController {
 
     @PublicAPI
     @PostMapping("/jwt/refresh")
-    public ResponseEntity<?> RefreshJwt(@CookieValue(value = "refreshToken") String refreshToken) {
-        return new ResponseEntity<>(authService.refreshJwt(refreshToken), HttpStatus.OK);
+    public ResponseEntity<?> RefreshJwt(@CookieValue(value = "refreshToken") String refreshToken, HttpServletResponse httpServletResponse) {
+        return new ResponseEntity<>(authService.refreshJwt(refreshToken, httpServletResponse), HttpStatus.OK);
     }
 
     @PublicAPI

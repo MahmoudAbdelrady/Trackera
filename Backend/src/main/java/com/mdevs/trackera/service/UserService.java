@@ -5,7 +5,6 @@ import com.mdevs.trackera.dto.auth.LoggedUserDTO;
 import com.mdevs.trackera.dto.auth.OAuthUserInfoDTO;
 import com.mdevs.trackera.dto.auth.PasswordDTO;
 import com.mdevs.trackera.dto.auth.SignUpDTO;
-import com.mdevs.trackera.dto.jira.AccessibleResourceDTO;
 import com.mdevs.trackera.dto.user.UserPreferenceDTO;
 import com.mdevs.trackera.entity.SecurityToken;
 import com.mdevs.trackera.entity.User;
@@ -17,9 +16,7 @@ import com.mdevs.trackera.repository.UserRepository;
 import com.mdevs.trackera.shared.EmailTemplates;
 import com.mdevs.trackera.shared.SecurityTokenBuilder;
 import com.mdevs.trackera.shared.exceptions.types.BusinessException;
-import com.mdevs.trackera.shared.exceptions.types.NotFoundException;
 import com.mdevs.trackera.shared.oauth_provider.OAuthProvider;
-import com.mdevs.trackera.utils.AppUtils;
 import com.mdevs.trackera.shared.TrackeraEmailTarget;
 import com.mdevs.trackera.utils.EmailTemplateUtil;
 import org.apache.commons.lang3.StringUtils;
@@ -231,7 +228,7 @@ public class UserService implements UserDetailsService {
         UserEmail oldPendingEmail = loggedUser.getPendingEmail();
         if (oldPendingEmail != null) {
             loggedUser.setPendingEmail(null);
-            userEmailService.deleteIfNotLinkedToOAuth(oldPendingEmail);
+            userEmailService.deleteIfUnused(oldPendingEmail);
         }
 
         loggedUser.setPendingEmail(existingUserEmail != null ? existingUserEmail : userEmailService.create(loggedUser, email));
@@ -264,7 +261,7 @@ public class UserService implements UserDetailsService {
         user.setPendingEmail(null);
         userRepository.save(user);
 
-        userEmailService.deleteIfNotLinkedToOAuth(currentPrimary);
+        userEmailService.deleteIfUnused(currentPrimary);
 
         TrackeraEmailTarget.builder()
                 .targetEmail(currentPrimary.getEmail())
@@ -305,7 +302,7 @@ public class UserService implements UserDetailsService {
         loggedUser.setPendingEmail(null);
         userRepository.save(loggedUser);
 
-        userEmailService.deleteIfNotLinkedToOAuth(pendingEmail);
+        userEmailService.deleteIfUnused(pendingEmail);
         securityTokenService.deleteNonExpiredSecurityToken(loggedUser, SecurityToken.Type.NEW_EMAIL_VERIFICATION);
     }
 
@@ -319,8 +316,7 @@ public class UserService implements UserDetailsService {
         List<Map<String, Object>> preferences = userPreferredSettingService.getAllByUser(AppConfig.getAuthenticatedCurrentUser());
         for (Map<String, Object> preference : preferences) {
             if (preference.get("key").equals(JiraService.JIRA_PRIMARY_PROJECT_SETTING_KEY)) {
-                Map<String, Object> jiraProjectInfo = AppUtils.convertJsonStringToObject(preference.get("value").toString(), Map.class);
-                preference.put("value", jiraProjectInfo);
+                jiraService.loadJiraPreference(preference);
             }
         }
         return preferences;
@@ -331,10 +327,7 @@ public class UserService implements UserDetailsService {
         for (UserPreferenceDTO preferenceDTO : userPreferenceDTOList) {
             userPreferredSettingService.validatePreference(preferenceDTO);
             if (preferenceDTO.getKey().equals(JiraService.JIRA_PRIMARY_PROJECT_SETTING_KEY)) {
-                AccessibleResourceDTO accessibleResourceDTO = jiraService.getUserSites(loggedUser).stream().filter(site -> site.getId().equals(preferenceDTO.getValue()))
-                        .findFirst().orElseThrow(() -> new NotFoundException("Site not found"));
-
-                preferenceDTO.setValue(AppUtils.convertObjectToJsonString(accessibleResourceDTO));
+                jiraService.handleJiraPreference(preferenceDTO, loggedUser);
             }
         }
         userPreferredSettingService.updateAll(loggedUser, userPreferenceDTOList);

@@ -30,8 +30,9 @@ public class UserEmailService {
         return userEmail;
     }
 
-    public void deleteIfNotLinkedToOAuth(UserEmail userEmail) {
-        if (userOAuthProviderRepository.notExistsByUserAndProviderEmail(userEmail.getUser(), userEmail)) {
+    public void deleteIfUnused(UserEmail userEmail) {
+        User user = userEmail.getUser();
+        if (!user.isEmailLinked(userEmail) && userOAuthProviderRepository.notExistsByUserAndProviderEmail(userEmail.getUser(), userEmail)) {
             userEmailRepository.delete(userEmail);
         }
     }

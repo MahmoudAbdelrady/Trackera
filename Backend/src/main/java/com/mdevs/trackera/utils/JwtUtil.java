@@ -51,7 +51,7 @@ public class JwtUtil {
         Claims claims = getTokenPayload(token, isAccessToken);
         String uuid = claims.get("id", String.class);
         if (isTokenInvalid(uuid, token, isAccessToken)) {
-            throw new SecurityException("Invalid or expired token");
+            throw new SecurityException("Session expired.");
         }
         return claims;
     }

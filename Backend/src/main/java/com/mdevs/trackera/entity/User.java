@@ -68,4 +68,8 @@ public class User extends BaseEntity implements UserDetails {
     public boolean isPasswordSet() {
         return !StringUtils.isEmpty(password);
     }
+
+    public boolean isEmailLinked(UserEmail email) {
+        return email.getId().equals(primaryEmail.getId()) || (pendingEmail != null && email.getId().equals(pendingEmail.getId()));
+    }
 }
