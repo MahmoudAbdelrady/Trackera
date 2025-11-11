@@ -327,7 +327,7 @@ public class UserService implements UserDetailsService {
         for (UserPreferenceDTO preferenceDTO : userPreferenceDTOList) {
             userPreferredSettingService.validatePreference(preferenceDTO);
             if (preferenceDTO.getKey().equals(JiraService.JIRA_PRIMARY_PROJECT_SETTING_KEY)) {
-                jiraService.handleJiraPreference(preferenceDTO, loggedUser);
+                jiraService.handleJiraPreference(loggedUser, preferenceDTO);
             }
         }
         userPreferredSettingService.updateAll(loggedUser, userPreferenceDTOList);

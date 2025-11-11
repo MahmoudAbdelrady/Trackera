@@ -252,7 +252,7 @@ public class JiraService {
         preference.put("value", jiraProjectInfo);
     }
 
-    public void handleJiraPreference(UserPreferenceDTO preferenceDTO, User loggedUser) {
+    public void handleJiraPreference(User loggedUser, UserPreferenceDTO preferenceDTO) {
         AccessibleResourceDTO accessibleResourceDTO = getUserSites(loggedUser).stream().filter(site -> site.getId().equals(preferenceDTO.getValue()))
                 .findFirst().orElseThrow(() -> new NotFoundException("Site not found"));
 
