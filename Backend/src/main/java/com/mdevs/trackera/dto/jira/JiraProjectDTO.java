@@ -7,7 +7,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class AccessibleResourceDTO {
+public class JiraProjectDTO {
     private String id;
 
     private String name;

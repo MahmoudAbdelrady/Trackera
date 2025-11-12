@@ -4,6 +4,8 @@ import com.mdevs.trackera.entity.User;
 import com.mdevs.trackera.entity.UserEmail;
 import com.mdevs.trackera.repository.UserEmailRepository;
 import com.mdevs.trackera.repository.UserOAuthProviderRepository;
+import com.mdevs.trackera.shared.exceptions.types.BusinessException;
+import com.mdevs.trackera.shared.oauth_provider.OAuthProvider;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -34,6 +36,12 @@ public class UserEmailService {
         User user = userEmail.getUser();
         if (!user.isEmailLinked(userEmail) && userOAuthProviderRepository.notExistsByUserAndProviderEmail(userEmail.getUser(), userEmail)) {
             userEmailRepository.delete(userEmail);
+        }
+    }
+
+    public void validateOAuthEmailNotInUse(String email, User excludeUser, OAuthProvider provider) {
+        if (userEmailRepository.existsByEmailAndUserNot(email, excludeUser)) {
+            throw new BusinessException(provider.getDisplayName() + " account's email already in use");
         }
     }
 }

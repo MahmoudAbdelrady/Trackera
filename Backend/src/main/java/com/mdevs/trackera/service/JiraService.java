@@ -1,7 +1,9 @@
 package com.mdevs.trackera.service;
 
 import com.mdevs.trackera.config.general.AppConfig;
-import com.mdevs.trackera.dto.jira.AccessibleResourceDTO;
+import com.mdevs.trackera.dto.jira.JiraProjectDTO;
+import com.mdevs.trackera.dto.jira.JiraTaskDTO;
+import com.mdevs.trackera.dto.jira.JiraTaskResponse;
 import com.mdevs.trackera.dto.user.UserPreferenceDTO;
 import com.mdevs.trackera.entity.User;
 import com.mdevs.trackera.entity.UserOAuthProvider;
@@ -102,9 +104,9 @@ public class JiraService {
     }
 
     private Map<String, Object> fetchAndCacheTasks(User user, String cacheKey, String forceUpdateCacheKey, LocalDateTime now) {
-        List<Map<String, Object>> jiraTasks = getTasksFromJira(user);
-        List<Map<String, Object>> currentTasks = jiraTasks.stream().filter(task -> !(Boolean) task.get("isResolved")).toList();
-        List<Map<String, Object>> overestimatedTasks = jiraTasks.stream().filter(task -> ((Map<String, Object>) task.get("timeTracking")).get("evaluation") == JiraTaskEvaluation.OVERESTIMATED).toList();
+        List<JiraTaskDTO> jiraTasks = getTasksFromJira(user);
+        List<JiraTaskDTO> currentTasks = jiraTasks.stream().filter(task -> !task.isResolved()).toList();
+        List<JiraTaskDTO> overestimatedTasks = jiraTasks.stream().filter(task -> task.timeTracking().evaluation() == JiraTaskEvaluation.OVERESTIMATED).toList();
         String lastUpdated = TrackeraTimeSpanUtil.getSimpleDateTimeFormatter().format(now);
 
         Map<String, Object> allTasks = new HashMap<>();
@@ -121,10 +123,10 @@ public class JiraService {
         return result;
     }
 
-    private List<Map<String, Object>> getTasksFromJira(User user) {
-        List<Map<String, Object>> jiraTasks = new ArrayList<>();
+    private List<JiraTaskDTO> getTasksFromJira(User user) {
+        List<JiraTaskDTO> jiraTasks = new ArrayList<>();
         UserOAuthProvider userOAuthProvider = userOAuthProviderService.validateAndGetOAuthProvider(user, OAuthProvider.JIRA);
-        Map<String, Object> userJiraPrimaryProject = userPreferredSettingService.getPreferenceValue(user, JIRA_PRIMARY_PROJECT_SETTING_KEY, Map.class);
+        JiraProjectDTO userJiraPrimaryProject = userPreferredSettingService.getPreferenceValue(user, JIRA_PRIMARY_PROJECT_SETTING_KEY, JiraProjectDTO.class);
         if (userJiraPrimaryProject == null) {
             throw new BusinessException("Jira primary project not set. Please set it in your settings.");
         }
@@ -134,7 +136,7 @@ public class JiraService {
         headers.setBearerAuth(accessToken);
         headers.setAccept(List.of(MediaType.APPLICATION_JSON));
         Map<String, Object> jiraResponse;
-        String url = JIRA_API_BASE_URL.replace("{cloudId}", userJiraPrimaryProject.get("id").toString()) + "/search/jql?jql=" + getJiraTasksSearchCondition() + "&fields=key,summary,status,timetracking,project,resolution";
+        String url = JIRA_API_BASE_URL.replace("{cloudId}", userJiraPrimaryProject.getId()) + "/search/jql?jql=" + getJiraTasksSearchCondition() + "&fields=key,summary,status,timetracking,project,resolution";
         String nextPageToken = null;
         boolean isLast;
 
@@ -149,52 +151,63 @@ public class JiraService {
         return jiraTasks;
     }
 
-    private void processJiraResponseTasks(Map<String, Object> jiraResponse, Map<String, Object> userJiraPrimaryProject, List<Map<String, Object>> jiraTasks) {
-        for (Map<String, Object> task : (List<Map<String, Object>>) jiraResponse.get("issues")) {
-            Map<String, Object> taskFields = (Map<String, Object>) task.get("fields");
-            Map<String, Object> taskProject = (Map<String, Object>) taskFields.get("project");
-            Map<String, Object> taskStatus = ((Map<String, Object>) taskFields.get("status"));
-            Map<String, Object> taskTimeTracking = (Map<String, Object>) taskFields.get("timetracking");
+    private void processJiraResponseTasks(Map<String, Object> jiraResponse, JiraProjectDTO userJiraPrimaryProject, List<JiraTaskDTO> jiraTasks) {
+        List<Map<String, Object>> retrievedTasks = (List<Map<String, Object>>) jiraResponse.get("issues");
+        String projectBaseUrl = userJiraPrimaryProject.getUrl();
+        for (Map<String, Object> rawTask : retrievedTasks) {
+            JiraTaskResponse task = new JiraTaskResponse((String) rawTask.get("key"), (Map<String, Object>) rawTask.get("fields"));
 
-            String originalEstimate = null;
-            String loggedTime = null;
-            String remainingTime = null;
-            JiraTaskEvaluation jiraTaskEvaluation = null;
-            String notes = null;
+            JiraTaskDTO.TimeTrackingDTO timeTracking = buildTimeTrackingInfo(task.getTimeTracking());
 
-            if (taskTimeTracking != null && !taskTimeTracking.isEmpty()) {
-                originalEstimate = (String) taskTimeTracking.get("originalEstimate");
-                loggedTime = (String) taskTimeTracking.get("timeSpent");
-                remainingTime = (String) taskTimeTracking.get("remainingEstimate");
-                if (taskTimeTracking.containsKey("timeSpentSeconds") && taskTimeTracking.containsKey("originalEstimateSeconds")) {
-                    int timeSpentSeconds = ((Number) taskTimeTracking.get("timeSpentSeconds")).intValue();
-                    int originalEstimateSeconds = ((Number) taskTimeTracking.get("originalEstimateSeconds")).intValue();
-                    if (timeSpentSeconds <= originalEstimateSeconds) {
-                        jiraTaskEvaluation = JiraTaskEvaluation.ON_TIME;
-                    } else {
-                        jiraTaskEvaluation = JiraTaskEvaluation.OVERESTIMATED;
-                        notes = "Overestimated by " + TrackeraTimeSpanUtil.formatDuration((timeSpentSeconds - originalEstimateSeconds) / 60, true);
-                    }
-                }
-            }
-
-            Map<String, Object> timeTracking = new HashMap<>();
-            timeTracking.put("originalEstimate", originalEstimate);
-            timeTracking.put("loggedTime", loggedTime);
-            timeTracking.put("remainingTime", remainingTime);
-            timeTracking.put("evaluation", jiraTaskEvaluation);
-            timeTracking.put("notes", notes);
-
-            Map<String, Object> taskInfo = new HashMap<>();
-            taskInfo.put("taskName", taskFields.get("summary"));
-            taskInfo.put("taskUrl", userJiraPrimaryProject.get("url") + "/browse/" + task.get("key"));
-            taskInfo.put("status", Map.of("name", taskStatus.get("name"), "category", ((Map<String, Object>) taskStatus.get("statusCategory")).get("key")));
-            taskInfo.put("isResolved", taskFields.get("resolution") != null && !taskFields.get("resolution").toString().isEmpty());
-            taskInfo.put("project", Map.of("name", taskProject.get("name"), "icon", ((Map<String, Object>) taskProject.get("avatarUrls")).get("48x48")));
-            taskInfo.put("timeTracking", timeTracking);
+            JiraTaskDTO taskInfo = buildTaskInfo(task, projectBaseUrl, timeTracking);
 
             jiraTasks.add(taskInfo);
         }
+    }
+
+    private JiraTaskDTO.TimeTrackingDTO buildTimeTrackingInfo(Map<String, Object> taskTimeTracking) {
+        if (taskTimeTracking == null || taskTimeTracking.isEmpty()) {
+            return new JiraTaskDTO.TimeTrackingDTO(null, null, null, null, null);
+        }
+
+        String originalEstimate = (String) taskTimeTracking.get("originalEstimate");
+        String loggedTime = (String) taskTimeTracking.get("timeSpent");
+        String remainingTime = (String) taskTimeTracking.get("remainingEstimate");
+        JiraTaskEvaluation jiraTaskEvaluation = null;
+        String notes = null;
+
+        if (taskTimeTracking.containsKey("timeSpentSeconds") && taskTimeTracking.containsKey("originalEstimateSeconds")) {
+            int timeSpentSeconds = ((Number) taskTimeTracking.get("timeSpentSeconds")).intValue();
+            int originalEstimateSeconds = ((Number) taskTimeTracking.get("originalEstimateSeconds")).intValue();
+            if (timeSpentSeconds <= originalEstimateSeconds) {
+                jiraTaskEvaluation = JiraTaskEvaluation.ON_TIME;
+            } else {
+                jiraTaskEvaluation = JiraTaskEvaluation.OVERESTIMATED;
+                notes = "Overestimated by " + TrackeraTimeSpanUtil.formatDuration((timeSpentSeconds - originalEstimateSeconds) / 60, true);
+            }
+        }
+
+        return new JiraTaskDTO.TimeTrackingDTO(originalEstimate, loggedTime, remainingTime, jiraTaskEvaluation, notes);
+    }
+
+    private JiraTaskDTO buildTaskInfo(JiraTaskResponse task, String projectBaseUrl, JiraTaskDTO.TimeTrackingDTO timeTracking) {
+        Map<String, Object> status = task.getStatus();
+        Map<String, Object> project = task.getProject();
+
+        return new JiraTaskDTO(
+                task.getSummary(),
+                projectBaseUrl + "/browse/" + task.key(),
+                new JiraTaskDTO.StatusDTO(
+                        (String) status.get("name"),
+                        (String) ((Map<String, Object>) status.get("statusCategory")).get("key")
+                ),
+                task.getResolution() != null && !task.getResolution().toString().isEmpty(),
+                new JiraTaskDTO.ProjectDTO(
+                        (String) project.get("name"),
+                        (String) ((Map<String, Object>) project.get("avatarUrls")).get("48x48")
+                ),
+                timeTracking
+        );
     }
 
     private String getJiraTasksSearchCondition() {
@@ -202,10 +215,10 @@ public class JiraService {
         return "assignee=currentUser() AND (resolution IS EMPTY OR (resolutiondate >= '" + maxDate + "' AND timespent > 0)) ORDER BY created DESC";
     }
 
-    public List<AccessibleResourceDTO> getUserSites(User user) {
+    public List<JiraProjectDTO> getUserSites(User user) {
         UserOAuthProvider userOAuthProvider = userOAuthProviderService.validateAndGetOAuthProvider(user, OAuthProvider.JIRA);
         String cacheKey = USER_JIRA_SITES_FETCH_CACHE_KEY_PREFIX + user.getId();
-        List<AccessibleResourceDTO> resources = fetchFromCache(user, cacheKey, List.class);
+        List<JiraProjectDTO> resources = fetchFromCache(user, cacheKey, List.class);
         if (resources != null) {
             return resources;
         }
@@ -214,7 +227,7 @@ public class JiraService {
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(accessToken);
         headers.setAccept(List.of(MediaType.APPLICATION_JSON));
-        resources = Arrays.asList(callJiraApi("https://api.atlassian.com/oauth/token/accessible-resources", HttpMethod.GET, headers, userOAuthProvider, AccessibleResourceDTO[].class));
+        resources = Arrays.asList(callJiraApi("https://api.atlassian.com/oauth/token/accessible-resources", HttpMethod.GET, headers, userOAuthProvider, JiraProjectDTO[].class));
         redisTemplate.opsForValue().set(cacheKey, resources, Duration.ofMinutes(JIRA_SITES_FETCH_MINUTES_DURATION));
 
         return resources;
@@ -248,14 +261,14 @@ public class JiraService {
     }
 
     public void loadJiraPreference(Map<String, Object> preference) {
-        Map<String, Object> jiraProjectInfo = AppUtils.convertJsonStringToObject(preference.get("value").toString(), Map.class);
+        JiraProjectDTO jiraProjectInfo = AppUtils.convertJsonStringToObject(preference.get("value").toString(), JiraProjectDTO.class);
         preference.put("value", jiraProjectInfo);
     }
 
     public void handleJiraPreference(User loggedUser, UserPreferenceDTO preferenceDTO) {
-        AccessibleResourceDTO accessibleResourceDTO = getUserSites(loggedUser).stream().filter(site -> site.getId().equals(preferenceDTO.getValue()))
+        JiraProjectDTO jiraProjectDTO = getUserSites(loggedUser).stream().filter(site -> site.getId().equals(preferenceDTO.getValue()))
                 .findFirst().orElseThrow(() -> new NotFoundException("Site not found"));
 
-        preferenceDTO.setValue(AppUtils.convertObjectToJsonString(accessibleResourceDTO));
+        preferenceDTO.setValue(AppUtils.convertObjectToJsonString(jiraProjectDTO));
     }
 }

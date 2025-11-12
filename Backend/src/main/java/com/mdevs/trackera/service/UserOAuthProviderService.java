@@ -15,7 +15,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class UserOAuthProviderService {
@@ -31,6 +33,10 @@ public class UserOAuthProviderService {
         this.userOAuthProviderRepository = userOAuthProviderRepository;
         this.oAuthProviderFactory = oAuthProviderFactory;
         this.cryptoUtil = cryptoUtil;
+    }
+
+    public Map<OAuthProvider, UserOAuthProvider> getLinkedProvidersMap(User user) {
+        return userOAuthProviderRepository.findByUser(user).stream().collect(Collectors.toMap(UserOAuthProvider::getProvider, o -> o));
     }
 
     public void createOrUpdate(User user, OAuthUserInfoDTO oAuthUserInfoDTO, OAuthProvider oAuthProvider, UserEmail userEmail) {

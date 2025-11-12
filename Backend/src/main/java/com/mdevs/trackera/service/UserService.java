@@ -37,8 +37,6 @@ public class UserService implements UserDetailsService {
 
     private final UserEmailRepository userEmailRepository;
 
-    private final UserOAuthProviderRepository userOAuthProviderRepository;
-
     private final UserEmailService userEmailService;
 
     private final UserOAuthProviderService userOAuthProviderService;
@@ -55,12 +53,10 @@ public class UserService implements UserDetailsService {
 
     public static final String EMAIL_REGEX = "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9-]+(?:\\.[a-zA-Z0-9-]+)*\\.[a-zA-Z]{2,}$";
 
-    public UserService(UserRepository userRepository, UserEmailRepository userEmailRepository, UserOAuthProviderRepository userOAuthProviderRepository, UserEmailService userEmailService,
-                       UserOAuthProviderService userOAuthProviderService, UserPreferredSettingService userPreferredSettingService, JiraService jiraService, SecurityTokenService securityTokenService,
-                       ModelMapper modelMapper, PasswordEncoder passwordEncoder) {
+    public UserService(UserRepository userRepository, UserEmailRepository userEmailRepository, UserEmailService userEmailService, UserOAuthProviderService userOAuthProviderService,
+                       UserPreferredSettingService userPreferredSettingService, JiraService jiraService, SecurityTokenService securityTokenService, ModelMapper modelMapper, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.userEmailRepository = userEmailRepository;
-        this.userOAuthProviderRepository = userOAuthProviderRepository;
         this.userEmailService = userEmailService;
         this.userOAuthProviderService = userOAuthProviderService;
         this.userPreferredSettingService = userPreferredSettingService;
@@ -87,7 +83,7 @@ public class UserService implements UserDetailsService {
 
     public List<Map<String, Object>> getUserOAuthProviders() {
         User loggedUser = AppConfig.getAuthenticatedCurrentUser();
-        Map<OAuthProvider, UserOAuthProvider> linkedProviders = userOAuthProviderRepository.findByUser(loggedUser).stream().collect(Collectors.toMap(UserOAuthProvider::getProvider, o -> o));
+        Map<OAuthProvider, UserOAuthProvider> linkedProviders = userOAuthProviderService.getLinkedProvidersMap(loggedUser);
 
         return Arrays.stream(OAuthProvider.values()).map(provider -> {
             UserOAuthProvider userProvider = linkedProviders.get(provider);

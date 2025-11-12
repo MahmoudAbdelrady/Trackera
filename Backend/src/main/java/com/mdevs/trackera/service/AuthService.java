@@ -6,7 +6,6 @@ import com.mdevs.trackera.entity.*;
 import com.mdevs.trackera.repository.*;
 import com.mdevs.trackera.shared.EmailTemplates;
 import com.mdevs.trackera.shared.SecurityTokenBuilder;
-import com.mdevs.trackera.shared.exceptions.types.BusinessException;
 import com.mdevs.trackera.shared.exceptions.types.UnauthorizedException;
 import com.mdevs.trackera.shared.oauth_provider.OAuthProvider;
 import com.mdevs.trackera.shared.oauth_provider.OAuthProviderFactory;
@@ -29,8 +28,6 @@ import java.util.*;
 @Service
 public class AuthService {
     private final UserRepository userRepository;
-
-    private final UserEmailRepository userEmailRepository;
 
     private final UserService userService;
 
@@ -56,11 +53,10 @@ public class AuthService {
 
     private static final int REFRESH_TOKEN_ROTATION_THRESHOLD_DAYS = 3;
 
-    public AuthService(UserRepository userRepository, UserEmailRepository userEmailRepository, UserService userService, UserEmailService userEmailService, AuthenticationManager authenticationManager,
-                       SecurityTokenService securityTokenService, UserOAuthProviderService userOAuthProviderService, OAuthProviderFactory oAuthProviderFactory, SecurityTokenRepository securityTokenRepository,
-                       UserInvalidTokenRepository userInvalidTokenRepository, JwtUtil jwtUtil, CookieHelper cookieHelper, CryptoUtil cryptoUtil) {
+    public AuthService(UserRepository userRepository, UserService userService, UserEmailService userEmailService, AuthenticationManager authenticationManager, SecurityTokenService securityTokenService,
+                       UserOAuthProviderService userOAuthProviderService, OAuthProviderFactory oAuthProviderFactory, SecurityTokenRepository securityTokenRepository, UserInvalidTokenRepository userInvalidTokenRepository,
+                       JwtUtil jwtUtil, CookieHelper cookieHelper, CryptoUtil cryptoUtil) {
         this.userRepository = userRepository;
-        this.userEmailRepository = userEmailRepository;
         this.userService = userService;
         this.userEmailService = userEmailService;
         this.authenticationManager = authenticationManager;
@@ -151,9 +147,7 @@ public class AuthService {
 
     private void handleOAuthLinkingFlow(OAuthProvider provider, OAuthUserInfoDTO oAuthUserInfo) {
         User user = userRepository.findOne(oAuthUserInfo.getUserId());
-        if (userEmailRepository.existsByEmailAndUserNot(oAuthUserInfo.getEmail(), user)) {
-            throw new BusinessException(provider.getDisplayName() + " account's email already in use");
-        }
+        userEmailService.validateOAuthEmailNotInUse(oAuthUserInfo.getEmail(), user, provider);
         processOAuthData(user, provider, oAuthUserInfo);
         userService.handleOAuthEmailMatching(user, oAuthUserInfo);
     }
