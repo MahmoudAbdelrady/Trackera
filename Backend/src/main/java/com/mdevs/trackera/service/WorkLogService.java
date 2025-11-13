@@ -269,39 +269,6 @@ public class WorkLogService {
         }
     }
 
-    private WorkLog saveWorkLog(ManageWorkLogDTO manageWorkLogDTO, int totalMinutes) {
-        try {
-            WorkLog workLog = new WorkLog();
-            workLog.setUser(AppConfig.getAuthenticatedCurrentUser());
-            workLog.setTotalMinutes(totalMinutes);
-            workLog.setWorkDate(manageWorkLogDTO.getLogDate());
-            workLog.setStatus(WorkLogStatus.NOT_SYNCED);
-            if (!StringUtils.isEmpty(manageWorkLogDTO.getLogName())) {
-                workLog.setName(manageWorkLogDTO.getLogName());
-            } else {
-                DayOfWeek dayOfWeek = manageWorkLogDTO.getLogDate().getDayOfWeek();
-                String dayName = dayOfWeek.name().substring(0, 1).toUpperCase() + dayOfWeek.name().substring(1).toLowerCase();
-                String formattedDate = TrackeraTimeSpanUtil.getCompactedDateFormatter().format(manageWorkLogDTO.getLogDate());
-                workLog.setName("Worklog - " + dayName + formattedDate);
-            }
-
-            return workLogRepository.save(workLog);
-        } catch (Exception e) {
-            LOGGER.error("Error saving worklog", e);
-            throw new RuntimeException(e.getMessage());
-        }
-    }
-
-    private void saveWorkLogDetails(List<WorkLogDetail> allWorkLogDetails, WorkLog workLog) {
-        try {
-            allWorkLogDetails.forEach(logDetail -> logDetail.setWorkLog(workLog));
-            workLogDetailRepository.saveAll(allWorkLogDetails);
-        } catch (Exception e) {
-            LOGGER.error("Error saving worklog details", e);
-            throw new RuntimeException(e.getMessage());
-        }
-    }
-
     private Map<String, Object> processWorkLogFile(MultipartFile worklogFile) {
         List<Map<WorkLogColumn, String>> parsedData;
         try {
@@ -418,6 +385,39 @@ public class WorkLogService {
         }
 
         return (hours * 60) + minutes;
+    }
+
+    private WorkLog saveWorkLog(ManageWorkLogDTO manageWorkLogDTO, int totalMinutes) {
+        try {
+            WorkLog workLog = new WorkLog();
+            workLog.setUser(AppConfig.getAuthenticatedCurrentUser());
+            workLog.setTotalMinutes(totalMinutes);
+            workLog.setWorkDate(manageWorkLogDTO.getLogDate());
+            workLog.setStatus(WorkLogStatus.NOT_SYNCED);
+            if (!StringUtils.isEmpty(manageWorkLogDTO.getLogName())) {
+                workLog.setName(manageWorkLogDTO.getLogName());
+            } else {
+                DayOfWeek dayOfWeek = manageWorkLogDTO.getLogDate().getDayOfWeek();
+                String dayName = dayOfWeek.name().substring(0, 1).toUpperCase() + dayOfWeek.name().substring(1).toLowerCase();
+                String formattedDate = TrackeraTimeSpanUtil.getCompactedDateFormatter().format(manageWorkLogDTO.getLogDate());
+                workLog.setName("Worklog - " + dayName + formattedDate);
+            }
+
+            return workLogRepository.save(workLog);
+        } catch (Exception e) {
+            LOGGER.error("Error saving worklog", e);
+            throw new RuntimeException(e.getMessage());
+        }
+    }
+
+    private void saveWorkLogDetails(List<WorkLogDetail> allWorkLogDetails, WorkLog workLog) {
+        try {
+            allWorkLogDetails.forEach(logDetail -> logDetail.setWorkLog(workLog));
+            workLogDetailRepository.saveAll(allWorkLogDetails);
+        } catch (Exception e) {
+            LOGGER.error("Error saving worklog details", e);
+            throw new RuntimeException(e.getMessage());
+        }
     }
 
     private WorkLog validateWorkLogExistsAndHasPermission(String uuid) {
