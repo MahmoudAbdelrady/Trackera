@@ -62,6 +62,7 @@ public class JiraService {
         this.userPreferredSettingService = userPreferredSettingService;
     }
 
+    //<editor-fold desc="Retrieval">
     public Map<String, Object> getUserTasks(boolean forceUpdate) {
         User currentUser = AppConfig.getAuthenticatedCurrentUser();
         userOAuthProviderService.validateAndGetOAuthProvider(currentUser, OAuthProvider.JIRA);
@@ -80,6 +81,40 @@ public class JiraService {
         return cachedData;
     }
 
+    public List<JiraProjectDTO> getUserSites(User user) {
+        UserOAuthProvider userOAuthProvider = userOAuthProviderService.validateAndGetOAuthProvider(user, OAuthProvider.JIRA);
+        String cacheKey = USER_JIRA_SITES_FETCH_CACHE_KEY_PREFIX + user.getId();
+        List<JiraProjectDTO> resources = fetchFromCache(user, cacheKey, List.class);
+        if (resources != null) {
+            return resources;
+        }
+
+        String accessToken = userOAuthProviderService.resolveValidAccessToken(userOAuthProvider);
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(accessToken);
+        headers.setAccept(List.of(MediaType.APPLICATION_JSON));
+        resources = Arrays.asList(callJiraApi("https://api.atlassian.com/oauth/token/accessible-resources", HttpMethod.GET, headers, userOAuthProvider, JiraProjectDTO[].class));
+        redisTemplate.opsForValue().set(cacheKey, resources, Duration.ofMinutes(JIRA_SITES_FETCH_MINUTES_DURATION));
+
+        return resources;
+    }
+
+    public void loadJiraPreference(Map<String, Object> preference) {
+        JiraProjectDTO jiraProjectInfo = AppUtils.convertJsonStringToObject(preference.get("value").toString(), JiraProjectDTO.class);
+        preference.put("value", jiraProjectInfo);
+    }
+    //</editor-fold>
+
+    //<editor-fold desc="Update & Management">
+    public void handleJiraPreference(User loggedUser, UserPreferenceDTO preferenceDTO) {
+        JiraProjectDTO jiraProjectDTO = getUserSites(loggedUser).stream().filter(site -> site.getId().equals(preferenceDTO.getValue()))
+                .findFirst().orElseThrow(() -> new NotFoundException("Site not found"));
+
+        preferenceDTO.setValue(AppUtils.convertObjectToJsonString(jiraProjectDTO));
+    }
+    //</editor-fold>
+
+    //<editor-fold desc="Caching & Data access">
     private <T> T fetchFromCache(User user, String cacheKey, Class<T> resultType) {
         try {
             Object cachedData = redisTemplate.opsForValue().get(cacheKey);
@@ -88,19 +123,6 @@ public class JiraService {
             LOGGER.error("Error while fetching cached Jira data for user with id: {}, and cache key: {}", user.getId(), cacheKey, e);
             return null;
         }
-    }
-
-    private boolean shouldFetchTasks(Map<String, Object> cachedData, String forceUpdateCacheKey, LocalDateTime now, boolean forceUpdate) {
-        if (cachedData == null) return true;
-
-        if (forceUpdate) {
-            LocalDateTime lastForceUpdate = Optional.ofNullable(redisTemplate.opsForValue().get(forceUpdateCacheKey))
-                    .map(date -> LocalDateTime.parse(date.toString(), TrackeraTimeSpanUtil.getSimpleDateTimeFormatter())).orElse(null);
-            return lastForceUpdate == null || lastForceUpdate.isBefore(now.minusMinutes(JIRA_TASKS_FORCE_FETCH_MINUTES_DURATION));
-        }
-
-        LocalDateTime lastUpdated = LocalDateTime.parse(cachedData.get("lastUpdated").toString(), TrackeraTimeSpanUtil.getSimpleDateTimeFormatter());
-        return lastUpdated.isBefore(now.minusHours(JIRA_TASKS_FETCH_HOURS_DURATION));
     }
 
     private Map<String, Object> fetchAndCacheTasks(User user, String cacheKey, String forceUpdateCacheKey, LocalDateTime now) {
@@ -123,6 +145,21 @@ public class JiraService {
         return result;
     }
 
+    private boolean shouldFetchTasks(Map<String, Object> cachedData, String forceUpdateCacheKey, LocalDateTime now, boolean forceUpdate) {
+        if (cachedData == null) return true;
+
+        if (forceUpdate) {
+            LocalDateTime lastForceUpdate = Optional.ofNullable(redisTemplate.opsForValue().get(forceUpdateCacheKey))
+                    .map(date -> LocalDateTime.parse(date.toString(), TrackeraTimeSpanUtil.getSimpleDateTimeFormatter())).orElse(null);
+            return lastForceUpdate == null || lastForceUpdate.isBefore(now.minusMinutes(JIRA_TASKS_FORCE_FETCH_MINUTES_DURATION));
+        }
+
+        LocalDateTime lastUpdated = LocalDateTime.parse(cachedData.get("lastUpdated").toString(), TrackeraTimeSpanUtil.getSimpleDateTimeFormatter());
+        return lastUpdated.isBefore(now.minusHours(JIRA_TASKS_FETCH_HOURS_DURATION));
+    }
+    //</editor-fold>
+
+    //<editor-fold desc="Integration & Processing">
     private List<JiraTaskDTO> getTasksFromJira(User user) {
         List<JiraTaskDTO> jiraTasks = new ArrayList<>();
         UserOAuthProvider userOAuthProvider = userOAuthProviderService.validateAndGetOAuthProvider(user, OAuthProvider.JIRA);
@@ -215,24 +252,6 @@ public class JiraService {
         return "assignee=currentUser() AND (resolution IS EMPTY OR (resolutiondate >= '" + maxDate + "' AND timespent > 0)) ORDER BY created DESC";
     }
 
-    public List<JiraProjectDTO> getUserSites(User user) {
-        UserOAuthProvider userOAuthProvider = userOAuthProviderService.validateAndGetOAuthProvider(user, OAuthProvider.JIRA);
-        String cacheKey = USER_JIRA_SITES_FETCH_CACHE_KEY_PREFIX + user.getId();
-        List<JiraProjectDTO> resources = fetchFromCache(user, cacheKey, List.class);
-        if (resources != null) {
-            return resources;
-        }
-
-        String accessToken = userOAuthProviderService.resolveValidAccessToken(userOAuthProvider);
-        HttpHeaders headers = new HttpHeaders();
-        headers.setBearerAuth(accessToken);
-        headers.setAccept(List.of(MediaType.APPLICATION_JSON));
-        resources = Arrays.asList(callJiraApi("https://api.atlassian.com/oauth/token/accessible-resources", HttpMethod.GET, headers, userOAuthProvider, JiraProjectDTO[].class));
-        redisTemplate.opsForValue().set(cacheKey, resources, Duration.ofMinutes(JIRA_SITES_FETCH_MINUTES_DURATION));
-
-        return resources;
-    }
-
     @Retryable(retryFor = Exception.class, backoff = @Backoff(delay = 1000, multiplier = 3))
     private <T> T callJiraApi(String url, HttpMethod method, HttpHeaders headers, UserOAuthProvider userOAuthProvider, Class<T> responseType) {
         try {
@@ -259,16 +278,5 @@ public class JiraService {
             throw new RuntimeException("Error while calling Jira API", e);
         }
     }
-
-    public void loadJiraPreference(Map<String, Object> preference) {
-        JiraProjectDTO jiraProjectInfo = AppUtils.convertJsonStringToObject(preference.get("value").toString(), JiraProjectDTO.class);
-        preference.put("value", jiraProjectInfo);
-    }
-
-    public void handleJiraPreference(User loggedUser, UserPreferenceDTO preferenceDTO) {
-        JiraProjectDTO jiraProjectDTO = getUserSites(loggedUser).stream().filter(site -> site.getId().equals(preferenceDTO.getValue()))
-                .findFirst().orElseThrow(() -> new NotFoundException("Site not found"));
-
-        preferenceDTO.setValue(AppUtils.convertObjectToJsonString(jiraProjectDTO));
-    }
+    //</editor-fold>
 }

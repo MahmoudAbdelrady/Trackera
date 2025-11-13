@@ -11,7 +11,6 @@ import com.mdevs.trackera.entity.User;
 import com.mdevs.trackera.entity.UserEmail;
 import com.mdevs.trackera.entity.UserOAuthProvider;
 import com.mdevs.trackera.repository.UserEmailRepository;
-import com.mdevs.trackera.repository.UserOAuthProviderRepository;
 import com.mdevs.trackera.repository.UserRepository;
 import com.mdevs.trackera.shared.EmailTemplates;
 import com.mdevs.trackera.shared.SecurityTokenBuilder;
@@ -29,7 +28,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Service
 public class UserService implements UserDetailsService {
@@ -71,6 +69,7 @@ public class UserService implements UserDetailsService {
         return Optional.ofNullable(userRepository.findByPrimaryEmail(email)).orElseThrow(() -> new UsernameNotFoundException("Account not found."));
     }
 
+    //<editor-fold desc="User Info and Management">
     public LoggedUserDTO getMeInfo() {
         User loggedUser = AppConfig.getAuthenticatedCurrentUser();
         LoggedUserDTO loggedUserDTO = modelMapper.map(AppConfig.getAuthenticatedCurrentUser(), LoggedUserDTO.class);
@@ -99,6 +98,29 @@ public class UserService implements UserDetailsService {
         }).toList();
     }
 
+    public List<Map<String, Object>> getUserPreferences() {
+        List<Map<String, Object>> preferences = userPreferredSettingService.getAllByUser(AppConfig.getAuthenticatedCurrentUser());
+        for (Map<String, Object> preference : preferences) {
+            if (preference.get("key").equals(JiraService.JIRA_PRIMARY_PROJECT_SETTING_KEY)) {
+                jiraService.loadJiraPreference(preference);
+            }
+        }
+        return preferences;
+    }
+
+    public void updateUserPreferences(List<UserPreferenceDTO> userPreferenceDTOList) {
+        User loggedUser = AppConfig.getAuthenticatedCurrentUser();
+        for (UserPreferenceDTO preferenceDTO : userPreferenceDTOList) {
+            userPreferredSettingService.validatePreference(preferenceDTO);
+            if (preferenceDTO.getKey().equals(JiraService.JIRA_PRIMARY_PROJECT_SETTING_KEY)) {
+                jiraService.handleJiraPreference(loggedUser, preferenceDTO);
+            }
+        }
+        userPreferredSettingService.updateAll(loggedUser, userPreferenceDTOList);
+    }
+    //</editor-fold>
+
+    //<editor-fold desc="Registration & Authentication">
     @Transactional
     public User create(SignUpDTO signUpDTO) {
         if (userEmailRepository.existsByEmail(signUpDTO.getEmail())) {
@@ -173,7 +195,9 @@ public class UserService implements UserDetailsService {
         user.setVerified(true);
         userRepository.save(user);
     }
+    //</editor-fold>
 
+    //<editor-fold desc="Password Management">
     @Transactional
     public void changePassword(PasswordDTO passwordDTO) {
         User user = AppConfig.getAuthenticatedCurrentUser();
@@ -209,7 +233,9 @@ public class UserService implements UserDetailsService {
                 .build();
         securityTokenService.createAndSendSecurityToken(securityTokenBuilder);
     }
+    //</editor-fold>
 
+    //<editor-fold desc="Email Management">
     @Transactional
     public void requestEmailChange(String email) {
         User loggedUser = AppConfig.getAuthenticatedCurrentUser();
@@ -231,17 +257,6 @@ public class UserService implements UserDetailsService {
         userRepository.save(loggedUser);
 
         sendEmailVerificationSecurityToken(loggedUser, email);
-    }
-
-    private void validateEmailAvailability(User loggedUser, UserEmail existingUserEmail) {
-        if (!existingUserEmail.getUser().getId().equals(loggedUser.getId())) {
-            throw new BusinessException("Email is already in use");
-        }
-
-        boolean isPrimaryOrPending = loggedUser.getPrimaryEmail().getId().equals(existingUserEmail.getId()) || (loggedUser.getPendingEmail() != null && loggedUser.getPendingEmail().getId().equals(existingUserEmail.getId()));
-        if (isPrimaryOrPending) {
-            throw new BusinessException("Email is already associated with your account");
-        }
     }
 
     @Transactional
@@ -307,25 +322,18 @@ public class UserService implements UserDetailsService {
             throw new BusinessException("Invalid email format");
         }
     }
+    //</editor-fold>
 
-    public List<Map<String, Object>> getUserPreferences() {
-        List<Map<String, Object>> preferences = userPreferredSettingService.getAllByUser(AppConfig.getAuthenticatedCurrentUser());
-        for (Map<String, Object> preference : preferences) {
-            if (preference.get("key").equals(JiraService.JIRA_PRIMARY_PROJECT_SETTING_KEY)) {
-                jiraService.loadJiraPreference(preference);
-            }
+    //<editor-fold desc="Internal Methods & Validations">
+    private void validateEmailAvailability(User loggedUser, UserEmail existingUserEmail) {
+        if (!existingUserEmail.getUser().getId().equals(loggedUser.getId())) {
+            throw new BusinessException("Email is already in use");
         }
-        return preferences;
-    }
 
-    public void updateUserPreferences(List<UserPreferenceDTO> userPreferenceDTOList) {
-        User loggedUser = AppConfig.getAuthenticatedCurrentUser();
-        for (UserPreferenceDTO preferenceDTO : userPreferenceDTOList) {
-            userPreferredSettingService.validatePreference(preferenceDTO);
-            if (preferenceDTO.getKey().equals(JiraService.JIRA_PRIMARY_PROJECT_SETTING_KEY)) {
-                jiraService.handleJiraPreference(loggedUser, preferenceDTO);
-            }
+        boolean isPrimaryOrPending = loggedUser.getPrimaryEmail().getId().equals(existingUserEmail.getId()) || (loggedUser.getPendingEmail() != null && loggedUser.getPendingEmail().getId().equals(existingUserEmail.getId()));
+        if (isPrimaryOrPending) {
+            throw new BusinessException("Email is already associated with your account");
         }
-        userPreferredSettingService.updateAll(loggedUser, userPreferenceDTOList);
     }
+    //</editor-fold>
 }

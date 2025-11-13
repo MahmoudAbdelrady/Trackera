@@ -35,10 +35,29 @@ public class UserOAuthProviderService {
         this.cryptoUtil = cryptoUtil;
     }
 
+    //<editor-fold desc="Retrieval">
     public Map<OAuthProvider, UserOAuthProvider> getLinkedProvidersMap(User user) {
         return userOAuthProviderRepository.findByUser(user).stream().collect(Collectors.toMap(UserOAuthProvider::getProvider, o -> o));
     }
 
+    public UserOAuthProvider getUserLinkedProviderOrThrow(User user, String email, OAuthProvider provider) {
+        return Optional.ofNullable(userOAuthProviderRepository.findByUserAndEmailAndProvider(user, email, provider))
+                .orElseThrow(() -> new BusinessException("No linked " + provider.getDisplayName() + " account matches the provided email."));
+    }
+
+    public UserOAuthProvider validateAndGetOAuthProvider(User user, OAuthProvider provider) {
+        UserOAuthProvider userOAuthProvider = userOAuthProviderRepository.findByUserAndProvider(user, provider);
+        if (userOAuthProvider == null) {
+            throw new BusinessException(provider + " account not linked");
+        }
+        if (userOAuthProvider.isRevoked()) {
+            throw new BusinessException(provider + " account link has been revoked. Please relink your account.");
+        }
+        return userOAuthProvider;
+    }
+    //</editor-fold>
+
+    //<editor-fold desc="Creation and Update">
     public void createOrUpdate(User user, OAuthUserInfoDTO oAuthUserInfoDTO, OAuthProvider oAuthProvider, UserEmail userEmail) {
         UserOAuthProvider existingProvider = userOAuthProviderRepository.findByUserAndProvider(user, oAuthProvider); // for handling re-linking in case of revoked link
         if (existingProvider == null) {
@@ -82,30 +101,9 @@ public class UserOAuthProviderService {
         existingUserOAuthProvider.setRevoked(false);
         return userOAuthProviderRepository.save(existingUserOAuthProvider);
     }
+    //</editor-fold>
 
-    public UserOAuthProvider getUserLinkedProviderOrThrow(User user, String email, OAuthProvider provider) {
-        return Optional.ofNullable(userOAuthProviderRepository.findByUserAndEmailAndProvider(user, email, provider))
-                .orElseThrow(() -> new BusinessException("No linked " + provider.getDisplayName() + " account matches the provided email."));
-    }
-
-    public void ensureUserDoesNotHaveActiveLinkedProvider(User user, OAuthProvider oAuthProvider) {
-        UserOAuthProvider userOAuthProvider = userOAuthProviderRepository.findByUserAndProvider(user, oAuthProvider);
-        if (userOAuthProvider != null && !userOAuthProvider.isRevoked()) {
-            throw new BusinessException("The current account is already linked with " + oAuthProvider.getDisplayName());
-        }
-    }
-
-    public UserOAuthProvider validateAndGetOAuthProvider(User user, OAuthProvider provider) {
-        UserOAuthProvider userOAuthProvider = userOAuthProviderRepository.findByUserAndProvider(user, provider);
-        if (userOAuthProvider == null) {
-            throw new BusinessException(provider + " account not linked");
-        }
-        if (userOAuthProvider.isRevoked()) {
-            throw new BusinessException(provider + " account link has been revoked. Please relink your account.");
-        }
-        return userOAuthProvider;
-    }
-
+    //<editor-fold desc="Deletion">
     public UserOAuthProvider delete(User user, OAuthProvider oAuthProvider) {
         UserOAuthProvider deletedOAuthProvider = userOAuthProviderRepository.findByUserAndProvider(user, oAuthProvider);
         if (deletedOAuthProvider == null) {
@@ -117,4 +115,14 @@ public class UserOAuthProviderService {
         userOAuthProviderRepository.delete(deletedOAuthProvider);
         return deletedOAuthProvider;
     }
+    //</editor-fold>
+
+    //<editor-fold desc="Validations">
+    public void ensureUserDoesNotHaveActiveLinkedProvider(User user, OAuthProvider oAuthProvider) {
+        UserOAuthProvider userOAuthProvider = userOAuthProviderRepository.findByUserAndProvider(user, oAuthProvider);
+        if (userOAuthProvider != null && !userOAuthProvider.isRevoked()) {
+            throw new BusinessException("The current account is already linked with " + oAuthProvider.getDisplayName());
+        }
+    }
+    //</editor-fold>
 }
