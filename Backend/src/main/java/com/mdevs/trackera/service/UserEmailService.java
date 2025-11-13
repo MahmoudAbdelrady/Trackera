@@ -19,6 +19,7 @@ public class UserEmailService {
         this.userOAuthProviderRepository = userOAuthProviderRepository;
     }
 
+    //<editor-fold desc="Creation">
     public UserEmail create(User user, String email) {
         UserEmail userEmail = new UserEmail(user, email);
         return userEmailRepository.save(userEmail);
@@ -31,17 +32,22 @@ public class UserEmailService {
         }
         return userEmail;
     }
+    //</editor-fold>
 
+    //<editor-fold desc="Deletion">
     public void deleteIfUnused(UserEmail userEmail) {
         User user = userEmail.getUser();
         if (!user.isEmailLinked(userEmail) && userOAuthProviderRepository.notExistsByUserAndProviderEmail(userEmail.getUser(), userEmail)) {
             userEmailRepository.delete(userEmail);
         }
     }
+    //</editor-fold>
 
+    //<editor-fold desc="Validation">
     public void validateOAuthEmailNotInUse(String email, User excludeUser, OAuthProvider provider) {
         if (userEmailRepository.existsByEmailAndUserNot(email, excludeUser)) {
             throw new BusinessException(provider.getDisplayName() + " account's email already in use");
         }
     }
+    //</editor-fold>
 }

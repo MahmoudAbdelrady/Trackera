@@ -70,6 +70,7 @@ public class AuthService {
         this.cryptoUtil = cryptoUtil;
     }
 
+    //<editor-fold desc="Registration & Authentication">
     @Transactional
     public void signUp(SignUpDTO signUpDTO) {
         User user = userService.create(signUpDTO);
@@ -115,6 +116,33 @@ public class AuthService {
         return generateLoginInfo(loggedUser, httpResponse);
     }
 
+    @Transactional
+    public void logout(HttpServletRequest httpRequest, HttpServletResponse httpResponse) {
+        String accessToken = httpRequest.getHeader(HttpHeaders.AUTHORIZATION).substring(7);
+        String refreshToken = cookieHelper.extractCookieValue(httpRequest, CookieHelper.REFRESH_TOKEN_COOKIE_NAME);
+        saveInvalidToken(accessToken, true);
+        if (!StringUtils.isEmpty(refreshToken)) {
+            saveInvalidToken(refreshToken, false);
+        }
+        httpResponse.addCookie(cookieHelper.create(CookieHelper.REFRESH_TOKEN_COOKIE_NAME, null, true, "/trackera/auth", 0));
+    }
+
+    public Map<String, Object> refreshJwt(String refreshToken, HttpServletResponse httpResponse) {
+        Claims refreshTokenClaims = jwtUtil.validateAndGetTokenPayload(refreshToken, false);
+        String newAccessToken = jwtUtil.generateToken(refreshTokenClaims.get("id", String.class), true);
+
+        LocalDateTime refreshTokenExpiry = AppUtils.convertDateToLocalDateTime(refreshTokenClaims.getExpiration());
+        if (refreshTokenExpiry.isBefore(LocalDateTime.now().plusDays(REFRESH_TOKEN_ROTATION_THRESHOLD_DAYS))) {
+            String newRefreshToken = jwtUtil.generateToken(refreshTokenClaims.get("id", String.class), false);
+            httpResponse.addCookie(cookieHelper.create(CookieHelper.REFRESH_TOKEN_COOKIE_NAME, newRefreshToken, true, "/trackera/auth", CookieHelper.getRefreshTokenCookieMaxAge()));
+            saveInvalidToken(refreshToken, false);
+        }
+
+        return Map.of("token", newAccessToken);
+    }
+    //</editor-fold>
+
+    //<editor-fold desc="OAuth2 Integration">
     public String oAuth(String oAuthProvider, HttpServletRequest httpRequest) {
         OAuthProvider provider = OAuthProvider.fromCode(oAuthProvider);
         String jwtTokenHeader = httpRequest.getHeader(HttpHeaders.AUTHORIZATION);
@@ -145,6 +173,63 @@ public class AuthService {
         return result;
     }
 
+    @Transactional
+    public String unlinkOAuthProvider(String provider) {
+        OAuthProvider oAuthProvider = OAuthProvider.fromCode(provider);
+        User loggedUser = AppConfig.getAuthenticatedCurrentUser();
+        UserOAuthProvider deletedOAuthProvider = userOAuthProviderService.delete(loggedUser, oAuthProvider);
+        oAuthProviderFactory.getProvider(oAuthProvider).handlePostUnLinkingActions(loggedUser);
+        userEmailService.deleteIfUnused(deletedOAuthProvider.getProviderEmail());
+        return oAuthProvider.getDisplayName() + " unlinked successfully";
+    }
+    //</editor-fold>
+
+    //<editor-fold desc="Security Token Management">
+    @Transactional
+    public AuthResultDTO consumeToken(String token) {
+        SecurityToken securityToken = securityTokenService.validateAndGet(token);
+        User user = securityToken.getUser();
+
+        String message;
+        switch (securityToken.getType()) {
+            case ACCOUNT_ACTIVATION -> {
+                userService.verifyUser(user);
+                message = "Your account has been successfully activated";
+            }
+            case NEW_EMAIL_VERIFICATION -> {
+                userService.verifyAndChangePrimaryEmail(user, securityToken.getAdditionalInfo());
+                message = "Your email has been successfully verified";
+            }
+            default -> throw new UnauthorizedException("Url is expired or invalid");
+        }
+        securityTokenRepository.delete(securityToken);
+
+        return new AuthResultDTO(securityToken.getType().getLabel(), message);
+    }
+    //</editor-fold>
+
+    //<editor-fold desc="Password Management">
+    @Transactional
+    public void requestResetPassword(String email) {
+        User user = userRepository.findByPrimaryEmail(email);
+        if (user != null && user.canResetPassword()) {
+            userService.sendPasswordFlowEmail(user, true);
+        }
+    }
+
+    @Transactional
+    public void resetUserPassword(String token, PasswordDTO passwordDTO) {
+        SecurityToken securityToken = securityTokenService.validateAndGet(token);
+        if (!securityToken.getType().equals(SecurityToken.Type.PASSWORD_RESET)) {
+            throw new UnauthorizedException("Url is expired or invalid");
+        }
+        User user = securityToken.getUser();
+        userService.validateAndUpdateUserPassword(user, passwordDTO, true);
+        securityTokenRepository.delete(securityToken);
+    }
+    //</editor-fold>
+
+    //<editor-fold desc="Internal Methods & Validations">
     private void handleOAuthLinkingFlow(OAuthProvider provider, OAuthUserInfoDTO oAuthUserInfo) {
         User user = userRepository.findOne(oAuthUserInfo.getUserId());
         userEmailService.validateOAuthEmailNotInUse(oAuthUserInfo.getEmail(), user, provider);
@@ -175,27 +260,6 @@ public class AuthService {
         return Map.of("token", accessToken);
     }
 
-    @Transactional
-    public String unlinkOAuthProvider(String provider) {
-        OAuthProvider oAuthProvider = OAuthProvider.fromCode(provider);
-        User loggedUser = AppConfig.getAuthenticatedCurrentUser();
-        UserOAuthProvider deletedOAuthProvider = userOAuthProviderService.delete(loggedUser, oAuthProvider);
-        oAuthProviderFactory.getProvider(oAuthProvider).handlePostUnLinkingActions(loggedUser);
-        userEmailService.deleteIfUnused(deletedOAuthProvider.getProviderEmail());
-        return oAuthProvider.getDisplayName() + " unlinked successfully";
-    }
-
-    @Transactional
-    public void logout(HttpServletRequest httpRequest, HttpServletResponse httpResponse) {
-        String accessToken = httpRequest.getHeader(HttpHeaders.AUTHORIZATION).substring(7);
-        String refreshToken = cookieHelper.extractCookieValue(httpRequest, CookieHelper.REFRESH_TOKEN_COOKIE_NAME);
-        saveInvalidToken(accessToken, true);
-        if (!StringUtils.isEmpty(refreshToken)) {
-            saveInvalidToken(refreshToken, false);
-        }
-        httpResponse.addCookie(cookieHelper.create(CookieHelper.REFRESH_TOKEN_COOKIE_NAME, null, true, "/trackera/auth", 0));
-    }
-
     private void saveInvalidToken(String token, boolean isAccessToken) {
         Claims tokenClaims = jwtUtil.getTokenPayload(token, isAccessToken);
         User user = userRepository.findByUuid(tokenClaims.get("id", String.class));
@@ -203,59 +267,5 @@ public class AuthService {
         UserInvalidToken invalidAccessToken = new UserInvalidToken(user, cryptoUtil.hash(token, false), tokenExpiryDate, isAccessToken);
         userInvalidTokenRepository.save(invalidAccessToken);
     }
-
-    public Map<String, Object> refreshJwt(String refreshToken, HttpServletResponse httpResponse) {
-        Claims refreshTokenClaims = jwtUtil.validateAndGetTokenPayload(refreshToken, false);
-        String newAccessToken = jwtUtil.generateToken(refreshTokenClaims.get("id", String.class), true);
-
-        LocalDateTime refreshTokenExpiry = AppUtils.convertDateToLocalDateTime(refreshTokenClaims.getExpiration());
-        if (refreshTokenExpiry.isBefore(LocalDateTime.now().plusDays(REFRESH_TOKEN_ROTATION_THRESHOLD_DAYS))) {
-            String newRefreshToken = jwtUtil.generateToken(refreshTokenClaims.get("id", String.class), false);
-            httpResponse.addCookie(cookieHelper.create(CookieHelper.REFRESH_TOKEN_COOKIE_NAME, newRefreshToken, true, "/trackera/auth", CookieHelper.getRefreshTokenCookieMaxAge()));
-            saveInvalidToken(refreshToken, false);
-        }
-
-        return Map.of("token", newAccessToken);
-    }
-
-    @Transactional
-    public AuthResultDTO consumeToken(String token) {
-        SecurityToken securityToken = securityTokenService.validateAndGet(token);
-        User user = securityToken.getUser();
-
-        String message;
-        switch (securityToken.getType()) {
-            case ACCOUNT_ACTIVATION -> {
-                userService.verifyUser(user);
-                message = "Your account has been successfully activated";
-            }
-            case NEW_EMAIL_VERIFICATION -> {
-                userService.verifyAndChangePrimaryEmail(user, securityToken.getAdditionalInfo());
-                message = "Your email has been successfully verified";
-            }
-            default -> throw new UnauthorizedException("Url is expired or invalid");
-        }
-        securityTokenRepository.delete(securityToken);
-
-        return new AuthResultDTO(securityToken.getType().getLabel(), message);
-    }
-
-    @Transactional
-    public void requestResetPassword(String email) {
-        User user = userRepository.findByPrimaryEmail(email);
-        if (user != null && user.canResetPassword()) {
-            userService.sendPasswordFlowEmail(user, true);
-        }
-    }
-
-    @Transactional
-    public void resetUserPassword(String token, PasswordDTO passwordDTO) {
-        SecurityToken securityToken = securityTokenService.validateAndGet(token);
-        if (!securityToken.getType().equals(SecurityToken.Type.PASSWORD_RESET)) {
-            throw new UnauthorizedException("Url is expired or invalid");
-        }
-        User user = securityToken.getUser();
-        userService.validateAndUpdateUserPassword(user, passwordDTO, true);
-        securityTokenRepository.delete(securityToken);
-    }
+    //</editor-fold>
 }

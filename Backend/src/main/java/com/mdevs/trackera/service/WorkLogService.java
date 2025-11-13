@@ -58,6 +58,7 @@ public class WorkLogService {
         this.modelMapper = modelMapper;
     }
 
+    //<editor-fold desc="Search & Retrieval">
     public Page<WorkLogInfoDTO> searchAllWorkLogs(WorkLogSearchFilterDTO searchFilterDTO, Pageable pageable) {
         Map<String, Object> queryParameters = new HashMap<>();
         String searchQuery = buildSearchQuery(searchFilterDTO, queryParameters);
@@ -82,22 +83,6 @@ public class WorkLogService {
         return new PageImpl<>(workLogInfoDTOList, pageable, totalRecords);
     }
 
-    private String buildSearchQuery(WorkLogSearchFilterDTO searchFilterDTO, Map<String, Object> queryParameters) {
-        WorkLogQueryBuilder workLogQueryBuilder = new WorkLogQueryBuilder(AppConfig.getAuthenticatedCurrentUser().getId());
-        if (searchFilterDTO != null) {
-            searchFilterDTO.validate();
-            workLogQueryBuilder
-                    .withLogName(searchFilterDTO.getLogName())
-                    .withDateRange(searchFilterDTO.getDateFrom(), searchFilterDTO.getDateTo())
-                    .withTotalHours(searchFilterDTO.getTotalHours())
-                    .withEvaluation(searchFilterDTO.getEvaluation())
-                    .withStatus(searchFilterDTO.getStatus());
-        }
-
-        queryParameters.putAll(workLogQueryBuilder.getParameters());
-        return workLogQueryBuilder.getQuery();
-    }
-
     public WorkLogInfoDTO getWorkLogByUUID(String uuid) {
         WorkLog workLog = validateWorkLogExistsAndHasPermission(uuid);
         WorkLogInfoDTO workLogInfoDTO = modelMapper.map(workLog, WorkLogInfoDTO.class);
@@ -106,6 +91,39 @@ public class WorkLogService {
         return workLogInfoDTO;
     }
 
+    public List<WorkLogTaskDTO> getWorkLogDetailSummary(String uuid) {
+        WorkLog workLog = validateWorkLogExistsAndHasPermission(uuid);
+        List<Map<String, Object>> workLogDetailGroups = workLogDetailRepository.getGroupedWorkLogDetailsByWorkLog(workLog);
+        return workLogDetailGroups.stream().map(worklogGroup -> {
+            WorkLogTaskDTO workLogTaskDTO = new WorkLogTaskDTO(worklogGroup.get("taskName").toString(), (String) worklogGroup.get("taskUrl"));
+            Integer totalMinutes = Integer.parseInt(worklogGroup.get("totalMinutes").toString());
+            workLogTaskDTO.setTotalHours(TrackeraTimeSpanUtil.formatDuration(totalMinutes, false));
+            workLogTaskDTO.setTotalMinutes(totalMinutes); // for sorting purpose
+            workLogTaskDTO.setStatus(WorkLogStatus.valueOf(worklogGroup.get("status").toString()));
+            return workLogTaskDTO;
+        }).toList();
+    }
+
+    public List<WorkLogEntryDTO> getWorkLogTaskDetails(String uuid, String taskName) {
+        WorkLog workLog = validateWorkLogExistsAndHasPermission(uuid);
+        List<WorkLogDetail> workLogDetails = workLogDetailRepository.findByWorkLogAndTaskName(workLog, taskName);
+        if (workLogDetails.isEmpty()) {
+            throw new NotFoundException("No logs found for the specified task in this worklog");
+        }
+        return workLogDetails.stream().map(workLogDetail -> {
+            WorkLogEntryDTO workLogEntryDTO = new WorkLogEntryDTO();
+            workLogEntryDTO.setId(workLogDetail.getUuid());
+            workLogEntryDTO.setFromTime(TrackeraTimeSpanUtil.getDateTime12hFormatter().format(workLogDetail.getStartTime()));
+            workLogEntryDTO.setToTime(TrackeraTimeSpanUtil.getDateTime12hFormatter().format(workLogDetail.getEndTime()));
+            workLogEntryDTO.setDuration(TrackeraTimeSpanUtil.formatDuration(workLogDetail.getDuration(), false));
+            workLogEntryDTO.setDescription(workLogDetail.getDescription());
+            workLogEntryDTO.setStatus(workLogDetail.isSynced() ? WorkLogStatus.SYNCED : WorkLogStatus.NOT_SYNCED);
+            return workLogEntryDTO;
+        }).toList();
+    }
+    //</editor-fold>
+
+    //<editor-fold desc="Creation & Update">
     @Transactional
     public Map<String, Object> addWorkLog(ManageWorkLogDTO manageWorkLogDTO, MultipartFile worklogFile) {
         validateWorkLog(manageWorkLogDTO, null);
@@ -141,7 +159,9 @@ public class WorkLogService {
         workLogRepository.save(workLog);
         return Map.of("message", "Worklog updated successfully");
     }
+    //</editor-fold>
 
+    //<editor-fold desc="Deletion">
     @Transactional
     public void deleteWorkLog(String uuid) {
         WorkLog workLog = validateWorkLogExistsAndHasPermission(uuid);
@@ -149,6 +169,63 @@ public class WorkLogService {
         workLogRepository.delete(workLog);
     }
 
+    @Transactional
+    public Map<String, Object> deleteWorkLogTaskDetails(String uuid, String taskName) {
+        WorkLog workLog = validateWorkLogExistsAndHasPermission(uuid);
+        List<WorkLogDetail> detailsToDelete = workLogDetailRepository.findByWorkLogAndTaskName(workLog, taskName);
+        if (detailsToDelete.isEmpty()) {
+            throw new NotFoundException("No logs found for the specified task in this worklog");
+        }
+        workLogDetailRepository.deleteAll(detailsToDelete);
+
+        List<WorkLogDetail> existingDetails = workLogDetailRepository.findAllByWorkLog(workLog);
+        Map<String, Object> result = new HashMap<>();
+        if (existingDetails.isEmpty()) {
+            workLogRepository.delete(workLog);
+            result.put("isLast", true);
+        } else {
+            int totalDeletedMinutes = detailsToDelete.stream().mapToInt(WorkLogDetail::getDuration).sum();
+            workLog.setTotalMinutes(workLog.getTotalMinutes() - totalDeletedMinutes);
+            workLogRepository.save(workLog);
+        }
+
+        result.put("message", "Task logs deleted successfully");
+        return result;
+    }
+
+    @Transactional
+    public Map<String, Object> deleteWorkLogTaskEntry(String uuid) {
+        WorkLogDetail workLogEntry = workLogDetailRepository.findByUuid(uuid);
+        if (workLogEntry == null) {
+            throw new NotFoundException("WorkLog entry not found");
+        }
+        WorkLog workLog = workLogEntry.getWorkLog();
+        if (!workLog.getUser().getId().equals(AppConfig.getAuthenticatedCurrentUser().getId())) {
+            throw new UnauthorizedException("You are not authorized to access this entry");
+        }
+
+        workLogDetailRepository.delete(workLogEntry);
+
+        Map<String, Object> result = new HashMap<>();
+        if (!workLogDetailRepository.existsByWorkLog(workLog)) {
+            workLogRepository.delete(workLog);
+            result.put("isLast", true);
+        } else {
+            int deletedDuration = workLogEntry.getDuration();
+            workLog.setTotalMinutes(workLog.getTotalMinutes() - deletedDuration);
+            workLogRepository.save(workLog);
+
+            if (!workLogDetailRepository.existsByWorkLogAndTaskName(workLog, workLogEntry.getTaskName())) {
+                result.put("isLastOfTask", true);
+            }
+        }
+
+        result.put("message", "WorkLog entry deleted successfully");
+        return result;
+    }
+    //</editor-fold>
+
+    //<editor-fold desc="Summary & Analytics">
     public List<WorkLogSummaryDTO> getCurrentMonthSummary() {
         LocalDate now = LocalDate.now();
         DecimalFormat durationDecimalFormat = TrackeraTimeSpanUtil.getDurationDecimalFormat();
@@ -160,6 +237,24 @@ public class WorkLogService {
                 new WorkLogSummaryDTO("Target Hours", "Equivalent to " + TrackeraTimeSpanUtil.formatDuration(targetMinutes, true), "target", durationDecimalFormat.format(targetMinutes / 60.0)),
                 new WorkLogSummaryDTO("Remaining Hours", "Equivalent to " + TrackeraTimeSpanUtil.formatDuration(remainingMinutes, true), "remaining", durationDecimalFormat.format(remainingMinutes / 60.0))
         );
+    }
+    //</editor-fold>
+
+    //<editor-fold desc="Internal Methods & Validations">
+    private String buildSearchQuery(WorkLogSearchFilterDTO searchFilterDTO, Map<String, Object> queryParameters) {
+        WorkLogQueryBuilder workLogQueryBuilder = new WorkLogQueryBuilder(AppConfig.getAuthenticatedCurrentUser().getId());
+        if (searchFilterDTO != null) {
+            searchFilterDTO.validate();
+            workLogQueryBuilder
+                    .withLogName(searchFilterDTO.getLogName())
+                    .withDateRange(searchFilterDTO.getDateFrom(), searchFilterDTO.getDateTo())
+                    .withTotalHours(searchFilterDTO.getTotalHours())
+                    .withEvaluation(searchFilterDTO.getEvaluation())
+                    .withStatus(searchFilterDTO.getStatus());
+        }
+
+        queryParameters.putAll(workLogQueryBuilder.getParameters());
+        return workLogQueryBuilder.getQuery();
     }
 
     private void validateWorkLog(ManageWorkLogDTO manageWorkLogDTO, Long existingWorkLogId) {
@@ -292,7 +387,7 @@ public class WorkLogService {
         return (hours * 60) + minutes;
     }
 
-    public WorkLog saveWorkLog(ManageWorkLogDTO manageWorkLogDTO, int totalMinutes) {
+    private WorkLog saveWorkLog(ManageWorkLogDTO manageWorkLogDTO, int totalMinutes) {
         try {
             WorkLog workLog = new WorkLog();
             workLog.setUser(AppConfig.getAuthenticatedCurrentUser());
@@ -315,7 +410,7 @@ public class WorkLogService {
         }
     }
 
-    public void saveWorkLogDetails(List<WorkLogDetail> allWorkLogDetails, WorkLog workLog) {
+    private void saveWorkLogDetails(List<WorkLogDetail> allWorkLogDetails, WorkLog workLog) {
         try {
             allWorkLogDetails.forEach(logDetail -> logDetail.setWorkLog(workLog));
             workLogDetailRepository.saveAll(allWorkLogDetails);
@@ -335,90 +430,5 @@ public class WorkLogService {
         }
         return workLog;
     }
-
-    public List<WorkLogTaskDTO> getWorkLogDetailSummary(String uuid) {
-        WorkLog workLog = validateWorkLogExistsAndHasPermission(uuid);
-        List<Map<String, Object>> workLogDetailGroups = workLogDetailRepository.getGroupedWorkLogDetailsByWorkLog(workLog);
-        return workLogDetailGroups.stream().map(worklogGroup -> {
-            WorkLogTaskDTO workLogTaskDTO = new WorkLogTaskDTO(worklogGroup.get("taskName").toString(), (String) worklogGroup.get("taskUrl"));
-            Integer totalMinutes = Integer.parseInt(worklogGroup.get("totalMinutes").toString());
-            workLogTaskDTO.setTotalHours(TrackeraTimeSpanUtil.formatDuration(totalMinutes, false));
-            workLogTaskDTO.setTotalMinutes(totalMinutes); // for sorting purpose
-            workLogTaskDTO.setStatus(WorkLogStatus.valueOf(worklogGroup.get("status").toString()));
-            return workLogTaskDTO;
-        }).toList();
-    }
-
-    public List<WorkLogEntryDTO> getWorkLogTaskDetails(String uuid, String taskName) {
-        WorkLog workLog = validateWorkLogExistsAndHasPermission(uuid);
-        List<WorkLogDetail> workLogDetails = workLogDetailRepository.findByWorkLogAndTaskName(workLog, taskName);
-        if (workLogDetails.isEmpty()) {
-            throw new NotFoundException("No logs found for the specified task in this worklog");
-        }
-        return workLogDetails.stream().map(workLogDetail -> {
-            WorkLogEntryDTO workLogEntryDTO = new WorkLogEntryDTO();
-            workLogEntryDTO.setId(workLogDetail.getUuid());
-            workLogEntryDTO.setFromTime(TrackeraTimeSpanUtil.getDateTime12hFormatter().format(workLogDetail.getStartTime()));
-            workLogEntryDTO.setToTime(TrackeraTimeSpanUtil.getDateTime12hFormatter().format(workLogDetail.getEndTime()));
-            workLogEntryDTO.setDuration(TrackeraTimeSpanUtil.formatDuration(workLogDetail.getDuration(), false));
-            workLogEntryDTO.setDescription(workLogDetail.getDescription());
-            workLogEntryDTO.setStatus(workLogDetail.isSynced() ? WorkLogStatus.SYNCED : WorkLogStatus.NOT_SYNCED);
-            return workLogEntryDTO;
-        }).toList();
-    }
-
-    @Transactional
-    public Map<String, Object> deleteWorkLogTaskDetails(String uuid, String taskName) {
-        WorkLog workLog = validateWorkLogExistsAndHasPermission(uuid);
-        List<WorkLogDetail> detailsToDelete = workLogDetailRepository.findByWorkLogAndTaskName(workLog, taskName);
-        if (detailsToDelete.isEmpty()) {
-            throw new NotFoundException("No logs found for the specified task in this worklog");
-        }
-        workLogDetailRepository.deleteAll(detailsToDelete);
-
-        List<WorkLogDetail> existingDetails = workLogDetailRepository.findAllByWorkLog(workLog);
-        Map<String, Object> result = new HashMap<>();
-        if (existingDetails.isEmpty()) {
-            workLogRepository.delete(workLog);
-            result.put("isLast", true);
-        } else {
-            int totalDeletedMinutes = detailsToDelete.stream().mapToInt(WorkLogDetail::getDuration).sum();
-            workLog.setTotalMinutes(workLog.getTotalMinutes() - totalDeletedMinutes);
-            workLogRepository.save(workLog);
-        }
-
-        result.put("message", "Task logs deleted successfully");
-        return result;
-    }
-
-    @Transactional
-    public Map<String, Object> deleteWorkLogTaskEntry(String uuid) {
-        WorkLogDetail workLogEntry = workLogDetailRepository.findByUuid(uuid);
-        if (workLogEntry == null) {
-            throw new NotFoundException("WorkLog entry not found");
-        }
-        WorkLog workLog = workLogEntry.getWorkLog();
-        if (!workLog.getUser().getId().equals(AppConfig.getAuthenticatedCurrentUser().getId())) {
-            throw new UnauthorizedException("You are not authorized to access this entry");
-        }
-
-        workLogDetailRepository.delete(workLogEntry);
-
-        Map<String, Object> result = new HashMap<>();
-        if (!workLogDetailRepository.existsByWorkLog(workLog)) {
-            workLogRepository.delete(workLog);
-            result.put("isLast", true);
-        } else {
-            int deletedDuration = workLogEntry.getDuration();
-            workLog.setTotalMinutes(workLog.getTotalMinutes() - deletedDuration);
-            workLogRepository.save(workLog);
-
-            if (!workLogDetailRepository.existsByWorkLogAndTaskName(workLog, workLogEntry.getTaskName())) {
-                result.put("isLastOfTask", true);
-            }
-        }
-
-        result.put("message", "WorkLog entry deleted successfully");
-        return result;
-    }
+    //</editor-fold>
 }

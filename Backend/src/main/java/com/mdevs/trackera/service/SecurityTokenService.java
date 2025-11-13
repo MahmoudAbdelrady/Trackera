@@ -29,6 +29,7 @@ public class SecurityTokenService {
         this.cryptoUtil = cryptoUtil;
     }
 
+    //<editor-fold desc="Retrieval">
     public SecurityToken validateAndGet(String token) {
         Map<String, String> tokenPayload = cryptoUtil.parseSecurityToken(token);
         if (tokenPayload == null || tokenPayload.isEmpty()) {
@@ -41,7 +42,9 @@ public class SecurityTokenService {
         }
         return securityRequestToken;
     }
+    //</editor-fold>
 
+    //<editor-fold desc="Creation and Update">
     @Transactional
     public void createAndSendSecurityToken(SecurityTokenBuilder builder) {
         if (hasRecentActivationToken(builder.getUser(), builder.getType())) {
@@ -68,12 +71,17 @@ public class SecurityTokenService {
                 .parameters(templateParameters)
                 .build().send();
     }
+    //</editor-fold>
 
-    public boolean hasRecentActivationToken(User user, SecurityToken.Type type) {
-        return securityTokenRepository.existsByUserAndTypeAndCreatedAtGreaterThanEqual(user, type, LocalDateTime.now().minusMinutes(MAX_SECURITY_TOKEN_MINUTES));
-    }
-
+    //<editor-fold desc="Deletion">
     public void deleteNonExpiredSecurityToken(User user, SecurityToken.Type type) {
         securityTokenRepository.deleteByUserAndTypeAndCreatedAtGreaterThanEqual(user, type, LocalDateTime.now().minusMinutes(MAX_SECURITY_TOKEN_MINUTES));
     }
+    //</editor-fold>
+
+    //<editor-fold desc="Validations">
+    public boolean hasRecentActivationToken(User user, SecurityToken.Type type) {
+        return securityTokenRepository.existsByUserAndTypeAndCreatedAtGreaterThanEqual(user, type, LocalDateTime.now().minusMinutes(MAX_SECURITY_TOKEN_MINUTES));
+    }
+    //</editor-fold>
 }

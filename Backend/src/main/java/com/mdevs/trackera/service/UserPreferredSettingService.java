@@ -22,6 +22,7 @@ public class UserPreferredSettingService {
         this.userPreferredSettingRepository = userPreferredSettingRepository;
     }
 
+    //<editor-fold desc="Retrieval">
     public List<Map<String, Object>> getAllByUser(User user) {
         return userPreferredSettingRepository.findAllByUser(user).stream().map(setting -> {
             Map<String, Object> settingInfo = new HashMap<>();
@@ -41,7 +42,9 @@ public class UserPreferredSettingService {
 
         return valueType == String.class ? valueType.cast(value) : AppUtils.convertJsonStringToObject(value, valueType);
     }
+    //</editor-fold>
 
+    //<editor-fold desc="Creation and Update">
     public void create(User user, String key, String value) {
         UserPreferredSetting preferredSetting = new UserPreferredSetting(user, key, value);
         userPreferredSettingRepository.save(preferredSetting);
@@ -59,11 +62,15 @@ public class UserPreferredSettingService {
             }
         }
     }
+    //</editor-fold>
 
+    //<editor-fold desc="Deletion">
     public void deleteByUserAndKey(User user, String key) {
         userPreferredSettingRepository.deleteByUserAndKey(user, key);
     }
+    //</editor-fold>
 
+    //<editor-fold desc="Validations">
     public void validatePreference(UserPreferenceDTO preferenceDTO) {
         if (StringUtils.isEmpty(preferenceDTO.getKey())) {
             throw new BusinessException("Preference key is required");
@@ -72,4 +79,5 @@ public class UserPreferredSettingService {
             throw new BusinessException("Preference value is required");
         }
     }
+    //</editor-fold>
 }
