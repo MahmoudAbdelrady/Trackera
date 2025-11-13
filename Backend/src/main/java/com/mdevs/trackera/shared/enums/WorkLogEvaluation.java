@@ -1,6 +1,6 @@
 package com.mdevs.trackera.shared.enums;
 
-import com.mdevs.trackera.utils.TrackeraTimeSpanUtil;
+import com.mdevs.trackera.shared.DurationFormatter;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -22,11 +22,11 @@ public enum WorkLogEvaluation implements BaseEnum {
     private final BigDecimal maxHours;
 
     public Integer getMinMinutes() {
-        return TrackeraTimeSpanUtil.hoursToMinutes(minHours);
+        return DurationFormatter.hoursToMinutes(minHours);
     }
 
     public Integer getMaxMinutes() {
-        return TrackeraTimeSpanUtil.hoursToMinutes(maxHours);
+        return DurationFormatter.hoursToMinutes(maxHours);
     }
 
     public boolean matches(Integer totalMinutes) {

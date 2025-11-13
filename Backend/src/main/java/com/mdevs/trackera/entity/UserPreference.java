@@ -12,7 +12,7 @@ import lombok.Setter;
 @AllArgsConstructor
 @Getter
 @Setter
-public class UserPreferredSetting extends BaseEntity {
+public class UserPreference extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     private User user;
 

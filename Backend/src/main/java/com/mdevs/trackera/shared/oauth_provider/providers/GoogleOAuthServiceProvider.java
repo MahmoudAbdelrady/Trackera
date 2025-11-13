@@ -10,15 +10,11 @@ import com.mdevs.trackera.dto.auth.OAuthAccessCredentialsDTO;
 import com.mdevs.trackera.dto.auth.OAuthUserInfoDTO;
 import com.mdevs.trackera.dto.auth.OAuthRequestDTO;
 import com.mdevs.trackera.entity.User;
-import com.mdevs.trackera.service.UserPreferredSettingService;
 import com.mdevs.trackera.shared.oauth_provider.OAuthProvider;
 import com.mdevs.trackera.shared.oauth_provider.OAuthServiceProvider;
-import com.mdevs.trackera.utils.OAuthUtil;
-import com.mdevs.trackera.utils.CryptoUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -33,10 +29,6 @@ public class GoogleOAuthServiceProvider extends OAuthServiceProvider {
     private String CLIENT_SECRET;
 
     private final static Logger LOGGER = LoggerFactory.getLogger(GoogleOAuthServiceProvider.class);
-
-    public GoogleOAuthServiceProvider(RedisTemplate<String, Object> redisTemplate, CryptoUtil cryptoUtil, OAuthUtil oAuthUtil, UserPreferredSettingService userPreferredSettingService) {
-        super(redisTemplate, cryptoUtil, oAuthUtil, userPreferredSettingService);
-    }
 
     @Override
     protected OAuthProvider getOAuthProvider() {

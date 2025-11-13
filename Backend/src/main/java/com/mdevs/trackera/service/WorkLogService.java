@@ -13,7 +13,7 @@ import com.mdevs.trackera.shared.enums.WorkLogStatus;
 import com.mdevs.trackera.shared.exceptions.types.BusinessException;
 import com.mdevs.trackera.shared.exceptions.types.NotFoundException;
 import com.mdevs.trackera.shared.exceptions.types.UnauthorizedException;
-import com.mdevs.trackera.utils.TrackeraTimeSpanUtil;
+import com.mdevs.trackera.shared.DurationFormatter;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.TypedQuery;
@@ -71,7 +71,7 @@ public class WorkLogService {
         List<WorkLogInfoDTO> workLogInfoDTOList = typedQuery.getResultList().stream().map(workLog -> {
             WorkLogInfoDTO workLogInfoDTO = modelMapper.map(workLog, WorkLogInfoDTO.class);
             workLogInfoDTO.setId(workLog.getUuid());
-            workLogInfoDTO.setTotalTime(TrackeraTimeSpanUtil.formatDuration(workLog.getTotalMinutes(), true));
+            workLogInfoDTO.setTotalTime(DurationFormatter.formatDuration(workLog.getTotalMinutes(), true));
             return workLogInfoDTO;
         }).toList();
 
@@ -87,7 +87,7 @@ public class WorkLogService {
         WorkLog workLog = validateWorkLogExistsAndHasPermission(uuid);
         WorkLogInfoDTO workLogInfoDTO = modelMapper.map(workLog, WorkLogInfoDTO.class);
         workLogInfoDTO.setId(workLog.getUuid());
-        workLogInfoDTO.setTotalTime(TrackeraTimeSpanUtil.formatDuration(workLog.getTotalMinutes(), true));
+        workLogInfoDTO.setTotalTime(DurationFormatter.formatDuration(workLog.getTotalMinutes(), true));
         return workLogInfoDTO;
     }
 
@@ -97,7 +97,7 @@ public class WorkLogService {
         return workLogDetailGroups.stream().map(worklogGroup -> {
             WorkLogTaskDTO workLogTaskDTO = new WorkLogTaskDTO(worklogGroup.get("taskName").toString(), (String) worklogGroup.get("taskUrl"));
             Integer totalMinutes = Integer.parseInt(worklogGroup.get("totalMinutes").toString());
-            workLogTaskDTO.setTotalHours(TrackeraTimeSpanUtil.formatDuration(totalMinutes, false));
+            workLogTaskDTO.setTotalHours(DurationFormatter.formatDuration(totalMinutes, false));
             workLogTaskDTO.setTotalMinutes(totalMinutes); // for sorting purpose
             workLogTaskDTO.setStatus(WorkLogStatus.valueOf(worklogGroup.get("status").toString()));
             return workLogTaskDTO;
@@ -113,9 +113,9 @@ public class WorkLogService {
         return workLogDetails.stream().map(workLogDetail -> {
             WorkLogEntryDTO workLogEntryDTO = new WorkLogEntryDTO();
             workLogEntryDTO.setId(workLogDetail.getUuid());
-            workLogEntryDTO.setFromTime(TrackeraTimeSpanUtil.getDateTime12hFormatter().format(workLogDetail.getStartTime()));
-            workLogEntryDTO.setToTime(TrackeraTimeSpanUtil.getDateTime12hFormatter().format(workLogDetail.getEndTime()));
-            workLogEntryDTO.setDuration(TrackeraTimeSpanUtil.formatDuration(workLogDetail.getDuration(), false));
+            workLogEntryDTO.setFromTime(DurationFormatter.getDateTime12hFormatter().format(workLogDetail.getStartTime()));
+            workLogEntryDTO.setToTime(DurationFormatter.getDateTime12hFormatter().format(workLogDetail.getEndTime()));
+            workLogEntryDTO.setDuration(DurationFormatter.formatDuration(workLogDetail.getDuration(), false));
             workLogEntryDTO.setDescription(workLogDetail.getDescription());
             workLogEntryDTO.setStatus(workLogDetail.isSynced() ? WorkLogStatus.SYNCED : WorkLogStatus.NOT_SYNCED);
             return workLogEntryDTO;
@@ -228,14 +228,14 @@ public class WorkLogService {
     //<editor-fold desc="Summary & Analytics">
     public List<WorkLogSummaryDTO> getCurrentMonthSummary() {
         LocalDate now = LocalDate.now();
-        DecimalFormat durationDecimalFormat = TrackeraTimeSpanUtil.getDurationDecimalFormat();
+        DecimalFormat durationDecimalFormat = DurationFormatter.getDurationDecimalFormat();
         int totalLogged = workLogRepository.sumTotalMinutesByUserAndWorkDateBetween(AppConfig.getAuthenticatedCurrentUser(), now.withDayOfMonth(1), now.withDayOfMonth(now.lengthOfMonth()));
         int targetMinutes = 200 * 60; // @TODO --> Should be based on user settings and user can choose decimal target hours
         int remainingMinutes = Math.max(targetMinutes - totalLogged, 0);
         return List.of(
-                new WorkLogSummaryDTO("Logged Hours", "Equivalent to " + TrackeraTimeSpanUtil.formatDuration(totalLogged, true), "logged", durationDecimalFormat.format(totalLogged / 60.0)),
-                new WorkLogSummaryDTO("Target Hours", "Equivalent to " + TrackeraTimeSpanUtil.formatDuration(targetMinutes, true), "target", durationDecimalFormat.format(targetMinutes / 60.0)),
-                new WorkLogSummaryDTO("Remaining Hours", "Equivalent to " + TrackeraTimeSpanUtil.formatDuration(remainingMinutes, true), "remaining", durationDecimalFormat.format(remainingMinutes / 60.0))
+                new WorkLogSummaryDTO("Logged Hours", "Equivalent to " + DurationFormatter.formatDuration(totalLogged, true), "logged", durationDecimalFormat.format(totalLogged / 60.0)),
+                new WorkLogSummaryDTO("Target Hours", "Equivalent to " + DurationFormatter.formatDuration(targetMinutes, true), "target", durationDecimalFormat.format(targetMinutes / 60.0)),
+                new WorkLogSummaryDTO("Remaining Hours", "Equivalent to " + DurationFormatter.formatDuration(remainingMinutes, true), "remaining", durationDecimalFormat.format(remainingMinutes / 60.0))
         );
     }
     //</editor-fold>
@@ -356,7 +356,7 @@ public class WorkLogService {
 
         if (expectedType == LocalTime.class) {
             try {
-                result = LocalTime.parse(cell, TrackeraTimeSpanUtil.getDateTime12hFormatter());
+                result = LocalTime.parse(cell, DurationFormatter.getDateTime12hFormatter());
             } catch (Exception e) {
                 throw new BusinessException("[" + cellName + "] Invalid time format. Expected format is hh:mm AM/PM");
             }
@@ -399,7 +399,7 @@ public class WorkLogService {
             } else {
                 DayOfWeek dayOfWeek = manageWorkLogDTO.getLogDate().getDayOfWeek();
                 String dayName = dayOfWeek.name().substring(0, 1).toUpperCase() + dayOfWeek.name().substring(1).toLowerCase();
-                String formattedDate = TrackeraTimeSpanUtil.getCompactedDateFormatter().format(manageWorkLogDTO.getLogDate());
+                String formattedDate = DurationFormatter.getCompactedDateFormatter().format(manageWorkLogDTO.getLogDate());
                 workLog.setName("Worklog - " + dayName + formattedDate);
             }
 

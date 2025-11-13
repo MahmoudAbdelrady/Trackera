@@ -1,4 +1,4 @@
-package com.mdevs.trackera.utils;
+package com.mdevs.trackera.shared;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -6,7 +6,7 @@ import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.time.format.DateTimeFormatter;
 
-public class TrackeraTimeSpanUtil {
+public class DurationFormatter {
     private static final SimpleDateFormat SIMPLE_12H_FORMAT = new SimpleDateFormat("hh:mm a");
 
     private static final DateTimeFormatter DATE_TIME_12H_FORMATTER = DateTimeFormatter.ofPattern("hh:mm a");

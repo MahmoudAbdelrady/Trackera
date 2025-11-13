@@ -4,7 +4,6 @@ import com.mdevs.trackera.shared.search_filter.SearchFilter;
 import com.mdevs.trackera.shared.enums.WorkLogEvaluation;
 import com.mdevs.trackera.shared.enums.WorkLogStatus;
 import com.mdevs.trackera.shared.search_filter.SearchOperator;
-import com.mdevs.trackera.utils.TrackeraTimeSpanUtil;
 import lombok.Getter;
 import org.apache.commons.lang3.StringUtils;
 
@@ -49,10 +48,10 @@ public class WorkLogQueryBuilder {
         if (totalHoursFilter == null) return this;
 
         query.append(" AND wl.totalMinutes ").append(totalHoursFilter.getOperator().getQuerySymbol()).append(" :totalHours");
-        parameters.put("totalHours", TrackeraTimeSpanUtil.hoursToMinutes(totalHoursFilter.getValue()));
+        parameters.put("totalHours", DurationFormatter.hoursToMinutes(totalHoursFilter.getValue()));
         if (totalHoursFilter.getOperator().equals(SearchOperator.BETWEEN)) {
             query.append(" AND :totalHoursSecond");
-            parameters.put("totalHoursSecond", TrackeraTimeSpanUtil.hoursToMinutes(totalHoursFilter.getSecondValue()));
+            parameters.put("totalHoursSecond", DurationFormatter.hoursToMinutes(totalHoursFilter.getSecondValue()));
         }
         return this;
     }

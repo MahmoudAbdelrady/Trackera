@@ -12,7 +12,7 @@ import com.mdevs.trackera.shared.exceptions.types.BusinessException;
 import com.mdevs.trackera.shared.exceptions.types.NotFoundException;
 import com.mdevs.trackera.shared.oauth_provider.OAuthProvider;
 import com.mdevs.trackera.utils.AppUtils;
-import com.mdevs.trackera.utils.TrackeraTimeSpanUtil;
+import com.mdevs.trackera.shared.DurationFormatter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -32,7 +32,7 @@ public class JiraService {
 
     private final UserOAuthProviderService userOAuthProviderService;
 
-    private final UserPreferredSettingService userPreferredSettingService;
+    private final UserPreferenceService userPreferenceService;
 
     public static final String JIRA_PRIMARY_PROJECT_SETTING_KEY = "jiraPrimaryProject";
 
@@ -56,10 +56,10 @@ public class JiraService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(JiraService.class);
 
-    public JiraService(RedisTemplate<String, Object> redisTemplate, UserOAuthProviderService userOAuthProviderService, UserPreferredSettingService userPreferredSettingService) {
+    public JiraService(RedisTemplate<String, Object> redisTemplate, UserOAuthProviderService userOAuthProviderService, UserPreferenceService userPreferenceService) {
         this.redisTemplate = redisTemplate;
         this.userOAuthProviderService = userOAuthProviderService;
-        this.userPreferredSettingService = userPreferredSettingService;
+        this.userPreferenceService = userPreferenceService;
     }
 
     //<editor-fold desc="Retrieval">
@@ -129,7 +129,7 @@ public class JiraService {
         List<JiraTaskDTO> jiraTasks = getTasksFromJira(user);
         List<JiraTaskDTO> currentTasks = jiraTasks.stream().filter(task -> !task.isResolved()).toList();
         List<JiraTaskDTO> overestimatedTasks = jiraTasks.stream().filter(task -> task.timeTracking().evaluation() == JiraTaskEvaluation.OVERESTIMATED).toList();
-        String lastUpdated = TrackeraTimeSpanUtil.getSimpleDateTimeFormatter().format(now);
+        String lastUpdated = DurationFormatter.getSimpleDateTimeFormatter().format(now);
 
         Map<String, Object> allTasks = new HashMap<>();
         allTasks.put("currentTasks", Map.of("total", currentTasks.size(), "data", currentTasks));
@@ -150,11 +150,11 @@ public class JiraService {
 
         if (forceUpdate) {
             LocalDateTime lastForceUpdate = Optional.ofNullable(redisTemplate.opsForValue().get(forceUpdateCacheKey))
-                    .map(date -> LocalDateTime.parse(date.toString(), TrackeraTimeSpanUtil.getSimpleDateTimeFormatter())).orElse(null);
+                    .map(date -> LocalDateTime.parse(date.toString(), DurationFormatter.getSimpleDateTimeFormatter())).orElse(null);
             return lastForceUpdate == null || lastForceUpdate.isBefore(now.minusMinutes(JIRA_TASKS_FORCE_FETCH_MINUTES_DURATION));
         }
 
-        LocalDateTime lastUpdated = LocalDateTime.parse(cachedData.get("lastUpdated").toString(), TrackeraTimeSpanUtil.getSimpleDateTimeFormatter());
+        LocalDateTime lastUpdated = LocalDateTime.parse(cachedData.get("lastUpdated").toString(), DurationFormatter.getSimpleDateTimeFormatter());
         return lastUpdated.isBefore(now.minusHours(JIRA_TASKS_FETCH_HOURS_DURATION));
     }
     //</editor-fold>
@@ -163,7 +163,7 @@ public class JiraService {
     private List<JiraTaskDTO> getTasksFromJira(User user) {
         List<JiraTaskDTO> jiraTasks = new ArrayList<>();
         UserOAuthProvider userOAuthProvider = userOAuthProviderService.validateAndGetOAuthProvider(user, OAuthProvider.JIRA);
-        JiraProjectDTO userJiraPrimaryProject = userPreferredSettingService.getPreferenceValue(user, JIRA_PRIMARY_PROJECT_SETTING_KEY, JiraProjectDTO.class);
+        JiraProjectDTO userJiraPrimaryProject = userPreferenceService.getPreferenceValue(user, JIRA_PRIMARY_PROJECT_SETTING_KEY, JiraProjectDTO.class);
         if (userJiraPrimaryProject == null) {
             throw new BusinessException("Jira primary project not set. Please set it in your settings.");
         }
@@ -220,7 +220,7 @@ public class JiraService {
                 jiraTaskEvaluation = JiraTaskEvaluation.ON_TIME;
             } else {
                 jiraTaskEvaluation = JiraTaskEvaluation.OVERESTIMATED;
-                notes = "Overestimated by " + TrackeraTimeSpanUtil.formatDuration((timeSpentSeconds - originalEstimateSeconds) / 60, true);
+                notes = "Overestimated by " + DurationFormatter.formatDuration((timeSpentSeconds - originalEstimateSeconds) / 60, true);
             }
         }
 

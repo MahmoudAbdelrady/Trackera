@@ -6,25 +6,28 @@ import com.mdevs.trackera.dto.auth.OAuthUserInfoDTO;
 import com.mdevs.trackera.dto.auth.OAuthRequestDTO;
 import com.mdevs.trackera.entity.User;
 import com.mdevs.trackera.entity.UserOAuthProvider;
-import com.mdevs.trackera.service.UserPreferredSettingService;
+import com.mdevs.trackera.service.UserPreferenceService;
 import com.mdevs.trackera.utils.OAuthUtil;
 import com.mdevs.trackera.utils.CryptoUtil;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.time.Duration;
 import java.util.Map;
 
-@RequiredArgsConstructor
 public abstract class OAuthServiceProvider {
-    private final RedisTemplate<String, Object> redisTemplate;
+    @Autowired
+    private RedisTemplate<String, Object> redisTemplate;
 
-    private final CryptoUtil cryptoUtil;
+    @Autowired
+    private CryptoUtil cryptoUtil;
 
-    private final OAuthUtil oAuthUtil;
+    @Autowired
+    private OAuthUtil oAuthUtil;
 
-    protected final UserPreferredSettingService userPreferredSettingService;
+    @Autowired
+    protected UserPreferenceService userPreferenceService;
 
     //<editor-fold> common methods
     protected String getRedirectUri() {

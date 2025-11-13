@@ -6,16 +6,12 @@ import com.mdevs.trackera.dto.auth.OAuthRequestDTO;
 import com.mdevs.trackera.dto.jira.JiraProjectDTO;
 import com.mdevs.trackera.entity.User;
 import com.mdevs.trackera.service.JiraService;
-import com.mdevs.trackera.service.UserPreferredSettingService;
 import com.mdevs.trackera.shared.oauth_provider.OAuthProvider;
 import com.mdevs.trackera.shared.oauth_provider.OAuthServiceProvider;
 import com.mdevs.trackera.utils.AppUtils;
-import com.mdevs.trackera.utils.OAuthUtil;
-import com.mdevs.trackera.utils.CryptoUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.*;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClientException;
@@ -34,10 +30,6 @@ public class JiraOAuthServiceProvider extends OAuthServiceProvider {
     private final static String JIRA_AUTH_BASE_URL = "https://auth.atlassian.com";
 
     private final static Logger LOGGER = LoggerFactory.getLogger(JiraOAuthServiceProvider.class);
-
-    public JiraOAuthServiceProvider(RedisTemplate<String, Object> redisTemplate, CryptoUtil cryptoUtil, OAuthUtil oAuthUtil, UserPreferredSettingService userPreferredSettingService) {
-        super(redisTemplate, cryptoUtil, oAuthUtil, userPreferredSettingService);
-    }
 
     @Override
     protected OAuthProvider getOAuthProvider() {
@@ -132,11 +124,11 @@ public class JiraOAuthServiceProvider extends OAuthServiceProvider {
     @Override
     public void handlePostLinkingActions(User user, OAuthUserInfoDTO userInfo) {
         String primaryProjectSetting = AppUtils.convertObjectToJsonString(userInfo.getAdditionalInfo().get(JiraService.JIRA_PRIMARY_PROJECT_SETTING_KEY));
-        userPreferredSettingService.create(user, JiraService.JIRA_PRIMARY_PROJECT_SETTING_KEY, primaryProjectSetting);
+        userPreferenceService.create(user, JiraService.JIRA_PRIMARY_PROJECT_SETTING_KEY, primaryProjectSetting);
     }
 
     @Override
     public void handlePostUnLinkingActions(User user) {
-        userPreferredSettingService.deleteByUserAndKey(user, JiraService.JIRA_PRIMARY_PROJECT_SETTING_KEY);
+        userPreferenceService.deleteByUserAndKey(user, JiraService.JIRA_PRIMARY_PROJECT_SETTING_KEY);
     }
 }

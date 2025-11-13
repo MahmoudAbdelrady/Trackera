@@ -39,7 +39,7 @@ public class UserService implements UserDetailsService {
 
     private final UserOAuthProviderService userOAuthProviderService;
 
-    private final UserPreferredSettingService userPreferredSettingService;
+    private final UserPreferenceService userPreferenceService;
 
     private final JiraService jiraService;
 
@@ -52,12 +52,12 @@ public class UserService implements UserDetailsService {
     public static final String EMAIL_REGEX = "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9-]+(?:\\.[a-zA-Z0-9-]+)*\\.[a-zA-Z]{2,}$";
 
     public UserService(UserRepository userRepository, UserEmailRepository userEmailRepository, UserEmailService userEmailService, UserOAuthProviderService userOAuthProviderService,
-                       UserPreferredSettingService userPreferredSettingService, JiraService jiraService, SecurityTokenService securityTokenService, ModelMapper modelMapper, PasswordEncoder passwordEncoder) {
+                       UserPreferenceService userPreferenceService, JiraService jiraService, SecurityTokenService securityTokenService, ModelMapper modelMapper, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.userEmailRepository = userEmailRepository;
         this.userEmailService = userEmailService;
         this.userOAuthProviderService = userOAuthProviderService;
-        this.userPreferredSettingService = userPreferredSettingService;
+        this.userPreferenceService = userPreferenceService;
         this.jiraService = jiraService;
         this.securityTokenService = securityTokenService;
         this.modelMapper = modelMapper;
@@ -99,7 +99,7 @@ public class UserService implements UserDetailsService {
     }
 
     public List<Map<String, Object>> getUserPreferences() {
-        List<Map<String, Object>> preferences = userPreferredSettingService.getAllByUser(AppConfig.getAuthenticatedCurrentUser());
+        List<Map<String, Object>> preferences = userPreferenceService.getAllByUser(AppConfig.getAuthenticatedCurrentUser());
         for (Map<String, Object> preference : preferences) {
             if (preference.get("key").equals(JiraService.JIRA_PRIMARY_PROJECT_SETTING_KEY)) {
                 jiraService.loadJiraPreference(preference);
@@ -111,12 +111,12 @@ public class UserService implements UserDetailsService {
     public void updateUserPreferences(List<UserPreferenceDTO> userPreferenceDTOList) {
         User loggedUser = AppConfig.getAuthenticatedCurrentUser();
         for (UserPreferenceDTO preferenceDTO : userPreferenceDTOList) {
-            userPreferredSettingService.validatePreference(preferenceDTO);
+            userPreferenceService.validatePreference(preferenceDTO);
             if (preferenceDTO.getKey().equals(JiraService.JIRA_PRIMARY_PROJECT_SETTING_KEY)) {
                 jiraService.handleJiraPreference(loggedUser, preferenceDTO);
             }
         }
-        userPreferredSettingService.updateAll(loggedUser, userPreferenceDTOList);
+        userPreferenceService.updateAll(loggedUser, userPreferenceDTOList);
     }
     //</editor-fold>
 
