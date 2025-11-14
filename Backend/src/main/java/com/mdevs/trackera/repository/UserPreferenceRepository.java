@@ -2,15 +2,16 @@ package com.mdevs.trackera.repository;
 
 import com.mdevs.trackera.entity.User;
 import com.mdevs.trackera.entity.UserPreference;
+import com.mdevs.trackera.shared.enums.UserPreferenceOption;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
 @Repository
 public interface UserPreferenceRepository extends BaseRepository<UserPreference> {
-    UserPreference findByUserAndKey(User user, String key);
+    UserPreference findByUserAndOption(User user, UserPreferenceOption option);
 
-    void deleteByUserAndKey(User user, String key);
+    void deleteByUserAndOption(User user, UserPreferenceOption option);
 
     List<UserPreference> findAllByUser(User user);
 }

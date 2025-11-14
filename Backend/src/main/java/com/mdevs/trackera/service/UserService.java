@@ -5,7 +5,7 @@ import com.mdevs.trackera.dto.auth.LoggedUserDTO;
 import com.mdevs.trackera.dto.auth.OAuthUserInfoDTO;
 import com.mdevs.trackera.dto.auth.PasswordDTO;
 import com.mdevs.trackera.dto.auth.SignUpDTO;
-import com.mdevs.trackera.dto.user.UserPreferenceDTO;
+import com.mdevs.trackera.dto.jira.JiraProjectDTO;
 import com.mdevs.trackera.entity.SecurityToken;
 import com.mdevs.trackera.entity.User;
 import com.mdevs.trackera.entity.UserEmail;
@@ -14,9 +14,11 @@ import com.mdevs.trackera.repository.UserEmailRepository;
 import com.mdevs.trackera.repository.UserRepository;
 import com.mdevs.trackera.shared.EmailTemplates;
 import com.mdevs.trackera.shared.SecurityTokenBuilder;
+import com.mdevs.trackera.shared.enums.UserPreferenceOption;
 import com.mdevs.trackera.shared.exceptions.types.BusinessException;
 import com.mdevs.trackera.oauth.OAuthProvider;
 import com.mdevs.trackera.shared.TrackeraEmailTarget;
+import com.mdevs.trackera.utils.AppUtils;
 import com.mdevs.trackera.utils.EmailTemplateUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.modelmapper.ModelMapper;
@@ -67,7 +69,7 @@ public class UserService implements UserDetailsService {
         return Optional.ofNullable(userRepository.findByPrimaryEmail(email)).orElseThrow(() -> new UsernameNotFoundException("Account not found."));
     }
 
-    //<editor-fold desc="User Info and Management">
+    //<editor-fold desc="User Info Retrieval">
     public LoggedUserDTO getMeInfo() {
         User loggedUser = AppConfig.getAuthenticatedCurrentUser();
         LoggedUserDTO loggedUserDTO = modelMapper.map(AppConfig.getAuthenticatedCurrentUser(), LoggedUserDTO.class);
@@ -96,25 +98,27 @@ public class UserService implements UserDetailsService {
         }).toList();
     }
 
-    public List<Map<String, Object>> getUserPreferences() {
-        List<Map<String, Object>> preferences = userPreferenceService.getAllByUser(AppConfig.getAuthenticatedCurrentUser());
-        for (Map<String, Object> preference : preferences) {
-            if (preference.get("key").equals(JiraService.JIRA_PRIMARY_PROJECT_SETTING_KEY)) {
-                jiraService.loadPreference(preference);
+    public Map<String, Object> getPreferences() {
+        Map<String, Object> preferences = userPreferenceService.getAll(AppConfig.getAuthenticatedCurrentUser());
+        for (Map.Entry<String, Object> preference : preferences.entrySet()) {
+            if (preference.getKey().equals(UserPreferenceOption.JIRA_PRIMARY_PROJECT.getCode())) {
+                preference.setValue(AppUtils.convertJsonStringToObject(preference.getValue().toString(), JiraProjectDTO.class));
             }
         }
         return preferences;
     }
+    //</editor-fold>
 
-    public void updateUserPreferences(List<UserPreferenceDTO> userPreferenceDTOList) {
-        User loggedUser = AppConfig.getAuthenticatedCurrentUser();
-        for (UserPreferenceDTO preferenceDTO : userPreferenceDTOList) {
-            userPreferenceService.validatePreference(preferenceDTO);
-            if (preferenceDTO.getKey().equals(JiraService.JIRA_PRIMARY_PROJECT_SETTING_KEY)) {
-                jiraService.handlePreference(loggedUser, preferenceDTO);
+    //<editor-fold desc="User Info Management">
+    public void updateUserPreferences(Map<String, Object> updatedPreferences) {
+        User currentUser = AppConfig.getAuthenticatedCurrentUser();
+        for (Map.Entry<String, Object> preference : updatedPreferences.entrySet()) {
+            userPreferenceService.validatePreference(preference);
+            if (preference.getKey().equals(UserPreferenceOption.JIRA_PRIMARY_PROJECT.getCode())) {
+                preference.setValue(AppUtils.convertObjectToJsonString(jiraService.findSiteById(currentUser, preference.getValue().toString())));
             }
         }
-        userPreferenceService.updateAll(loggedUser, userPreferenceDTOList);
+        userPreferenceService.updateAll(currentUser, updatedPreferences);
     }
     //</editor-fold>
 
@@ -134,7 +138,11 @@ public class UserService implements UserDetailsService {
 
         UserEmail userEmail = userEmailService.create(user, signUpDTO.getEmail());
         user.setPrimaryEmail(userEmail);
-        return userRepository.save(user);
+        userRepository.save(user);
+
+        userPreferenceService.create(user, UserPreferenceOption.WORKLOGS_MONTHLY_TARGET_HOURS, "200");
+
+        return user;
     }
 
     @Transactional
@@ -175,6 +183,9 @@ public class UserService implements UserDetailsService {
         UserEmail oAuthUserEmail = userEmailService.create(authenticatedUser, oAuthUserInfo.getEmail());
         authenticatedUser.setPrimaryEmail(oAuthUserEmail);
         userRepository.save(authenticatedUser);
+
+        userPreferenceService.create(authenticatedUser, UserPreferenceOption.WORKLOGS_MONTHLY_TARGET_HOURS, "200");
+
         return authenticatedUser;
     }
 

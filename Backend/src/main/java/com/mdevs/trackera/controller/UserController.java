@@ -1,14 +1,12 @@
 package com.mdevs.trackera.controller;
 
 import com.mdevs.trackera.dto.auth.PasswordDTO;
-import com.mdevs.trackera.dto.user.UserPreferenceDTO;
 import com.mdevs.trackera.service.UserService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -56,12 +54,12 @@ public class UserController {
 
     @GetMapping("/preferences")
     public ResponseEntity<?> GetPreferences() {
-        return new ResponseEntity<>(userService.getUserPreferences(), HttpStatus.OK);
+        return new ResponseEntity<>(userService.getPreferences(), HttpStatus.OK);
     }
 
     @PostMapping("/preferences")
-    public ResponseEntity<?> UpdatePreferences(@RequestBody List<UserPreferenceDTO> userPreferenceDTOList){
-        userService.updateUserPreferences(userPreferenceDTOList);
+    public ResponseEntity<?> UpdatePreferences(@RequestBody Map<String, Object> updatedPreferences){
+        userService.updateUserPreferences(updatedPreferences);
         return new ResponseEntity<>("Preferences updated successfully.", HttpStatus.OK);
     }
 }

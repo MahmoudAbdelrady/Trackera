@@ -8,6 +8,7 @@ import com.mdevs.trackera.entity.User;
 import com.mdevs.trackera.service.JiraService;
 import com.mdevs.trackera.oauth.OAuthProvider;
 import com.mdevs.trackera.oauth.OAuthServiceProvider;
+import com.mdevs.trackera.shared.enums.UserPreferenceOption;
 import com.mdevs.trackera.utils.AppUtils;
 import com.mdevs.trackera.utils.HttpUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -75,13 +76,13 @@ public class JiraOAuthServiceProvider extends OAuthServiceProvider {
 
     @Override
     public void handlePostLinkingActions(User user, OAuthUserInfoDTO userInfo) {
-        String primaryProjectSetting = AppUtils.convertObjectToJsonString(userInfo.getAdditionalInfo().get(JiraService.JIRA_PRIMARY_PROJECT_SETTING_KEY));
-        userPreferenceService.create(user, JiraService.JIRA_PRIMARY_PROJECT_SETTING_KEY, primaryProjectSetting);
+        String primaryProjectPreference = AppUtils.convertObjectToJsonString(userInfo.getAdditionalInfo().get(UserPreferenceOption.JIRA_PRIMARY_PROJECT.getCode()));
+        userPreferenceService.create(user, UserPreferenceOption.JIRA_PRIMARY_PROJECT, primaryProjectPreference);
     }
 
     @Override
     public void handlePostUnLinkingActions(User user) {
-        userPreferenceService.deleteByUserAndKey(user, JiraService.JIRA_PRIMARY_PROJECT_SETTING_KEY);
+        userPreferenceService.deleteByUserAndOption(user, UserPreferenceOption.JIRA_PRIMARY_PROJECT);
     }
 
     private OAuthAccessCredentialsDTO getJiraTokenResponse(String authCode, String codeVerifier) {
@@ -122,7 +123,7 @@ public class JiraOAuthServiceProvider extends OAuthServiceProvider {
         Long userId = securityParams.containsKey("userId") ? Long.parseLong(securityParams.get("userId")) : null;
         String[] names = parseDisplayName((String) userJiraInfo.get("displayName"));
         String avatarUrl = userJiraInfo.get("avatarUrls") != null && (userJiraInfo.get("avatarUrls") instanceof Map) ? ((Map<String, String>) userJiraInfo.get("avatarUrls")).get("48x48") : null;
-        Map<String, Object> additionalInfo = new HashMap<>(Map.of(JiraService.JIRA_PRIMARY_PROJECT_SETTING_KEY, primaryProject));
+        Map<String, Object> additionalInfo = new HashMap<>(Map.of(UserPreferenceOption.JIRA_PRIMARY_PROJECT.getCode(), primaryProject));
 
         return new OAuthUserInfoDTO(userId, userJiraInfo.get("emailAddress").toString(), names[0], names[1], avatarUrl, tokenResponse, additionalInfo);
     }

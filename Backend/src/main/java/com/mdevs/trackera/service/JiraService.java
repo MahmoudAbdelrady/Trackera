@@ -4,14 +4,13 @@ import com.mdevs.trackera.config.general.AppConfig;
 import com.mdevs.trackera.dto.jira.JiraProjectDTO;
 import com.mdevs.trackera.dto.jira.JiraTaskDTO;
 import com.mdevs.trackera.dto.jira.JiraTaskResponse;
-import com.mdevs.trackera.dto.user.UserPreferenceDTO;
 import com.mdevs.trackera.entity.User;
 import com.mdevs.trackera.entity.OAuthConnection;
+import com.mdevs.trackera.shared.enums.UserPreferenceOption;
 import com.mdevs.trackera.shared.enums.JiraTaskEvaluation;
 import com.mdevs.trackera.shared.exceptions.types.BusinessException;
 import com.mdevs.trackera.shared.exceptions.types.NotFoundException;
 import com.mdevs.trackera.oauth.OAuthProvider;
-import com.mdevs.trackera.utils.AppUtils;
 import com.mdevs.trackera.shared.DurationFormatter;
 import com.mdevs.trackera.utils.HttpUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -34,8 +33,6 @@ public class JiraService {
     private final OAuthConnectionService oAuthConnectionService;
 
     private final UserPreferenceService userPreferenceService;
-
-    public static final String JIRA_PRIMARY_PROJECT_SETTING_KEY = "jiraPrimaryProject";
 
     public static final String JIRA_API_BASE_URL = "https://api.atlassian.com/ex/jira/{cloudId}/rest/api/3";
 
@@ -95,22 +92,15 @@ public class JiraService {
         return resources;
     }
 
-    public void loadPreference(Map<String, Object> preference) {
-        JiraProjectDTO jiraProjectInfo = AppUtils.convertJsonStringToObject(preference.get("value").toString(), JiraProjectDTO.class);
-        preference.put("value", jiraProjectInfo);
+    public JiraProjectDTO findSiteById(User user, String siteId) {
+        return getUserSites(user).stream()
+                .filter(site -> site.getId().equals(siteId))
+                .findFirst()
+                .orElseThrow(() -> new NotFoundException("Site not found"));
     }
 
     public static String getApiUrl(JiraProjectDTO projectDTO) {
         return JIRA_API_BASE_URL.replace("{cloudId}", projectDTO.getId());
-    }
-    //</editor-fold>
-
-    //<editor-fold desc="Update & Management">
-    public void handlePreference(User loggedUser, UserPreferenceDTO preferenceDTO) {
-        JiraProjectDTO jiraProjectDTO = getUserSites(loggedUser).stream().filter(site -> site.getId().equals(preferenceDTO.getValue()))
-                .findFirst().orElseThrow(() -> new NotFoundException("Site not found"));
-
-        preferenceDTO.setValue(AppUtils.convertObjectToJsonString(jiraProjectDTO));
     }
     //</editor-fold>
 
@@ -163,7 +153,7 @@ public class JiraService {
     private List<JiraTaskDTO> getTasksFromJira(User user) {
         List<JiraTaskDTO> jiraTasks = new ArrayList<>();
         OAuthConnection connection = oAuthConnectionService.validateAndGetConnection(user, OAuthProvider.JIRA);
-        JiraProjectDTO userJiraPrimaryProject = userPreferenceService.getPreferenceValue(user, JIRA_PRIMARY_PROJECT_SETTING_KEY, JiraProjectDTO.class);
+        JiraProjectDTO userJiraPrimaryProject = (JiraProjectDTO) userPreferenceService.getPreferenceValue(user, UserPreferenceOption.JIRA_PRIMARY_PROJECT);
         if (userJiraPrimaryProject == null) {
             throw new BusinessException("Jira primary project not set. Please set it in your settings.");
         }

@@ -1,9 +1,9 @@
 package com.mdevs.trackera.service;
 
-import com.mdevs.trackera.dto.user.UserPreferenceDTO;
 import com.mdevs.trackera.entity.User;
 import com.mdevs.trackera.entity.UserPreference;
 import com.mdevs.trackera.repository.UserPreferenceRepository;
+import com.mdevs.trackera.shared.enums.UserPreferenceOption;
 import com.mdevs.trackera.shared.exceptions.types.BusinessException;
 import com.mdevs.trackera.utils.AppUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -11,7 +11,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 @Service
@@ -23,59 +22,60 @@ public class UserPreferenceService {
     }
 
     //<editor-fold desc="Retrieval">
-    public List<Map<String, Object>> getAllByUser(User user) {
-        return userPreferenceRepository.findAllByUser(user).stream().map(setting -> {
-            Map<String, Object> settingInfo = new HashMap<>();
-            settingInfo.put("key", setting.getKey());
-            settingInfo.put("value", setting.getValue());
-            return settingInfo;
-        }).toList();
+    public Map<String, Object> getAll(User user) {
+        Map<String, Object> preferencesMap = new HashMap<>();
+        userPreferenceRepository.findAllByUser(user).forEach(pref -> {
+            UserPreferenceOption option = pref.getOption();
+            preferencesMap.put(option.getCode(), AppUtils.convertValue(pref.getValue(), option.getValueType()));
+        });
+        return preferencesMap;
     }
 
-    public <T> T getPreferenceValue(User user, String key, Class<T> valueType) {
-        UserPreference setting = userPreferenceRepository.findByUserAndKey(user, key);
-        if (setting == null) {
+    public Object getPreferenceValue(User user, UserPreferenceOption option) {
+        UserPreference preference = userPreferenceRepository.findByUserAndOption(user, option);
+        if (preference == null) {
             return null;
         }
 
-        String value = setting.getValue();
+        String value = preference.getValue();
 
-        return valueType == String.class ? valueType.cast(value) : AppUtils.convertJsonStringToObject(value, valueType);
+        return AppUtils.convertValue(value, option.getValueType());
     }
     //</editor-fold>
 
     //<editor-fold desc="Creation and Update">
-    public void create(User user, String key, String value) {
-        UserPreference preference = new UserPreference(user, key, value);
+    public void create(User user, UserPreferenceOption option, String value) {
+        UserPreference preference = new UserPreference(user, option, value);
         userPreferenceRepository.save(preference);
     }
 
     @Transactional
-    public void updateAll(User user, List<UserPreferenceDTO> userPreferenceDTOList) {
-        for (UserPreferenceDTO dto : userPreferenceDTOList) {
-            UserPreference existingPreference = userPreferenceRepository.findByUserAndKey(user, dto.getKey());
+    public void updateAll(User user, Map<String, Object> updatedPreferences) {
+        for (Map.Entry<String, Object> preference : updatedPreferences.entrySet()) {
+            UserPreferenceOption option = UserPreferenceOption.fromCode(preference.getKey());
+            UserPreference existingPreference = userPreferenceRepository.findByUserAndOption(user, option);
             if (existingPreference != null) {
-                existingPreference.setValue(dto.getValue());
+                existingPreference.setValue(preference.getValue().toString());
                 userPreferenceRepository.save(existingPreference);
             } else {
-                create(user, dto.getKey(), dto.getValue());
+                create(user, option, preference.getValue().toString());
             }
         }
     }
     //</editor-fold>
 
     //<editor-fold desc="Deletion">
-    public void deleteByUserAndKey(User user, String key) {
-        userPreferenceRepository.deleteByUserAndKey(user, key);
+    public void deleteByUserAndOption(User user, UserPreferenceOption option) {
+        userPreferenceRepository.deleteByUserAndOption(user, option);
     }
     //</editor-fold>
 
     //<editor-fold desc="Validations">
-    public void validatePreference(UserPreferenceDTO preferenceDTO) {
-        if (StringUtils.isEmpty(preferenceDTO.getKey())) {
+    public void validatePreference(Map.Entry<String, Object> preference) {
+        if (StringUtils.isEmpty(preference.getKey())) {
             throw new BusinessException("Preference key is required");
         }
-        if (StringUtils.isEmpty(preferenceDTO.getValue())) {
+        if (preference.getValue() == null || StringUtils.isEmpty(preference.getValue().toString())) {
             throw new BusinessException("Preference value is required");
         }
     }
