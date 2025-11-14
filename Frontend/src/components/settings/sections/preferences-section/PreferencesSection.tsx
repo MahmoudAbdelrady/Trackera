@@ -1,4 +1,4 @@
-import { Button, Select, Spin } from "antd";
+import { Button, InputNumber, Select, Spin } from "antd";
 import { UserPreference } from "../../../";
 import classes from "./scss/preferences-section.module.css";
 import { showErrorToast, showSuccessToast } from "../../../../utils/toast-handler/showToast";
@@ -11,6 +11,7 @@ const PreferencesSection = () => {
   // preferences keys
   const PREFERENCE_KEYS = {
     JIRA_PRIMARY_PROJECT: "jiraPrimaryProject",
+    WORKLOGS_MONTHLY_TARGET_HOURS: "worklogsMonthlyTargetHours",
   };
 
   // user preferences
@@ -18,7 +19,7 @@ const PreferencesSection = () => {
   const [initialPreferences, setInitialPreferences] = useState<Record<string, any>>({});
   const [updatedPreferences, setUpdatedPreferences] = useState<Record<string, any>>({});
 
-  // jira site
+  // jira sites
   const [isFetchingSites, setIsFetchingSites] = useState<boolean>(false);
   const [jiraSites, setJiraSites] = useState<JiraSite[]>([]);
 
@@ -27,16 +28,11 @@ const PreferencesSection = () => {
     const fetchUserPreferences = async () => {
       try {
         const response = await requestInstance.get("/user/preferences");
-        const preferences: Record<string, any>[] = response.data;
+        const preferences: Record<string, any> = response.data;
 
-        const initialPrefs: Record<string, any> = {};
-        preferences.forEach((pref) => {
-          initialPrefs[pref.key] = pref.value;
-        });
-
-        setInitialPreferences(initialPrefs);
-        setUpdatedPreferences(initialPrefs);
-        setJiraSites([initialPrefs[PREFERENCE_KEYS.JIRA_PRIMARY_PROJECT] || []]);
+        setInitialPreferences(preferences);
+        setUpdatedPreferences(preferences);
+        setJiraSites([preferences[PREFERENCE_KEYS.JIRA_PRIMARY_PROJECT] || []]);
       } catch (error) {
         showErrorToast(error);
       }
@@ -66,18 +62,17 @@ const PreferencesSection = () => {
 
   const updateUserPreferences = async () => {
     setIsLoadingPreferences(true);
-    const preferencesArray = Object.entries(updatedPreferences).map(([key, value]) => ({
-      key,
-      value: key === PREFERENCE_KEYS.JIRA_PRIMARY_PROJECT ? value.id : value,
-    }));
     try {
-      const response = await requestInstance.post("/user/preferences", preferencesArray);
+      const response = await requestInstance.post("/user/preferences", updatedPreferences);
+      setInitialPreferences(updatedPreferences);
       showSuccessToast(response.data);
     } catch (error: any) {
       showErrorToast(error);
     }
     setIsLoadingPreferences(false);
   };
+
+  console.log({ initialPreferences, updatedPreferences, isEqual: isEqual(initialPreferences, updatedPreferences) });
 
   return (
     <div className={classes.preferences_section}>
@@ -98,6 +93,13 @@ const PreferencesSection = () => {
                 }
               }}
               onChange={(value) => handlePreferenceChange(PREFERENCE_KEYS.JIRA_PRIMARY_PROJECT, value)}
+            />
+          </UserPreference>
+          <UserPreference label="Worklog Monthly Target Hours">
+            <InputNumber
+              value={updatedPreferences[PREFERENCE_KEYS.WORKLOGS_MONTHLY_TARGET_HOURS]}
+              onChange={(value) => handlePreferenceChange(PREFERENCE_KEYS.WORKLOGS_MONTHLY_TARGET_HOURS, value)}
+              className={classes.preference_input}
             />
           </UserPreference>
           <Button type="primary" onClick={updateUserPreferences} loading={isLoadingPreferences} disabled={isEqual(initialPreferences, updatedPreferences)} className={classes.update_button}>

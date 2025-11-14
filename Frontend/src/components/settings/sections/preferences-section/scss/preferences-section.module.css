@@ -3,13 +3,16 @@
   justify-content: center;
   align-items: flex-start;
   flex-direction: column;
-  gap: 10px;
+  gap: 20px;
 }
 .preferences_section .loading_spinner {
   width: 100%;
 }
 .preferences_section .preference_select {
   min-width: 150px;
+}
+.preferences_section .preference_input {
+  color: #5c5c5c;
 }
 .preferences_section .update_button {
   align-self: flex-end;
