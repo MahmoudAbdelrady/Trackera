@@ -1,4 +1,4 @@
-package com.mdevs.trackera.shared.oauth_provider;
+package com.mdevs.trackera.oauth;
 
 import lombok.Getter;
 

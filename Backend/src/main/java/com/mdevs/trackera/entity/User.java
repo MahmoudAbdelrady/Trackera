@@ -43,7 +43,7 @@ public class User extends BaseEntity implements UserDetails {
     @ColumnDefault("false")
     private boolean isVerified = false;
 
-    @Formula("EXISTS (SELECT 1 FROM USEROAUTHPROVIDERS uap WHERE uap.USER_ID = ID)")
+    @Formula("EXISTS (SELECT 1 FROM OAUTHCONNECTIONS oac WHERE oac.USER_ID = ID)")
     @NotAudited
     private boolean isOAuth;
 

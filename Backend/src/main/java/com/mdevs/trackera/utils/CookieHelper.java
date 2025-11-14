@@ -11,6 +11,8 @@ import java.util.Arrays;
 public class CookieHelper {
     public static final String REFRESH_TOKEN_COOKIE_NAME = "refreshToken";
 
+    public static final int REFRESH_TOKEN_ROTATION_THRESHOLD_DAYS = 3;
+
     public Cookie create(String name, String value, boolean isHttpOnly, String path, int maxAge) {
         Cookie cookie = new Cookie(name, value);
         cookie.setHttpOnly(isHttpOnly);

@@ -2,8 +2,7 @@ package com.mdevs.trackera.job;
 
 import com.mdevs.trackera.entity.UserInvalidToken;
 import com.mdevs.trackera.repository.UserInvalidTokenRepository;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -14,12 +13,11 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Component
+@Slf4j
 public class UserInvalidTokenCleanUpJob {
     private final UserInvalidTokenRepository userInvalidTokenRepository;
 
     private final UserInvalidTokenCleanUpJob selfRef;
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(UserInvalidTokenCleanUpJob.class);
 
     public UserInvalidTokenCleanUpJob(UserInvalidTokenRepository userInvalidTokenRepository, @Lazy UserInvalidTokenCleanUpJob selfRef) {
         this.userInvalidTokenRepository = userInvalidTokenRepository;
@@ -38,7 +36,7 @@ public class UserInvalidTokenCleanUpJob {
                 try {
                     selfRef.deleteExpiredTokens(userInvalidTokens);
                 } catch (Exception e) {
-                    LOGGER.error("Error while deleting expired user invalid tokens in batch: {} Error:\n{}", maxId, e.getMessage());
+                    log.error("Error while deleting expired user invalid tokens in batch: {} Error:\n{}", maxId, e.getMessage());
                 }
                 maxId = userInvalidTokens.getLast().getId();
             }

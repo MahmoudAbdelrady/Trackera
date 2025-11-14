@@ -3,8 +3,7 @@ package com.mdevs.trackera.config.security;
 import com.mdevs.trackera.shared.ApiScanner;
 import com.mdevs.trackera.shared.annotations.PublicAPI;
 import jakarta.annotation.PostConstruct;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.util.AntPathMatcher;
 import org.springframework.web.bind.annotation.*;
@@ -15,6 +14,7 @@ import java.util.Map;
 import java.util.Set;
 
 @Configuration
+@Slf4j
 public class ApiConfig {
     private Map<Class<? extends Annotation>, Map<String, String>> customAnnotatedApis;
 
@@ -24,8 +24,6 @@ public class ApiConfig {
 
     private static final String BASE_CONTROLLER_PACKAGE = "com.mdevs.trackera.controller";
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(ApiConfig.class);
-
     public ApiConfig(ApiScanner apiScanner) {
         this.apiScanner = apiScanner;
     }
@@ -34,9 +32,9 @@ public class ApiConfig {
     public void init() {
         try {
             customAnnotatedApis = Collections.unmodifiableMap(apiScanner.scanCustomAnnotatedApis(BASE_CONTROLLER_PACKAGE, Set.of(PublicAPI.class)));
-            LOGGER.info("Scanned {} public APIs", customAnnotatedApis.getOrDefault(PublicAPI.class, Map.of()).size());
+            log.info("Scanned {} public APIs", customAnnotatedApis.getOrDefault(PublicAPI.class, Map.of()).size());
         } catch (Exception e) {
-            LOGGER.error("Error scanning custom annotated APIs: ", e);
+            log.error("Error scanning custom annotated APIs: ", e);
             this.customAnnotatedApis = Map.of();
         }
     }

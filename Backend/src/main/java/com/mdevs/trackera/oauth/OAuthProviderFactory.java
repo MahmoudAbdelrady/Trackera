@@ -1,7 +1,7 @@
-package com.mdevs.trackera.shared.oauth_provider;
+package com.mdevs.trackera.oauth;
 
-import com.mdevs.trackera.shared.oauth_provider.providers.GoogleOAuthServiceProvider;
-import com.mdevs.trackera.shared.oauth_provider.providers.JiraOAuthServiceProvider;
+import com.mdevs.trackera.oauth.providers.GoogleOAuthServiceProvider;
+import com.mdevs.trackera.oauth.providers.JiraOAuthServiceProvider;
 import org.springframework.stereotype.Component;
 
 @Component

@@ -3,8 +3,7 @@ package com.mdevs.trackera.job;
 import com.mdevs.trackera.entity.SecurityToken;
 import com.mdevs.trackera.repository.SecurityTokenRepository;
 import com.mdevs.trackera.service.SecurityTokenService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -15,12 +14,11 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Component
+@Slf4j
 public class SecurityTokenCleanUpJob {
     private final SecurityTokenRepository securityTokenRepository;
 
     private final SecurityTokenCleanUpJob selfRef;
-
-    private final static Logger LOGGER = LoggerFactory.getLogger(SecurityTokenCleanUpJob.class);
 
     public SecurityTokenCleanUpJob(SecurityTokenRepository securityTokenRepository, @Lazy SecurityTokenCleanUpJob securityTokenCleanUpJob) {
         this.securityTokenRepository = securityTokenRepository;
@@ -39,7 +37,7 @@ public class SecurityTokenCleanUpJob {
                 try {
                     selfRef.deleteExpiredTokens(securityTokens);
                 } catch (Exception e) {
-                    LOGGER.error("Error while deleting expired security request tokens in batch: {} Error:\n{}", maxId, e.getMessage());
+                    log.error("Error while deleting expired security request tokens in batch: {} Error:\n{}", maxId, e.getMessage());
                 }
                 maxId = securityTokens.getLast().getId();
             }

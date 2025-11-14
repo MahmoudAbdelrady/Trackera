@@ -6,15 +6,15 @@ import com.mdevs.trackera.dto.jira.JiraTaskDTO;
 import com.mdevs.trackera.dto.jira.JiraTaskResponse;
 import com.mdevs.trackera.dto.user.UserPreferenceDTO;
 import com.mdevs.trackera.entity.User;
-import com.mdevs.trackera.entity.UserOAuthProvider;
+import com.mdevs.trackera.entity.OAuthConnection;
 import com.mdevs.trackera.shared.enums.JiraTaskEvaluation;
 import com.mdevs.trackera.shared.exceptions.types.BusinessException;
 import com.mdevs.trackera.shared.exceptions.types.NotFoundException;
-import com.mdevs.trackera.shared.oauth_provider.OAuthProvider;
+import com.mdevs.trackera.oauth.OAuthProvider;
 import com.mdevs.trackera.utils.AppUtils;
 import com.mdevs.trackera.shared.DurationFormatter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.mdevs.trackera.utils.HttpUtil;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.*;
 import org.springframework.retry.annotation.Backoff;
@@ -27,10 +27,11 @@ import java.time.LocalDateTime;
 import java.util.*;
 
 @Service
+@Slf4j
 public class JiraService {
     private final RedisTemplate<String, Object> redisTemplate;
 
-    private final UserOAuthProviderService userOAuthProviderService;
+    private final OAuthConnectionService oAuthConnectionService;
 
     private final UserPreferenceService userPreferenceService;
 
@@ -54,18 +55,16 @@ public class JiraService {
 
     private static final Duration USER_JIRA_TASKS_FORCE_UPDATE_CACHE_TTL = Duration.ofMinutes(JIRA_TASKS_FORCE_FETCH_MINUTES_DURATION);
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(JiraService.class);
-
-    public JiraService(RedisTemplate<String, Object> redisTemplate, UserOAuthProviderService userOAuthProviderService, UserPreferenceService userPreferenceService) {
+    public JiraService(RedisTemplate<String, Object> redisTemplate, OAuthConnectionService oAuthConnectionService, UserPreferenceService userPreferenceService) {
         this.redisTemplate = redisTemplate;
-        this.userOAuthProviderService = userOAuthProviderService;
+        this.oAuthConnectionService = oAuthConnectionService;
         this.userPreferenceService = userPreferenceService;
     }
 
     //<editor-fold desc="Retrieval">
     public Map<String, Object> getUserTasks(boolean forceUpdate) {
         User currentUser = AppConfig.getAuthenticatedCurrentUser();
-        userOAuthProviderService.validateAndGetOAuthProvider(currentUser, OAuthProvider.JIRA);
+        oAuthConnectionService.validateAndGetConnection(currentUser, OAuthProvider.JIRA);
 
         String cacheKey = USER_JIRA_TASKS_CACHE_KEY_PREFIX + currentUser.getId();
         String forceUpdateCacheKey = USER_JIRA_TASKS_FORCE_UPDATE_CACHE_KEY_PREFIX + currentUser.getId();
@@ -82,31 +81,32 @@ public class JiraService {
     }
 
     public List<JiraProjectDTO> getUserSites(User user) {
-        UserOAuthProvider userOAuthProvider = userOAuthProviderService.validateAndGetOAuthProvider(user, OAuthProvider.JIRA);
+        OAuthConnection connection = oAuthConnectionService.validateAndGetConnection(user, OAuthProvider.JIRA);
         String cacheKey = USER_JIRA_SITES_FETCH_CACHE_KEY_PREFIX + user.getId();
         List<JiraProjectDTO> resources = fetchFromCache(user, cacheKey, List.class);
         if (resources != null) {
             return resources;
         }
 
-        String accessToken = userOAuthProviderService.resolveValidAccessToken(userOAuthProvider);
-        HttpHeaders headers = new HttpHeaders();
-        headers.setBearerAuth(accessToken);
-        headers.setAccept(List.of(MediaType.APPLICATION_JSON));
-        resources = Arrays.asList(callJiraApi("https://api.atlassian.com/oauth/token/accessible-resources", HttpMethod.GET, headers, userOAuthProvider, JiraProjectDTO[].class));
+        String accessToken = oAuthConnectionService.resolveValidAccessToken(connection);
+        resources = Arrays.asList(callJiraApi("https://api.atlassian.com/oauth/token/accessible-resources", HttpMethod.GET, HttpUtil.createBearerAuthEntity(accessToken), connection, JiraProjectDTO[].class));
         redisTemplate.opsForValue().set(cacheKey, resources, Duration.ofMinutes(JIRA_SITES_FETCH_MINUTES_DURATION));
 
         return resources;
     }
 
-    public void loadJiraPreference(Map<String, Object> preference) {
+    public void loadPreference(Map<String, Object> preference) {
         JiraProjectDTO jiraProjectInfo = AppUtils.convertJsonStringToObject(preference.get("value").toString(), JiraProjectDTO.class);
         preference.put("value", jiraProjectInfo);
+    }
+
+    public static String getApiUrl(JiraProjectDTO projectDTO) {
+        return JIRA_API_BASE_URL.replace("{cloudId}", projectDTO.getId());
     }
     //</editor-fold>
 
     //<editor-fold desc="Update & Management">
-    public void handleJiraPreference(User loggedUser, UserPreferenceDTO preferenceDTO) {
+    public void handlePreference(User loggedUser, UserPreferenceDTO preferenceDTO) {
         JiraProjectDTO jiraProjectDTO = getUserSites(loggedUser).stream().filter(site -> site.getId().equals(preferenceDTO.getValue()))
                 .findFirst().orElseThrow(() -> new NotFoundException("Site not found"));
 
@@ -120,7 +120,7 @@ public class JiraService {
             Object cachedData = redisTemplate.opsForValue().get(cacheKey);
             return cachedData != null ? resultType.cast(cachedData) : null;
         } catch (Exception e) {
-            LOGGER.error("Error while fetching cached Jira data for user with id: {}, and cache key: {}", user.getId(), cacheKey, e);
+            log.error("Error while fetching cached Jira data for user with id: {}, and cache key: {}", user.getId(), cacheKey, e);
             return null;
         }
     }
@@ -162,24 +162,21 @@ public class JiraService {
     //<editor-fold desc="Integration & Processing">
     private List<JiraTaskDTO> getTasksFromJira(User user) {
         List<JiraTaskDTO> jiraTasks = new ArrayList<>();
-        UserOAuthProvider userOAuthProvider = userOAuthProviderService.validateAndGetOAuthProvider(user, OAuthProvider.JIRA);
+        OAuthConnection connection = oAuthConnectionService.validateAndGetConnection(user, OAuthProvider.JIRA);
         JiraProjectDTO userJiraPrimaryProject = userPreferenceService.getPreferenceValue(user, JIRA_PRIMARY_PROJECT_SETTING_KEY, JiraProjectDTO.class);
         if (userJiraPrimaryProject == null) {
             throw new BusinessException("Jira primary project not set. Please set it in your settings.");
         }
 
-        String accessToken = userOAuthProviderService.resolveValidAccessToken(userOAuthProvider);
-        HttpHeaders headers = new HttpHeaders();
-        headers.setBearerAuth(accessToken);
-        headers.setAccept(List.of(MediaType.APPLICATION_JSON));
+        String accessToken = oAuthConnectionService.resolveValidAccessToken(connection);
         Map<String, Object> jiraResponse;
-        String url = JIRA_API_BASE_URL.replace("{cloudId}", userJiraPrimaryProject.getId()) + "/search/jql?jql=" + getJiraTasksSearchCondition() + "&fields=key,summary,status,timetracking,project,resolution";
+        String url = getApiUrl(userJiraPrimaryProject) + "/search/jql?jql=" + getJiraTasksSearchCondition() + "&fields=key,summary,status,timetracking,project,resolution";
         String nextPageToken = null;
         boolean isLast;
 
         do {
             String pagedUrl = url + (nextPageToken != null ? "&nextPageToken=" + nextPageToken : "");
-            jiraResponse = callJiraApi(pagedUrl, HttpMethod.GET, headers, userOAuthProvider, Map.class);
+            jiraResponse = callJiraApi(pagedUrl, HttpMethod.GET, HttpUtil.createBearerAuthEntity(accessToken), connection, Map.class);
             processJiraResponseTasks(jiraResponse, userJiraPrimaryProject, jiraTasks);
             isLast = (boolean) jiraResponse.get("isLast");
             nextPageToken = (String) jiraResponse.get("nextPageToken");
@@ -253,20 +250,19 @@ public class JiraService {
     }
 
     @Retryable(retryFor = Exception.class, backoff = @Backoff(delay = 1000, multiplier = 3))
-    private <T> T callJiraApi(String url, HttpMethod method, HttpHeaders headers, UserOAuthProvider userOAuthProvider, Class<T> responseType) {
+    private <T> T callJiraApi(String url, HttpMethod method, HttpEntity<Void> entity, OAuthConnection OAuthConnection, Class<T> responseType) {
         try {
-            HttpEntity<Void> entity = new HttpEntity<>(headers);
-            ResponseEntity<T> response = AppUtils.getRestTemplate().exchange(url, method, entity, responseType);
+            ResponseEntity<T> response = HttpUtil.getRestTemplate().exchange(url, method, entity, responseType);
 
             if (response.getStatusCode() == HttpStatus.UNAUTHORIZED) {
-                String newAccessToken = userOAuthProviderService.resolveValidAccessToken(userOAuthProvider);
+                String newAccessToken = oAuthConnectionService.resolveValidAccessToken(OAuthConnection);
 
                 HttpHeaders newHeaders = new HttpHeaders();
                 newHeaders.putAll(entity.getHeaders());
                 newHeaders.setBearerAuth(newAccessToken);
                 entity = new HttpEntity<>(newHeaders);
 
-                response = AppUtils.getRestTemplate().exchange(url, method, entity, responseType);
+                response = HttpUtil.getRestTemplate().exchange(url, method, entity, responseType);
             }
 
             if (!response.getStatusCode().is2xxSuccessful()) {

@@ -2,6 +2,7 @@ package com.mdevs.trackera.shared;
 
 import com.mdevs.trackera.shared.enums.WorkLogColumn;
 import com.mdevs.trackera.shared.exceptions.types.BusinessException;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
@@ -9,8 +10,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.apache.tika.Tika;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -22,11 +21,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+@Slf4j
 public class FileHandler {
 
-    private final static Tika tika = new Tika();
+    private static final Tika tika = new Tika();
 
-    private final static List<String> ALLOWED_MIME_TYPES = List.of(
+    private static final List<String> ALLOWED_MIME_TYPES = List.of(
             "application/vnd.ms-excel",
             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             "text/csv",
@@ -34,21 +34,19 @@ public class FileHandler {
             "application/vnd.google-apps.spreadsheet"
     );
 
-    private final static Logger LOGGER = LoggerFactory.getLogger(FileHandler.class);
-
-    private final static int MAX_WORKLOG_ROWS = 300;
+    private static final int MAX_WORKLOG_ROWS = 300;
 
     public static List<Map<WorkLogColumn, String>> validateAndParse(MultipartFile workLogFile) {
         String mimeType;
         try {
             mimeType = tika.detect(workLogFile.getInputStream(), workLogFile.getOriginalFilename());
         } catch (Exception e) {
-            LOGGER.error("Could not detect mime type for file {}", workLogFile.getOriginalFilename(), e);
+            log.error("Could not detect mime type for file {}", workLogFile.getOriginalFilename(), e);
             throw new IllegalArgumentException("Error uploading file: " + workLogFile.getOriginalFilename());
         }
 
         if (!ALLOWED_MIME_TYPES.contains(mimeType)) {
-            LOGGER.error("Invalid MIME type detected for file {}, Detected mime type: {}", workLogFile.getOriginalFilename(), mimeType);
+            log.error("Invalid MIME type detected for file {}, Detected mime type: {}", workLogFile.getOriginalFilename(), mimeType);
             throw new BusinessException("The uploaded file type is not supported. Allowed types are excel and csv files only.");
         }
         return parseWorklogFile(workLogFile);
@@ -63,7 +61,7 @@ public class FileHandler {
             List<Map<WorkLogColumn, String>> parsedData = fileName.toLowerCase().endsWith(".xlsx") ? parseExcel(inputStream) : parseCsv(inputStream);
             return parsedData.stream().filter(row -> !isRowEmpty(row)).toList();
         } catch (Exception ex) {
-            LOGGER.error("Error parsing worklog file", ex);
+            log.error("Error parsing worklog file", ex);
             throw new RuntimeException(ex.getMessage());
         }
     }

@@ -46,17 +46,17 @@ public class UserPreferenceService {
 
     //<editor-fold desc="Creation and Update">
     public void create(User user, String key, String value) {
-        UserPreference preferredSetting = new UserPreference(user, key, value);
-        userPreferenceRepository.save(preferredSetting);
+        UserPreference preference = new UserPreference(user, key, value);
+        userPreferenceRepository.save(preference);
     }
 
     @Transactional
     public void updateAll(User user, List<UserPreferenceDTO> userPreferenceDTOList) {
         for (UserPreferenceDTO dto : userPreferenceDTOList) {
-            UserPreference existingSetting = userPreferenceRepository.findByUserAndKey(user, dto.getKey());
-            if (existingSetting != null) {
-                existingSetting.setValue(dto.getValue());
-                userPreferenceRepository.save(existingSetting);
+            UserPreference existingPreference = userPreferenceRepository.findByUserAndKey(user, dto.getKey());
+            if (existingPreference != null) {
+                existingPreference.setValue(dto.getValue());
+                userPreferenceRepository.save(existingPreference);
             } else {
                 create(user, dto.getKey(), dto.getValue());
             }

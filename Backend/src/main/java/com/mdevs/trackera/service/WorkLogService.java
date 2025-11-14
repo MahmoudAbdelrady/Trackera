@@ -17,10 +17,9 @@ import com.mdevs.trackera.shared.DurationFormatter;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.TypedQuery;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.modelmapper.ModelMapper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -38,6 +37,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 @Service
+@Slf4j
 public class WorkLogService {
     private final WorkLogRepository workLogRepository;
 
@@ -48,9 +48,7 @@ public class WorkLogService {
     @PersistenceContext
     private EntityManager entityManager;
 
-    private final static Pattern DURATION_PATTERN = Pattern.compile("(?:(\\d+)h)?\\s*(?:(\\d+)m)?");
-
-    private final static Logger LOGGER = LoggerFactory.getLogger(WorkLogService.class);
+    private static final Pattern DURATION_PATTERN = Pattern.compile("(?:(\\d+)h)?\\s*(?:(\\d+)m)?");
 
     public WorkLogService(WorkLogRepository workLogRepository, WorkLogDetailRepository workLogDetailRepository, ModelMapper modelMapper) {
         this.workLogRepository = workLogRepository;
@@ -84,7 +82,7 @@ public class WorkLogService {
     }
 
     public WorkLogInfoDTO getWorkLogByUUID(String uuid) {
-        WorkLog workLog = validateWorkLogExistsAndHasPermission(uuid);
+        WorkLog workLog = ensureWorkLogExistsAndHasPermission(uuid);
         WorkLogInfoDTO workLogInfoDTO = modelMapper.map(workLog, WorkLogInfoDTO.class);
         workLogInfoDTO.setId(workLog.getUuid());
         workLogInfoDTO.setTotalTime(DurationFormatter.formatDuration(workLog.getTotalMinutes(), true));
@@ -92,7 +90,7 @@ public class WorkLogService {
     }
 
     public List<WorkLogTaskDTO> getWorkLogDetailSummary(String uuid) {
-        WorkLog workLog = validateWorkLogExistsAndHasPermission(uuid);
+        WorkLog workLog = ensureWorkLogExistsAndHasPermission(uuid);
         List<Map<String, Object>> workLogDetailGroups = workLogDetailRepository.getGroupedWorkLogDetailsByWorkLog(workLog);
         return workLogDetailGroups.stream().map(worklogGroup -> {
             WorkLogTaskDTO workLogTaskDTO = new WorkLogTaskDTO(worklogGroup.get("taskName").toString(), (String) worklogGroup.get("taskUrl"));
@@ -105,7 +103,7 @@ public class WorkLogService {
     }
 
     public List<WorkLogEntryDTO> getWorkLogTaskDetails(String uuid, String taskName) {
-        WorkLog workLog = validateWorkLogExistsAndHasPermission(uuid);
+        WorkLog workLog = ensureWorkLogExistsAndHasPermission(uuid);
         List<WorkLogDetail> workLogDetails = workLogDetailRepository.findByWorkLogAndTaskName(workLog, taskName);
         if (workLogDetails.isEmpty()) {
             throw new NotFoundException("No logs found for the specified task in this worklog");
@@ -139,7 +137,7 @@ public class WorkLogService {
 
     @Transactional
     public Map<String, Object> updateWorkLog(String uuid, ManageWorkLogDTO manageWorkLogDTO, MultipartFile worklogFile) {
-        WorkLog workLog = validateWorkLogExistsAndHasPermission(uuid);
+        WorkLog workLog = ensureWorkLogExistsAndHasPermission(uuid);
         validateWorkLog(manageWorkLogDTO, workLog.getId());
 
         if (worklogFile != null) {
@@ -164,14 +162,14 @@ public class WorkLogService {
     //<editor-fold desc="Deletion">
     @Transactional
     public void deleteWorkLog(String uuid) {
-        WorkLog workLog = validateWorkLogExistsAndHasPermission(uuid);
+        WorkLog workLog = ensureWorkLogExistsAndHasPermission(uuid);
         workLogDetailRepository.deleteAllByWorkLog(workLog);
         workLogRepository.delete(workLog);
     }
 
     @Transactional
     public Map<String, Object> deleteWorkLogTaskDetails(String uuid, String taskName) {
-        WorkLog workLog = validateWorkLogExistsAndHasPermission(uuid);
+        WorkLog workLog = ensureWorkLogExistsAndHasPermission(uuid);
         List<WorkLogDetail> detailsToDelete = workLogDetailRepository.findByWorkLogAndTaskName(workLog, taskName);
         if (detailsToDelete.isEmpty()) {
             throw new NotFoundException("No logs found for the specified task in this worklog");
@@ -274,7 +272,7 @@ public class WorkLogService {
         try {
             parsedData = FileHandler.validateAndParse(worklogFile);
         } catch (Exception ex) {
-            LOGGER.error("Error processing worklog file", ex);
+            log.error("Error processing worklog file", ex);
             throw new RuntimeException(ex.getMessage());
         }
 
@@ -405,7 +403,7 @@ public class WorkLogService {
 
             return workLogRepository.save(workLog);
         } catch (Exception e) {
-            LOGGER.error("Error saving worklog", e);
+            log.error("Error saving worklog", e);
             throw new RuntimeException(e.getMessage());
         }
     }
@@ -414,13 +412,13 @@ public class WorkLogService {
         try {
             allWorkLogDetails.forEach(logDetail -> logDetail.setWorkLog(workLog));
             workLogDetailRepository.saveAll(allWorkLogDetails);
-        } catch (Exception e) {
-            LOGGER.error("Error saving worklog details", e);
-            throw new RuntimeException(e.getMessage());
+        } catch (Exception exception) {
+            log.error("Error saving worklog details", exception);
+            throw new RuntimeException(exception.getMessage());
         }
     }
 
-    private WorkLog validateWorkLogExistsAndHasPermission(String uuid) {
+    private WorkLog ensureWorkLogExistsAndHasPermission(String uuid) {
         WorkLog workLog = workLogRepository.findByUserAndUuid(AppConfig.getAuthenticatedCurrentUser(), uuid);
         if (workLog == null) {
             throw new NotFoundException("WorkLog not found");

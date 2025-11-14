@@ -9,13 +9,13 @@ import com.mdevs.trackera.dto.user.UserPreferenceDTO;
 import com.mdevs.trackera.entity.SecurityToken;
 import com.mdevs.trackera.entity.User;
 import com.mdevs.trackera.entity.UserEmail;
-import com.mdevs.trackera.entity.UserOAuthProvider;
+import com.mdevs.trackera.entity.OAuthConnection;
 import com.mdevs.trackera.repository.UserEmailRepository;
 import com.mdevs.trackera.repository.UserRepository;
 import com.mdevs.trackera.shared.EmailTemplates;
 import com.mdevs.trackera.shared.SecurityTokenBuilder;
 import com.mdevs.trackera.shared.exceptions.types.BusinessException;
-import com.mdevs.trackera.shared.oauth_provider.OAuthProvider;
+import com.mdevs.trackera.oauth.OAuthProvider;
 import com.mdevs.trackera.shared.TrackeraEmailTarget;
 import com.mdevs.trackera.utils.EmailTemplateUtil;
 import org.apache.commons.lang3.StringUtils;
@@ -37,7 +37,7 @@ public class UserService implements UserDetailsService {
 
     private final UserEmailService userEmailService;
 
-    private final UserOAuthProviderService userOAuthProviderService;
+    private final OAuthConnectionService oAuthConnectionService;
 
     private final UserPreferenceService userPreferenceService;
 
@@ -49,14 +49,12 @@ public class UserService implements UserDetailsService {
 
     private final PasswordEncoder passwordEncoder;
 
-    public static final String EMAIL_REGEX = "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9-]+(?:\\.[a-zA-Z0-9-]+)*\\.[a-zA-Z]{2,}$";
-
-    public UserService(UserRepository userRepository, UserEmailRepository userEmailRepository, UserEmailService userEmailService, UserOAuthProviderService userOAuthProviderService,
+    public UserService(UserRepository userRepository, UserEmailRepository userEmailRepository, UserEmailService userEmailService, OAuthConnectionService oAuthConnectionService,
                        UserPreferenceService userPreferenceService, JiraService jiraService, SecurityTokenService securityTokenService, ModelMapper modelMapper, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.userEmailRepository = userEmailRepository;
         this.userEmailService = userEmailService;
-        this.userOAuthProviderService = userOAuthProviderService;
+        this.oAuthConnectionService = oAuthConnectionService;
         this.userPreferenceService = userPreferenceService;
         this.jiraService = jiraService;
         this.securityTokenService = securityTokenService;
@@ -82,16 +80,16 @@ public class UserService implements UserDetailsService {
 
     public List<Map<String, Object>> getUserOAuthProviders() {
         User loggedUser = AppConfig.getAuthenticatedCurrentUser();
-        Map<OAuthProvider, UserOAuthProvider> linkedProviders = userOAuthProviderService.getLinkedProvidersMap(loggedUser);
+        Map<OAuthProvider, OAuthConnection> linkedProviders = oAuthConnectionService.getConnectionsAsMap(loggedUser);
 
         return Arrays.stream(OAuthProvider.values()).map(provider -> {
-            UserOAuthProvider userProvider = linkedProviders.get(provider);
+            OAuthConnection userProvider = linkedProviders.get(provider);
             boolean isLinked = userProvider != null;
             Map<String, Object> providerInfo = new HashMap<>();
             providerInfo.put("provider", Map.of("name", provider.getDisplayName(), "code", provider.getCode()));
             providerInfo.put("isLinked", isLinked);
             if (isLinked) {
-                providerInfo.put("email", userProvider.getProviderEmail().getEmail());
+                providerInfo.put("email", userProvider.getAccountEmail().getEmail());
                 providerInfo.put("isRevoked", userProvider.isRevoked());
             }
             return providerInfo;
@@ -102,7 +100,7 @@ public class UserService implements UserDetailsService {
         List<Map<String, Object>> preferences = userPreferenceService.getAllByUser(AppConfig.getAuthenticatedCurrentUser());
         for (Map<String, Object> preference : preferences) {
             if (preference.get("key").equals(JiraService.JIRA_PRIMARY_PROJECT_SETTING_KEY)) {
-                jiraService.loadJiraPreference(preference);
+                jiraService.loadPreference(preference);
             }
         }
         return preferences;
@@ -113,7 +111,7 @@ public class UserService implements UserDetailsService {
         for (UserPreferenceDTO preferenceDTO : userPreferenceDTOList) {
             userPreferenceService.validatePreference(preferenceDTO);
             if (preferenceDTO.getKey().equals(JiraService.JIRA_PRIMARY_PROJECT_SETTING_KEY)) {
-                jiraService.handleJiraPreference(loggedUser, preferenceDTO);
+                jiraService.handlePreference(loggedUser, preferenceDTO);
             }
         }
         userPreferenceService.updateAll(loggedUser, userPreferenceDTOList);
@@ -158,9 +156,9 @@ public class UserService implements UserDetailsService {
 
     @Transactional
     public void handleExistingUserOAuthLogin(User authenticatedUser, OAuthUserInfoDTO oAuthUserInfo, OAuthProvider oAuthProvider) {
-        UserOAuthProvider userOAuthProvider = userOAuthProviderService.getUserLinkedProviderOrThrow(authenticatedUser, oAuthUserInfo.getEmail(), oAuthProvider);
-        if (userOAuthProvider.isExpired() || userOAuthProvider.isRevoked()) {
-            userOAuthProviderService.updateAccessCredentials(userOAuthProvider, oAuthUserInfo.getAccessCredentials());
+        OAuthConnection oAuthConnection = oAuthConnectionService.getConnectionOrThrow(authenticatedUser, oAuthUserInfo.getEmail(), oAuthProvider);
+        if (oAuthConnection.isExpired() || oAuthConnection.isRevoked()) {
+            oAuthConnectionService.updateAccessCredentials(oAuthConnection, oAuthUserInfo.getAccessCredentials());
         }
         handleOAuthEmailMatching(authenticatedUser, oAuthUserInfo);
     }
@@ -184,10 +182,10 @@ public class UserService implements UserDetailsService {
     public void handleOAuthEmailMatching(User authenticatedUser, OAuthUserInfoDTO oAuthUserInfo) {
         if (!authenticatedUser.isVerified() && authenticatedUser.getPrimaryEmail().getEmail().equals(oAuthUserInfo.getEmail())) {
             verifyUser(authenticatedUser);
-            securityTokenService.deleteNonExpiredSecurityToken(authenticatedUser, SecurityToken.Type.ACCOUNT_ACTIVATION);
+            securityTokenService.deleteNonExpired(authenticatedUser, SecurityToken.Type.ACCOUNT_ACTIVATION);
         } else if (authenticatedUser.getPendingEmail() != null && authenticatedUser.getPendingEmail().getEmail().equals(oAuthUserInfo.getEmail())) {
             verifyAndChangePrimaryEmail(authenticatedUser, oAuthUserInfo.getEmail());
-            securityTokenService.deleteNonExpiredSecurityToken(authenticatedUser, SecurityToken.Type.NEW_EMAIL_VERIFICATION);
+            securityTokenService.deleteNonExpired(authenticatedUser, SecurityToken.Type.NEW_EMAIL_VERIFICATION);
         }
     }
 
@@ -231,7 +229,7 @@ public class UserService implements UserDetailsService {
                 .extraParameters(EmailTemplateUtil.getTemplateParams(isForReset ? SecurityToken.Type.PASSWORD_RESET : SecurityToken.Type.PASSWORD_CHANGE))
                 .pageUrl("/change-password")
                 .build();
-        securityTokenService.createAndSendSecurityToken(securityTokenBuilder);
+        securityTokenService.createAndSend(securityTokenBuilder);
     }
     //</editor-fold>
 
@@ -239,13 +237,13 @@ public class UserService implements UserDetailsService {
     @Transactional
     public void requestEmailChange(String email) {
         User loggedUser = AppConfig.getAuthenticatedCurrentUser();
-        validateUserEmail(email);
+        userEmailService.ensureValidEmailFormat(email);
 
         UserEmail existingUserEmail = userEmailRepository.findByEmail(email);
         if (existingUserEmail != null) {
-            validateEmailAvailability(loggedUser, existingUserEmail);
+            userEmailService.ensureEmailAvailableForUser(loggedUser, existingUserEmail);
         }
-        securityTokenService.deleteNonExpiredSecurityToken(loggedUser, SecurityToken.Type.NEW_EMAIL_VERIFICATION);
+        securityTokenService.deleteNonExpired(loggedUser, SecurityToken.Type.NEW_EMAIL_VERIFICATION);
 
         UserEmail oldPendingEmail = loggedUser.getPendingEmail();
         if (oldPendingEmail != null) {
@@ -261,7 +259,7 @@ public class UserService implements UserDetailsService {
 
     @Transactional
     public void verifyAndChangePrimaryEmail(User user, String email) {
-        validateUserEmail(email);
+        userEmailService.ensureValidEmailFormat(email);
         UserEmail pendingEmail = user.getPendingEmail();
         if (pendingEmail == null || !pendingEmail.getEmail().equals(email)) {
             throw new BusinessException("No matching pending email found for verification");
@@ -299,7 +297,7 @@ public class UserService implements UserDetailsService {
                 .templateName(EmailTemplates.VERIFICATION_MAIL_TEMPLATE)
                 .extraParameters(EmailTemplateUtil.getTemplateParams(SecurityToken.Type.NEW_EMAIL_VERIFICATION))
                 .build();
-        securityTokenService.createAndSendSecurityToken(securityTokenBuilder);
+        securityTokenService.createAndSend(securityTokenBuilder);
     }
 
     @Transactional
@@ -314,26 +312,7 @@ public class UserService implements UserDetailsService {
         userRepository.save(loggedUser);
 
         userEmailService.deleteIfUnused(pendingEmail);
-        securityTokenService.deleteNonExpiredSecurityToken(loggedUser, SecurityToken.Type.NEW_EMAIL_VERIFICATION);
-    }
-
-    public void validateUserEmail(String email) {
-        if (StringUtils.isEmpty(email) || !email.matches(EMAIL_REGEX)) {
-            throw new BusinessException("Invalid email format");
-        }
-    }
-    //</editor-fold>
-
-    //<editor-fold desc="Internal Methods & Validations">
-    private void validateEmailAvailability(User loggedUser, UserEmail existingUserEmail) {
-        if (!existingUserEmail.getUser().getId().equals(loggedUser.getId())) {
-            throw new BusinessException("Email is already in use");
-        }
-
-        boolean isPrimaryOrPending = loggedUser.getPrimaryEmail().getId().equals(existingUserEmail.getId()) || (loggedUser.getPendingEmail() != null && loggedUser.getPendingEmail().getId().equals(existingUserEmail.getId()));
-        if (isPrimaryOrPending) {
-            throw new BusinessException("Email is already associated with your account");
-        }
+        securityTokenService.deleteNonExpired(loggedUser, SecurityToken.Type.NEW_EMAIL_VERIFICATION);
     }
     //</editor-fold>
 }

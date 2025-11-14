@@ -2,19 +2,14 @@ package com.mdevs.trackera.utils;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Getter;
-import org.springframework.web.client.RestTemplate;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Date;
-import java.util.Map;
 
 public class AppUtils {
     @Getter
     private static final ObjectMapper objectMapper = new ObjectMapper();
-
-    @Getter
-    private static final RestTemplate restTemplate = new RestTemplate();
 
     public static String convertObjectToJsonString(Object data) {
         try {

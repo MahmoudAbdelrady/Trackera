@@ -1,6 +1,6 @@
 package com.mdevs.trackera.entity;
 
-import com.mdevs.trackera.shared.oauth_provider.OAuthProvider;
+import com.mdevs.trackera.oauth.OAuthProvider;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
 @Getter
 @Setter
 @NoArgsConstructor
-public class UserOAuthProvider extends BaseEntity {
+public class OAuthConnection extends BaseEntity {
     @ManyToOne(optional = false, fetch = FetchType.LAZY)
     private User user;
 
@@ -22,7 +22,7 @@ public class UserOAuthProvider extends BaseEntity {
     private OAuthProvider provider;
 
     @ManyToOne(optional = false)
-    private UserEmail providerEmail;
+    private UserEmail accountEmail;
 
     @Column(nullable = false, columnDefinition = "LONGTEXT")
     private String accessToken;
@@ -36,7 +36,7 @@ public class UserOAuthProvider extends BaseEntity {
     @Column(nullable = false)
     private boolean isRevoked = false;
 
-    public UserOAuthProvider(User user, OAuthProvider provider) {
+    public OAuthConnection(User user, OAuthProvider provider) {
         this.user = user;
         this.provider = provider;
     }

@@ -7,8 +7,8 @@ import com.mdevs.trackera.repository.*;
 import com.mdevs.trackera.shared.EmailTemplates;
 import com.mdevs.trackera.shared.SecurityTokenBuilder;
 import com.mdevs.trackera.shared.exceptions.types.UnauthorizedException;
-import com.mdevs.trackera.shared.oauth_provider.OAuthProvider;
-import com.mdevs.trackera.shared.oauth_provider.OAuthProviderFactory;
+import com.mdevs.trackera.oauth.OAuthProvider;
+import com.mdevs.trackera.oauth.OAuthProviderFactory;
 import com.mdevs.trackera.utils.*;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.http.HttpServletRequest;
@@ -37,7 +37,7 @@ public class AuthService {
 
     private final SecurityTokenService securityTokenService;
 
-    private final UserOAuthProviderService userOAuthProviderService;
+    private final OAuthConnectionService oAuthConnectionService;
 
     private final OAuthProviderFactory oAuthProviderFactory;
 
@@ -51,17 +51,15 @@ public class AuthService {
 
     private final CryptoUtil cryptoUtil;
 
-    private static final int REFRESH_TOKEN_ROTATION_THRESHOLD_DAYS = 3;
-
     public AuthService(UserRepository userRepository, UserService userService, UserEmailService userEmailService, AuthenticationManager authenticationManager, SecurityTokenService securityTokenService,
-                       UserOAuthProviderService userOAuthProviderService, OAuthProviderFactory oAuthProviderFactory, SecurityTokenRepository securityTokenRepository, UserInvalidTokenRepository userInvalidTokenRepository,
+                       OAuthConnectionService oAuthConnectionService, OAuthProviderFactory oAuthProviderFactory, SecurityTokenRepository securityTokenRepository, UserInvalidTokenRepository userInvalidTokenRepository,
                        JwtUtil jwtUtil, CookieHelper cookieHelper, CryptoUtil cryptoUtil) {
         this.userRepository = userRepository;
         this.userService = userService;
         this.userEmailService = userEmailService;
         this.authenticationManager = authenticationManager;
         this.securityTokenService = securityTokenService;
-        this.userOAuthProviderService = userOAuthProviderService;
+        this.oAuthConnectionService = oAuthConnectionService;
         this.oAuthProviderFactory = oAuthProviderFactory;
         this.securityTokenRepository = securityTokenRepository;
         this.userInvalidTokenRepository = userInvalidTokenRepository;
@@ -81,16 +79,16 @@ public class AuthService {
                 .templateName(EmailTemplates.VERIFICATION_MAIL_TEMPLATE)
                 .extraParameters(EmailTemplateUtil.getTemplateParams(SecurityToken.Type.ACCOUNT_ACTIVATION))
                 .build();
-        securityTokenService.createAndSendSecurityToken(securityTokenBuilder);
+        securityTokenService.createAndSend(securityTokenBuilder);
     }
 
     @Transactional
-    public Map<String, Object> login(LoginDTO loginDTO, HttpServletResponse httpResponse) {
+    public Map<String, Object> login(LoginDTO loginDTO, HttpServletResponse response) {
         Authentication authentication;
         try {
             UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(loginDTO.getEmail(), loginDTO.getPassword(), List.of());
             authentication = authenticationManager.authenticate(authToken);
-        } catch (AuthenticationException e) {
+        } catch (AuthenticationException exception) {
             throw new SecurityException("Invalid credentials");
         }
 
@@ -107,34 +105,34 @@ public class AuthService {
                         .templateName(EmailTemplates.VERIFICATION_MAIL_TEMPLATE)
                         .extraParameters(EmailTemplateUtil.getTemplateParams(SecurityToken.Type.ACCOUNT_ACTIVATION))
                         .build();
-                securityTokenService.createAndSendSecurityToken(securityTokenBuilder);
+                securityTokenService.createAndSend(securityTokenBuilder);
                 message = "Account not activated. An activation link has been sent to your email.";
             }
             return Map.of("isError", true, "message", message);
         }
 
-        return generateLoginInfo(loggedUser, httpResponse);
+        return generateLoginInfo(loggedUser, response);
     }
 
     @Transactional
-    public void logout(HttpServletRequest httpRequest, HttpServletResponse httpResponse) {
-        String accessToken = httpRequest.getHeader(HttpHeaders.AUTHORIZATION).substring(7);
-        String refreshToken = cookieHelper.extractCookieValue(httpRequest, CookieHelper.REFRESH_TOKEN_COOKIE_NAME);
+    public void logout(HttpServletRequest request, HttpServletResponse response) {
+        String accessToken = request.getHeader(HttpHeaders.AUTHORIZATION).substring(7);
+        String refreshToken = cookieHelper.extractCookieValue(request, CookieHelper.REFRESH_TOKEN_COOKIE_NAME);
         saveInvalidToken(accessToken, true);
         if (!StringUtils.isEmpty(refreshToken)) {
             saveInvalidToken(refreshToken, false);
         }
-        httpResponse.addCookie(cookieHelper.create(CookieHelper.REFRESH_TOKEN_COOKIE_NAME, null, true, "/trackera/auth", 0));
+        response.addCookie(cookieHelper.create(CookieHelper.REFRESH_TOKEN_COOKIE_NAME, null, true, "/trackera/auth", 0));
     }
 
-    public Map<String, Object> refreshJwt(String refreshToken, HttpServletResponse httpResponse) {
+    public Map<String, Object> refreshJwt(String refreshToken, HttpServletResponse response) {
         Claims refreshTokenClaims = jwtUtil.validateAndGetTokenPayload(refreshToken, false);
         String newAccessToken = jwtUtil.generateToken(refreshTokenClaims.get("id", String.class), true);
 
         LocalDateTime refreshTokenExpiry = AppUtils.convertDateToLocalDateTime(refreshTokenClaims.getExpiration());
-        if (refreshTokenExpiry.isBefore(LocalDateTime.now().plusDays(REFRESH_TOKEN_ROTATION_THRESHOLD_DAYS))) {
+        if (refreshTokenExpiry.isBefore(LocalDateTime.now().plusDays(CookieHelper.REFRESH_TOKEN_ROTATION_THRESHOLD_DAYS))) {
             String newRefreshToken = jwtUtil.generateToken(refreshTokenClaims.get("id", String.class), false);
-            httpResponse.addCookie(cookieHelper.create(CookieHelper.REFRESH_TOKEN_COOKIE_NAME, newRefreshToken, true, "/trackera/auth", CookieHelper.getRefreshTokenCookieMaxAge()));
+            response.addCookie(cookieHelper.create(CookieHelper.REFRESH_TOKEN_COOKIE_NAME, newRefreshToken, true, "/trackera/auth", CookieHelper.getRefreshTokenCookieMaxAge()));
             saveInvalidToken(refreshToken, false);
         }
 
@@ -143,44 +141,44 @@ public class AuthService {
     //</editor-fold>
 
     //<editor-fold desc="OAuth2 Integration">
-    public String oAuth(String oAuthProvider, HttpServletRequest httpRequest) {
-        OAuthProvider provider = OAuthProvider.fromCode(oAuthProvider);
-        String jwtTokenHeader = httpRequest.getHeader(HttpHeaders.AUTHORIZATION);
+    public String oAuth(String providerCode, HttpServletRequest request) {
+        OAuthProvider provider = OAuthProvider.fromCode(providerCode);
+        String jwtTokenHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
         if (StringUtils.isEmpty(jwtTokenHeader) || !jwtTokenHeader.startsWith("Bearer ")) {
             return oAuthProviderFactory.getProvider(provider).generateAuthFlowUrl(null);
         }
 
         Claims claims = jwtUtil.validateAndGetTokenPayload(jwtTokenHeader.substring(7), true);
         User user = userRepository.findByUuid(claims.get("id", String.class));
-        userOAuthProviderService.ensureUserDoesNotHaveActiveLinkedProvider(user, provider);
+        oAuthConnectionService.ensureNoConnection(user, provider);
         return oAuthProviderFactory.getProvider(provider).generateAuthFlowUrl(user);
     }
 
     @Transactional
-    public Map<String, Object> oAuthCallback(String provider, OAuthRequestDTO oAuthRequestDTO, HttpServletResponse httpResponse) {
-        OAuthProvider oAuthProvider = OAuthProvider.fromCode(provider);
-        OAuthUserInfoDTO oAuthUserInfoDTO = oAuthProviderFactory.getProvider(oAuthProvider).authenticate(oAuthRequestDTO);
+    public Map<String, Object> oAuthCallback(String providerCode, OAuthRequestDTO oAuthRequestDTO, HttpServletResponse response) {
+        OAuthProvider provider = OAuthProvider.fromCode(providerCode);
+        OAuthUserInfoDTO oAuthUserInfoDTO = oAuthProviderFactory.getProvider(provider).authenticate(oAuthRequestDTO);
 
         Map<String, Object> result;
         if (oAuthUserInfoDTO.getUserId() != null) {
-            handleOAuthLinkingFlow(oAuthProvider, oAuthUserInfoDTO);
+            handleOAuthLinkingFlow(provider, oAuthUserInfoDTO);
             result = Map.of("message", "Account linked successfully");
         } else {
-            User user = handleOAuthLoginOrSignupFlow(oAuthProvider, oAuthUserInfoDTO);
-            result = generateLoginInfo(user, httpResponse);
+            User user = handleOAuthLoginOrSignupFlow(provider, oAuthUserInfoDTO);
+            result = generateLoginInfo(user, response);
         }
 
         return result;
     }
 
     @Transactional
-    public String unlinkOAuthProvider(String provider) {
-        OAuthProvider oAuthProvider = OAuthProvider.fromCode(provider);
-        User loggedUser = AppConfig.getAuthenticatedCurrentUser();
-        UserOAuthProvider deletedOAuthProvider = userOAuthProviderService.delete(loggedUser, oAuthProvider);
-        oAuthProviderFactory.getProvider(oAuthProvider).handlePostUnLinkingActions(loggedUser);
-        userEmailService.deleteIfUnused(deletedOAuthProvider.getProviderEmail());
-        return oAuthProvider.getDisplayName() + " unlinked successfully";
+    public String unlinkOAuthProvider(String providerCode) {
+        OAuthProvider provider = OAuthProvider.fromCode(providerCode);
+        User currentUser = AppConfig.getAuthenticatedCurrentUser();
+        OAuthConnection deletedConnection = oAuthConnectionService.delete(currentUser, provider);
+        oAuthProviderFactory.getProvider(provider).handlePostUnLinkingActions(currentUser);
+        userEmailService.deleteIfUnused(deletedConnection.getAccountEmail());
+        return provider.getDisplayName() + " unlinked successfully";
     }
     //</editor-fold>
 
@@ -232,7 +230,7 @@ public class AuthService {
     //<editor-fold desc="Internal Methods & Validations">
     private void handleOAuthLinkingFlow(OAuthProvider provider, OAuthUserInfoDTO oAuthUserInfo) {
         User user = userRepository.findOne(oAuthUserInfo.getUserId());
-        userEmailService.validateOAuthEmailNotInUse(oAuthUserInfo.getEmail(), user, provider);
+        userEmailService.ensureOAuthEmailAvailable(oAuthUserInfo.getEmail(), user, provider);
         processOAuthData(user, provider, oAuthUserInfo);
         userService.handleOAuthEmailMatching(user, oAuthUserInfo);
     }
@@ -249,14 +247,14 @@ public class AuthService {
 
     private void processOAuthData(User user, OAuthProvider provider, OAuthUserInfoDTO oAuthUserInfoDTO) {
         UserEmail userEmail = userEmailService.getOrCreate(user, oAuthUserInfoDTO.getEmail());
-        userOAuthProviderService.createOrUpdate(user, oAuthUserInfoDTO, provider, userEmail);
+        oAuthConnectionService.createOrUpdate(user, oAuthUserInfoDTO, provider, userEmail);
         oAuthProviderFactory.getProvider(provider).handlePostLinkingActions(user, oAuthUserInfoDTO);
     }
 
-    private Map<String, Object> generateLoginInfo(User user, HttpServletResponse httpResponse) {
+    private Map<String, Object> generateLoginInfo(User user, HttpServletResponse response) {
         String accessToken = jwtUtil.generateToken(user.getUuid(), true);
         String refreshToken = jwtUtil.generateToken(user.getUuid(), false);
-        httpResponse.addCookie(cookieHelper.create(CookieHelper.REFRESH_TOKEN_COOKIE_NAME, refreshToken, true, "/trackera/auth", CookieHelper.getRefreshTokenCookieMaxAge()));
+        response.addCookie(cookieHelper.create(CookieHelper.REFRESH_TOKEN_COOKIE_NAME, refreshToken, true, "/trackera/auth", CookieHelper.getRefreshTokenCookieMaxAge()));
         return Map.of("token", accessToken);
     }
 

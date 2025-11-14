@@ -22,7 +22,7 @@ public class SecurityTokenService {
 
     private final CryptoUtil cryptoUtil;
 
-    public final static long MAX_SECURITY_TOKEN_MINUTES = 15;
+    public static final long MAX_SECURITY_TOKEN_MINUTES = 15;
 
     public SecurityTokenService(SecurityTokenRepository securityTokenRepository, CryptoUtil cryptoUtil) {
         this.securityTokenRepository = securityTokenRepository;
@@ -46,7 +46,7 @@ public class SecurityTokenService {
 
     //<editor-fold desc="Creation and Update">
     @Transactional
-    public void createAndSendSecurityToken(SecurityTokenBuilder builder) {
+    public void createAndSend(SecurityTokenBuilder builder) {
         if (hasRecentActivationToken(builder.getUser(), builder.getType())) {
             return;
         }
@@ -74,7 +74,7 @@ public class SecurityTokenService {
     //</editor-fold>
 
     //<editor-fold desc="Deletion">
-    public void deleteNonExpiredSecurityToken(User user, SecurityToken.Type type) {
+    public void deleteNonExpired(User user, SecurityToken.Type type) {
         securityTokenRepository.deleteByUserAndTypeAndCreatedAtGreaterThanEqual(user, type, LocalDateTime.now().minusMinutes(MAX_SECURITY_TOKEN_MINUTES));
     }
     //</editor-fold>

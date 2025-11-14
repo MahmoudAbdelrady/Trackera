@@ -21,7 +21,7 @@ public class CryptoUtil {
     @Value("${trackera.hasher.encryption_key}")
     private String encryptionSecretKey;
 
-    private final static String ENCRYPTION_ALGORITHM = "AES";
+    private static final String ENCRYPTION_ALGORITHM = "AES";
 
     private static final SecureRandom secureRandom = new SecureRandom();
 

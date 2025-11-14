@@ -36,38 +36,38 @@ public class AuthController {
 
     @PublicAPI
     @PostMapping("/login")
-    public ResponseEntity<?> Login(@RequestBody @Valid LoginDTO loginDTO, HttpServletResponse httpServletResponse) {
-        Map<String, Object> result = authService.login(loginDTO, httpServletResponse);
+    public ResponseEntity<?> Login(@RequestBody @Valid LoginDTO loginDTO, HttpServletResponse response) {
+        Map<String, Object> result = authService.login(loginDTO, response);
         return result.containsKey("isError") ? ExceptionResponseMaker.makeResponse(result.get("message").toString(), HttpStatus.FORBIDDEN) : new ResponseEntity<>(result, HttpStatus.OK);
     }
 
     @PublicAPI
-    @GetMapping("/oauth/{oAuthProvider}")
-    public ResponseEntity<?> OAuth(@PathVariable String oAuthProvider, HttpServletRequest httpServletRequest) {
-        return new ResponseEntity<>(Map.of("url", authService.oAuth(oAuthProvider, httpServletRequest)), HttpStatus.OK);
+    @GetMapping("/oauth/{providerCode}")
+    public ResponseEntity<?> OAuth(@PathVariable String providerCode, HttpServletRequest request) {
+        return new ResponseEntity<>(Map.of("url", authService.oAuth(providerCode, request)), HttpStatus.OK);
     }
 
     @PublicAPI
-    @PostMapping("/oauth/{oAuthProvider}/callback")
-    public ResponseEntity<?> OAuthCallback(@PathVariable String oAuthProvider, @RequestBody @Valid OAuthRequestDTO oAuthRequestDTO, HttpServletResponse httpServletResponse) {
-        return new ResponseEntity<>(authService.oAuthCallback(oAuthProvider, oAuthRequestDTO, httpServletResponse), HttpStatus.OK);
+    @PostMapping("/oauth/{providerCode}/callback")
+    public ResponseEntity<?> OAuthCallback(@PathVariable String providerCode, @RequestBody @Valid OAuthRequestDTO oAuthRequestDTO, HttpServletResponse response) {
+        return new ResponseEntity<>(authService.oAuthCallback(providerCode, oAuthRequestDTO, response), HttpStatus.OK);
     }
 
-    @PostMapping("/oauth/unlink/{oAuthProvider}")
-    public ResponseEntity<?> UnlinkOAuthProvider(@PathVariable String oAuthProvider) {
-        return new ResponseEntity<>(authService.unlinkOAuthProvider(oAuthProvider), HttpStatus.OK);
+    @PostMapping("/oauth/unlink/{providerCode}")
+    public ResponseEntity<?> UnlinkOAuthProvider(@PathVariable String providerCode) {
+        return new ResponseEntity<>(authService.unlinkOAuthProvider(providerCode), HttpStatus.OK);
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<?> Logout(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse) {
-        authService.logout(httpServletRequest, httpServletResponse);
+    public ResponseEntity<?> Logout(HttpServletRequest request, HttpServletResponse response) {
+        authService.logout(request, response);
         return new ResponseEntity<>("Logged out successfully", HttpStatus.OK);
     }
 
     @PublicAPI
     @PostMapping("/jwt/refresh")
-    public ResponseEntity<?> RefreshJwt(@CookieValue(value = "refreshToken") String refreshToken, HttpServletResponse httpServletResponse) {
-        return new ResponseEntity<>(authService.refreshJwt(refreshToken, httpServletResponse), HttpStatus.OK);
+    public ResponseEntity<?> RefreshJwt(@CookieValue(value = "refreshToken") String refreshToken, HttpServletResponse response) {
+        return new ResponseEntity<>(authService.refreshJwt(refreshToken, response), HttpStatus.OK);
     }
 
     @PublicAPI
