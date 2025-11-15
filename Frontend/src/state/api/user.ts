@@ -8,6 +8,7 @@ export interface UserInfo {
   profilePicture: string | null;
   avatarColor: string;
   passwordSet: boolean;
+  jiraLinked: boolean;
 }
 
 const fetchMe = async () => {

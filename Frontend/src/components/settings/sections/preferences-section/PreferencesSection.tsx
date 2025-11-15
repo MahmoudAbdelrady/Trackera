@@ -1,4 +1,4 @@
-import { Button, InputNumber, Select, Spin } from "antd";
+import { Alert, Button, InputNumber, Select, Spin } from "antd";
 import { UserPreference } from "../../../";
 import classes from "./scss/preferences-section.module.css";
 import { showErrorToast, showSuccessToast } from "../../../../utils/toast-handler/showToast";
@@ -6,8 +6,11 @@ import requestInstance from "../../../../shared/axios/request-instance";
 import { useEffect, useState } from "react";
 import type { JiraSite } from "../../../../shared/types";
 import { isEqual } from "lodash";
+import { userQueries } from "../../../../state/queries";
 
 const PreferencesSection = () => {
+  const { data: loggedUserData } = userQueries.useMeQuery();
+
   // preferences keys
   const PREFERENCE_KEYS = {
     JIRA_PRIMARY_PROJECT: "jiraPrimaryProject",
@@ -91,24 +94,28 @@ const PreferencesSection = () => {
       ) : (
         <>
           <UserPreference label="Jira Main Site">
-            <Select
-              options={jiraSites.map((site) => ({ label: site.name, value: site.id }))}
-              value={updatedPreferences[PREFERENCE_KEYS.JIRA_PRIMARY_PROJECT]?.id}
-              className={classes.preference_select}
-              loading={isFetchingSites}
-              notFoundContent={isFetchingSites ? <Spin size="small" /> : "No Data"}
-              onOpenChange={(open) => {
-                if (open) {
-                  fetchJiraSites();
+            {loggedUserData?.jiraLinked ? (
+              <Select
+                options={jiraSites.map((site) => ({ label: site.name, value: site.id }))}
+                value={updatedPreferences[PREFERENCE_KEYS.JIRA_PRIMARY_PROJECT]?.id}
+                className={classes.preference_select}
+                loading={isFetchingSites}
+                notFoundContent={isFetchingSites ? <Spin size="small" /> : "No Data"}
+                onOpenChange={(open) => {
+                  if (open) {
+                    fetchJiraSites();
+                  }
+                }}
+                onChange={(value) =>
+                  handlePreferenceChange(
+                    PREFERENCE_KEYS.JIRA_PRIMARY_PROJECT,
+                    jiraSites.find((site) => site.id === value)
+                  )
                 }
-              }}
-              onChange={(value) =>
-                handlePreferenceChange(
-                  PREFERENCE_KEYS.JIRA_PRIMARY_PROJECT,
-                  jiraSites.find((site) => site.id === value)
-                )
-              }
-            />
+              />
+            ) : (
+              <Alert message="Connect your Jira account to select a site" type="info" showIcon />
+            )}
           </UserPreference>
           <UserPreference label="Worklog Monthly Target Hours">
             <InputNumber
