@@ -24,8 +24,8 @@ const PreferencesSection = () => {
   const [jiraSites, setJiraSites] = useState<JiraSite[]>([]);
 
   useEffect(() => {
-    setIsLoadingPreferences(true);
     const fetchUserPreferences = async () => {
+      setIsLoadingPreferences(true);
       try {
         const response = await requestInstance.get("/user/preferences");
         const preferences: Record<string, any> = response.data;
@@ -60,10 +60,21 @@ const PreferencesSection = () => {
     }));
   };
 
+  const transformPreferenceValue = (key: string, value: any): any => {
+    if (key === PREFERENCE_KEYS.JIRA_PRIMARY_PROJECT) {
+      return (value as JiraSite).id;
+    }
+    return value;
+  };
+
   const updateUserPreferences = async () => {
     setIsLoadingPreferences(true);
     try {
-      const preferencesToUpdate = Object.fromEntries(Object.entries(updatedPreferences).filter(([key, value]) => !isEqual(initialPreferences[key], value)));
+      const preferencesToUpdate = Object.fromEntries(
+        Object.entries(updatedPreferences)
+          .filter(([key, value]) => !isEqual(initialPreferences[key], value))
+          .map(([key, value]) => [key, transformPreferenceValue(key, value)])
+      );
       const response = await requestInstance.post("/user/preferences", preferencesToUpdate);
       setInitialPreferences(updatedPreferences);
       showSuccessToast(response.data);
@@ -91,7 +102,12 @@ const PreferencesSection = () => {
                   fetchJiraSites();
                 }
               }}
-              onChange={(value) => handlePreferenceChange(PREFERENCE_KEYS.JIRA_PRIMARY_PROJECT, value)}
+              onChange={(value) =>
+                handlePreferenceChange(
+                  PREFERENCE_KEYS.JIRA_PRIMARY_PROJECT,
+                  jiraSites.find((site) => site.id === value)
+                )
+              }
             />
           </UserPreference>
           <UserPreference label="Worklog Monthly Target Hours">
