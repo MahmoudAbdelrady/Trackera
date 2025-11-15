@@ -63,7 +63,8 @@ const PreferencesSection = () => {
   const updateUserPreferences = async () => {
     setIsLoadingPreferences(true);
     try {
-      const response = await requestInstance.post("/user/preferences", updatedPreferences);
+      const preferencesToUpdate = Object.fromEntries(Object.entries(updatedPreferences).filter(([key, value]) => !isEqual(initialPreferences[key], value)));
+      const response = await requestInstance.post("/user/preferences", preferencesToUpdate);
       setInitialPreferences(updatedPreferences);
       showSuccessToast(response.data);
     } catch (error: any) {
@@ -71,8 +72,6 @@ const PreferencesSection = () => {
     }
     setIsLoadingPreferences(false);
   };
-
-  console.log({ initialPreferences, updatedPreferences, isEqual: isEqual(initialPreferences, updatedPreferences) });
 
   return (
     <div className={classes.preferences_section}>

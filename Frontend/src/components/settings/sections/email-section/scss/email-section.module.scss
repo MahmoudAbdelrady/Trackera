@@ -5,7 +5,6 @@
   .email_item {
     @include between;
     &:not(:first-child) {
-      margin-top: 20px;
       padding-top: 20px;
       border-top: 1px solid $borderColor;
     }
@@ -17,6 +16,9 @@
       @include start;
       width: 100%;
       gap: 10px;
+      @media (max-width: 480px) {
+        flex-direction: column;
+      }
     }
     .actions {
       @include end;

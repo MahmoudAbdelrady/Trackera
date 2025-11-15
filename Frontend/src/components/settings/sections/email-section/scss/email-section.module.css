@@ -4,7 +4,6 @@
   align-items: center;
 }
 .user_emails .email_item:not(:first-child) {
-  margin-top: 20px;
   padding-top: 20px;
   border-top: 1px solid #e5e7eb;
 }
@@ -20,6 +19,11 @@
   align-items: center;
   width: 100%;
   gap: 10px;
+}
+@media (max-width: 480px) {
+  .user_emails .email_item .info {
+    flex-direction: column;
+  }
 }
 .user_emails .email_item .actions {
   display: flex;

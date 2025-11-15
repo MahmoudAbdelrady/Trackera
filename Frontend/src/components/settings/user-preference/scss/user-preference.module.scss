@@ -4,4 +4,7 @@
 .preference {
   @include start;
   gap: 8px;
+  @media (max-width: 480px) {
+    @include between;
+  }
 }
