@@ -7,11 +7,11 @@ import com.mdevs.trackera.dto.auth.OAuthRequestDTO;
 import com.mdevs.trackera.entity.User;
 import com.mdevs.trackera.entity.OAuthConnection;
 import com.mdevs.trackera.service.UserPreferenceService;
+import com.mdevs.trackera.shared.CacheService;
 import com.mdevs.trackera.utils.OAuthUtil;
 import com.mdevs.trackera.utils.CryptoUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.time.Duration;
@@ -20,16 +20,16 @@ import java.util.Map;
 @Slf4j
 public abstract class OAuthServiceProvider {
     @Autowired
-    private RedisTemplate<String, Object> redisTemplate;
+    protected CacheService cacheService;
+
+    @Autowired
+    protected UserPreferenceService userPreferenceService;
 
     @Autowired
     private CryptoUtil cryptoUtil;
 
     @Autowired
     private OAuthUtil oAuthUtil;
-
-    @Autowired
-    protected UserPreferenceService userPreferenceService;
 
     // Public API
     public abstract String generateAuthFlowUrl(User user);
@@ -59,7 +59,7 @@ public abstract class OAuthServiceProvider {
     protected UriComponentsBuilder getBaseOAuthBuilder(String authBaseUrl, String clientId, User user, String... scopes) {
         try {
             Map<String, String> securityParams = oAuthUtil.generateSecurityParams(user != null ? user.getId() : null);
-            redisTemplate.opsForValue().set(securityParams.get("state"), securityParams, Duration.ofMinutes(10));
+            cacheService.set(securityParams.get("state"), securityParams, Duration.ofMinutes(10));
 
             return UriComponentsBuilder.fromUriString(authBaseUrl)
                     .queryParam("client_id", clientId)
@@ -76,10 +76,11 @@ public abstract class OAuthServiceProvider {
     }
 
     protected Map<String, String> validateAndGetSecurityParams(String state) {
-        Map<String, String> securityParams = (Map<String, String>) redisTemplate.opsForValue().getAndDelete(state);
+        Map<String, String> securityParams = (Map<String, String>) cacheService.get(state, Map.class);
         if (securityParams == null || securityParams.isEmpty()) {
             throw new SecurityException("Invalid state parameter");
         }
+        cacheService.evict(state);
         return securityParams;
     }
 

@@ -8,7 +8,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table(indexes = {@Index(columnList = "_OPTION")})
+@Table(indexes = {@Index(columnList = "_OPTION")}, uniqueConstraints = {@UniqueConstraint(columnNames = {"USER_ID", "_OPTION"})})
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter

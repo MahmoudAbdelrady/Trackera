@@ -59,7 +59,7 @@ public class UserController {
 
     @GetMapping("/preferences")
     public ResponseEntity<?> GetPreferences() {
-        return new ResponseEntity<>(userPreferenceService.getAll(AppConfig.getAuthenticatedCurrentUser()), HttpStatus.OK);
+        return new ResponseEntity<>(userPreferenceService.getAll(), HttpStatus.OK);
     }
 
     @PostMapping("/preferences")

@@ -1,5 +1,6 @@
 package com.mdevs.trackera.service;
 
+import com.mdevs.trackera.config.general.AppConfig;
 import com.mdevs.trackera.entity.User;
 import com.mdevs.trackera.entity.UserPreference;
 import com.mdevs.trackera.repository.UserPreferenceRepository;
@@ -22,9 +23,9 @@ public class UserPreferenceService {
     }
 
     //<editor-fold desc="Retrieval">
-    public Map<String, Object> getAll(User user) {
+    public Map<String, Object> getAll() {
         Map<String, Object> preferencesMap = new HashMap<>();
-        userPreferenceRepository.findAllByUser(user).forEach(pref -> {
+        userPreferenceRepository.findAllByUser(AppConfig.getAuthenticatedCurrentUser()).forEach(pref -> {
             UserPreferenceOption option = pref.getOption();
             preferencesMap.put(option.getCode(), AppUtils.convertValue(pref.getValue(), option.getValueType()));
         });
@@ -49,17 +50,21 @@ public class UserPreferenceService {
         userPreferenceRepository.save(preference);
     }
 
+    public void createOrUpdate(User user, UserPreferenceOption option, String value) {
+        UserPreference existingPreference = userPreferenceRepository.findByUserAndOption(user, option);
+        if (existingPreference != null) {
+            existingPreference.setValue(value);
+            userPreferenceRepository.save(existingPreference);
+        } else {
+            create(user, option, value);
+        }
+    }
+
     @Transactional
     public void updateAll(User user, Map<String, Object> updatedPreferences) {
         for (Map.Entry<String, Object> preference : updatedPreferences.entrySet()) {
             UserPreferenceOption option = UserPreferenceOption.fromCode(preference.getKey());
-            UserPreference existingPreference = userPreferenceRepository.findByUserAndOption(user, option);
-            if (existingPreference != null) {
-                existingPreference.setValue(preference.getValue().toString());
-                userPreferenceRepository.save(existingPreference);
-            } else {
-                create(user, option, preference.getValue().toString());
-            }
+            createOrUpdate(user, option, preference.getValue().toString());
         }
     }
     //</editor-fold>

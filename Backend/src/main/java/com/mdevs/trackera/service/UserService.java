@@ -108,6 +108,7 @@ public class UserService implements UserDetailsService {
             }
         }
         userPreferenceService.updateAll(currentUser, updatedPreferences);
+        jiraService.handleSiteChange(currentUser);
     }
     //</editor-fold>
 
@@ -153,7 +154,7 @@ public class UserService implements UserDetailsService {
 
     @Transactional
     public void handleExistingUserOAuthLogin(User authenticatedUser, OAuthUserInfoDTO oAuthUserInfo, OAuthProvider oAuthProvider) {
-        OAuthConnection oAuthConnection = oAuthConnectionService.getConnectionOrThrow(authenticatedUser, oAuthUserInfo.getEmail(), oAuthProvider);
+        OAuthConnection oAuthConnection = oAuthConnectionService.getConnectionByUserAndEmailOrThrow(authenticatedUser, oAuthUserInfo.getEmail(), oAuthProvider);
         if (oAuthConnection.isExpired() || oAuthConnection.isRevoked()) {
             oAuthConnectionService.updateAccessCredentials(oAuthConnection, oAuthUserInfo.getAccessCredentials());
         }
