@@ -7,9 +7,9 @@ type OAuthCallbacks = {
 };
 
 export function useOAuthFlow({ onSuccess, onError }: OAuthCallbacks) {
-  const fetchOAuthFlowLink = useCallback(async (provider: string) => {
+  const fetchOAuthFlowLink = useCallback(async (provider: string, forceLink: boolean) => {
     try {
-      const response = await requestInstance.get(`/auth/oauth/${provider}`);
+      const response = await requestInstance.get(`/auth/oauth/${provider}${forceLink ? "?forceLink=true" : ""}`);
       return response.data.url;
     } catch (error: any) {
       throw error;
@@ -17,9 +17,9 @@ export function useOAuthFlow({ onSuccess, onError }: OAuthCallbacks) {
   }, []);
 
   const linkProviderAccount = useCallback(
-    async (provider: string) => {
+    async (provider: string, forceLink: boolean = false) => {
       try {
-        const providerOAuthLink = await fetchOAuthFlowLink(provider);
+        const providerOAuthLink = await fetchOAuthFlowLink(provider, forceLink);
         window.open(providerOAuthLink, `Link ${provider} Account`, "width=600,height=600");
       } catch (error: any) {
         onError?.(error.message || "Failed to link account");

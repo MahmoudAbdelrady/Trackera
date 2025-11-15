@@ -12,13 +12,6 @@ interface LinkedAccountProps {
   onUnlink: () => void;
 }
 
-interface EmailSectionProps {
-  userEmails: UserEmailType[];
-  isFetchingEmails: boolean;
-  setFetchUserEmails: (fetch: boolean) => void;
-  setFetchLinkedAccounts: (fetch: boolean) => void;
-}
-
 interface UserEmailType {
   email: string;
   primary: boolean;
@@ -33,4 +26,4 @@ interface UserEmailProps {
   setFetchLinkedAccounts: (fetch: boolean) => void;
 }
 
-export type { SettingsSectionProps, LinkedAccountProps, EmailSectionProps, UserEmailType, UserEmailProps };
+export type { SettingsSectionProps, LinkedAccountProps, UserEmailType, UserEmailProps };

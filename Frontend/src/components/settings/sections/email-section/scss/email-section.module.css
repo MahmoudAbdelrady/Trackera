@@ -1,9 +1,44 @@
-.add_email_button {
-  align-self: flex-start;
-  padding: 18px 28px;
-  font-size: 16px;
+.user_emails .email_item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
-
-.emails_list {
-  margin-top: 10px;
+.user_emails .email_item:not(:first-child) {
+  padding-top: 20px;
+  border-top: 1px solid #e5e7eb;
+}
+@media (max-width: 892px) {
+  .user_emails .email_item {
+    flex-direction: column;
+    align-items: flex-end;
+  }
+}
+.user_emails .email_item .info {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  width: 100%;
+  gap: 10px;
+}
+@media (max-width: 480px) {
+  .user_emails .email_item .info {
+    flex-direction: column;
+  }
+}
+.user_emails .email_item .actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+  margin-left: 20px;
+  width: 100%;
+}
+@media (max-width: 892px) {
+  .user_emails .email_item .actions {
+    margin-left: 0;
+    margin-top: 20px;
+  }
+  .user_emails .email_item .actions .action_btn {
+    width: 100%;
+  }
 }/*# sourceMappingURL=email-section.module.css.map */

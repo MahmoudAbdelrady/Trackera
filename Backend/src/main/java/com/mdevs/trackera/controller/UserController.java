@@ -1,15 +1,14 @@
 package com.mdevs.trackera.controller;
 
+import com.mdevs.trackera.config.general.AppConfig;
 import com.mdevs.trackera.dto.auth.PasswordDTO;
-import com.mdevs.trackera.dto.user.UserPreferenceDTO;
+import com.mdevs.trackera.service.UserPreferenceService;
 import com.mdevs.trackera.service.UserService;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -17,9 +16,11 @@ import java.util.Map;
 public class UserController {
     private final UserService userService;
 
-    @Autowired
-    public UserController(UserService userService) {
+    private final UserPreferenceService userPreferenceService;
+
+    public UserController(UserService userService, UserPreferenceService userPreferenceService) {
         this.userService = userService;
+        this.userPreferenceService = userPreferenceService;
     }
 
     @GetMapping("/me")
@@ -32,48 +33,38 @@ public class UserController {
         return new ResponseEntity<>(userService.getUserOAuthProviders(), HttpStatus.OK);
     }
 
-    @PostMapping("/change-password")
+    @PostMapping("/password")
     public ResponseEntity<?> ChangePassword(@RequestBody @Valid PasswordDTO passwordDTO) {
-        return new ResponseEntity<>(userService.changePassword(passwordDTO), HttpStatus.OK);
+        userService.changePassword(passwordDTO);
+        return new ResponseEntity<>("Password changed successfully.", HttpStatus.OK);
     }
 
-    @GetMapping("/emails")
-    public ResponseEntity<?> GetUserEmails() {
-        return new ResponseEntity<>(userService.getUserEmails(), HttpStatus.OK);
+    @PostMapping("/email/request-change")
+    public ResponseEntity<?> RequestEmailChange(@RequestBody Map<String, Object> body) {
+        userService.requestEmailChange((String) body.get("email"));
+        return new ResponseEntity<>("We’ve sent a verification link to your new email. Please verify to complete the change.", HttpStatus.CREATED);
     }
 
-    @PostMapping("/emails")
-    public ResponseEntity<?> AddEmail(@RequestBody Map<String, Object> body) {
-        userService.addEmail((String) body.get("email"));
-        return new ResponseEntity<>("Email added successfully. Please check your email for verification.", HttpStatus.CREATED);
-    }
-
-    @PostMapping("/emails/primary")
-    public ResponseEntity<?> MakeEmailPrimary(@RequestBody Map<String, Object> body) {
-        userService.makeEmailPrimary((String) body.get("email"));
-        return new ResponseEntity<>("Email set as primary successfully.", HttpStatus.OK);
-    }
-
-    @PostMapping("/emails/send-verification")
-    public ResponseEntity<?> SendVerificationEmail(@RequestBody Map<String, Object> body) {
-        userService.sendVerificationEmail((String) body.get("email"));
+    @PostMapping("/email/send-verification")
+    public ResponseEntity<?> SendEmailVerification() {
+        userService.sendEmailVerification();
         return new ResponseEntity<>("Verification email sent successfully. Please check your email.", HttpStatus.OK);
     }
 
-    @DeleteMapping("/emails")
-    public ResponseEntity<?> RemoveEmail(@RequestBody Map<String, Object> body) {
-        userService.removeEmail((String) body.get("email"));
-        return new ResponseEntity<>("Email removed successfully.", HttpStatus.OK);
+    @DeleteMapping("/email/pending")
+    public ResponseEntity<?> RemovePendingEmail() {
+        userService.removePendingEmail();
+        return new ResponseEntity<>("Pending email removed successfully.", HttpStatus.OK);
     }
 
     @GetMapping("/preferences")
     public ResponseEntity<?> GetPreferences() {
-        return new ResponseEntity<>(userService.getUserPreferences(), HttpStatus.OK);
+        return new ResponseEntity<>(userPreferenceService.getAll(), HttpStatus.OK);
     }
 
     @PostMapping("/preferences")
-    public ResponseEntity<?> UpdatePreferences(@RequestBody List<UserPreferenceDTO> userPreferenceDTOList){
-        userService.updateUserPreferences(userPreferenceDTOList);
+    public ResponseEntity<?> UpdatePreferences(@RequestBody Map<String, Object> updatedPreferences){
+        userService.updateUserPreferences(updatedPreferences);
         return new ResponseEntity<>("Preferences updated successfully.", HttpStatus.OK);
     }
 }

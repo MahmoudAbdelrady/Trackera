@@ -1,1 +1,1 @@
-{"version":3,"sources":["user-preference.module.scss","../../../../shared/styles/_mixins.scss","user-preference.module.css"],"names":[],"mappings":"AAGA;ECmBE,aAAA;EACA,2BAAA;EACA,mBAAA;EDnBA,QAAA;AEAF","file":"user-preference.module.css"}
+{"version":3,"sources":["user-preference.module.scss","../../../../shared/styles/_mixins.scss","user-preference.module.css"],"names":[],"mappings":"AAGA;ECmBE,aAAA;EACA,2BAAA;EACA,mBAAA;EDnBA,QAAA;AEAF;AFCE;EAHF;ICOE,aAAA;IACA,8BAAA;IACA,mBAAA;ECDA;AACF","file":"user-preference.module.css"}

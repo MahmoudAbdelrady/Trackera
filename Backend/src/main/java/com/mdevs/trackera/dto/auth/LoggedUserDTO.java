@@ -14,6 +14,10 @@ public class LoggedUserDTO {
 
     private String lastname;
 
+    private String primaryEmail;
+
+    private String pendingEmail;
+
     private String profilePicture;
 
     private String avatarColor;

@@ -27,9 +27,9 @@ const SecurityVerification = () => {
         isError: true,
       });
     } else {
-      const processToken = async () => {
+      const consumeToken = async () => {
         try {
-          const response = await requestInstance.post(`/auth/process-token?token=${token}`);
+          const response = await requestInstance.post(`/auth/token/consume?token=${token}`);
           setVerificationResult({
             title: response.data.title,
             description: response.data.desc,
@@ -42,7 +42,7 @@ const SecurityVerification = () => {
         }
       };
 
-      processToken();
+      consumeToken();
     }
     setIsVerifying(false);
   }, [navigate, token]);

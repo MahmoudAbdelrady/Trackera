@@ -6,13 +6,14 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.List;
 
 @Repository
 public interface UserInvalidTokenRepository extends BaseRepository<UserInvalidToken> {
     @Query("SELECT t FROM UserInvalidToken t WHERE t.expiryDate <= :now AND t.id > :maxId ORDER BY t.id")
-    List<UserInvalidToken> findAllByExpiryDateOrderById(@Param("now") Date now, @Param("maxId") Long maxId, Pageable pageable);
+    List<UserInvalidToken> findAllByExpiryDateOrderById(@Param("now") LocalDateTime now, @Param("maxId") Long maxId, Pageable pageable);
 
     @Query("SELECT t FROM UserInvalidToken t WHERE t.user.uuid = :uuid AND t.isAccessToken = :isAccessToken AND t.id > :maxId ORDER BY t.id")
     List<UserInvalidToken> findAllByUserAndTokenTypeOrderById(@Param("uuid") String uuid, @Param("isAccessToken") boolean isAccessToken, @Param("maxId") Long maxId, Pageable pageable);

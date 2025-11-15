@@ -1,25 +1,19 @@
 package com.mdevs.trackera.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.mdevs.trackera.config.general.AppConfig;
 import com.mdevs.trackera.dto.auth.*;
 import com.mdevs.trackera.entity.*;
 import com.mdevs.trackera.repository.*;
 import com.mdevs.trackera.shared.EmailTemplates;
-import com.mdevs.trackera.shared.exceptions.types.BusinessException;
+import com.mdevs.trackera.shared.SecurityTokenBuilder;
 import com.mdevs.trackera.shared.exceptions.types.UnauthorizedException;
-import com.mdevs.trackera.shared.oauth_provider.OAuthProvider;
-import com.mdevs.trackera.shared.oauth_provider.OAuthProviderFactory;
-import com.mdevs.trackera.shared.utils.AppUtils;
-import com.mdevs.trackera.shared.utils.JwtUtil;
-import com.mdevs.trackera.shared.utils.TrackeraHasher;
+import com.mdevs.trackera.oauth.OAuthProvider;
+import com.mdevs.trackera.oauth.OAuthProviderFactory;
+import com.mdevs.trackera.utils.*;
 import io.jsonwebtoken.Claims;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -37,13 +31,13 @@ public class AuthService {
 
     private final UserService userService;
 
+    private final UserEmailService userEmailService;
+
     private final AuthenticationManager authenticationManager;
 
     private final SecurityTokenService securityTokenService;
 
-    private final UserOAuthProviderService userOAuthProviderService;
-
-    private final UserPreferredSettingService userPreferredSettingService;
+    private final OAuthConnectionService oAuthConnectionService;
 
     private final OAuthProviderFactory oAuthProviderFactory;
 
@@ -51,186 +45,149 @@ public class AuthService {
 
     private final UserInvalidTokenRepository userInvalidTokenRepository;
 
-    private final UserOAuthProviderRepository userOAuthProviderRepository;
-
     private final JwtUtil jwtUtil;
 
-    private final TrackeraHasher trackeraHasher;
+    private final CookieHelper cookieHelper;
 
-    private final static String REFRESH_TOKEN_COOKIE_NAME = "refreshToken";
+    private final CryptoUtil cryptoUtil;
 
-    @Value("${trackera.environment}")
-    private String trackeraEnv;
-
-    @Value("${trackera.cookie.max-age}")
-    private String cookieMaxAge;
-
-    @Autowired
-    public AuthService(UserRepository userRepository, UserService userService, AuthenticationManager authenticationManager, SecurityTokenService securityTokenService, UserOAuthProviderService userOAuthProviderService, UserPreferredSettingService userPreferredSettingService, OAuthProviderFactory oAuthProviderFactory,
-                       SecurityTokenRepository securityTokenRepository, UserInvalidTokenRepository userInvalidTokenRepository, UserOAuthProviderRepository userOAuthProviderRepository,
-                       JwtUtil jwtUtil, TrackeraHasher trackeraHasher) {
+    public AuthService(UserRepository userRepository, UserService userService, UserEmailService userEmailService, AuthenticationManager authenticationManager, SecurityTokenService securityTokenService,
+                       OAuthConnectionService oAuthConnectionService, OAuthProviderFactory oAuthProviderFactory, SecurityTokenRepository securityTokenRepository, UserInvalidTokenRepository userInvalidTokenRepository,
+                       JwtUtil jwtUtil, CookieHelper cookieHelper, CryptoUtil cryptoUtil) {
         this.userRepository = userRepository;
         this.userService = userService;
+        this.userEmailService = userEmailService;
         this.authenticationManager = authenticationManager;
         this.securityTokenService = securityTokenService;
-        this.userOAuthProviderService = userOAuthProviderService;
-        this.userPreferredSettingService = userPreferredSettingService;
+        this.oAuthConnectionService = oAuthConnectionService;
         this.oAuthProviderFactory = oAuthProviderFactory;
         this.securityTokenRepository = securityTokenRepository;
         this.userInvalidTokenRepository = userInvalidTokenRepository;
-        this.userOAuthProviderRepository = userOAuthProviderRepository;
         this.jwtUtil = jwtUtil;
-        this.trackeraHasher = trackeraHasher;
+        this.cookieHelper = cookieHelper;
+        this.cryptoUtil = cryptoUtil;
     }
 
+    //<editor-fold desc="Registration & Authentication">
     @Transactional
-    public String signUp(SignUpDTO signUpDTO) {
+    public void signUp(SignUpDTO signUpDTO) {
         User user = userService.create(signUpDTO);
-        Map<String, String> templateParameters = new HashMap<>();
-        templateParameters.put("emailTypeDesc", "Please click the link below to activate your account.");
-        templateParameters.put("linkLabel", "Activate my account");
-        securityTokenService.createAndSendSecurityToken(user, user.getEmail(), SecurityToken.Type.ACCOUNT_ACTIVATION, null, templateParameters, null, EmailTemplates.VERIFICATION_MAIL_TEMPLATE);
-        return "Account created successfully. Please check your email for verification.";
+        SecurityTokenBuilder securityTokenBuilder = SecurityTokenBuilder.builder()
+                .user(user)
+                .targetEmail(user.getPrimaryEmail().getEmail())
+                .type(SecurityToken.Type.ACCOUNT_ACTIVATION)
+                .templateName(EmailTemplates.VERIFICATION_MAIL_TEMPLATE)
+                .extraParameters(EmailTemplateUtil.getTemplateParams(SecurityToken.Type.ACCOUNT_ACTIVATION))
+                .build();
+        securityTokenService.createAndSend(securityTokenBuilder);
     }
 
     @Transactional
-    public Map<String, Object> login(LoginDTO loginDTO, HttpServletResponse httpResponse) {
+    public Map<String, Object> login(LoginDTO loginDTO, HttpServletResponse response) {
+        Authentication authentication;
         try {
             UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(loginDTO.getEmail(), loginDTO.getPassword(), List.of());
-            Authentication authentication = authenticationManager.authenticate(authToken);
-            User loggedUser = (User) authentication.getPrincipal();
-
-            Map<String, Object> result = new HashMap<>();
-            if (!loggedUser.isVerified()) {
-                String message;
-                if (securityTokenRepository.existsByUserAndTypeAndCreatedAtGreaterThanEqual(loggedUser, SecurityToken.Type.ACCOUNT_ACTIVATION, LocalDateTime.now().minusMinutes(SecurityTokenService.MAX_SECURITY_TOKEN_MINUTES))) {
-                    message = "Account not activated. Please check your email for the activation link.";
-                } else {
-                    Map<String, String> templateParameters = new HashMap<>();
-                    templateParameters.put("emailTypeDesc", "Please click the link below to activate your account.");
-                    templateParameters.put("linkLabel", "Activate my account");
-                    securityTokenService.createAndSendSecurityToken(loggedUser, loginDTO.getEmail(), SecurityToken.Type.ACCOUNT_ACTIVATION, null, templateParameters, null, EmailTemplates.VERIFICATION_MAIL_TEMPLATE);
-                    message = "Account not activated. An activation link has been sent to your email.";
-                }
-                result.put("isError", true);
-                result.put("message", message);
-            } else {
-                result = generateLoginInfo(loggedUser, httpResponse);
-            }
-
-            return result;
-        } catch (AuthenticationException e) {
+            authentication = authenticationManager.authenticate(authToken);
+        } catch (AuthenticationException exception) {
             throw new SecurityException("Invalid credentials");
         }
-    }
 
-    public Map<String, Object> oAuth(String oAuthProvider, HttpServletRequest httpRequest) {
-        String flowUrl = oAuthProviderFactory.getProvider(OAuthProvider.fromCode(oAuthProvider)).generateAuthFlowUrl(httpRequest);
-        return Map.of("url", flowUrl);
-    }
-
-    @Transactional
-    public Map<String, Object> oAuthCallback(String provider, OAuthRequestDTO oAuthRequestDTO, HttpServletResponse httpResponse) {
-        OAuthProvider oAuthProvider = OAuthProvider.fromCode(provider);
-        OAuthUserInfoDTO oAuthUserInfoDTO = oAuthProviderFactory.getProvider(oAuthProvider).authenticate(oAuthRequestDTO);
-        User authenticatedUser;
-        boolean createOrUpdateOAuthProvider = true;
-        boolean isLinkingAccount = false;
-        UserOAuthProvider userOAuthProvider = null;
-
-        if (oAuthUserInfoDTO.getUserId() != null) { // means the user is linking an oAuth provider as user id is fetched from jwt
-            isLinkingAccount = true;
-            authenticatedUser = userRepository.findOne(oAuthUserInfoDTO.getUserId());
-            userOAuthProvider = userOAuthProviderRepository.findByUserAndProvider(authenticatedUser, oAuthProvider);
-            if (userOAuthProvider != null && !userOAuthProvider.isRevoked()) {
-                throw new BusinessException("The current account is already linked with " + oAuthProvider.getDisplayName());
+        User loggedUser = (User) authentication.getPrincipal();
+        if (!loggedUser.isVerified()) {
+            String message;
+            if (securityTokenService.hasRecentActivationToken(loggedUser, SecurityToken.Type.ACCOUNT_ACTIVATION)) {
+                message = "Account not activated. Please check your email for the activation link.";
+            } else {
+                SecurityTokenBuilder securityTokenBuilder = SecurityTokenBuilder.builder()
+                        .user(loggedUser)
+                        .targetEmail(loginDTO.getEmail())
+                        .type(SecurityToken.Type.ACCOUNT_ACTIVATION)
+                        .templateName(EmailTemplates.VERIFICATION_MAIL_TEMPLATE)
+                        .extraParameters(EmailTemplateUtil.getTemplateParams(SecurityToken.Type.ACCOUNT_ACTIVATION))
+                        .build();
+                securityTokenService.createAndSend(securityTokenBuilder);
+                message = "Account not activated. An activation link has been sent to your email.";
             }
-            if (userRepository.existsByUserEmailOrOAuthProvidersEmailAndIdNot(oAuthUserInfoDTO.getEmail(), authenticatedUser.getId())) {
-                throw new BusinessException(oAuthProvider.getDisplayName() + " account's email already in use");
-            }
-        } else {
-            Map<String, Object> oAuthUserData = userService.createOrGetOAuthUser(oAuthUserInfoDTO, oAuthProvider);
-            authenticatedUser = (User) oAuthUserData.get("user");
-            createOrUpdateOAuthProvider = (boolean) oAuthUserData.get("createOAuthProvider");
+            return Map.of("isError", true, "message", message);
         }
 
-        if (createOrUpdateOAuthProvider) {
-            userOAuthProviderService.createOrUpdate(authenticatedUser, oAuthUserInfoDTO, oAuthProvider, userOAuthProvider);
-            userService.createUserEmail(authenticatedUser, oAuthUserInfoDTO.getEmail(), oAuthUserInfoDTO.getEmail().equals(authenticatedUser.getEmail()), true, List.of(oAuthProvider.getEmailTag()));
-        }
-
-        handleOAuthProviderAdditionalInfo(authenticatedUser, oAuthProvider, oAuthUserInfoDTO.getAdditionalInfo());
-
-        return isLinkingAccount ? Map.of("message", "Account linked successfully") : generateLoginInfo(authenticatedUser, httpResponse);
-    }
-
-    private void handleOAuthProviderAdditionalInfo(User authenticatedUser, OAuthProvider oAuthProvider, Map<String, Object> additionalInfo) {
-        if (additionalInfo == null || additionalInfo.isEmpty())
-            return;
-
-        if (oAuthProvider.equals(OAuthProvider.JIRA)) {
-            userPreferredSettingService.create(authenticatedUser, JiraService.JIRA_PRIMARY_PROJECT_SETTING_KEY, AppUtils.convertObjectToJsonString(additionalInfo.get(JiraService.JIRA_PRIMARY_PROJECT_SETTING_KEY)));
-        }
-    }
-
-    private Map<String, Object> generateLoginInfo(User user, HttpServletResponse httpResponse) {
-        String accessToken = jwtUtil.generateToken(user.getUuid(), true);
-        String refreshToken = jwtUtil.generateToken(user.getUuid(), false);
-        httpResponse.addCookie(createTrackeraCookie(REFRESH_TOKEN_COOKIE_NAME, refreshToken, true, Integer.parseInt(cookieMaxAge)));
-        return Map.of("token", accessToken);
+        return generateLoginInfo(loggedUser, response);
     }
 
     @Transactional
-    public String unlinkOAuthProvider(String provider) {
-        OAuthProvider oAuthProvider = OAuthProvider.fromCode(provider);
-        User loggedUser = Objects.requireNonNull(AppConfig.getCurrentUser());
-        UserOAuthProvider deletedOAuthProvider = userOAuthProviderService.delete(loggedUser, oAuthProvider);
-        userService.removeEmailTag(loggedUser, deletedOAuthProvider.getEmail(), oAuthProvider.getEmailTag());
-        return oAuthProvider.getDisplayName() + " unlinked successfully";
-    }
-
-    @Transactional
-    public void logout(HttpServletRequest httpRequest, HttpServletResponse httpResponse) {
-        String accessToken = httpRequest.getHeader(HttpHeaders.AUTHORIZATION).substring(7);
-        String refreshToken = httpRequest.getCookies() != null ? Arrays.stream(httpRequest.getCookies()).filter(cookie -> cookie.getName().equals(REFRESH_TOKEN_COOKIE_NAME)).map(Cookie::getValue).findFirst().orElse(null) : null;
+    public void logout(HttpServletRequest request, HttpServletResponse response) {
+        String accessToken = request.getHeader(HttpHeaders.AUTHORIZATION).substring(7);
+        String refreshToken = cookieHelper.extractCookieValue(request, CookieHelper.REFRESH_TOKEN_COOKIE_NAME);
         saveInvalidToken(accessToken, true);
         if (!StringUtils.isEmpty(refreshToken)) {
             saveInvalidToken(refreshToken, false);
         }
-        httpResponse.addCookie(createTrackeraCookie(REFRESH_TOKEN_COOKIE_NAME, null, true, 0));
+        response.addCookie(cookieHelper.create(CookieHelper.REFRESH_TOKEN_COOKIE_NAME, null, true, "/trackera/auth", 0));
     }
 
-    private Cookie createTrackeraCookie(String name, String value, boolean isHttpOnly, int cookieMaxAge) {
-        Cookie trackeraCookie = new Cookie(name, value);
-        trackeraCookie.setHttpOnly(isHttpOnly);
-        trackeraCookie.setSecure(trackeraEnv.equals("prod"));
-        trackeraCookie.setPath(isHttpOnly ? "/trackera/auth" : "/");
-        trackeraCookie.setMaxAge(cookieMaxAge);
-        return trackeraCookie;
-    }
+    public Map<String, Object> refreshJwt(String refreshToken, HttpServletResponse response) {
+        Claims refreshTokenClaims = jwtUtil.validateAndGetTokenPayload(refreshToken, false);
+        String newAccessToken = jwtUtil.generateToken(refreshTokenClaims.get("id", String.class), true);
 
-    public void saveInvalidToken(String token, boolean isAccessToken) {
-        Claims accessTokenClaims = jwtUtil.getTokenPayload(token, isAccessToken);
-        User user = userRepository.findByUuid(accessTokenClaims.get("id", String.class));
-        Date accessTokenClaimsExpiration = accessTokenClaims.getExpiration();
-        UserInvalidToken invalidAccessToken = new UserInvalidToken(user, trackeraHasher.hash(token, false), accessTokenClaimsExpiration, isAccessToken);
-        userInvalidTokenRepository.save(invalidAccessToken);
-    }
-
-    public Map<String, Object> refreshJwt(String refreshToken) {
-        Claims accessTokenClaims;
-        try {
-            accessTokenClaims = jwtUtil.validateAndGetTokenPayload(refreshToken, false);
-        } catch (SecurityException e) {
-            throw new SecurityException("Login has expired. Please sign in again.");
+        LocalDateTime refreshTokenExpiry = AppUtils.convertDateToLocalDateTime(refreshTokenClaims.getExpiration());
+        if (refreshTokenExpiry.isBefore(LocalDateTime.now().plusDays(CookieHelper.REFRESH_TOKEN_ROTATION_THRESHOLD_DAYS))) {
+            String newRefreshToken = jwtUtil.generateToken(refreshTokenClaims.get("id", String.class), false);
+            response.addCookie(cookieHelper.create(CookieHelper.REFRESH_TOKEN_COOKIE_NAME, newRefreshToken, true, "/trackera/auth", CookieHelper.getRefreshTokenCookieMaxAge()));
+            saveInvalidToken(refreshToken, false);
         }
-        String newAccessToken = jwtUtil.generateToken(accessTokenClaims.get("id", String.class), true);
+
         return Map.of("token", newAccessToken);
+    }
+    //</editor-fold>
+
+    //<editor-fold desc="OAuth2 Integration">
+    public String oAuth(String providerCode, Boolean forceLink, HttpServletRequest request) {
+        OAuthProvider provider = OAuthProvider.fromCode(providerCode);
+        String jwtTokenHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
+        if (StringUtils.isEmpty(jwtTokenHeader) || !jwtTokenHeader.startsWith("Bearer ")) {
+            return oAuthProviderFactory.getProvider(provider).generateAuthFlowUrl(null);
+        }
+
+        Claims claims = jwtUtil.validateAndGetTokenPayload(jwtTokenHeader.substring(7), true);
+        User user = userRepository.findByUuid(claims.get("id", String.class));
+        if (!forceLink) {
+            oAuthConnectionService.ensureNoConnection(user, provider);
+        }
+        return oAuthProviderFactory.getProvider(provider).generateAuthFlowUrl(user);
     }
 
     @Transactional
-    public AuthResultDTO processToken(String token) {
-        SecurityToken securityToken = securityTokenService.getSecurityToken(token);
+    public Map<String, Object> oAuthCallback(String providerCode, OAuthRequestDTO oAuthRequestDTO, HttpServletResponse response) {
+        OAuthProvider provider = OAuthProvider.fromCode(providerCode);
+        OAuthUserInfoDTO oAuthUserInfoDTO = oAuthProviderFactory.getProvider(provider).authenticate(oAuthRequestDTO);
+
+        Map<String, Object> result;
+        if (oAuthUserInfoDTO.getUserId() != null) {
+            handleOAuthLinkingFlow(provider, oAuthUserInfoDTO);
+            result = Map.of("message", "Account linked successfully");
+        } else {
+            User user = handleOAuthLoginOrSignupFlow(provider, oAuthUserInfoDTO);
+            result = generateLoginInfo(user, response);
+        }
+
+        return result;
+    }
+
+    @Transactional
+    public String unlinkOAuthProvider(String providerCode) {
+        OAuthProvider provider = OAuthProvider.fromCode(providerCode);
+        User currentUser = AppConfig.getAuthenticatedCurrentUser();
+        OAuthConnection deletedConnection = oAuthConnectionService.delete(currentUser, provider);
+        oAuthProviderFactory.getProvider(provider).handlePostUnLinkingActions(currentUser);
+        userEmailService.deleteIfUnused(deletedConnection.getAccountEmail());
+        return provider.getDisplayName() + " unlinked successfully";
+    }
+    //</editor-fold>
+
+    //<editor-fold desc="Security Token Management">
+    @Transactional
+    public AuthResultDTO consumeToken(String token) {
+        SecurityToken securityToken = securityTokenService.validateAndGet(token);
         User user = securityToken.getUser();
 
         String message;
@@ -240,7 +197,7 @@ public class AuthService {
                 message = "Your account has been successfully activated";
             }
             case NEW_EMAIL_VERIFICATION -> {
-                userService.verifyEmail(user, securityToken.getAdditionalInfo());
+                userService.verifyAndChangePrimaryEmail(user, securityToken.getAdditionalInfo());
                 message = "Your email has been successfully verified";
             }
             default -> throw new UnauthorizedException("Url is expired or invalid");
@@ -249,37 +206,66 @@ public class AuthService {
 
         return new AuthResultDTO(securityToken.getType().getLabel(), message);
     }
+    //</editor-fold>
 
-    public void validateToken(String token) {
-        securityTokenService.getSecurityToken(token);
+    //<editor-fold desc="Password Management">
+    @Transactional
+    public void requestResetPassword(String email) {
+        User user = userRepository.findByPrimaryEmail(email);
+        if (user != null && user.canResetPassword()) {
+            userService.sendPasswordFlowEmail(user, true);
+        }
     }
 
     @Transactional
-    public String sendResetPassword(String email) {
-        User user = null;
-        try {
-            user = userService.validateAndGetUserByEmail(email);
-        } catch (Exception e) {
-            // do nothing
-        }
-
-        if (user != null && user.canResetPassword() && user.getEmail().equals(email)) {
-            userService.sendResetPasswordEmail(user, email, "Please click the link below to reset your password.", true);
-        }
-
-        return "If the email exists, a password reset link has been sent to your email.";
-    }
-
-    @Transactional
-    public String changePassword(String token, PasswordDTO passwordDTO) {
-        SecurityToken securityToken = securityTokenService.getSecurityToken(token);
-        if (securityToken.getType().equals(SecurityToken.Type.ACCOUNT_ACTIVATION)) {
+    public void resetUserPassword(String token, PasswordDTO passwordDTO) {
+        SecurityToken securityToken = securityTokenService.validateAndGet(token);
+        if (!securityToken.getType().equals(SecurityToken.Type.PASSWORD_RESET)) {
             throw new UnauthorizedException("Url is expired or invalid");
         }
         User user = securityToken.getUser();
-        user.setPassword(userService.getUserNewPassword(user, passwordDTO));
-        userRepository.save(user);
+        userService.validateAndUpdateUserPassword(user, passwordDTO, true);
         securityTokenRepository.delete(securityToken);
-        return "Password changed successfully";
     }
+    //</editor-fold>
+
+    //<editor-fold desc="Internal Methods & Validations">
+    private void handleOAuthLinkingFlow(OAuthProvider provider, OAuthUserInfoDTO oAuthUserInfo) {
+        User user = userRepository.findOne(oAuthUserInfo.getUserId());
+        userEmailService.ensureOAuthEmailAvailable(oAuthUserInfo.getEmail(), user, provider);
+        processOAuthData(user, provider, oAuthUserInfo);
+        userService.handleOAuthEmailMatching(user, oAuthUserInfo);
+    }
+
+    private User handleOAuthLoginOrSignupFlow(OAuthProvider provider, OAuthUserInfoDTO oAuthUserInfo) {
+        Map<String, Object> userData = userService.createOrGetOAuthUser(oAuthUserInfo, provider);
+        User user = (User) userData.get("user");
+        boolean isNewUser = (boolean) userData.get("isNewUser");
+        if (isNewUser) {
+            processOAuthData(user, provider, oAuthUserInfo);
+        }
+        return user;
+    }
+
+    private void processOAuthData(User user, OAuthProvider provider, OAuthUserInfoDTO oAuthUserInfoDTO) {
+        UserEmail userEmail = userEmailService.getOrCreate(user, oAuthUserInfoDTO.getEmail());
+        oAuthConnectionService.createOrUpdate(user, oAuthUserInfoDTO, provider, userEmail);
+        oAuthProviderFactory.getProvider(provider).handlePostLinkingActions(user, oAuthUserInfoDTO);
+    }
+
+    private Map<String, Object> generateLoginInfo(User user, HttpServletResponse response) {
+        String accessToken = jwtUtil.generateToken(user.getUuid(), true);
+        String refreshToken = jwtUtil.generateToken(user.getUuid(), false);
+        response.addCookie(cookieHelper.create(CookieHelper.REFRESH_TOKEN_COOKIE_NAME, refreshToken, true, "/trackera/auth", CookieHelper.getRefreshTokenCookieMaxAge()));
+        return Map.of("token", accessToken);
+    }
+
+    private void saveInvalidToken(String token, boolean isAccessToken) {
+        Claims tokenClaims = jwtUtil.getTokenPayload(token, isAccessToken);
+        User user = userRepository.findByUuid(tokenClaims.get("id", String.class));
+        LocalDateTime tokenExpiryDate = AppUtils.convertDateToLocalDateTime(tokenClaims.getExpiration());
+        UserInvalidToken invalidAccessToken = new UserInvalidToken(user, cryptoUtil.hash(token, false), tokenExpiryDate, isAccessToken);
+        userInvalidTokenRepository.save(invalidAccessToken);
+    }
+    //</editor-fold>
 }

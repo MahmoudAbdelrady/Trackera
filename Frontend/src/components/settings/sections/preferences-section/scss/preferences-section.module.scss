@@ -4,15 +4,24 @@
 .preferences_section {
   @include start-rev;
   flex-direction: column;
-  gap: 10px;
+  gap: 20px;
   .loading_spinner {
     width: 100%;
   }
   .preference_select {
     min-width: 150px;
   }
+  .preference_input {
+    color: $subtitleColor;
+    @media (max-width: 768px) {
+      width: 100%;
+    }
+  }
   .update_button {
     align-self: flex-end;
     margin-top: 10px;
+    @media (max-width: 768px) {
+      width: 100%;
+    }
   }
 }

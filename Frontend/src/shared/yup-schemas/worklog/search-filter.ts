@@ -2,14 +2,13 @@ import dayjs from "dayjs";
 import * as yup from "yup";
 
 const workLogSearchFilterSchema = yup.object({
-  fieldName: yup.string().required(),
   operator: yup.string().nullable().optional(),
   value: yup.string().trim().nullable().optional(),
-  extraValue: yup.string().trim().nullable().optional(),
+  secondValue: yup.string().trim().nullable().optional(),
 });
 
 const validateOperatorWithValues = function (this: yup.TestContext<any>, obj: any) {
-  const { operator, value, extraValue } = obj || {};
+  const { operator, value, secondValue } = obj || {};
   const errors: any[] = [];
 
   // if value is provided but no operator
@@ -28,10 +27,10 @@ const validateOperatorWithValues = function (this: yup.TestContext<any>, obj: an
     });
   }
 
-  // if operator == "BETWEEN" but no extraValue
-  if (operator === "BETWEEN" && !extraValue) {
+  // if operator == "BETWEEN" but no secondValue
+  if (operator === "BETWEEN" && !secondValue) {
     errors.push({
-      path: `${this.path}.extraValue`,
+      path: `${this.path}.secondValue`,
       message: "Field is required",
     });
   }
@@ -43,42 +42,43 @@ const validateOperatorWithValues = function (this: yup.TestContext<any>, obj: an
 };
 
 const searchFilterSchema = yup.object({
-  logName: workLogSearchFilterSchema,
+  logName: yup.string().nullable().optional(),
 
-  logHours: workLogSearchFilterSchema.test({
-    name: "validate-logHours-fields",
+  totalHours: workLogSearchFilterSchema.nullable().optional().test({
+    name: "validate-totalHours-fields",
     test: validateOperatorWithValues,
   }),
 
-  dateFrom: workLogSearchFilterSchema.test({
-    name: "validate-dateFrom-after-dateTo",
-    test: function (value) {
-      const { value: dateFromValue } = value || {};
-      const dateToValue = this.parent.dateTo?.value;
+  dateFrom: yup
+    .string()
+    .nullable()
+    .optional()
+    .test({
+      name: "validate-dateFrom-after-dateTo",
+      message: "Field must be before 'Date To'",
+      test: function (dateFromValue) {
+        const dateToValue = this.parent.dateTo;
 
-      if (!dateFromValue || !dateToValue) {
-        return true;
-      }
+        if (!dateFromValue || !dateToValue) {
+          return true;
+        }
 
-      const from = dayjs(dateFromValue);
-      const to = dayjs(dateToValue);
+        const from = dayjs(dateFromValue);
+        const to = dayjs(dateToValue);
 
-      if (!from.isValid() || !to.isValid()) {
-        return true;
-      }
+        if (!from.isValid() || !to.isValid()) {
+          return true;
+        }
 
-      if (from.isAfter(to)) {
-        return this.createError({ path: `${this.path}.value`, message: "Field must be before 'Date To'" });
-      }
-      return true;
-    },
-  }),
+        return !from.isAfter(to);
+      },
+    }),
 
-  dateTo: workLogSearchFilterSchema,
+  dateTo: yup.string().nullable().optional(),
 
-  evaluation: workLogSearchFilterSchema,
+  evaluation: yup.string().nullable().optional(),
 
-  status: workLogSearchFilterSchema,
+  status: yup.string().nullable().optional(),
 });
 
 export default searchFilterSchema;

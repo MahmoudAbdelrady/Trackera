@@ -4,10 +4,7 @@ import { Avatar, Dropdown, type MenuProps } from "antd";
 import { Sidebar } from "..";
 import { useState } from "react";
 import { useAuthStore } from "../../state/store";
-import {
-  showErrorToast,
-  showSuccessToast,
-} from "../../utils/toast-handler/showToast";
+import { showErrorToast, showSuccessToast } from "../../utils/toast-handler/showToast";
 import requestInstance from "../../shared/axios/request-instance";
 import { useNavigate } from "react-router-dom";
 import { userQueries } from "../../state/queries";
@@ -35,9 +32,7 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
   const userProfileItems: MenuProps["items"] = [
     {
       label: (
-        <div
-          className={`${classes.profile_item} ${isLoading && classes.disabled}`}
-        >
+        <div className={`${classes.profile_item} ${isLoading && classes.disabled}`}>
           <LogOut />
           <span className={classes.profile_item_label}>Logout</span>
         </div>

@@ -4,9 +4,6 @@ import com.mdevs.trackera.dto.auth.AuthFilterUserDTO;
 import com.mdevs.trackera.entity.User;
 import com.mdevs.trackera.repository.UserRepository;
 import lombok.Getter;
-import org.modelmapper.ModelMapper;
-import org.modelmapper.convention.MatchingStrategies;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
@@ -18,6 +15,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.LocalDate;
+import java.util.Objects;
 import java.util.Properties;
 
 @Configuration
@@ -31,18 +29,8 @@ public class AppConfig {
     @Value("${trackera.mail.password}")
     private String emailPassword;
 
-    @Autowired
     public AppConfig(ApplicationContext applicationContext) {
         AppConfig.applicationContext = applicationContext;
-    }
-
-    @Bean
-    public ModelMapper modelMapper() {
-        ModelMapper modelMapper = new ModelMapper();
-        modelMapper.getConfiguration()
-                .setMatchingStrategy(MatchingStrategies.STRICT)
-                .setSkipNullEnabled(true);
-        return modelMapper;
     }
 
     @Bean
@@ -72,16 +60,20 @@ public class AppConfig {
         return applicationContext.getEnvironment().getProperty("trackera.frontend.url");
     }
 
-    public static String getBackendUrl() {
-        return applicationContext.getEnvironment().getProperty("trackera.backend.url");
-    }
-
     public static User getCurrentUser() {
         Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         return (principal instanceof AuthFilterUserDTO) ? applicationContext.getBean(UserRepository.class).findByUuid(((AuthFilterUserDTO) principal).getId()) : null;
     }
 
+    public static User getAuthenticatedCurrentUser() {
+        return Objects.requireNonNull(getCurrentUser(), "Authenticated user not found");
+    }
+
     public static LocalDate getMinQueryableDate() {
         return LocalDate.now().minusYears(2).withDayOfYear(1);
+    }
+
+    public static boolean isProductionEnv() {
+        return applicationContext.getEnvironment().getProperty("trackera.environment", "dev").equalsIgnoreCase("prod");
     }
 }

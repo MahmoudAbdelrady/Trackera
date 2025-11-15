@@ -7,7 +7,7 @@ type WorkLogStatusType = "SYNCED" | "PARTIALLY" | "NOT_SYNCED";
 
 interface Worklog extends TrackeraTableEntity {
   name: string;
-  totalHours: string;
+  totalTime: string;
   workDate: string;
   evaluation: WorkLogEvaluationType;
   status: WorkLogStatusType;
@@ -17,7 +17,7 @@ interface WorklogTask extends TrackeraTableEntity {
   taskName: string;
   taskUrl: string;
   totalHours: string;
-  totalTime: number;
+  totalMinutes: number;
   status: WorkLogStatusType;
 }
 
@@ -82,15 +82,14 @@ interface WorkLogSummaryCard {
 }
 
 interface WorkLogSearchFilter {
-  fieldName: string;
-  operator?: string | undefined | null;
+  operator: string | undefined | null;
   value: any | undefined | null;
-  extraValue?: any | undefined | null;
+  secondValue?: any | undefined | null;
 }
 
 interface WorkLogsFilterProps {
-  filters: WorkLogSearchFilter[];
-  setFilters: (filters: WorkLogSearchFilter[]) => void;
+  filters: Record<string, any>;
+  setFilters: (filters: Record<string, any>) => void;
   setFetchWorkLog: (fetch: boolean) => void;
 }
 

@@ -3,7 +3,6 @@ package com.mdevs.trackera.config.security;
 import com.mdevs.trackera.config.general.AppConfig;
 import com.mdevs.trackera.filter.JwtFilter;
 import com.mdevs.trackera.service.UserService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -25,7 +24,6 @@ public class SecurityConfig {
 
     private final PasswordEncoder passwordEncoder;
 
-    @Autowired
     public SecurityConfig(UserService userService, PasswordEncoder passwordEncoder) {
         this.userService = userService;
         this.passwordEncoder = passwordEncoder;

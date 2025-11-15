@@ -4,11 +4,11 @@ import com.mdevs.trackera.config.general.AppConfig;
 import com.mdevs.trackera.entity.SecurityToken;
 import com.mdevs.trackera.entity.User;
 import com.mdevs.trackera.repository.SecurityTokenRepository;
+import com.mdevs.trackera.shared.SecurityTokenBuilder;
 import com.mdevs.trackera.shared.exceptions.types.UnauthorizedException;
-import com.mdevs.trackera.shared.utils.TrackeraHasher;
-import com.mdevs.trackera.shared.utils.mail.TrackeraEmailTarget;
+import com.mdevs.trackera.utils.CryptoUtil;
+import com.mdevs.trackera.shared.TrackeraEmailTarget;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,18 +20,18 @@ import java.util.Map;
 public class SecurityTokenService {
     private final SecurityTokenRepository securityTokenRepository;
 
-    private final TrackeraHasher trackeraHasher;
+    private final CryptoUtil cryptoUtil;
 
-    public final static long MAX_SECURITY_TOKEN_MINUTES = 15;
+    public static final long MAX_SECURITY_TOKEN_MINUTES = 15;
 
-    @Autowired
-    public SecurityTokenService(SecurityTokenRepository securityTokenRepository, TrackeraHasher trackeraHasher) {
+    public SecurityTokenService(SecurityTokenRepository securityTokenRepository, CryptoUtil cryptoUtil) {
         this.securityTokenRepository = securityTokenRepository;
-        this.trackeraHasher = trackeraHasher;
+        this.cryptoUtil = cryptoUtil;
     }
 
-    public SecurityToken getSecurityToken(String token) {
-        Map<String, String> tokenPayload = trackeraHasher.parseSecurityToken(token);
+    //<editor-fold desc="Retrieval">
+    public SecurityToken validateAndGet(String token) {
+        Map<String, String> tokenPayload = cryptoUtil.parseSecurityToken(token);
         if (tokenPayload == null || tokenPayload.isEmpty()) {
             throw new UnauthorizedException("Url is expired or invalid");
         }
@@ -42,35 +42,46 @@ public class SecurityTokenService {
         }
         return securityRequestToken;
     }
+    //</editor-fold>
 
+    //<editor-fold desc="Creation and Update">
     @Transactional
-    public void createAndSendSecurityToken(User user, String targetEmail, SecurityToken.Type type, String additionalInfo, Map<String, String> extraParameters, String pageUrl, String templateName) {
-        if (securityTokenRepository.existsByUserAndTypeAndCreatedAtGreaterThanEqual(user, type, LocalDateTime.now().minusMinutes(MAX_SECURITY_TOKEN_MINUTES))) {
+    public void createAndSend(SecurityTokenBuilder builder) {
+        if (hasRecentActivationToken(builder.getUser(), builder.getType())) {
             return;
         }
 
-        SecurityToken securityToken = new SecurityToken(user, type);
-        if (!StringUtils.isEmpty(additionalInfo)) {
-            securityToken.setAdditionalInfo(additionalInfo);
+        SecurityToken securityToken = new SecurityToken(builder.getUser(), builder.getType());
+        if (!StringUtils.isEmpty(builder.getAdditionalInfo())) {
+            securityToken.setAdditionalInfo(builder.getAdditionalInfo());
         }
         securityTokenRepository.save(securityToken);
-        String token = trackeraHasher.hashForSecurityToken(securityToken.getId());
+        String token = cryptoUtil.hashForSecurityToken(securityToken.getId());
 
         Map<String, String> templateParameters = new HashMap<>();
-        templateParameters.put("emailType", type.getLabel());
-        templateParameters.put("verificationLink", AppConfig.getFrontendUrl() + (pageUrl != null ? pageUrl : "/security-verification") + "?token=" + token);
-        if (extraParameters != null && !extraParameters.isEmpty()) {
-            templateParameters.putAll(extraParameters);
+        templateParameters.put("emailType", builder.getType().getLabel());
+        templateParameters.put("verificationLink", AppConfig.getFrontendUrl() + (builder.getPageUrl() != null ? builder.getPageUrl() : "/security-verification") + "?token=" + token);
+        if (builder.getExtraParameters() != null && !builder.getExtraParameters().isEmpty()) {
+            templateParameters.putAll(builder.getExtraParameters());
         }
         TrackeraEmailTarget.builder()
-                .targetEmail(targetEmail)
-                .subject(type.getLabel())
-                .templateName(templateName)
+                .targetEmail(builder.getTargetEmail())
+                .subject(builder.getType().getLabel())
+                .templateName(builder.getTemplateName())
                 .parameters(templateParameters)
                 .build().send();
     }
+    //</editor-fold>
 
-    public void deleteNonExpiredSecurityToken(User user, SecurityToken.Type type) {
+    //<editor-fold desc="Deletion">
+    public void deleteNonExpired(User user, SecurityToken.Type type) {
         securityTokenRepository.deleteByUserAndTypeAndCreatedAtGreaterThanEqual(user, type, LocalDateTime.now().minusMinutes(MAX_SECURITY_TOKEN_MINUTES));
     }
+    //</editor-fold>
+
+    //<editor-fold desc="Validations">
+    public boolean hasRecentActivationToken(User user, SecurityToken.Type type) {
+        return securityTokenRepository.existsByUserAndTypeAndCreatedAtGreaterThanEqual(user, type, LocalDateTime.now().minusMinutes(MAX_SECURITY_TOKEN_MINUTES));
+    }
+    //</editor-fold>
 }

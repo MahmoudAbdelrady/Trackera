@@ -22,6 +22,7 @@ import EmailSection from "./settings/sections/email-section/EmailSection";
 import ChangePasswordSection from "./settings/sections/change-password-section/ChangePasswordSection";
 import PreferencesSection from "./settings/sections/preferences-section/PreferencesSection";
 import UserPreference from "./settings/user-preference/UserPreference";
+import ServerError from "./server-error/ServerError";
 
 export {
   AuthLayout,
@@ -48,4 +49,5 @@ export {
   ChangePasswordSection,
   PreferencesSection,
   UserPreference,
+  ServerError,
 };

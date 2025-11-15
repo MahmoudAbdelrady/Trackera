@@ -3,14 +3,13 @@ package com.mdevs.trackera.filter;
 import com.mdevs.trackera.config.security.ApiConfig;
 import com.mdevs.trackera.dto.auth.AuthFilterUserDTO;
 import com.mdevs.trackera.shared.annotations.PublicAPI;
-import com.mdevs.trackera.shared.utils.JwtUtil;
+import com.mdevs.trackera.utils.JwtUtil;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -28,7 +27,6 @@ public class JwtFilter extends OncePerRequestFilter {
 
     private final ApiConfig apiConfig;
 
-    @Autowired
     public JwtFilter(JwtUtil jwtUtil, ApiConfig apiConfig) {
         this.jwtUtil = jwtUtil;
         this.apiConfig = apiConfig;

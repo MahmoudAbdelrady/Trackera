@@ -16,7 +16,7 @@ import java.util.List;
 
 @Audited
 @Entity
-@Table(indexes = {@Index(columnList = "EMAIL"), @Index(columnList = "UUID")})
+@Table(indexes = {@Index(columnList = "UUID")})
 @Getter
 @Setter
 public class User extends BaseEntity implements UserDetails {
@@ -26,8 +26,11 @@ public class User extends BaseEntity implements UserDetails {
     @Column(nullable = false)
     private String lastname;
 
-    @Column(nullable = false, unique = true)
-    private String email;
+    @OneToOne
+    private UserEmail primaryEmail;
+
+    @OneToOne
+    private UserEmail pendingEmail;
 
     private String password;
 
@@ -37,16 +40,12 @@ public class User extends BaseEntity implements UserDetails {
     private String avatarColor;
 
     @Column(nullable = false)
-    @ColumnDefault("0")
+    @ColumnDefault("false")
     private boolean isVerified = false;
 
-    @Formula("EXISTS (SELECT 1 FROM USEROAUTHPROVIDERS uap WHERE uap.USER_ID = ID)")
+    @Formula("EXISTS (SELECT 1 FROM OAUTHCONNECTIONS oac WHERE oac.USER_ID = ID)")
     @NotAudited
     private boolean isOAuth;
-
-    @OneToMany(fetch = FetchType.LAZY, mappedBy = "user")
-    @NotAudited
-    private List<UserOAuthProvider> oAuthProviders;
 
     public User() {
         this.avatarColor = String.format("#%06x", (int) (Math.random() * 0xffffff));
@@ -68,5 +67,9 @@ public class User extends BaseEntity implements UserDetails {
 
     public boolean isPasswordSet() {
         return !StringUtils.isEmpty(password);
+    }
+
+    public boolean isEmailLinked(UserEmail email) {
+        return email.getId().equals(primaryEmail.getId()) || (pendingEmail != null && email.getId().equals(pendingEmail.getId()));
     }
 }

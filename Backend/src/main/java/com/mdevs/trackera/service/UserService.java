@@ -1,31 +1,26 @@
 package com.mdevs.trackera.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.mdevs.trackera.config.general.AppConfig;
 import com.mdevs.trackera.dto.auth.LoggedUserDTO;
 import com.mdevs.trackera.dto.auth.OAuthUserInfoDTO;
 import com.mdevs.trackera.dto.auth.PasswordDTO;
 import com.mdevs.trackera.dto.auth.SignUpDTO;
-import com.mdevs.trackera.dto.jira.AccessibleResourceDTO;
-import com.mdevs.trackera.dto.user.UserEmailDTO;
-import com.mdevs.trackera.dto.user.UserPreferenceDTO;
 import com.mdevs.trackera.entity.SecurityToken;
 import com.mdevs.trackera.entity.User;
 import com.mdevs.trackera.entity.UserEmail;
-import com.mdevs.trackera.entity.UserOAuthProvider;
+import com.mdevs.trackera.entity.OAuthConnection;
 import com.mdevs.trackera.repository.UserEmailRepository;
-import com.mdevs.trackera.repository.UserOAuthProviderRepository;
 import com.mdevs.trackera.repository.UserRepository;
 import com.mdevs.trackera.shared.EmailTemplates;
-import com.mdevs.trackera.shared.enums.EmailTag;
+import com.mdevs.trackera.shared.SecurityTokenBuilder;
+import com.mdevs.trackera.shared.enums.UserPreferenceOption;
 import com.mdevs.trackera.shared.exceptions.types.BusinessException;
-import com.mdevs.trackera.shared.exceptions.types.NotFoundException;
-import com.mdevs.trackera.shared.oauth_provider.OAuthProvider;
-import com.mdevs.trackera.shared.utils.AppUtils;
-import com.mdevs.trackera.shared.utils.mail.TrackeraEmailTarget;
+import com.mdevs.trackera.oauth.OAuthProvider;
+import com.mdevs.trackera.shared.TrackeraEmailTarget;
+import com.mdevs.trackera.shared.mappers.UserMapper;
+import com.mdevs.trackera.utils.AppUtils;
+import com.mdevs.trackera.utils.EmailTemplateUtil;
 import org.apache.commons.lang3.StringUtils;
-import org.modelmapper.ModelMapper;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -41,310 +36,278 @@ public class UserService implements UserDetailsService {
 
     private final UserEmailRepository userEmailRepository;
 
-    private final UserOAuthProviderRepository userOAuthProviderRepository;
+    private final UserEmailService userEmailService;
 
-    private final UserOAuthProviderService userOAuthProviderService;
+    private final OAuthConnectionService oAuthConnectionService;
 
-    private final UserPreferredSettingService userPreferredSettingService;
+    private final UserPreferenceService userPreferenceService;
 
     private final JiraService jiraService;
 
     private final SecurityTokenService securityTokenService;
 
-    private final ModelMapper modelMapper;
-
     private final PasswordEncoder passwordEncoder;
 
-    public static final String EMAIL_REGEX = "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9-]+(?:\\.[a-zA-Z0-9-]+)*\\.[a-zA-Z]{2,}$";
+    private final UserMapper userMapper;
 
-    @Autowired
-    public UserService(UserRepository userRepository, UserEmailRepository userEmailRepository, UserOAuthProviderRepository userOAuthProviderRepository, UserOAuthProviderService userOAuthProviderService, UserPreferredSettingService userPreferredSettingService, JiraService jiraService,
-                       SecurityTokenService securityTokenService, ModelMapper modelMapper, PasswordEncoder passwordEncoder) {
+    public UserService(UserRepository userRepository, UserEmailRepository userEmailRepository, UserEmailService userEmailService, OAuthConnectionService oAuthConnectionService,
+                       UserPreferenceService userPreferenceService, JiraService jiraService, SecurityTokenService securityTokenService, PasswordEncoder passwordEncoder, UserMapper userMapper) {
         this.userRepository = userRepository;
         this.userEmailRepository = userEmailRepository;
-        this.userOAuthProviderRepository = userOAuthProviderRepository;
-        this.userOAuthProviderService = userOAuthProviderService;
-        this.userPreferredSettingService = userPreferredSettingService;
+        this.userEmailService = userEmailService;
+        this.oAuthConnectionService = oAuthConnectionService;
+        this.userPreferenceService = userPreferenceService;
         this.jiraService = jiraService;
         this.securityTokenService = securityTokenService;
-        this.modelMapper = modelMapper;
         this.passwordEncoder = passwordEncoder;
+        this.userMapper = userMapper;
     }
 
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        try {
-            return validateAndGetUserByEmail(email);
-        } catch (Exception e) {
-            throw new UsernameNotFoundException(e.getMessage());
-        }
+        return Optional.ofNullable(userRepository.findByPrimaryEmail(email)).orElseThrow(() -> new UsernameNotFoundException("Account not found."));
     }
 
-    public User validateAndGetUserByEmail(String email) {
-        UserEmail userEmail = userEmailRepository.findByEmail(email);
-        if (userEmail == null) {
-            throw new UsernameNotFoundException("Account not found. Please create an account and try again.");
-        }
-        if (!userEmail.isPrimary() && !userEmail.isVerified()) {
-            throw new SecurityException("Invalid email or password.");
-        }
-        return userEmail.getUser();
-    }
-
+    //<editor-fold desc="User Info Retrieval">
     public LoggedUserDTO getMeInfo() {
-        return modelMapper.map(AppConfig.getCurrentUser(), LoggedUserDTO.class);
+        return userMapper.toLoggedUserDTO(AppConfig.getAuthenticatedCurrentUser());
     }
 
     public List<Map<String, Object>> getUserOAuthProviders() {
-        User loggedUser = AppConfig.getCurrentUser();
-        List<UserOAuthProvider> userOAuthProviders = userOAuthProviderRepository.findByUser(loggedUser);
-        return Arrays.stream(OAuthProvider.values()).map(p -> {
-            UserOAuthProvider userOAuthProvider = userOAuthProviders.stream().filter(uop -> uop.getProvider().equals(p)).findFirst().orElse(null);
+        User loggedUser = AppConfig.getAuthenticatedCurrentUser();
+        Map<OAuthProvider, OAuthConnection> linkedProviders = oAuthConnectionService.getConnectionsAsMap(loggedUser);
+
+        return Arrays.stream(OAuthProvider.values()).map(provider -> {
+            OAuthConnection userProvider = linkedProviders.get(provider);
+            boolean isLinked = userProvider != null;
             Map<String, Object> providerInfo = new HashMap<>();
-            providerInfo.put("provider", Map.of("code", p.getCode(), "name", p.getDisplayName()));
-            boolean userOAuthProviderExists = userOAuthProvider != null;
-            providerInfo.put("isLinked", userOAuthProviderExists);
-            providerInfo.put("email", userOAuthProviderExists && !StringUtils.isEmpty(userOAuthProvider.getEmail()) ? userOAuthProvider.getEmail() : null);
-            if (userOAuthProviderExists) {
-                providerInfo.put("isRevoked", userOAuthProvider.isRevoked());
+            providerInfo.put("provider", Map.of("name", provider.getDisplayName(), "code", provider.getCode()));
+            providerInfo.put("isLinked", isLinked);
+            if (isLinked) {
+                providerInfo.put("email", userProvider.getAccountEmail().getEmail());
+                providerInfo.put("isRevoked", userProvider.isRevoked());
             }
             return providerInfo;
         }).toList();
     }
+    //</editor-fold>
 
+    //<editor-fold desc="User Info Management">
+    public void updateUserPreferences(Map<String, Object> updatedPreferences) {
+        User currentUser = AppConfig.getAuthenticatedCurrentUser();
+        for (Map.Entry<String, Object> preference : updatedPreferences.entrySet()) {
+            userPreferenceService.validatePreference(preference);
+            if (preference.getKey().equals(UserPreferenceOption.JIRA_PRIMARY_PROJECT.getCode())) {
+                preference.setValue(AppUtils.convertObjectToJsonString(jiraService.findSiteById(currentUser, preference.getValue().toString())));
+            }
+        }
+        userPreferenceService.updateAll(currentUser, updatedPreferences);
+        jiraService.handleSiteChange(currentUser);
+    }
+    //</editor-fold>
+
+    //<editor-fold desc="Registration & Authentication">
+    @Transactional
     public User create(SignUpDTO signUpDTO) {
         if (userEmailRepository.existsByEmail(signUpDTO.getEmail())) {
-            throw new BusinessException("Email already exists");
+            throw new BusinessException("Email already in use");
         }
         if (!signUpDTO.getPassword().equals(signUpDTO.getConfirmPassword())) {
             throw new BusinessException("Passwords do not match");
         }
-        User user = modelMapper.map(signUpDTO, User.class);
+
+        User user = userMapper.toEntity(signUpDTO);
         user.setPassword(passwordEncoder.encode(user.getPassword()));
         userRepository.save(user);
-        UserEmail userEmail = new UserEmail(user, signUpDTO.getEmail(), true, false);
-        userEmailRepository.save(userEmail);
+
+        UserEmail userEmail = userEmailService.create(user, signUpDTO.getEmail());
+        user.setPrimaryEmail(userEmail);
+        userRepository.save(user);
+
+        userPreferenceService.create(user, UserPreferenceOption.WORKLOGS_MONTHLY_TARGET_HOURS, "200");
+
         return user;
     }
 
-    public void createUserEmail(User user, String email, boolean isPrimary, boolean isVerified, List<EmailTag> tags) {
-        UserEmail userEmail = Optional.ofNullable(userEmailRepository.findByUserAndEmail(user, email)).orElse(new UserEmail(user, email, isPrimary, isVerified));
-        userEmail.addTags(tags);
-        if (tags.stream().anyMatch(EmailTag::isOAuthTag)) {
-            userEmail.removeTag(EmailTag.PASSWORD_REQUIRED);
-        }
-        userEmailRepository.save(userEmail);
-    }
-
+    @Transactional
     public Map<String, Object> createOrGetOAuthUser(OAuthUserInfoDTO oAuthUserInfo, OAuthProvider oAuthProvider) {
         User authenticatedUser = Optional.ofNullable(userEmailRepository.findByEmail(oAuthUserInfo.getEmail())).map(UserEmail::getUser).orElse(null);
-        boolean createOAuthProvider = true;
+        boolean isNewUser = authenticatedUser == null;
 
-        if (authenticatedUser != null) { // means the user is logging in with an oAuth provider
-            createOAuthProvider = false;
-            if (userOAuthProviderService.getByUserAndProvider(authenticatedUser, oAuthProvider) == null) {
-                throw new BusinessException("This account is not linked with " + oAuthProvider.getDisplayName());
-            }
+        if (!isNewUser) {
+            handleExistingUserOAuthLogin(authenticatedUser, oAuthUserInfo, oAuthProvider);
         } else {
-            authenticatedUser = new User();
-            authenticatedUser.setEmail(oAuthUserInfo.getEmail());
-            authenticatedUser.setFirstname(oAuthUserInfo.getFirstname());
-            authenticatedUser.setLastname(oAuthUserInfo.getLastname());
-            authenticatedUser.setProfilePicture(oAuthUserInfo.getProfilePicture());
-            authenticatedUser.setVerified(true);
-            userRepository.save(authenticatedUser);
+            authenticatedUser = createUserFromOAuth(oAuthUserInfo);
         }
 
         return Map.of(
                 "user", authenticatedUser,
-                "createOAuthProvider", createOAuthProvider
+                "isNewUser", isNewUser
         );
+    }
+
+    @Transactional
+    public void handleExistingUserOAuthLogin(User authenticatedUser, OAuthUserInfoDTO oAuthUserInfo, OAuthProvider oAuthProvider) {
+        OAuthConnection oAuthConnection = oAuthConnectionService.getConnectionByUserAndEmailOrThrow(authenticatedUser, oAuthUserInfo.getEmail(), oAuthProvider);
+        if (oAuthConnection.isExpired() || oAuthConnection.isRevoked()) {
+            oAuthConnectionService.updateAccessCredentials(oAuthConnection, oAuthUserInfo.getAccessCredentials());
+        }
+        handleOAuthEmailMatching(authenticatedUser, oAuthUserInfo);
+    }
+
+    @Transactional
+    public User createUserFromOAuth(OAuthUserInfoDTO oAuthUserInfo) {
+        User authenticatedUser = new User();
+        authenticatedUser.setFirstname(oAuthUserInfo.getFirstname());
+        authenticatedUser.setLastname(oAuthUserInfo.getLastname());
+        authenticatedUser.setProfilePicture(oAuthUserInfo.getProfilePicture());
+        authenticatedUser.setVerified(true);
+        userRepository.save(authenticatedUser);
+
+        UserEmail oAuthUserEmail = userEmailService.create(authenticatedUser, oAuthUserInfo.getEmail());
+        authenticatedUser.setPrimaryEmail(oAuthUserEmail);
+        userRepository.save(authenticatedUser);
+
+        userPreferenceService.create(authenticatedUser, UserPreferenceOption.WORKLOGS_MONTHLY_TARGET_HOURS, "200");
+
+        return authenticatedUser;
+    }
+
+    @Transactional
+    public void handleOAuthEmailMatching(User authenticatedUser, OAuthUserInfoDTO oAuthUserInfo) {
+        if (!authenticatedUser.isVerified() && authenticatedUser.getPrimaryEmail().getEmail().equals(oAuthUserInfo.getEmail())) {
+            verifyUser(authenticatedUser);
+            securityTokenService.deleteNonExpired(authenticatedUser, SecurityToken.Type.ACCOUNT_ACTIVATION);
+        } else if (authenticatedUser.getPendingEmail() != null && authenticatedUser.getPendingEmail().getEmail().equals(oAuthUserInfo.getEmail())) {
+            verifyAndChangePrimaryEmail(authenticatedUser, oAuthUserInfo.getEmail());
+            securityTokenService.deleteNonExpired(authenticatedUser, SecurityToken.Type.NEW_EMAIL_VERIFICATION);
+        }
     }
 
     public void verifyUser(User user) {
         user.setVerified(true);
         userRepository.save(user);
     }
+    //</editor-fold>
 
+    //<editor-fold desc="Password Management">
     @Transactional
-    public String changePassword(PasswordDTO passwordDTO) {
-        User user = Objects.requireNonNull(AppConfig.getCurrentUser());
-        if (!StringUtils.isEmpty(passwordDTO.getCurrentPassword()) && (!user.isPasswordSet() || !passwordEncoder.matches(passwordDTO.getCurrentPassword(), user.getPassword()))) {
-            throw new BusinessException("Current password is incorrect.");
-        }
-        user.setPassword(getUserNewPassword(user, passwordDTO));
-        sendResetPasswordEmail(user, user.getEmail(), "Your password has been changed. If you did not perform this action, please reset your password immediately.", false);
-        userRepository.save(user);
-        userEmailRepository.findAllByUser(user).forEach(ue -> {
-            ue.removeTag(EmailTag.PASSWORD_REQUIRED);
-            userEmailRepository.save(ue);
-        });
-        return "Password changed successfully.";
+    public void changePassword(PasswordDTO passwordDTO) {
+        User user = AppConfig.getAuthenticatedCurrentUser();
+        validateAndUpdateUserPassword(user, passwordDTO, false);
+        sendPasswordFlowEmail(user, false);
     }
 
-    public String getUserNewPassword(User user, PasswordDTO passwordDTO) {
+    public void validateAndUpdateUserPassword(User user, PasswordDTO passwordDTO, boolean isResetPassword) {
+        if (user.isPasswordSet()) {
+            if (!isResetPassword && (StringUtils.isEmpty(passwordDTO.getCurrentPassword()) || !passwordEncoder.matches(passwordDTO.getCurrentPassword(), user.getPassword()))) {
+                throw new BusinessException("Current password is incorrect.");
+            }
+            if (passwordEncoder.matches(passwordDTO.getNewPassword(), user.getPassword())) {
+                throw new BusinessException("New password cannot be the same as the current password");
+            }
+        }
         if (!passwordDTO.getNewPassword().equals(passwordDTO.getConfirmNewPassword())) {
             throw new BusinessException("Passwords do not match");
         }
-        if (passwordEncoder.matches(passwordDTO.getNewPassword(), user.getPassword())) {
-            throw new BusinessException("New password cannot be the same as the current password");
-        }
-        return passwordEncoder.encode(passwordDTO.getNewPassword());
+
+        user.setPassword(passwordEncoder.encode(passwordDTO.getNewPassword()));
+        userRepository.save(user);
     }
 
-    public void sendResetPasswordEmail(User user, String targetEmail, String description, boolean isForReset) {
-        Map<String, String> templateParameters = new HashMap<>();
-        templateParameters.put("emailTypeDesc", description);
-        templateParameters.put("linkLabel", "Reset my password");
-        securityTokenService.createAndSendSecurityToken(user, targetEmail, isForReset ? SecurityToken.Type.PASSWORD_RESET : SecurityToken.Type.PASSWORD_CHANGE, null, templateParameters, "/change-password", EmailTemplates.VERIFICATION_MAIL_TEMPLATE);
+    public void sendPasswordFlowEmail(User user, boolean isForReset) {
+        SecurityTokenBuilder securityTokenBuilder = SecurityTokenBuilder.builder()
+                .user(user)
+                .targetEmail(user.getPrimaryEmail().getEmail())
+                .type(isForReset ? SecurityToken.Type.PASSWORD_RESET : SecurityToken.Type.PASSWORD_CHANGE)
+                .templateName(EmailTemplates.VERIFICATION_MAIL_TEMPLATE)
+                .extraParameters(EmailTemplateUtil.getTemplateParams(isForReset ? SecurityToken.Type.PASSWORD_RESET : SecurityToken.Type.PASSWORD_CHANGE))
+                .pageUrl("/change-password")
+                .build();
+        securityTokenService.createAndSend(securityTokenBuilder);
     }
+    //</editor-fold>
 
-    public List<UserEmailDTO> getUserEmails() {
-        User loggedUser = Objects.requireNonNull(AppConfig.getCurrentUser());
-        List<UserEmail> userEmails = userEmailRepository.findAllByUserOrderByCreatedAt(loggedUser);
-        return userEmails.stream().sorted(Comparator.comparing(UserEmail::isPrimary).reversed()).map(userEmail -> {
-            UserEmailDTO userEmailDTO = modelMapper.map(userEmail, UserEmailDTO.class);
-            userEmailDTO.setOAuthLinked(userEmail.getTags().stream().anyMatch(EmailTag::isOAuthTag));
-            return  userEmailDTO;
-        }).toList();
-    }
-
+    //<editor-fold desc="Email Management">
     @Transactional
-    public void addEmail(String email) {
-        User loggedUser = Objects.requireNonNull(AppConfig.getCurrentUser());
-        validateUserEmail(email);
+    public void requestEmailChange(String email) {
+        User loggedUser = AppConfig.getAuthenticatedCurrentUser();
+        userEmailService.ensureValidEmailFormat(email);
+
         UserEmail existingUserEmail = userEmailRepository.findByEmail(email);
         if (existingUserEmail != null) {
-            throw new BusinessException(existingUserEmail.getUser().getId().equals(loggedUser.getId()) ? "Email already exists" : "Email is already associated with another account");
+            userEmailService.ensureEmailAvailableForUser(loggedUser, existingUserEmail);
         }
-        createUserEmail(loggedUser, email, false, false, List.of());
+        securityTokenService.deleteNonExpired(loggedUser, SecurityToken.Type.NEW_EMAIL_VERIFICATION);
+
+        UserEmail oldPendingEmail = loggedUser.getPendingEmail();
+        if (oldPendingEmail != null) {
+            loggedUser.setPendingEmail(null);
+            userEmailService.deleteIfUnused(oldPendingEmail);
+        }
+
+        loggedUser.setPendingEmail(existingUserEmail != null ? existingUserEmail : userEmailService.create(loggedUser, email));
+        userRepository.save(loggedUser);
+
         sendEmailVerificationSecurityToken(loggedUser, email);
     }
 
-    public void verifyEmail(User user, String email) {
-        validateUserEmail(email);
-        UserEmail userEmail = Optional.ofNullable(userEmailRepository.findByUserAndEmail(user, email)).orElseThrow(() -> new NotFoundException("Email not found"));
-        if (userEmail.isVerified()) {
-            throw new BusinessException("Email is already verified");
-        }
-        userEmail.setVerified(true);
-        if (!user.isPasswordSet()) {
-            userEmail.addTag(EmailTag.PASSWORD_REQUIRED);
-        }
-        userEmailRepository.save(userEmail);
-    }
-
     @Transactional
-    public void makeEmailPrimary(String email) {
-        User loggedUser = Objects.requireNonNull(AppConfig.getCurrentUser());
-        validateUserEmail(email);
-        UserEmail secondaryUserEmail = Optional.ofNullable(userEmailRepository.findByUserAndEmail(loggedUser, email)).orElseThrow(() -> new NotFoundException("Email not found"));
-        if (!secondaryUserEmail.isVerified()) {
-            throw new BusinessException("Cannot set unverified email as primary");
+    public void verifyAndChangePrimaryEmail(User user, String email) {
+        userEmailService.ensureValidEmailFormat(email);
+        UserEmail pendingEmail = user.getPendingEmail();
+        if (pendingEmail == null || !pendingEmail.getEmail().equals(email)) {
+            throw new BusinessException("No matching pending email found for verification");
         }
 
-        UserEmail currentPrimaryEmail = userEmailRepository.findByUserAndIsPrimaryTrue(loggedUser);
-        if (currentPrimaryEmail.getEmail().equals(secondaryUserEmail.getEmail())) {
-            throw new BusinessException("Email is already primary");
-        }
+        UserEmail currentPrimary = user.getPrimaryEmail();
+        user.setPrimaryEmail(pendingEmail);
+        user.setPendingEmail(null);
+        userRepository.save(user);
 
-        if (!loggedUser.isPasswordSet() && secondaryUserEmail.hasTag(EmailTag.PASSWORD_REQUIRED)) {
-            throw new BusinessException("You need to set a password before making this email your primary address.");
-        }
-
-        currentPrimaryEmail.setPrimary(false);
-        userEmailRepository.save(currentPrimaryEmail);
-
-        secondaryUserEmail.setPrimary(true);
-        loggedUser.setEmail(secondaryUserEmail.getEmail());
-        userRepository.save(loggedUser);
-        userEmailRepository.save(secondaryUserEmail);
+        userEmailService.deleteIfUnused(currentPrimary);
 
         TrackeraEmailTarget.builder()
-                .targetEmail(currentPrimaryEmail.getEmail())
-                .subject("Primary Email Changed")
+                .targetEmail(currentPrimary.getEmail())
+                .subject("Email Changed")
                 .templateName(EmailTemplates.INFO_MAIL_TEMPLATE)
-                .parameters(Map.of("content", "Your primary email has been changed to " + secondaryUserEmail.getEmail() + ". If you did not perform this action, please contact support immediately."))
+                .parameters(Map.of("content", "Your account's email has been changed to " + email + ". If you did not perform this action, please contact support immediately."))
                 .build().send();
     }
 
-    public void sendVerificationEmail(String email) {
-        User loggedUser = Objects.requireNonNull(AppConfig.getCurrentUser());
-        validateUserEmail(email);
-        UserEmail userEmail = Optional.ofNullable(userEmailRepository.findByUserAndEmail(loggedUser, email)).orElseThrow(() -> new NotFoundException("Email not found"));
-        if (userEmail.isVerified()) {
-            throw new BusinessException("Email is already verified");
+    public void sendEmailVerification() {
+        User loggedUser = AppConfig.getAuthenticatedCurrentUser();
+        if (loggedUser.getPendingEmail() == null) {
+            throw new BusinessException("No email change awaiting verification");
         }
-        sendEmailVerificationSecurityToken(loggedUser, email);
+        sendEmailVerificationSecurityToken(loggedUser, loggedUser.getPendingEmail().getEmail());
     }
 
     public void sendEmailVerificationSecurityToken(User user, String email) {
-        Map<String, String> templateParameters = new HashMap<>();
-        templateParameters.put("emailTypeDesc", "Please verify your new email address by clicking the link below:");
-        templateParameters.put("linkLabel", "Verify my email");
-        securityTokenService.createAndSendSecurityToken(user, email, SecurityToken.Type.NEW_EMAIL_VERIFICATION, email, templateParameters, null, EmailTemplates.VERIFICATION_MAIL_TEMPLATE);
+        SecurityTokenBuilder securityTokenBuilder = SecurityTokenBuilder.builder()
+                .user(user)
+                .targetEmail(email)
+                .type(SecurityToken.Type.NEW_EMAIL_VERIFICATION)
+                .additionalInfo(email)
+                .templateName(EmailTemplates.VERIFICATION_MAIL_TEMPLATE)
+                .extraParameters(EmailTemplateUtil.getTemplateParams(SecurityToken.Type.NEW_EMAIL_VERIFICATION))
+                .build();
+        securityTokenService.createAndSend(securityTokenBuilder);
     }
 
     @Transactional
-    public void removeEmail(String email) {
-        User loggedUser = Objects.requireNonNull(AppConfig.getCurrentUser());
-        validateUserEmail(email);
-        UserEmail userEmail = Optional.ofNullable(userEmailRepository.findByUserAndEmail(loggedUser, email)).orElseThrow(() -> new NotFoundException("Email not found"));
-        if (userEmail.isPrimary()) {
-            throw new BusinessException("Cannot remove primary email");
+    public void removePendingEmail() {
+        User loggedUser = AppConfig.getAuthenticatedCurrentUser();
+        if (loggedUser.getPendingEmail() == null) {
+            throw new BusinessException("No pending email to remove");
         }
 
-        userEmailRepository.delete(userEmail);
-        if (!userEmail.isVerified()) {
-            securityTokenService.deleteNonExpiredSecurityToken(loggedUser, SecurityToken.Type.NEW_EMAIL_VERIFICATION);
-        } else {
-            Arrays.stream(OAuthProvider.values())
-                    .filter(provider -> userEmail.getTags().contains(provider.getEmailTag()))
-                    .forEach(provider -> userOAuthProviderService.delete(loggedUser, provider));
-        }
+        UserEmail pendingEmail = loggedUser.getPendingEmail();
+        loggedUser.setPendingEmail(null);
+        userRepository.save(loggedUser);
 
-        TrackeraEmailTarget.builder()
-                .targetEmail(userEmail.getEmail())
-                .subject("Email Removed")
-                .templateName(EmailTemplates.INFO_MAIL_TEMPLATE)
-                .parameters(Map.of("content", "The email " + userEmail.getEmail() + " has been removed from your account. If you did not perform this action, please contact support immediately."))
-                .build().send();
+        userEmailService.deleteIfUnused(pendingEmail);
+        securityTokenService.deleteNonExpired(loggedUser, SecurityToken.Type.NEW_EMAIL_VERIFICATION);
     }
-
-    public void removeEmailTag(User user, String email, EmailTag tag) {
-        UserEmail userEmail = Optional.ofNullable(userEmailRepository.findByUserAndEmail(user, email)).orElseThrow(() -> new NotFoundException("Email not found"));
-        userEmail.removeTag(tag);
-        userEmailRepository.save(userEmail);
-    }
-
-    public void validateUserEmail(String email) {
-        if (StringUtils.isEmpty(email) || !email.matches(EMAIL_REGEX)) {
-            throw new BusinessException("Invalid email format");
-        }
-    }
-
-    public List<Map<String, Object>> getUserPreferences() {
-        List<Map<String, Object>> preferences = userPreferredSettingService.getAllByUser(AppConfig.getCurrentUser());
-        for (Map<String, Object> preference : preferences) {
-            if (preference.get("key").equals(JiraService.JIRA_PRIMARY_PROJECT_SETTING_KEY)) {
-                Map<String, Object> jiraProjectInfo = AppUtils.convertJsonStringToObject(preference.get("value").toString(), Map.class);
-                preference.put("value", jiraProjectInfo);
-            }
-        }
-        return preferences;
-    }
-
-    public void updateUserPreferences(List<UserPreferenceDTO> userPreferenceDTOList) {
-        User loggedUser = Objects.requireNonNull(AppConfig.getCurrentUser());
-        for (UserPreferenceDTO preferenceDTO : userPreferenceDTOList) {
-            userPreferredSettingService.validatePreference(preferenceDTO);
-            if (preferenceDTO.getKey().equals(JiraService.JIRA_PRIMARY_PROJECT_SETTING_KEY)) {
-                AccessibleResourceDTO accessibleResourceDTO = jiraService.getUserSites(loggedUser).stream().filter(site -> site.getId().equals(preferenceDTO.getValue()))
-                        .findFirst().orElseThrow(() -> new NotFoundException("Site not found"));
-
-                preferenceDTO.setValue(AppUtils.convertObjectToJsonString(accessibleResourceDTO));
-            }
-        }
-        userPreferredSettingService.updateAll(loggedUser, userPreferenceDTOList);
-    }
+    //</editor-fold>
 }

@@ -3,6 +3,8 @@ import requestInstance from "../../shared/axios/request-instance";
 export interface UserInfo {
   firstname: string;
   lastname: string;
+  primaryEmail: string;
+  pendingEmail: string | null;
   profilePicture: string | null;
   avatarColor: string;
   passwordSet: boolean;

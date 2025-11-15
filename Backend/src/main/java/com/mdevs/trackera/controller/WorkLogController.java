@@ -1,17 +1,15 @@
 package com.mdevs.trackera.controller;
 
 import com.mdevs.trackera.dto.worklog.ManageWorkLogDTO;
+import com.mdevs.trackera.dto.worklog.WorkLogSearchFilterDTO;
 import com.mdevs.trackera.service.WorkLogService;
-import com.mdevs.trackera.shared.search_filter.SearchFilter;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -19,14 +17,13 @@ import java.util.Map;
 public class WorkLogController {
     private final WorkLogService workLogService;
 
-    @Autowired
     public WorkLogController(WorkLogService workLogService) {
         this.workLogService = workLogService;
     }
 
     @PostMapping("/search")
-    public ResponseEntity<?> SearchAllWorkLogs(@RequestBody(required = false) List<SearchFilter> searchFilters, Pageable pageable) {
-        return new ResponseEntity<>(workLogService.searchAllWorkLogs(searchFilters, pageable), HttpStatus.OK);
+    public ResponseEntity<?> SearchAllWorkLogs(@RequestBody(required = false)WorkLogSearchFilterDTO searchFilterDTO, Pageable pageable) {
+        return new ResponseEntity<>(workLogService.searchAllWorkLogs(searchFilterDTO, pageable), HttpStatus.OK);
     }
 
     @GetMapping("/{uuid}")
@@ -48,7 +45,8 @@ public class WorkLogController {
 
     @DeleteMapping("/{uuid}")
     public ResponseEntity<?> DeleteWorkLog(@PathVariable String uuid) {
-        return new ResponseEntity<>(workLogService.deleteWorkLog(uuid), HttpStatus.OK);
+        workLogService.deleteWorkLog(uuid);
+        return new ResponseEntity<>("Worklog deleted successfully", HttpStatus.OK);
     }
 
     @GetMapping("/summary")

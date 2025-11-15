@@ -64,19 +64,19 @@ const JiraTasks = () => {
       },
     },
     {
-      title: "Logged Hours",
-      dataIndex: "loggedHours",
-      key: "loggedHours",
+      title: "Logged Time",
+      dataIndex: "loggedTime",
+      key: "loggedTime",
       render: (_, { timeTracking }) => {
-        return timeTracking.loggedHours || "-";
+        return timeTracking.loggedTime || "-";
       },
     },
     {
-      title: "Remaining Hours",
-      dataIndex: "remainingHours",
-      key: "remainingHours",
+      title: "Remaining Time",
+      dataIndex: "remainingTime",
+      key: "remainingTime",
       render: (_, { timeTracking }) => {
-        return timeTracking.remainingHours || "-";
+        return timeTracking.remainingTime || "-";
       },
     },
     {

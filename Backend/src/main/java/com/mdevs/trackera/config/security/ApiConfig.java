@@ -1,39 +1,47 @@
 package com.mdevs.trackera.config.security;
 
+import com.mdevs.trackera.shared.ApiScanner;
 import com.mdevs.trackera.shared.annotations.PublicAPI;
 import jakarta.annotation.PostConstruct;
-import org.springframework.beans.factory.config.BeanDefinition;
-import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.type.filter.AnnotationTypeFilter;
 import org.springframework.util.AntPathMatcher;
 import org.springframework.web.bind.annotation.*;
 
 import java.lang.annotation.Annotation;
-import java.lang.reflect.Method;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
 @Configuration
+@Slf4j
 public class ApiConfig {
-    private Map<Class<? extends Annotation>, Map<String, String>> CUSTOM_ANNOTATED_APIS;
+    private Map<Class<? extends Annotation>, Map<String, String>> customAnnotatedApis;
 
-    private final static AntPathMatcher ANT_PATH_MATCHER = new AntPathMatcher();
+    private final ApiScanner apiScanner;
+
+    private static final AntPathMatcher ANT_PATH_MATCHER = new AntPathMatcher();
+
+    private static final String BASE_CONTROLLER_PACKAGE = "com.mdevs.trackera.controller";
+
+    public ApiConfig(ApiScanner apiScanner) {
+        this.apiScanner = apiScanner;
+    }
 
     @PostConstruct
     public void init() {
-        CUSTOM_ANNOTATED_APIS = Collections.unmodifiableMap(scanCustomAnnotatedApis("com.mdevs.trackera.controller", Set.of(PublicAPI.class)));
-    }
-
-    public Map<String, String> getAnnotationApis(Class<? extends Annotation> annotationClass) {
-        return CUSTOM_ANNOTATED_APIS.get(annotationClass);
+        try {
+            customAnnotatedApis = Collections.unmodifiableMap(apiScanner.scanCustomAnnotatedApis(BASE_CONTROLLER_PACKAGE, Set.of(PublicAPI.class)));
+            log.info("Scanned {} public APIs", customAnnotatedApis.getOrDefault(PublicAPI.class, Map.of()).size());
+        } catch (Exception e) {
+            log.error("Error scanning custom annotated APIs: ", e);
+            this.customAnnotatedApis = Map.of();
+        }
     }
 
     public boolean hasAnnotations(String requestPath, String method, Set<Class<? extends Annotation>> annotationsClasses) {
         return annotationsClasses.stream().anyMatch(annotationClass -> {
-            Map<String, String> apis = getAnnotationApis(annotationClass);
+            Map<String, String> apis = customAnnotatedApis.getOrDefault(annotationClass, Map.of());
             return apis.entrySet().stream().anyMatch(entry -> {
                 String pattern = entry.getKey();
                 if (ANT_PATH_MATCHER.match(pattern, requestPath)) {
@@ -43,62 +51,5 @@ public class ApiConfig {
                 return false;
             });
         });
-    }
-
-    public Map<Class<? extends Annotation>, Map<String, String>> scanCustomAnnotatedApis(String packageName, Set<Class<? extends Annotation>> annotationsClasses) {
-        Map<Class<? extends Annotation>, Map<String, String>> processedApis = new HashMap<>();
-        annotationsClasses.forEach(annotation -> processedApis.put(annotation, new HashMap<>()));
-
-        Set<BeanDefinition> controllerBeans = scanForControllers(packageName);
-        for (BeanDefinition controllerBean : controllerBeans) {
-            Class<?> controllerClass;
-            try {
-                controllerClass = Class.forName(controllerBean.getBeanClassName());
-            } catch (ClassNotFoundException e) {
-                throw new RuntimeException(e);
-            }
-            RequestMapping requestMapping = controllerClass.getAnnotation(RequestMapping.class);
-            String[] classPaths = requestMapping != null ? requestMapping.value() : new String[]{};
-            for (Method method : controllerClass.getMethods()) {
-                String[] methodPaths = new String[]{};
-                GetMapping methodGetMapping = method.getAnnotation(GetMapping.class);
-                PostMapping methodPostMapping = method.getAnnotation(PostMapping.class);
-                PutMapping methodPutMapping = method.getAnnotation(PutMapping.class);
-                DeleteMapping methodDeleteMapping = method.getAnnotation(DeleteMapping.class);
-                String httpMethod = "ALL";
-                if (methodGetMapping != null) {
-                    methodPaths = methodGetMapping.value();
-                    httpMethod = "GET";
-                } else if (methodPostMapping != null) {
-                    methodPaths = methodPostMapping.value();
-                    httpMethod = "POST";
-                } else if (methodPutMapping != null) {
-                    methodPaths = methodPutMapping.value();
-                    httpMethod = "PUT";
-                } else if (methodDeleteMapping != null) {
-                    methodPaths = methodDeleteMapping.value();
-                    httpMethod = "DELETE";
-                }
-
-                for (Class<? extends Annotation> annotationClass : annotationsClasses) {
-                    if (controllerClass.isAnnotationPresent(annotationClass) || method.isAnnotationPresent(annotationClass)) {
-                        Map<String, String> apisMap = processedApis.get(annotationClass);
-                        for (String classPath : classPaths) {
-                            for (String methodPath : methodPaths) {
-                                String fullPath = ("/trackera/" + classPath + "/" + methodPath).replaceAll("//+", "/");
-                                apisMap.put(fullPath, httpMethod);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        return processedApis;
-    }
-
-    private Set<BeanDefinition> scanForControllers(String packageName) {
-        ClassPathScanningCandidateComponentProvider provider = new ClassPathScanningCandidateComponentProvider(false);
-        provider.addIncludeFilter(new AnnotationTypeFilter(RestController.class));
-        return provider.findCandidateComponents(packageName);
     }
 }

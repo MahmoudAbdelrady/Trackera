@@ -1,6 +1,6 @@
 import { Navigate } from "react-router-dom";
 import { userQueries } from "../state/queries";
-import { LoadingSpinner } from "../components";
+import { LoadingSpinner, ServerError } from "../components";
 import { useAuthStore } from "../state/store";
 
 const PrivateRoute = ({ children }: { children: React.JSX.Element }) => {
@@ -8,6 +8,8 @@ const PrivateRoute = ({ children }: { children: React.JSX.Element }) => {
   const meQuery = userQueries.useMeQuery();
 
   if (!isAuthenticated) return <Navigate to="/login" />;
+
+  if (meQuery.isError) return <ServerError />;
 
   if (meQuery.isLoading) return <LoadingSpinner />;
 

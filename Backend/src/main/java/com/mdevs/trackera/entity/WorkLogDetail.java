@@ -7,8 +7,6 @@ import lombok.Setter;
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.envers.Audited;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.LocalTime;
 
 @Entity
@@ -29,8 +27,8 @@ public class WorkLogDetail extends BaseEntity {
     @Column(nullable = false, columnDefinition = "TIME(0)")
     private LocalTime endTime;
 
-    @Column(nullable = false, precision = 10, scale = 3)
-    private BigDecimal duration;
+    @Column(nullable = false)
+    private Integer duration;
 
     @Column(nullable = false, columnDefinition = "LONGTEXT")
     private String description;
@@ -41,8 +39,4 @@ public class WorkLogDetail extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     private WorkLog workLog;
-
-    public void setDuration(BigDecimal duration) {
-        this.duration = duration.setScale(3, RoundingMode.HALF_UP);
-    }
 }

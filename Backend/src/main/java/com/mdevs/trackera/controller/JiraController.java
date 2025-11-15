@@ -2,21 +2,17 @@ package com.mdevs.trackera.controller;
 
 import com.mdevs.trackera.config.general.AppConfig;
 import com.mdevs.trackera.service.JiraService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.Objects;
-
 @RestController
 @RequestMapping("/jira")
 public class JiraController {
     private final JiraService jiraService;
 
-    @Autowired
     public JiraController(JiraService jiraService) {
         this.jiraService = jiraService;
     }
@@ -28,6 +24,6 @@ public class JiraController {
 
     @GetMapping("/sites")
     public ResponseEntity<?> GetUserSites() {
-        return ResponseEntity.ok(jiraService.getUserSites(Objects.requireNonNull(AppConfig.getCurrentUser())));
+        return ResponseEntity.ok(jiraService.getUserSites(AppConfig.getAuthenticatedCurrentUser()));
     }
 }

@@ -1,0 +1,51 @@
+.server_error_container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100vw;
+  height: 100vh;
+}
+.server_error_container .content {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  width: 600px;
+  height: 600px;
+  background-color: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+@media (max-width: 768px) {
+  .server_error_container .content {
+    margin: 0 15px;
+  }
+}
+.server_error_container .content .error_img {
+  width: 90px;
+  height: 90px;
+}
+.server_error_container .content .title {
+  margin-top: 15px;
+}
+.server_error_container .content .message {
+  margin-top: 10px;
+  text-align: center;
+  color: #5c5c5c;
+}
+.server_error_container .content .error_code {
+  margin-top: 10px;
+  font-size: 16px;
+  padding: 4px 10px;
+}
+.server_error_container .content .action_btns {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 15px;
+  margin-top: 60px;
+}
+.server_error_container .content .action_btns .btn {
+  padding: 18px 30px;
+  font-size: 16px;
+}/*# sourceMappingURL=server-error.module.css.map */
