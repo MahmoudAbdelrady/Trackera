@@ -4,8 +4,6 @@ import com.mdevs.trackera.dto.auth.AuthFilterUserDTO;
 import com.mdevs.trackera.entity.User;
 import com.mdevs.trackera.repository.UserRepository;
 import lombok.Getter;
-import org.modelmapper.ModelMapper;
-import org.modelmapper.convention.MatchingStrategies;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
@@ -33,15 +31,6 @@ public class AppConfig {
 
     public AppConfig(ApplicationContext applicationContext) {
         AppConfig.applicationContext = applicationContext;
-    }
-
-    @Bean
-    public ModelMapper modelMapper() {
-        ModelMapper modelMapper = new ModelMapper();
-        modelMapper.getConfiguration()
-                .setMatchingStrategy(MatchingStrategies.STRICT)
-                .setSkipNullEnabled(true);
-        return modelMapper;
     }
 
     @Bean

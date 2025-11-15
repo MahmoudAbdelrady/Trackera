@@ -16,12 +16,12 @@ import com.mdevs.trackera.shared.exceptions.types.BusinessException;
 import com.mdevs.trackera.shared.exceptions.types.NotFoundException;
 import com.mdevs.trackera.shared.exceptions.types.UnauthorizedException;
 import com.mdevs.trackera.shared.DurationFormatter;
+import com.mdevs.trackera.shared.mappers.WorkLogMapper;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.TypedQuery;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -47,18 +47,18 @@ public class WorkLogService {
 
     private final UserPreferenceService userPreferenceService;
 
-    private final ModelMapper modelMapper;
+    private final WorkLogMapper workLogMapper;
 
     @PersistenceContext
     private EntityManager entityManager;
 
     private static final Pattern DURATION_PATTERN = Pattern.compile("(?:(\\d+)h)?\\s*(?:(\\d+)m)?");
 
-    public WorkLogService(WorkLogRepository workLogRepository, WorkLogDetailRepository workLogDetailRepository, UserPreferenceService userPreferenceService, ModelMapper modelMapper) {
+    public WorkLogService(WorkLogRepository workLogRepository, WorkLogDetailRepository workLogDetailRepository, UserPreferenceService userPreferenceService, WorkLogMapper workLogMapper) {
         this.workLogRepository = workLogRepository;
         this.workLogDetailRepository = workLogDetailRepository;
         this.userPreferenceService = userPreferenceService;
-        this.modelMapper = modelMapper;
+        this.workLogMapper = workLogMapper;
     }
 
     //<editor-fold desc="Search & Retrieval">
@@ -72,7 +72,7 @@ public class WorkLogService {
         typedQuery.setMaxResults(pageable.getPageSize());
 
         List<WorkLogInfoDTO> workLogInfoDTOList = typedQuery.getResultList().stream().map(workLog -> {
-            WorkLogInfoDTO workLogInfoDTO = modelMapper.map(workLog, WorkLogInfoDTO.class);
+            WorkLogInfoDTO workLogInfoDTO = workLogMapper.toDto(workLog);
             workLogInfoDTO.setId(workLog.getUuid());
             workLogInfoDTO.setTotalTime(DurationFormatter.formatDuration(workLog.getTotalMinutes(), true));
             return workLogInfoDTO;
@@ -88,7 +88,7 @@ public class WorkLogService {
 
     public WorkLogInfoDTO getWorkLogByUUID(String uuid) {
         WorkLog workLog = ensureWorkLogExistsAndHasPermission(uuid);
-        WorkLogInfoDTO workLogInfoDTO = modelMapper.map(workLog, WorkLogInfoDTO.class);
+        WorkLogInfoDTO workLogInfoDTO = workLogMapper.toDto(workLog);
         workLogInfoDTO.setId(workLog.getUuid());
         workLogInfoDTO.setTotalTime(DurationFormatter.formatDuration(workLog.getTotalMinutes(), true));
         return workLogInfoDTO;

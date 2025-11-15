@@ -17,10 +17,10 @@ import com.mdevs.trackera.shared.enums.UserPreferenceOption;
 import com.mdevs.trackera.shared.exceptions.types.BusinessException;
 import com.mdevs.trackera.oauth.OAuthProvider;
 import com.mdevs.trackera.shared.TrackeraEmailTarget;
+import com.mdevs.trackera.shared.mappers.UserMapper;
 import com.mdevs.trackera.utils.AppUtils;
 import com.mdevs.trackera.utils.EmailTemplateUtil;
 import org.apache.commons.lang3.StringUtils;
-import org.modelmapper.ModelMapper;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -46,12 +46,12 @@ public class UserService implements UserDetailsService {
 
     private final SecurityTokenService securityTokenService;
 
-    private final ModelMapper modelMapper;
-
     private final PasswordEncoder passwordEncoder;
 
+    private final UserMapper userMapper;
+
     public UserService(UserRepository userRepository, UserEmailRepository userEmailRepository, UserEmailService userEmailService, OAuthConnectionService oAuthConnectionService,
-                       UserPreferenceService userPreferenceService, JiraService jiraService, SecurityTokenService securityTokenService, ModelMapper modelMapper, PasswordEncoder passwordEncoder) {
+                       UserPreferenceService userPreferenceService, JiraService jiraService, SecurityTokenService securityTokenService, PasswordEncoder passwordEncoder, UserMapper userMapper) {
         this.userRepository = userRepository;
         this.userEmailRepository = userEmailRepository;
         this.userEmailService = userEmailService;
@@ -59,8 +59,8 @@ public class UserService implements UserDetailsService {
         this.userPreferenceService = userPreferenceService;
         this.jiraService = jiraService;
         this.securityTokenService = securityTokenService;
-        this.modelMapper = modelMapper;
         this.passwordEncoder = passwordEncoder;
+        this.userMapper = userMapper;
     }
 
     @Override
@@ -70,13 +70,7 @@ public class UserService implements UserDetailsService {
 
     //<editor-fold desc="User Info Retrieval">
     public LoggedUserDTO getMeInfo() {
-        User loggedUser = AppConfig.getAuthenticatedCurrentUser();
-        LoggedUserDTO loggedUserDTO = modelMapper.map(AppConfig.getAuthenticatedCurrentUser(), LoggedUserDTO.class);
-        loggedUserDTO.setPrimaryEmail(loggedUser.getPrimaryEmail().getEmail());
-        if (loggedUser.getPendingEmail() != null) {
-            loggedUserDTO.setPendingEmail(loggedUser.getPendingEmail().getEmail());
-        }
-        return loggedUserDTO;
+        return userMapper.toLoggedUserDTO(AppConfig.getAuthenticatedCurrentUser());
     }
 
     public List<Map<String, Object>> getUserOAuthProviders() {
@@ -122,7 +116,7 @@ public class UserService implements UserDetailsService {
             throw new BusinessException("Passwords do not match");
         }
 
-        User user = modelMapper.map(signUpDTO, User.class);
+        User user = userMapper.toEntity(signUpDTO);
         user.setPassword(passwordEncoder.encode(user.getPassword()));
         userRepository.save(user);
 
