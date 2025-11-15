@@ -1,6 +1,8 @@
 package com.mdevs.trackera.controller;
 
+import com.mdevs.trackera.config.general.AppConfig;
 import com.mdevs.trackera.dto.auth.PasswordDTO;
+import com.mdevs.trackera.service.UserPreferenceService;
 import com.mdevs.trackera.service.UserService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -14,8 +16,11 @@ import java.util.Map;
 public class UserController {
     private final UserService userService;
 
-    public UserController(UserService userService) {
+    private final UserPreferenceService userPreferenceService;
+
+    public UserController(UserService userService, UserPreferenceService userPreferenceService) {
         this.userService = userService;
+        this.userPreferenceService = userPreferenceService;
     }
 
     @GetMapping("/me")
@@ -54,7 +59,7 @@ public class UserController {
 
     @GetMapping("/preferences")
     public ResponseEntity<?> GetPreferences() {
-        return new ResponseEntity<>(userService.getPreferences(), HttpStatus.OK);
+        return new ResponseEntity<>(userPreferenceService.getAll(AppConfig.getAuthenticatedCurrentUser()), HttpStatus.OK);
     }
 
     @PostMapping("/preferences")

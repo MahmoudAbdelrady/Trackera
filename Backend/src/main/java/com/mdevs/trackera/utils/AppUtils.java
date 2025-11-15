@@ -55,7 +55,7 @@ public class AppUtils {
             } else if (targetType == String.class) {
                 return targetType.cast(s);
             } else {
-                throw new IllegalArgumentException("Unsupported target type: " + targetType);
+                return AppUtils.convertJsonStringToObject(value.toString(), targetType);
             }
         }
 

@@ -5,7 +5,6 @@ import com.mdevs.trackera.dto.auth.LoggedUserDTO;
 import com.mdevs.trackera.dto.auth.OAuthUserInfoDTO;
 import com.mdevs.trackera.dto.auth.PasswordDTO;
 import com.mdevs.trackera.dto.auth.SignUpDTO;
-import com.mdevs.trackera.dto.jira.JiraProjectDTO;
 import com.mdevs.trackera.entity.SecurityToken;
 import com.mdevs.trackera.entity.User;
 import com.mdevs.trackera.entity.UserEmail;
@@ -96,16 +95,6 @@ public class UserService implements UserDetailsService {
             }
             return providerInfo;
         }).toList();
-    }
-
-    public Map<String, Object> getPreferences() {
-        Map<String, Object> preferences = userPreferenceService.getAll(AppConfig.getAuthenticatedCurrentUser());
-        for (Map.Entry<String, Object> preference : preferences.entrySet()) {
-            if (preference.getKey().equals(UserPreferenceOption.JIRA_PRIMARY_PROJECT.getCode())) {
-                preference.setValue(AppUtils.convertJsonStringToObject(preference.getValue().toString(), JiraProjectDTO.class));
-            }
-        }
-        return preferences;
     }
     //</editor-fold>
 
