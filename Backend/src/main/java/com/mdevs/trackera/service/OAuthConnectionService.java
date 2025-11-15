@@ -38,7 +38,7 @@ public class OAuthConnectionService {
         return oAuthConnectionRepository.findByUser(user).stream().collect(Collectors.toMap(OAuthConnection::getProvider, o -> o));
     }
 
-    public OAuthConnection getConnectionOrThrow(User user, String email, OAuthProvider provider) {
+    public OAuthConnection getConnectionByUserAndEmailOrThrow(User user, String email, OAuthProvider provider) {
         return Optional.ofNullable(oAuthConnectionRepository.findByUserAndEmailAndProvider(user, email, provider))
                 .orElseThrow(() -> new BusinessException("Account is not linked to " + provider.getDisplayName()));
     }

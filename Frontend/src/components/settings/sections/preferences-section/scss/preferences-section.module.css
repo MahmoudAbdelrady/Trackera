@@ -14,7 +14,17 @@
 .preferences_section .preference_input {
   color: #5c5c5c;
 }
+@media (max-width: 768px) {
+  .preferences_section .preference_input {
+    width: 100%;
+  }
+}
 .preferences_section .update_button {
   align-self: flex-end;
   margin-top: 10px;
+}
+@media (max-width: 768px) {
+  .preferences_section .update_button {
+    width: 100%;
+  }
 }/*# sourceMappingURL=preferences-section.module.css.map */

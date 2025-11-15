@@ -43,8 +43,8 @@ public class AuthController {
 
     @PublicAPI
     @GetMapping("/oauth/{providerCode}")
-    public ResponseEntity<?> OAuth(@PathVariable String providerCode, HttpServletRequest request) {
-        return new ResponseEntity<>(Map.of("url", authService.oAuth(providerCode, request)), HttpStatus.OK);
+    public ResponseEntity<?> OAuth(@PathVariable String providerCode, @RequestParam Boolean forceLink, HttpServletRequest request) {
+        return new ResponseEntity<>(Map.of("url", authService.oAuth(providerCode, forceLink, request)), HttpStatus.OK);
     }
 
     @PublicAPI

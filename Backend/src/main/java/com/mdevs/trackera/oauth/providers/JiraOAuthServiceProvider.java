@@ -77,7 +77,7 @@ public class JiraOAuthServiceProvider extends OAuthServiceProvider {
     @Override
     public void handlePostLinkingActions(User user, OAuthUserInfoDTO userInfo) {
         String primaryProjectPreference = AppUtils.convertObjectToJsonString(userInfo.getAdditionalInfo().get(UserPreferenceOption.JIRA_PRIMARY_PROJECT.getCode()));
-        userPreferenceService.create(user, UserPreferenceOption.JIRA_PRIMARY_PROJECT, primaryProjectPreference);
+        userPreferenceService.createOrUpdate(user, UserPreferenceOption.JIRA_PRIMARY_PROJECT, primaryProjectPreference);
     }
 
     @Override

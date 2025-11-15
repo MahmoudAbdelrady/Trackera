@@ -141,7 +141,7 @@ public class AuthService {
     //</editor-fold>
 
     //<editor-fold desc="OAuth2 Integration">
-    public String oAuth(String providerCode, HttpServletRequest request) {
+    public String oAuth(String providerCode, Boolean forceLink, HttpServletRequest request) {
         OAuthProvider provider = OAuthProvider.fromCode(providerCode);
         String jwtTokenHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
         if (StringUtils.isEmpty(jwtTokenHeader) || !jwtTokenHeader.startsWith("Bearer ")) {
@@ -150,7 +150,9 @@ public class AuthService {
 
         Claims claims = jwtUtil.validateAndGetTokenPayload(jwtTokenHeader.substring(7), true);
         User user = userRepository.findByUuid(claims.get("id", String.class));
-        oAuthConnectionService.ensureNoConnection(user, provider);
+        if (!Boolean.TRUE.equals(forceLink)) {
+            oAuthConnectionService.ensureNoConnection(user, provider);
+        }
         return oAuthProviderFactory.getProvider(provider).generateAuthFlowUrl(user);
     }
 
