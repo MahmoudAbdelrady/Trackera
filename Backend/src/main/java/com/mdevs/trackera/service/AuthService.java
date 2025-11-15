@@ -150,7 +150,7 @@ public class AuthService {
 
         Claims claims = jwtUtil.validateAndGetTokenPayload(jwtTokenHeader.substring(7), true);
         User user = userRepository.findByUuid(claims.get("id", String.class));
-        if (!Boolean.TRUE.equals(forceLink)) {
+        if (!forceLink) {
             oAuthConnectionService.ensureNoConnection(user, provider);
         }
         return oAuthProviderFactory.getProvider(provider).generateAuthFlowUrl(user);
