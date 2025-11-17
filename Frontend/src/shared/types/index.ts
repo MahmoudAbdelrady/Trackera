@@ -24,7 +24,7 @@ import type { JiraTask, JiraTaskEvaluationType, JiraSite } from "./jira";
 
 import { jiraTaskEvaluationMetadata } from "./jira";
 
-import type { SettingsSectionProps, LinkedAccountProps, UserEmailType, UserEmailProps } from "./settings";
+import type { SettingsSectionProps, LinkedAccountProps, UserEmailType, UserEmailProps, PreferencesProps } from "./settings";
 
 export type {
   TrackeraTableEntity,
@@ -58,6 +58,7 @@ export type {
   LinkedAccountProps,
   UserEmailType,
   UserEmailProps,
+  PreferencesProps,
 };
 
 export { worklogEvaluationMetadata, statusMetadata, jiraTaskEvaluationMetadata };

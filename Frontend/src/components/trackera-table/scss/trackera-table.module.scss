@@ -78,10 +78,15 @@
         }
         &.delete {
           color: $redColor;
-          &.disabled {
-            color: $borderColor;
-            cursor: not-allowed;
-          }
+        }
+        &.disabled {
+          color: $borderColor;
+          cursor: not-allowed;
+        }
+        &:hover,
+        &:active,
+        &:focus {
+          background: transparent;
         }
       }
     }

@@ -1,7 +1,7 @@
 import { Eye, SquarePen, Trash, ClipboardPlus, CalendarSync, CalendarX2 } from "lucide-react";
 import { ManageWorkLogModal, AppLayout, SearchFilter, WorklogModal, WorklogStatusCard, TrackeraTable, StatusBadge } from "../../components";
 import classes from "./scss/home.module.css";
-import { Switch, Tooltip, type TableProps } from "antd";
+import { Button, Switch, Tooltip, type TableProps } from "antd";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { worklogEvaluationMetadata, statusMetadata, type WorkLogSummaryCard, type PaginatedResponse, type Worklog, type WorkLogEvaluationType, type WorkLogStatusType } from "../../shared/types";
@@ -10,8 +10,10 @@ import trackeraTableClasses from "../../components/trackera-table/scss/trackera-
 import worklogModalClasses from "../../components/worklogs/modals/worklog-modal/scss/worklog-modal.module.css";
 import requestInstance from "../../shared/axios/request-instance";
 import { showErrorToast, showSuccessToast } from "../../utils/toast-handler/showToast";
+import { userQueries } from "../../state/queries";
 
 const Home = () => {
+  const { data: loggedUserData } = userQueries.useMeQuery();
   const [manageWorkLogVisible, setManageWorkLogVisible] = useState<boolean>(false);
   const [deleteWorkLogVisible, setDeleteWorkLogVisible] = useState<boolean>(false);
   const [isFetchingWorkLogs, setIsFetchingWorkLogs] = useState<boolean>(true);
@@ -101,7 +103,7 @@ const Home = () => {
       dataIndex: "status",
       key: "status",
       render: (_, { status }) => {
-        return <StatusBadge badgeProps={statusMetadata[status as WorkLogStatusType]} />;
+        return loggedUserData?.jiraLinked ? <StatusBadge badgeProps={statusMetadata[status as WorkLogStatusType]} /> : "-";
       },
     },
     {
@@ -110,12 +112,24 @@ const Home = () => {
       render: (_, record) => (
         <div className={trackeraTableClasses.actions_container}>
           {record.status === "SYNCED" ? (
-            <Tooltip title="Unsync from Jira">
-              <CalendarX2 onClick={() => {}} className={`${trackeraTableClasses.log_action_btn} ${trackeraTableClasses.unsync}`} />
+            <Tooltip title={`Unsync from Jira${loggedUserData?.jiraLinked ? "" : " (Jira not linked)"}`}>
+              <Button
+                type="text"
+                icon={<CalendarX2 />}
+                onClick={() => {}}
+                className={`${trackeraTableClasses.log_action_btn} ${trackeraTableClasses.unsync} ${!loggedUserData?.jiraLinked && trackeraTableClasses.disabled}`}
+                disabled={!loggedUserData?.jiraLinked}
+              />
             </Tooltip>
           ) : (
-            <Tooltip title="Sync to Jira">
-              <CalendarSync onClick={() => {}} className={`${trackeraTableClasses.log_action_btn} ${trackeraTableClasses.sync}`} />
+            <Tooltip title={`Sync to Jira${loggedUserData?.jiraLinked ? "" : " (Jira not linked)"}`}>
+              <Button
+                type="text"
+                icon={<CalendarSync />}
+                onClick={() => {}}
+                className={`${trackeraTableClasses.log_action_btn} ${trackeraTableClasses.sync} ${!loggedUserData?.jiraLinked && trackeraTableClasses.disabled}`}
+                disabled={!loggedUserData?.jiraLinked}
+              />
             </Tooltip>
           )}
           <Tooltip title="Edit">
@@ -155,6 +169,7 @@ const Home = () => {
           setFetchSummary={setFetchSummary}
           selectedWorkLog={selectedWorkLog}
           setSelectedWorkLog={setSelectedWorkLog}
+          jiraLinked={loggedUserData?.jiraLinked || false}
         />
       )}
       <WorklogModal
@@ -188,7 +203,7 @@ const Home = () => {
           ))}
         </div>
         <div className={classes.worklogs_content}>
-          <SearchFilter filters={searchFilters} setFilters={setSearchFilters} setFetchWorkLog={setFetchWorkLog} />
+          <SearchFilter filters={searchFilters} setFilters={setSearchFilters} setFetchWorkLog={setFetchWorkLog} jiraLinked={loggedUserData?.jiraLinked || false} />
           <div className={classes.worklogs_container}>
             <TrackeraTable<Worklog>
               properties={{

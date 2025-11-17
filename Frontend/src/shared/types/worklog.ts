@@ -72,6 +72,7 @@ interface ManageWorkLogModalProps {
   setFetchSummary: (fetch: boolean) => void;
   selectedWorkLog?: Worklog;
   setSelectedWorkLog?: (worklog: Worklog | undefined) => void;
+  jiraLinked: boolean;
 }
 
 interface WorkLogSummaryCard {
@@ -91,6 +92,7 @@ interface WorkLogsFilterProps {
   filters: Record<string, any>;
   setFilters: (filters: Record<string, any>) => void;
   setFetchWorkLog: (fetch: boolean) => void;
+  jiraLinked: boolean;
 }
 
 export type {

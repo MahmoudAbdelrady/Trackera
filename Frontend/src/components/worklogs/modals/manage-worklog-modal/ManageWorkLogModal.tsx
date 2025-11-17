@@ -217,7 +217,7 @@ const ManageWorkLogModal = (props: ManageWorkLogModalProps) => {
             </div>
             <div className={worklogModalClasses.form_group}>
               <span className={worklogModalClasses.label}>Sync to Jira after upload:</span>
-              <Switch disabled={isLoading} value={manageWorkLogFormik.values.syncToJira} onChange={(value) => manageWorkLogFormik.setFieldValue("syncToJira", value)} />
+              <Switch disabled={!props.jiraLinked || isLoading} value={manageWorkLogFormik.values.syncToJira} onChange={(value) => manageWorkLogFormik.setFieldValue("syncToJira", value)} />
             </div>
           </>
         )}

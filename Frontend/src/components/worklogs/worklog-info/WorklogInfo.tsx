@@ -4,7 +4,7 @@ import { Tooltip } from "antd";
 import { worklogEvaluationMetadata, statusMetadata, type Worklog, type WorkLogEvaluationType, type WorkLogStatusType } from "../../../shared/types";
 import { StatusBadge } from "../../";
 
-const WorklogInfo = ({ worklogInfo }: { worklogInfo: Worklog }) => {
+const WorklogInfo = ({ worklogInfo, jiraLinked }: { worklogInfo: Worklog; jiraLinked: boolean }) => {
   const evaluationMetaItem = worklogEvaluationMetadata[worklogInfo?.evaluation as WorkLogEvaluationType];
   const statusMetaItem = statusMetadata[worklogInfo?.status as WorkLogStatusType];
 
@@ -31,10 +31,10 @@ const WorklogInfo = ({ worklogInfo }: { worklogInfo: Worklog }) => {
           <StatusBadge badgeProps={evaluationMetaItem} />
         </div>
         <div className={classes.info_box}>
-          <Tooltip title="Status">
+          <Tooltip title={`Status${jiraLinked ? "" : " (Jira not linked)"}`}>
             <RefreshCcw className={classes.info_icon} />
           </Tooltip>
-          <StatusBadge badgeProps={statusMetaItem} />
+          {jiraLinked ? <StatusBadge badgeProps={statusMetaItem} /> : <span className={classes.info_label}>-</span>}
         </div>
       </div>
     </div>

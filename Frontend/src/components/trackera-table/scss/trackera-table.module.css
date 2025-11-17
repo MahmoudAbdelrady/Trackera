@@ -82,7 +82,10 @@
 .worklog_table_container .table_details .actions_container .log_action_btn.delete {
   color: #dc2626;
 }
-.worklog_table_container .table_details .actions_container .log_action_btn.delete.disabled {
+.worklog_table_container .table_details .actions_container .log_action_btn.disabled {
   color: #e5e7eb;
   cursor: not-allowed;
+}
+.worklog_table_container .table_details .actions_container .log_action_btn:hover, .worklog_table_container .table_details .actions_container .log_action_btn:active, .worklog_table_container .table_details .actions_container .log_action_btn:focus {
+  background: transparent;
 }/*# sourceMappingURL=trackera-table.module.css.map */

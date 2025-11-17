@@ -2,17 +2,19 @@ import { CalendarSync, CalendarX2, ExternalLink, Eye, Trash } from "lucide-react
 import { AppLayout, WorklogInfo, WorklogModal, TrackeraTable, StatusBadge } from "../../components";
 import classes from "./scss/worklog-details.module.css";
 import trackeraTableClasses from "../../components/trackera-table/scss/trackera-table.module.css";
-import { Empty, Popconfirm, Skeleton, Switch, Tooltip, type TableProps } from "antd";
+import { Button, Empty, Popconfirm, Skeleton, Switch, Tooltip, type TableProps } from "antd";
 import { statusMetadata, type Worklog, type WorklogEntry, type WorkLogStatusType, type WorklogTask } from "../../shared/types";
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import worklogModalClasses from "../../components/worklogs/modals/worklog-modal/scss/worklog-modal.module.css";
 import requestInstance from "../../shared/axios/request-instance";
 import { showErrorToast, showSuccessToast } from "../../utils/toast-handler/showToast";
+import { userQueries } from "../../state/queries";
 
 const WorklogDetails = () => {
   const { worklogId } = useParams();
   const navigate = useNavigate();
+  const { data: loggedUserData } = userQueries.useMeQuery();
 
   // worklog info
   const [worklogInfo, setWorklogInfo] = useState<Worklog | null>(null);
@@ -70,7 +72,7 @@ const WorklogDetails = () => {
       dataIndex: "status",
       key: "status",
       render: (_, { status }) => {
-        return <StatusBadge badgeProps={statusMetadata[status as WorkLogStatusType]} />;
+        return loggedUserData?.jiraLinked ? <StatusBadge badgeProps={statusMetadata[status as WorkLogStatusType]} /> : "-";
       },
       filters: Array.from(new Set(worklogTasks.map((task) => task.status))).map((status) => ({
         text: statusMetadata[status as WorkLogStatusType]?.label ?? status,
@@ -84,12 +86,24 @@ const WorklogDetails = () => {
       render: (_, record) => (
         <div className={trackeraTableClasses.actions_container}>
           {record.status === "SYNCED" ? (
-            <Tooltip title="Unsync from Jira">
-              <CalendarX2 onClick={() => {}} className={`${trackeraTableClasses.log_action_btn} ${trackeraTableClasses.unsync}`} />
+            <Tooltip title={`Unsync from Jira${loggedUserData?.jiraLinked ? "" : " (Jira not linked)"}`}>
+              <Button
+                type="text"
+                icon={<CalendarX2 />}
+                onClick={() => {}}
+                className={`${trackeraTableClasses.log_action_btn} ${trackeraTableClasses.unsync} ${!loggedUserData?.jiraLinked && trackeraTableClasses.disabled}`}
+                disabled={!loggedUserData?.jiraLinked}
+              />
             </Tooltip>
           ) : (
-            <Tooltip title="Sync to Jira">
-              <CalendarSync onClick={() => {}} className={`${trackeraTableClasses.log_action_btn} ${trackeraTableClasses.sync}`} />
+            <Tooltip title={`Sync to Jira${loggedUserData?.jiraLinked ? "" : " (Jira not linked)"}`}>
+              <Button
+                type="text"
+                icon={<CalendarSync />}
+                onClick={() => {}}
+                className={`${trackeraTableClasses.log_action_btn} ${trackeraTableClasses.sync} ${!loggedUserData?.jiraLinked && trackeraTableClasses.disabled}`}
+                disabled={!loggedUserData?.jiraLinked}
+              />
             </Tooltip>
           )}
           <Tooltip title="View">
@@ -156,12 +170,24 @@ const WorklogDetails = () => {
       render: (_, record) => (
         <div className={trackeraTableClasses.actions_container}>
           {record.status === "SYNCED" ? (
-            <Tooltip title="Unsync from Jira">
-              <CalendarX2 onClick={() => {}} className={`${trackeraTableClasses.log_action_btn} ${trackeraTableClasses.unsync}`} />
+            <Tooltip title={`Unsync from Jira${loggedUserData?.jiraLinked ? "" : " (Jira not linked)"}`}>
+              <Button
+                type="text"
+                icon={<CalendarX2 />}
+                onClick={() => {}}
+                className={`${trackeraTableClasses.log_action_btn} ${trackeraTableClasses.unsync} ${!loggedUserData?.jiraLinked && trackeraTableClasses.disabled}`}
+                disabled={!loggedUserData?.jiraLinked}
+              />
             </Tooltip>
           ) : (
-            <Tooltip title="Sync to Jira">
-              <CalendarSync onClick={() => {}} className={`${trackeraTableClasses.log_action_btn} ${trackeraTableClasses.sync}`} />
+            <Tooltip title={`Sync to Jira${loggedUserData?.jiraLinked ? "" : " (Jira not linked)"}`}>
+              <Button
+                type="text"
+                icon={<CalendarSync />}
+                onClick={() => {}}
+                className={`${trackeraTableClasses.log_action_btn} ${trackeraTableClasses.sync} ${!loggedUserData?.jiraLinked && trackeraTableClasses.disabled}`}
+                disabled={!loggedUserData?.jiraLinked}
+              />
             </Tooltip>
           )}
           <Popconfirm
@@ -171,7 +197,7 @@ const WorklogDetails = () => {
                 <span className={worklogModalClasses.label} style={{ marginRight: 8 }}>
                   Also unsync from Jira:
                 </span>
-                <Switch />
+                <Switch disabled={!loggedUserData?.jiraLinked} />
               </div>
             }
             onConfirm={() => {
@@ -323,7 +349,7 @@ const WorklogDetails = () => {
                   setSelectedWorklogEntries(selectedRows.map((row) => row.id.toString()));
                 },
                 getCheckboxProps: (record) => ({
-                  disabled: record.status === "SYNCED",
+                  disabled: !loggedUserData?.jiraLinked || record.status === "SYNCED",
                 }),
               },
             }}
@@ -332,7 +358,7 @@ const WorklogDetails = () => {
                 label: "Sync to Jira",
                 icon: <CalendarSync />,
                 onClick: () => {},
-                disabled: selectedWorklogEntries.length === 0,
+                disabled: !loggedUserData?.jiraLinked || selectedWorklogEntries.length === 0,
               },
             ]}
           />
@@ -358,7 +384,7 @@ const WorklogDetails = () => {
           <p className={worklogModalClasses.delete_message}>Are you sure you want to delete this task log? This action cannot be undone.</p>
           <div className={worklogModalClasses.switch_option}>
             <span className={worklogModalClasses.label}>Also unsync from Jira:</span>
-            <Switch disabled={isDeletingTask} />
+            <Switch disabled={!loggedUserData?.jiraLinked || isDeletingTask} />
           </div>
         </WorklogModal>
       )}
@@ -374,7 +400,7 @@ const WorklogDetails = () => {
           />
         ) : (
           <>
-            <WorklogInfo worklogInfo={worklogInfo} />
+            <WorklogInfo worklogInfo={worklogInfo} jiraLinked={loggedUserData?.jiraLinked ?? false} />
             <div className={classes.worklog_details_content}>
               {worklogTasks.length > 0 && (
                 <TrackeraTable<WorklogTask>
@@ -387,7 +413,7 @@ const WorklogDetails = () => {
                         setSelectedWorklogTasks(selectedRows.map((row) => row.id.toString()));
                       },
                       getCheckboxProps: (record) => ({
-                        disabled: record.status === "SYNCED",
+                        disabled: !loggedUserData?.jiraLinked || record.status === "SYNCED",
                       }),
                     },
                     loading: isFetchingTasks,
@@ -396,7 +422,7 @@ const WorklogDetails = () => {
                     {
                       label: "Sync to Jira",
                       icon: <CalendarSync />,
-                      disabled: selectedWorklogTasks.length === 0,
+                      disabled: !loggedUserData?.jiraLinked || selectedWorklogTasks.length === 0,
                       onClick: () => {},
                     },
                   ]}

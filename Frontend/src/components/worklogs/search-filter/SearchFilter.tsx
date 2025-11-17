@@ -214,6 +214,7 @@ const SearchFilter = (props: WorkLogsFilterProps) => {
                   value={searchFormik.values.status}
                   onChange={(value) => handleNestedChange("status", value)}
                   onBlur={() => handleNestedBlur("status")}
+                  disabled={!props.jiraLinked}
                 />
               </div>
             </div>

@@ -4,12 +4,11 @@ import classes from "./scss/preferences-section.module.css";
 import { showErrorToast, showSuccessToast } from "../../../../utils/toast-handler/showToast";
 import requestInstance from "../../../../shared/axios/request-instance";
 import { useEffect, useState } from "react";
-import type { JiraSite } from "../../../../shared/types";
+import type { JiraSite, PreferencesProps } from "../../../../shared/types";
 import { isEqual } from "lodash";
-import { userQueries } from "../../../../state/queries";
 
-const PreferencesSection = () => {
-  const { data: loggedUserData } = userQueries.useMeQuery();
+const PreferencesSection = (props: PreferencesProps) => {
+  const { jiraLinked, fetchPreferences, setFetchPreferences } = props;
 
   // preferences keys
   const PREFERENCE_KEYS = {
@@ -42,8 +41,11 @@ const PreferencesSection = () => {
       setIsLoadingPreferences(false);
     };
 
-    fetchUserPreferences();
-  }, []);
+    if (fetchPreferences) {
+      fetchUserPreferences();
+      setFetchPreferences(false);
+    }
+  }, [fetchPreferences]);
 
   const fetchJiraSites = async () => {
     setIsFetchingSites(true);
@@ -94,7 +96,7 @@ const PreferencesSection = () => {
       ) : (
         <>
           <UserPreference label="Jira Main Site">
-            {loggedUserData?.jiraLinked ? (
+            {jiraLinked ? (
               <Select
                 options={jiraSites.map((site) => ({ label: site.name, value: site.id }))}
                 value={updatedPreferences[PREFERENCE_KEYS.JIRA_PRIMARY_PROJECT]?.id}
