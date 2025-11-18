@@ -158,13 +158,15 @@ const WorklogDetails = () => {
       dataIndex: "status",
       key: "status",
       render: (_, { status }) => {
-        return <StatusBadge badgeProps={statusMetadata[status as WorkLogStatusType]} />;
+        return loggedUserData?.jiraLinked ? <StatusBadge badgeProps={statusMetadata[status as WorkLogStatusType]} /> : "-";
       },
-      filters: Array.from(new Set(worklogEntries.map((task) => task.status))).map((status) => ({
-        text: statusMetadata[status as WorkLogStatusType]?.label ?? status,
-        value: status,
-      })),
-      onFilter: (value, record) => record.status === value,
+      ...(loggedUserData?.jiraLinked && {
+        filters: Array.from(new Set(worklogEntries.map((task) => task.status))).map((status) => ({
+          text: statusMetadata[status as WorkLogStatusType]?.label ?? status,
+          value: status,
+        })),
+        onFilter: (value, record) => record.status === value,
+      }),
     },
     {
       title: "Actions",
