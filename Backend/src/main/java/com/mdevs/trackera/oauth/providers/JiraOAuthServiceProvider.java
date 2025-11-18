@@ -83,6 +83,8 @@ public class JiraOAuthServiceProvider extends OAuthServiceProvider {
     @Override
     public void handlePostUnLinkingActions(User user) {
         userPreferenceService.deleteByUserAndOption(user, UserPreferenceOption.JIRA_PRIMARY_PROJECT);
+        cacheService.evict(JiraService.USER_JIRA_TASKS_CACHE_KEY_PREFIX + user.getId());
+        cacheService.evict(JiraService.USER_JIRA_SITES_FETCH_CACHE_KEY_PREFIX + user.getId());
     }
 
     private OAuthAccessCredentialsDTO getJiraTokenResponse(String authCode, String codeVerifier) {
