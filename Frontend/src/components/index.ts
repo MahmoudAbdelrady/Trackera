@@ -23,6 +23,7 @@ import ChangePasswordSection from "./settings/sections/change-password-section/C
 import PreferencesSection from "./settings/sections/preferences-section/PreferencesSection";
 import UserPreference from "./settings/user-preference/UserPreference";
 import ServerError from "./server-error/ServerError";
+import AccessDenied from "./access-denied/AccessDenied";
 
 export {
   AuthLayout,
@@ -50,4 +51,5 @@ export {
   PreferencesSection,
   UserPreference,
   ServerError,
+  AccessDenied,
 };

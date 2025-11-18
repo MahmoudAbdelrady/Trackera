@@ -39,7 +39,8 @@
           }
         }
         .filter_operator {
-          width: 130px;
+          width: min-content;
+          min-width: 130px;
         }
         .range_input {
           width: 110px;

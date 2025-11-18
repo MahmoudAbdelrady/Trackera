@@ -15,15 +15,22 @@ interface OAuthAccount {
 }
 
 const Settings = () => {
-  const { data: userData } = userQueries.useMeQuery();
+  const { data: userData, refetch: refetchUser } = userQueries.useMeQuery();
+
+  // oauth accounts
   const [isFetchingAccounts, setIsFetchingAccounts] = useState(false);
   const [fetchOAuthAccounts, setFetchOAuthAccounts] = useState(true);
   const [oAuthAccounts, setOAuthAccounts] = useState<OAuthAccount[]>([]);
 
+  // preferences
+  const [fetchPreferences, setFetchPreferences] = useState(true);
+
   const { linkProviderAccount } = useOAuthFlow({
     onSuccess: () => {
       showSuccessToast("Account linked successfully");
+      refetchUser();
       setFetchOAuthAccounts(true);
+      setFetchPreferences(true);
     },
     onError: (error) => {
       showErrorToast(error);
@@ -34,6 +41,7 @@ const Settings = () => {
     try {
       const response = await requestInstance.post(`/auth/oauth/unlink/${provider}`);
       showSuccessToast(response.data);
+      refetchUser();
       setFetchOAuthAccounts(true);
     } catch (error: any) {
       showErrorToast(error);
@@ -84,7 +92,7 @@ const Settings = () => {
           )}
         </SettingsSection>
         <SettingsSection title="Preferences" icon={<Sliders />}>
-          <PreferencesSection />
+          <PreferencesSection jiraLinked={userData?.jiraLinked || false} fetchPreferences={fetchPreferences} setFetchPreferences={setFetchPreferences} />
         </SettingsSection>
       </div>
     </AppLayout>

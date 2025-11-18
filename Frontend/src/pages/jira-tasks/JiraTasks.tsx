@@ -1,5 +1,5 @@
 import { Button, Tabs, type TableProps, type TabsProps } from "antd";
-import { AppLayout, TrackeraTable, StatusBadge } from "../../components";
+import { AppLayout, TrackeraTable, StatusBadge, AccessDenied } from "../../components";
 import { ExternalLink, RefreshCw } from "lucide-react";
 import { jiraTaskEvaluationMetadata, type JiraTask, type JiraTaskEvaluationType } from "../../shared/types";
 import { Link } from "react-router-dom";
@@ -8,8 +8,11 @@ import classes from "./scss/jira-tasks.module.css";
 import { showErrorToast } from "../../utils/toast-handler/showToast";
 import requestInstance from "../../shared/axios/request-instance";
 import { useEffect, useState } from "react";
+import { userQueries } from "../../state/queries";
 
 const JiraTasks = () => {
+  const { data: loggedUserData } = userQueries.useMeQuery();
+
   const [isLoading, setIsLoading] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
   const [jiraTasks, setJiraTasks] = useState<Record<string, any> | null>(null);
@@ -142,7 +145,9 @@ const JiraTasks = () => {
   ];
 
   useEffect(() => {
-    fetchJiraTasks();
+    if (loggedUserData?.jiraLinked) {
+      fetchJiraTasks();
+    }
   }, []);
 
   const fetchJiraTasks = async (forceUpdate: boolean = false) => {
@@ -160,15 +165,21 @@ const JiraTasks = () => {
 
   return (
     <AppLayout>
-      <div className={classes.refresh_container}>
-        <Button icon={<RefreshCw />} onClick={() => fetchJiraTasks(true)}>
-          Refresh
-        </Button>
-        {lastUpdated && <div className={classes.last_refresh}>Last Updated: {lastUpdated}</div>}
-      </div>
-      <div className={classes.jira_tasks_container}>
-        <Tabs defaultActiveKey="1" items={items} />
-      </div>
+      {loggedUserData?.jiraLinked ? (
+        <>
+          <div className={classes.refresh_container}>
+            <Button icon={<RefreshCw />} onClick={() => fetchJiraTasks(true)}>
+              Refresh
+            </Button>
+            {lastUpdated && <div className={classes.last_refresh}>Last Updated: {lastUpdated}</div>}
+          </div>
+          <div className={classes.jira_tasks_container}>
+            <Tabs defaultActiveKey="1" items={items} />
+          </div>
+        </>
+      ) : (
+        <AccessDenied />
+      )}
     </AppLayout>
   );
 };

@@ -50,7 +50,9 @@
   }
 }
 .search_filters_container .search_filters_fields_grid .search_filter_input .filter_input_box .filter_operator {
-  width: 130px;
+  width: -moz-min-content;
+  width: min-content;
+  min-width: 130px;
 }
 .search_filters_container .search_filters_fields_grid .search_filter_input .filter_input_box .range_input {
   width: 110px;

@@ -1,4 +1,4 @@
-package com.mdevs.trackera.dto.auth;
+package com.mdevs.trackera.dto.user;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -23,4 +23,6 @@ public class LoggedUserDTO {
     private String avatarColor;
 
     private boolean isPasswordSet;
+
+    private boolean isJiraLinked;
 }

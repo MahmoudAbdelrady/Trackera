@@ -1,7 +1,7 @@
 package com.mdevs.trackera.service;
 
 import com.mdevs.trackera.config.general.AppConfig;
-import com.mdevs.trackera.dto.auth.LoggedUserDTO;
+import com.mdevs.trackera.dto.user.LoggedUserDTO;
 import com.mdevs.trackera.dto.auth.OAuthUserInfoDTO;
 import com.mdevs.trackera.dto.auth.PasswordDTO;
 import com.mdevs.trackera.dto.auth.SignUpDTO;
@@ -98,6 +98,7 @@ public class UserService implements UserDetailsService {
         for (Map.Entry<String, Object> preference : updatedPreferences.entrySet()) {
             userPreferenceService.validatePreference(preference);
             if (preference.getKey().equals(UserPreferenceOption.JIRA_PRIMARY_PROJECT.getCode())) {
+                oAuthConnectionService.validateAndGetConnection(currentUser, OAuthProvider.JIRA);
                 preference.setValue(AppUtils.convertObjectToJsonString(jiraService.findSiteById(currentUser, preference.getValue().toString())));
             }
         }

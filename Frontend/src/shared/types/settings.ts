@@ -26,4 +26,10 @@ interface UserEmailProps {
   setFetchLinkedAccounts: (fetch: boolean) => void;
 }
 
-export type { SettingsSectionProps, LinkedAccountProps, UserEmailType, UserEmailProps };
+interface PreferencesProps {
+  jiraLinked: boolean;
+  fetchPreferences: boolean;
+  setFetchPreferences: (fetch: boolean) => void;
+}
+
+export type { SettingsSectionProps, LinkedAccountProps, UserEmailType, UserEmailProps, PreferencesProps };

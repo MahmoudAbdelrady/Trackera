@@ -1,6 +1,6 @@
 package com.mdevs.trackera.shared.mappers;
 
-import com.mdevs.trackera.dto.auth.LoggedUserDTO;
+import com.mdevs.trackera.dto.user.LoggedUserDTO;
 import com.mdevs.trackera.dto.auth.SignUpDTO;
 import com.mdevs.trackera.entity.User;
 import com.mdevs.trackera.entity.UserEmail;

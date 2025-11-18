@@ -47,6 +47,10 @@ public class User extends BaseEntity implements UserDetails {
     @NotAudited
     private boolean isOAuth;
 
+    @Formula("EXISTS (SELECT 1 FROM OAUTHCONNECTIONS oac WHERE oac.USER_ID = ID AND oac.PROVIDER = 'JIRA' AND oac.IS_REVOKED = 0)")
+    @NotAudited
+    private boolean isJiraLinked;
+
     public User() {
         this.avatarColor = String.format("#%06x", (int) (Math.random() * 0xffffff));
     }

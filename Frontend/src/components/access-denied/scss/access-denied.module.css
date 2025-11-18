@@ -1,0 +1,35 @@
+.access_denied_container {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  width: 100%;
+  height: 100%;
+}
+.access_denied_container .content {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  background-color: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+@media (max-width: 768px) {
+  .access_denied_container .content {
+    margin: 0 15px;
+  }
+}
+.access_denied_container .content .access_denied_img {
+  width: 90px;
+  height: 90px;
+}
+.access_denied_container .content .title {
+  margin-top: 15px;
+}
+.access_denied_container .content .message {
+  margin-top: 10px;
+  text-align: center;
+  color: #5c5c5c;
+}/*# sourceMappingURL=access-denied.module.css.map */

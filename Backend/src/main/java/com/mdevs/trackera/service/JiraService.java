@@ -36,7 +36,7 @@ public class JiraService {
 
     public static final String USER_JIRA_TASKS_CACHE_KEY_PREFIX = "userJiraTasks:";
 
-    private static final String USER_JIRA_SITES_FETCH_CACHE_KEY_PREFIX = "userJiraSites:";
+    public static final String USER_JIRA_SITES_FETCH_CACHE_KEY_PREFIX = "userJiraSites:";
 
     private static final int JIRA_TASKS_FETCH_HOURS_DURATION = 1;
 
