@@ -1,4 +1,4 @@
-import { CalendarSync, CalendarX2, ExternalLink, Eye, Trash } from "lucide-react";
+import { CalendarSync, CalendarX2, ExternalLink, Eye, Info, Trash } from "lucide-react";
 import { AppLayout, WorklogInfo, WorklogModal, TrackeraTable, StatusBadge } from "../../components";
 import classes from "./scss/worklog-details.module.css";
 import trackeraTableClasses from "../../components/trackera-table/scss/trackera-table.module.css";
@@ -74,11 +74,13 @@ const WorklogDetails = () => {
       render: (_, { status }) => {
         return loggedUserData?.jiraLinked ? <StatusBadge badgeProps={statusMetadata[status as WorkLogStatusType]} /> : "-";
       },
-      filters: Array.from(new Set(worklogTasks.map((task) => task.status))).map((status) => ({
-        text: statusMetadata[status as WorkLogStatusType]?.label ?? status,
-        value: status,
-      })),
-      onFilter: (value, record) => record.status === value,
+      ...(loggedUserData?.jiraLinked && {
+        filters: Array.from(new Set(worklogTasks.map((task) => task.status))).map((status) => ({
+          text: statusMetadata[status as WorkLogStatusType]?.label ?? status,
+          value: status,
+        })),
+        onFilter: (value, record) => record.status === value,
+      }),
     },
     {
       title: "Actions",
@@ -170,7 +172,7 @@ const WorklogDetails = () => {
       render: (_, record) => (
         <div className={trackeraTableClasses.actions_container}>
           {record.status === "SYNCED" ? (
-            <Tooltip title={`Unsync from Jira${loggedUserData?.jiraLinked ? "" : " (Jira not linked)"}`}>
+            <Tooltip title={`${loggedUserData?.jiraLinked ? "Unsync from Jira" : "Link your Jira account in settings to enable this option."}`}>
               <Button
                 type="text"
                 icon={<CalendarX2 />}
@@ -180,7 +182,7 @@ const WorklogDetails = () => {
               />
             </Tooltip>
           ) : (
-            <Tooltip title={`Sync to Jira${loggedUserData?.jiraLinked ? "" : " (Jira not linked)"}`}>
+            <Tooltip title={`${loggedUserData?.jiraLinked ? "Sync to Jira" : "Link your Jira account in settings to enable this option."}`}>
               <Button
                 type="text"
                 icon={<CalendarSync />}
@@ -198,6 +200,11 @@ const WorklogDetails = () => {
                   Also unsync from Jira:
                 </span>
                 <Switch disabled={!loggedUserData?.jiraLinked} />
+                {!loggedUserData?.jiraLinked && (
+                  <Tooltip title="Link your Jira account in settings to enable this option.">
+                    <Info size={16} color="#dc2626" style={{ marginLeft: "4px" }} />
+                  </Tooltip>
+                )}
               </div>
             }
             onConfirm={() => {
@@ -355,7 +362,7 @@ const WorklogDetails = () => {
             }}
             actionButtons={[
               {
-                label: "Sync to Jira",
+                label: `Sync to Jira${loggedUserData?.jiraLinked ? "" : " (Jira not linked)"}`,
                 icon: <CalendarSync />,
                 onClick: () => {},
                 disabled: !loggedUserData?.jiraLinked || selectedWorklogEntries.length === 0,
@@ -385,6 +392,11 @@ const WorklogDetails = () => {
           <div className={worklogModalClasses.switch_option}>
             <span className={worklogModalClasses.label}>Also unsync from Jira:</span>
             <Switch disabled={!loggedUserData?.jiraLinked || isDeletingTask} />
+            {!loggedUserData?.jiraLinked && (
+              <Tooltip title="Link your Jira account in settings to enable this option.">
+                <Info size={16} color="#dc2626" />
+              </Tooltip>
+            )}
           </div>
         </WorklogModal>
       )}
@@ -420,7 +432,7 @@ const WorklogDetails = () => {
                   }}
                   actionButtons={[
                     {
-                      label: "Sync to Jira",
+                      label: `Sync to Jira${loggedUserData?.jiraLinked ? "" : " (Jira not linked)"}`,
                       icon: <CalendarSync />,
                       disabled: !loggedUserData?.jiraLinked || selectedWorklogTasks.length === 0,
                       onClick: () => {},

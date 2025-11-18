@@ -218,6 +218,11 @@ const ManageWorkLogModal = (props: ManageWorkLogModalProps) => {
             <div className={worklogModalClasses.form_group}>
               <span className={worklogModalClasses.label}>Sync to Jira after upload:</span>
               <Switch disabled={!props.jiraLinked || isLoading} value={manageWorkLogFormik.values.syncToJira} onChange={(value) => manageWorkLogFormik.setFieldValue("syncToJira", value)} />
+              {!props.jiraLinked && (
+                <Tooltip title="Link your Jira account in settings to enable this option.">
+                  <Info size={16} color="#dc2626" style={{ marginLeft: "8px" }} />
+                </Tooltip>
+              )}
             </div>
           </>
         )}

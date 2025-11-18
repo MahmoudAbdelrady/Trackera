@@ -1,4 +1,4 @@
-import { Eye, SquarePen, Trash, ClipboardPlus, CalendarSync, CalendarX2 } from "lucide-react";
+import { Eye, SquarePen, Trash, ClipboardPlus, CalendarSync, CalendarX2, Info } from "lucide-react";
 import { ManageWorkLogModal, AppLayout, SearchFilter, WorklogModal, WorklogStatusCard, TrackeraTable, StatusBadge } from "../../components";
 import classes from "./scss/home.module.css";
 import { Button, Switch, Tooltip, type TableProps } from "antd";
@@ -112,7 +112,7 @@ const Home = () => {
       render: (_, record) => (
         <div className={trackeraTableClasses.actions_container}>
           {record.status === "SYNCED" ? (
-            <Tooltip title={`Unsync from Jira${loggedUserData?.jiraLinked ? "" : " (Jira not linked)"}`}>
+            <Tooltip title={`${loggedUserData?.jiraLinked ? "Unsync from Jira" : "Link your Jira account in settings to enable this option."}`}>
               <Button
                 type="text"
                 icon={<CalendarX2 />}
@@ -122,7 +122,7 @@ const Home = () => {
               />
             </Tooltip>
           ) : (
-            <Tooltip title={`Sync to Jira${loggedUserData?.jiraLinked ? "" : " (Jira not linked)"}`}>
+            <Tooltip title={`${loggedUserData?.jiraLinked ? "Sync to Jira" : "Link your Jira account in settings to enable this option."}`}>
               <Button
                 type="text"
                 icon={<CalendarSync />}
@@ -193,7 +193,12 @@ const Home = () => {
         <p className={worklogModalClasses.delete_message}>Are you sure you want to delete this worklog? This action cannot be undone.</p>
         <div className={worklogModalClasses.switch_option}>
           <span className={worklogModalClasses.label}>Also unsync from Jira:</span>
-          <Switch />
+          <Switch disabled={!loggedUserData?.jiraLinked} />
+          {!loggedUserData?.jiraLinked && (
+            <Tooltip title="Link your Jira account in settings to enable this option.">
+              <Info size={16} color="#dc2626" />
+            </Tooltip>
+          )}
         </div>
       </WorklogModal>
       <AppLayout>

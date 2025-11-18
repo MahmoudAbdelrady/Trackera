@@ -1,5 +1,5 @@
-import { Funnel, Search, RotateCcw } from "lucide-react";
-import { Button, DatePicker, Form, Input, InputNumber, Radio, Select } from "antd";
+import { Funnel, Search, RotateCcw, Info } from "lucide-react";
+import { Button, DatePicker, Form, Input, InputNumber, Radio, Select, Tooltip } from "antd";
 
 import classes from "./scss/search-filter.module.css";
 import CollapsibleSection from "../../collapsible-section/CollapsibleSection";
@@ -216,6 +216,11 @@ const SearchFilter = (props: WorkLogsFilterProps) => {
                   onBlur={() => handleNestedBlur("status")}
                   disabled={!props.jiraLinked}
                 />
+                {!props.jiraLinked && (
+                  <Tooltip title="Link your Jira account in settings to enable this option.">
+                    <Info size={16} color="#dc2626" style={{ margin: "auto" }} />
+                  </Tooltip>
+                )}
               </div>
             </div>
 
