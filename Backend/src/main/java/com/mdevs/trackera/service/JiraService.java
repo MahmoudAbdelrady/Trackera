@@ -4,8 +4,10 @@ import com.mdevs.trackera.config.general.AppConfig;
 import com.mdevs.trackera.dto.jira.JiraProjectDTO;
 import com.mdevs.trackera.dto.jira.JiraTaskDTO;
 import com.mdevs.trackera.dto.jira.JiraTaskResponse;
+import com.mdevs.trackera.dto.worklog.WorkLogRequestBodyDTO;
 import com.mdevs.trackera.entity.User;
 import com.mdevs.trackera.entity.OAuthConnection;
+import com.mdevs.trackera.entity.WorkLogDetail;
 import com.mdevs.trackera.shared.CacheService;
 import com.mdevs.trackera.shared.enums.UserPreferenceOption;
 import com.mdevs.trackera.shared.enums.JiraTaskEvaluation;
@@ -129,13 +131,31 @@ public class JiraService {
     //</editor-fold>
 
     //<editor-fold desc="Integration & Processing">
+    public String addWorkLog(User user, WorkLogDetail workLogDetail) {
+        WorkLogRequestBodyDTO workLogRequest = new WorkLogRequestBodyDTO();
+        workLogRequest.setComment(createJiraCommentObject(workLogDetail.getDescription()));
+        workLogRequest.setStarted(LocalDateTime.of(workLogDetail.getWorkLog().getWorkDate(), workLogDetail.getStartTime()));
+        workLogRequest.setTimeSpentSeconds(workLogDetail.getDuration() * 60);
+
+        String apiUrl = getApiUrl(validateAndGetUserJiraPrimaryProject(user)) + "/issue/" + workLogDetail.getTaskName() + "/worklog";
+        OAuthConnection oAuthConnection = oAuthConnectionService.validateAndGetConnection(user, OAuthProvider.JIRA);
+        String accessToken = oAuthConnectionService.resolveValidAccessToken(oAuthConnection);
+        Map<String, Object> response = callJiraApi(apiUrl, HttpMethod.POST, HttpUtil.createBearerAuthEntity(accessToken), oAuthConnection, Map.class);
+
+        return response.get("id").toString();
+    }
+
+    public void deleteWorkLog(User user, WorkLogDetail workLogDetail) {
+        String apiUrl = getApiUrl(validateAndGetUserJiraPrimaryProject(user)) + "/issue/" + workLogDetail.getTaskName() + "/worklog/" + workLogDetail.getJiraId();
+        OAuthConnection oAuthConnection = oAuthConnectionService.validateAndGetConnection(user, OAuthProvider.JIRA);
+        String accessToken = oAuthConnectionService.resolveValidAccessToken(oAuthConnection);
+        callJiraApi(apiUrl, HttpMethod.DELETE, HttpUtil.createBearerAuthEntity(accessToken), oAuthConnection, Void.class);
+    }
+
     private List<JiraTaskDTO> getTasksFromJira(User user) {
         List<JiraTaskDTO> jiraTasks = new ArrayList<>();
         OAuthConnection connection = oAuthConnectionService.validateAndGetConnection(user, OAuthProvider.JIRA);
-        JiraProjectDTO userJiraPrimaryProject = (JiraProjectDTO) userPreferenceService.getPreferenceValue(user, UserPreferenceOption.JIRA_PRIMARY_PROJECT);
-        if (userJiraPrimaryProject == null) {
-            throw new BusinessException("Jira primary project not set. Please set it in your settings.");
-        }
+        JiraProjectDTO userJiraPrimaryProject = validateAndGetUserJiraPrimaryProject(user);
 
         String accessToken = oAuthConnectionService.resolveValidAccessToken(connection);
         Map<String, Object> jiraResponse;
@@ -152,6 +172,14 @@ public class JiraService {
         } while (!isLast);
 
         return jiraTasks;
+    }
+
+    private JiraProjectDTO validateAndGetUserJiraPrimaryProject(User user) {
+        JiraProjectDTO userJiraPrimaryProject = (JiraProjectDTO) userPreferenceService.getPreferenceValue(user, UserPreferenceOption.JIRA_PRIMARY_PROJECT);
+        if (userJiraPrimaryProject == null) {
+            throw new BusinessException("Jira primary project not set. Please set it in your settings.");
+        }
+        return userJiraPrimaryProject;
     }
 
     private void processJiraResponseTasks(Map<String, Object> jiraResponse, JiraProjectDTO userJiraPrimaryProject, List<JiraTaskDTO> jiraTasks) {
@@ -242,6 +270,29 @@ public class JiraService {
         } catch (Exception e) {
             throw new RuntimeException("Error while calling Jira API", e);
         }
+    }
+
+    private Object createJiraCommentObject(String comment) {
+        Map<String, Object> commentObject = new HashMap<>();
+        commentObject.put("type", "doc");
+        commentObject.put("version", 1);
+
+        List<Object> paragraphContent = new ArrayList<>();
+        Map<String, Object> textNode = new HashMap<>();
+        textNode.put("type", "text");
+        textNode.put("text", comment);
+        paragraphContent.add(textNode);
+
+        Map<String, Object> paragraph = new HashMap<>();
+        paragraph.put("type", "paragraph");
+        paragraph.put("content", paragraphContent);
+
+        List<Object> contentList = new ArrayList<>();
+        contentList.add(paragraph);
+
+        commentObject.put("content", contentList);
+
+        return commentObject;
     }
     //</editor-fold>
 }

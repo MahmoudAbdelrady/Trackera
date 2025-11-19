@@ -180,6 +180,37 @@ public class WorkLogService {
     }
     //</editor-fold>
 
+    //<editor-fold desc="Jira Synchronization">
+    public void syncToJira(String uuid) {
+        WorkLog workLog = ensureWorkLogExistsAndHasPermission(uuid);
+        // @TODO --> Implement Jira synchronization logic here
+        log.info("Synchronizing WorkLog with UUID {} to Jira (Not yet implemented)", uuid);
+    }
+
+    public void syncTaskToJira(String uuid, String taskName) {
+        WorkLog workLog = ensureWorkLogExistsAndHasPermission(uuid);
+        List<WorkLogDetail> workLogDetails = workLogDetailRepository.findByWorkLogAndTaskName(workLog, taskName);
+        if (workLogDetails.isEmpty()) {
+            throw new NotFoundException("No logs found for the specified task in this worklog");
+        }
+        // @TODO --> Implement Jira synchronization logic for the specific task here
+        log.info("Synchronizing Task '{}' of WorkLog with UUID {} to Jira (Not yet implemented)", taskName, uuid);
+    }
+
+    public void syncEntryToJira(String uuid) {
+        WorkLogDetail workLogEntry = workLogDetailRepository.findByUuid(uuid);
+        if (workLogEntry == null) {
+            throw new NotFoundException("WorkLog entry not found");
+        }
+        WorkLog workLog = workLogEntry.getWorkLog();
+        if (!workLog.getUser().getId().equals(AppConfig.getAuthenticatedCurrentUser().getId())) {
+            throw new UnauthorizedException("You are not authorized to access this entry");
+        }
+        // @TODO --> Implement Jira synchronization logic for the specific entry here
+        log.info("Synchronizing WorkLog Entry with UUID {} to Jira (Not yet implemented)", uuid);
+    }
+    //</editor-fold>
+
     //<editor-fold desc="Deletion">
     @Transactional
     public void deleteWorkLog(String uuid) {
