@@ -140,7 +140,7 @@ public class JiraService {
         String apiUrl = getApiUrl(validateAndGetUserJiraPrimaryProject(user)) + "/issue/" + workLogDetail.getTaskName() + "/worklog";
         OAuthConnection oAuthConnection = oAuthConnectionService.validateAndGetConnection(user, OAuthProvider.JIRA);
         String accessToken = oAuthConnectionService.resolveValidAccessToken(oAuthConnection);
-        Map<String, Object> response = callJiraApi(apiUrl, HttpMethod.POST, HttpUtil.createBearerAuthEntity(accessToken), oAuthConnection, Map.class);
+        Map<String, Object> response = callJiraApi(apiUrl, HttpMethod.POST, HttpUtil.createBearerAuthEntity(accessToken, workLogRequest), oAuthConnection, Map.class);
 
         return response.get("id").toString();
     }
@@ -247,7 +247,7 @@ public class JiraService {
     }
 
     @Retryable(retryFor = Exception.class, backoff = @Backoff(delay = 1000, multiplier = 3))
-    private <T> T callJiraApi(String url, HttpMethod method, HttpEntity<Void> entity, OAuthConnection OAuthConnection, Class<T> responseType) {
+    private <T> T callJiraApi(String url, HttpMethod method, HttpEntity<?> entity, OAuthConnection OAuthConnection, Class<T> responseType) {
         try {
             ResponseEntity<T> response = HttpUtil.getRestTemplate().exchange(url, method, entity, responseType);
 

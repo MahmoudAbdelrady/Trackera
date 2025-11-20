@@ -5,6 +5,7 @@ import com.mdevs.trackera.dto.worklog.*;
 import com.mdevs.trackera.entity.User;
 import com.mdevs.trackera.entity.WorkLog;
 import com.mdevs.trackera.entity.WorkLogDetail;
+import com.mdevs.trackera.oauth.OAuthProvider;
 import com.mdevs.trackera.repository.WorkLogDetailRepository;
 import com.mdevs.trackera.repository.WorkLogRepository;
 import com.mdevs.trackera.shared.FileHandler;
@@ -22,6 +23,7 @@ import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.TypedQuery;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -47,6 +49,12 @@ public class WorkLogService {
 
     private final UserPreferenceService userPreferenceService;
 
+    private final OAuthConnectionService oAuthConnectionService;
+
+    private final JiraService jiraService;
+
+    private final WorkLogService selfRef;
+
     private final WorkLogMapper workLogMapper;
 
     @PersistenceContext
@@ -54,10 +62,14 @@ public class WorkLogService {
 
     private static final Pattern DURATION_PATTERN = Pattern.compile("(?:(\\d+)h)?\\s*(?:(\\d+)m)?");
 
-    public WorkLogService(WorkLogRepository workLogRepository, WorkLogDetailRepository workLogDetailRepository, UserPreferenceService userPreferenceService, WorkLogMapper workLogMapper) {
+    public WorkLogService(WorkLogRepository workLogRepository, WorkLogDetailRepository workLogDetailRepository, UserPreferenceService userPreferenceService, OAuthConnectionService oAuthConnectionService,
+                          JiraService jiraService, @Lazy WorkLogService selfRef, WorkLogMapper workLogMapper) {
         this.workLogRepository = workLogRepository;
         this.workLogDetailRepository = workLogDetailRepository;
         this.userPreferenceService = userPreferenceService;
+        this.oAuthConnectionService = oAuthConnectionService;
+        this.jiraService = jiraService;
+        this.selfRef = selfRef;
         this.workLogMapper = workLogMapper;
     }
 
@@ -181,33 +193,55 @@ public class WorkLogService {
     //</editor-fold>
 
     //<editor-fold desc="Jira Synchronization">
-    public void syncToJira(String uuid) {
+    public Map<String, Object> syncToJira(String uuid) {
+        oAuthConnectionService.validateAndGetConnection(AppConfig.getAuthenticatedCurrentUser(), OAuthProvider.JIRA);
         WorkLog workLog = ensureWorkLogExistsAndHasPermission(uuid);
-        // @TODO --> Implement Jira synchronization logic here
-        log.info("Synchronizing WorkLog with UUID {} to Jira (Not yet implemented)", uuid);
+        List<WorkLogDetail> workLogDetails = workLogDetailRepository.findAllByWorkLog(workLog);
+        return handleJiraSyncing(workLog, workLogDetails);
     }
 
-    public void syncTaskToJira(String uuid, String taskName) {
+    public Map<String, Object> syncTasksToJira(String uuid, List<String> taskNames) {
+        oAuthConnectionService.validateAndGetConnection(AppConfig.getAuthenticatedCurrentUser(), OAuthProvider.JIRA);
         WorkLog workLog = ensureWorkLogExistsAndHasPermission(uuid);
-        List<WorkLogDetail> workLogDetails = workLogDetailRepository.findByWorkLogAndTaskName(workLog, taskName);
+        List<WorkLogDetail> workLogDetails = workLogDetailRepository.findByWorkLogAndTaskNameIn(workLog, taskNames);
         if (workLogDetails.isEmpty()) {
             throw new NotFoundException("No logs found for the specified task in this worklog");
         }
-        // @TODO --> Implement Jira synchronization logic for the specific task here
-        log.info("Synchronizing Task '{}' of WorkLog with UUID {} to Jira (Not yet implemented)", taskName, uuid);
+        return handleJiraSyncing(workLog, workLogDetails);
     }
 
-    public void syncEntryToJira(String uuid) {
-        WorkLogDetail workLogEntry = workLogDetailRepository.findByUuid(uuid);
-        if (workLogEntry == null) {
-            throw new NotFoundException("WorkLog entry not found");
+    public Map<String, Object> syncEntriesToJira(String uuid, List<String> entriesUUIDs) {
+        oAuthConnectionService.validateAndGetConnection(AppConfig.getAuthenticatedCurrentUser(), OAuthProvider.JIRA);
+        WorkLog workLog = ensureWorkLogExistsAndHasPermission(uuid);
+        List<WorkLogDetail> workLogDetails = workLogDetailRepository.findByWorkLogAndUuidIn(workLog, entriesUUIDs);
+        if (workLogDetails.isEmpty()) {
+            throw new NotFoundException("Logs not found");
         }
-        WorkLog workLog = workLogEntry.getWorkLog();
-        if (!workLog.getUser().getId().equals(AppConfig.getAuthenticatedCurrentUser().getId())) {
-            throw new UnauthorizedException("You are not authorized to access this entry");
+        return handleJiraSyncing(workLog, workLogDetails);
+    }
+
+    private Map<String, Object> handleJiraSyncing(WorkLog workLog, List<WorkLogDetail> workLogDetails) {
+        Map<String, Object> errors = new HashMap<>();
+        for (WorkLogDetail workLogDetail : workLogDetails) {
+            try {
+                selfRef.syncWorkLogDetailToJira(workLog.getUser(), workLogDetail);
+            } catch (Exception ex) {
+                log.error("Error syncing WorkLogDetail with UUID {} to Jira", workLogDetail.getUuid(), ex);
+                errors.put(workLogDetail.getUuid(), ex.getMessage());
+            }
         }
-        // @TODO --> Implement Jira synchronization logic for the specific entry here
-        log.info("Synchronizing WorkLog Entry with UUID {} to Jira (Not yet implemented)", uuid);
+        workLog.setStatus(workLogRepository.calculateWorkLogStatus(workLog));
+        workLogRepository.save(workLog);
+        return errors.isEmpty() ? Map.of("message", "WorkLog synchronized to Jira successfully") : Map.of("isError", true, "errors", errors);
+    }
+
+    @Transactional
+    public void syncWorkLogDetailToJira(User user, WorkLogDetail workLogDetail) {
+        log.info("Synchronizing WorkLogDetail with UUID {} to Jira", workLogDetail.getUuid());
+        String jiraId = jiraService.addWorkLog(user, workLogDetail);
+        workLogDetail.setSynced(true);
+        workLogDetail.setJiraId(jiraId);
+        workLogDetailRepository.save(workLogDetail);
     }
     //</editor-fold>
 
