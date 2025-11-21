@@ -13,17 +13,20 @@ public class HttpUtil {
     private static final RestTemplate restTemplate = new RestTemplate();
 
     public static <T> HttpEntity<T> createBearerAuthEntity(String accessToken) {
-        return new HttpEntity<>(createBearerAuthHeaders(accessToken));
+        return new HttpEntity<>(createBearerAuthHeaders(accessToken, false));
     }
 
     public static <T> HttpEntity<T> createBearerAuthEntity(String accessToken, T body) {
-        return new HttpEntity<>(body, createBearerAuthHeaders(accessToken));
+        return new HttpEntity<>(body, createBearerAuthHeaders(accessToken, true));
     }
 
-    private static HttpHeaders createBearerAuthHeaders(String accessToken) {
+    private static HttpHeaders createBearerAuthHeaders(String accessToken, boolean hasBody) {
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(accessToken);
         headers.setAccept(List.of(MediaType.APPLICATION_JSON));
+        if (hasBody) {
+            headers.setContentType(MediaType.APPLICATION_JSON);
+        }
         return headers;
     }
 }

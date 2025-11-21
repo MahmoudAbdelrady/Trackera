@@ -1,6 +1,8 @@
 package com.mdevs.trackera.utils;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import lombok.Getter;
 
 import java.time.LocalDateTime;
@@ -10,6 +12,11 @@ import java.util.Date;
 public class AppUtils {
     @Getter
     private static final ObjectMapper objectMapper = new ObjectMapper();
+
+    static {
+        objectMapper.registerModule(new JavaTimeModule());
+        objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+    }
 
     public static String convertObjectToJsonString(Object data) {
         try {

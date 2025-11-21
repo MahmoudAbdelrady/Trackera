@@ -1,10 +1,10 @@
 package com.mdevs.trackera.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.mdevs.trackera.config.general.AppConfig;
 import com.mdevs.trackera.dto.jira.JiraProjectDTO;
 import com.mdevs.trackera.dto.jira.JiraTaskDTO;
 import com.mdevs.trackera.dto.jira.JiraTaskResponse;
-import com.mdevs.trackera.dto.worklog.WorkLogRequestBodyDTO;
 import com.mdevs.trackera.entity.User;
 import com.mdevs.trackera.entity.OAuthConnection;
 import com.mdevs.trackera.entity.WorkLogDetail;
@@ -15,18 +15,24 @@ import com.mdevs.trackera.shared.exceptions.types.BusinessException;
 import com.mdevs.trackera.oauth.OAuthProvider;
 import com.mdevs.trackera.shared.DurationFormatter;
 import com.mdevs.trackera.shared.exceptions.types.NotFoundException;
+import com.mdevs.trackera.utils.AppUtils;
 import com.mdevs.trackera.utils.HttpUtil;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.*;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpClientErrorException;
 
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 @Service
+@Slf4j
 public class JiraService {
     private final OAuthConnectionService oAuthConnectionService;
 
@@ -45,6 +51,8 @@ public class JiraService {
     private static final int JIRA_SITES_FETCH_MINUTES_DURATION = 10;
 
     private static final Duration USER_JIRA_TASKS_CACHE_TTL = Duration.ofHours(JIRA_TASKS_FETCH_HOURS_DURATION);
+
+    private static final DateTimeFormatter JIRA_DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
 
     public JiraService(OAuthConnectionService oAuthConnectionService, UserPreferenceService userPreferenceService, CacheService cacheService) {
         this.oAuthConnectionService = oAuthConnectionService;
@@ -132,15 +140,15 @@ public class JiraService {
 
     //<editor-fold desc="Integration & Processing">
     public String addWorkLog(User user, WorkLogDetail workLogDetail) {
-        WorkLogRequestBodyDTO workLogRequest = new WorkLogRequestBodyDTO();
-        workLogRequest.setComment(createJiraCommentObject(workLogDetail.getDescription()));
-        workLogRequest.setStarted(LocalDateTime.of(workLogDetail.getWorkLog().getWorkDate(), workLogDetail.getStartTime()));
-        workLogRequest.setTimeSpentSeconds(workLogDetail.getDuration() * 60);
+        Map<String, Object> requestBody = new HashMap<>();
+        requestBody.put("comment", createJiraCommentObject(workLogDetail.getDescription()));
+        requestBody.put("started", JIRA_DATE_FORMATTER.format(LocalDateTime.of(workLogDetail.getWorkLog().getWorkDate(), workLogDetail.getStartTime()).atZone(ZoneId.systemDefault())));
+        requestBody.put("timeSpentSeconds", workLogDetail.getDuration() * 60);
 
         String apiUrl = getApiUrl(validateAndGetUserJiraPrimaryProject(user)) + "/issue/" + workLogDetail.getTaskName() + "/worklog";
         OAuthConnection oAuthConnection = oAuthConnectionService.validateAndGetConnection(user, OAuthProvider.JIRA);
         String accessToken = oAuthConnectionService.resolveValidAccessToken(oAuthConnection);
-        Map<String, Object> response = callJiraApi(apiUrl, HttpMethod.POST, HttpUtil.createBearerAuthEntity(accessToken, workLogRequest), oAuthConnection, Map.class);
+        Map<String, Object> response = callJiraApi(apiUrl, HttpMethod.POST, HttpUtil.createBearerAuthEntity(accessToken, requestBody), oAuthConnection, Map.class);
 
         return response.get("id").toString();
     }
@@ -267,9 +275,34 @@ public class JiraService {
             }
 
             return response.getBody();
-        } catch (Exception e) {
-            throw new RuntimeException("Error while calling Jira API", e);
+        } catch (HttpClientErrorException exception) {
+            log.error("Error while calling Jira API with url: {}", url, exception);
+            extractErrorAndThrow(exception);
+            return null; // Unreachable, but required for compilation
         }
+    }
+
+    private void extractErrorAndThrow(HttpClientErrorException e) {
+        String responseBody = e.getResponseBodyAsString();
+
+        JsonNode root;
+        try {
+            root = AppUtils.getObjectMapper().readTree(responseBody);
+        } catch (Exception parseErr) {
+            throw new RuntimeException("Jira API Error: " + e.getMessage(), e);
+        }
+
+        // 1. handle "errorMessages" list
+        if (root.has("errorMessages") && root.get("errorMessages").isArray() && !root.get("errorMessages").isEmpty()) {
+            List<String> errors = new ArrayList<>();
+            root.get("errorMessages").forEach(msg -> errors.add(msg.asText()));
+
+            String message = String.join(" | ", errors);
+            throw new RuntimeException(message);
+        }
+
+        // 3. fallback unknown Jira error
+        throw new RuntimeException("Jira API Error: " + responseBody);
     }
 
     private Object createJiraCommentObject(String comment) {

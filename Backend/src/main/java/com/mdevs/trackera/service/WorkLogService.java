@@ -220,6 +220,33 @@ public class WorkLogService {
         return handleJiraSyncing(workLog, workLogDetails);
     }
 
+    public Map<String, Object> unSyncFromJira(String uuid) {
+        oAuthConnectionService.validateAndGetConnection(AppConfig.getAuthenticatedCurrentUser(), OAuthProvider.JIRA);
+        WorkLog workLog = ensureWorkLogExistsAndHasPermission(uuid);
+        List<WorkLogDetail> workLogDetails = workLogDetailRepository.findAllByWorkLog(workLog);
+        return handleJiraUnSyncing(workLog, workLogDetails);
+    }
+
+    public Map<String, Object> unSyncTasksFromJira(String uuid, List<String> taskNames) {
+        oAuthConnectionService.validateAndGetConnection(AppConfig.getAuthenticatedCurrentUser(), OAuthProvider.JIRA);
+        WorkLog workLog = ensureWorkLogExistsAndHasPermission(uuid);
+        List<WorkLogDetail> workLogDetails = workLogDetailRepository.findByWorkLogAndTaskNameIn(workLog, taskNames);
+        if (workLogDetails.isEmpty()) {
+            throw new NotFoundException("No logs found for the specified task in this worklog");
+        }
+        return handleJiraUnSyncing(workLog, workLogDetails);
+    }
+
+    public Map<String, Object> unSyncEntriesFromJira(String uuid, List<String> entriesUUIDs) {
+        oAuthConnectionService.validateAndGetConnection(AppConfig.getAuthenticatedCurrentUser(), OAuthProvider.JIRA);
+        WorkLog workLog = ensureWorkLogExistsAndHasPermission(uuid);
+        List<WorkLogDetail> workLogDetails = workLogDetailRepository.findByWorkLogAndUuidIn(workLog, entriesUUIDs);
+        if (workLogDetails.isEmpty()) {
+            throw new NotFoundException("Logs not found");
+        }
+        return handleJiraUnSyncing(workLog, workLogDetails);
+    }
+
     private Map<String, Object> handleJiraSyncing(WorkLog workLog, List<WorkLogDetail> workLogDetails) {
         Map<String, Object> errors = new HashMap<>();
         for (WorkLogDetail workLogDetail : workLogDetails) {
@@ -235,12 +262,36 @@ public class WorkLogService {
         return errors.isEmpty() ? Map.of("message", "WorkLog synchronized to Jira successfully") : Map.of("isError", true, "errors", errors);
     }
 
+    private Map<String, Object> handleJiraUnSyncing(WorkLog workLog, List<WorkLogDetail> workLogDetails) {
+        Map<String, Object> errors = new HashMap<>();
+        for (WorkLogDetail workLogDetail : workLogDetails) {
+            try {
+                selfRef.unSyncWorkLogDetailFromJira(workLog.getUser(), workLogDetail);
+            } catch (Exception ex) {
+                log.error("Error unSyncing WorkLogDetail with UUID {} to Jira", workLogDetail.getUuid(), ex);
+                errors.put(workLogDetail.getUuid(), ex.getMessage());
+            }
+        }
+        workLog.setStatus(workLogRepository.calculateWorkLogStatus(workLog));
+        workLogRepository.save(workLog);
+        return errors.isEmpty() ? Map.of("message", "WorkLog unsynchronized from Jira successfully") : Map.of("isError", true, "errors", errors);
+    }
+
     @Transactional
     public void syncWorkLogDetailToJira(User user, WorkLogDetail workLogDetail) {
         log.info("Synchronizing WorkLogDetail with UUID {} to Jira", workLogDetail.getUuid());
         String jiraId = jiraService.addWorkLog(user, workLogDetail);
         workLogDetail.setSynced(true);
         workLogDetail.setJiraId(jiraId);
+        workLogDetailRepository.save(workLogDetail);
+    }
+
+    @Transactional
+    public void unSyncWorkLogDetailFromJira(User user, WorkLogDetail workLogDetail) {
+        log.info("UnSynchronizing WorkLogDetail with UUID {} from Jira", workLogDetail.getUuid());
+        jiraService.deleteWorkLog(user, workLogDetail);
+        workLogDetail.setSynced(false);
+        workLogDetail.setJiraId(null);
         workLogDetailRepository.save(workLogDetail);
     }
     //</editor-fold>

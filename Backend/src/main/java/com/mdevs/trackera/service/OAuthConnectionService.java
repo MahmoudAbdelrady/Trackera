@@ -11,7 +11,10 @@ import com.mdevs.trackera.oauth.OAuthProvider;
 import com.mdevs.trackera.oauth.OAuthProviderFactory;
 import com.mdevs.trackera.utils.CryptoUtil;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.Map;
@@ -23,12 +26,15 @@ import java.util.stream.Collectors;
 public class OAuthConnectionService {
     private final OAuthConnectionRepository oAuthConnectionRepository;
 
+    private final OAuthConnectionService selfRef;
+
     private final OAuthProviderFactory oAuthProviderFactory;
 
     private final CryptoUtil cryptoUtil;
 
-    public OAuthConnectionService(OAuthConnectionRepository oAuthConnectionRepository, OAuthProviderFactory oAuthProviderFactory, CryptoUtil cryptoUtil) {
+    public OAuthConnectionService(OAuthConnectionRepository oAuthConnectionRepository, @Lazy OAuthConnectionService selfRef, OAuthProviderFactory oAuthProviderFactory, CryptoUtil cryptoUtil) {
         this.oAuthConnectionRepository = oAuthConnectionRepository;
+        this.selfRef = selfRef;
         this.oAuthProviderFactory = oAuthProviderFactory;
         this.cryptoUtil = cryptoUtil;
     }
@@ -68,7 +74,7 @@ public class OAuthConnectionService {
     public String resolveValidAccessToken(OAuthConnection connection) {
         try {
             if (connection.isExpired()) {
-                connection = refreshAndUpdateCredentials(connection);
+                connection = selfRef.refreshAndUpdateCredentials(connection);
                 if (connection.isRevoked()) {
                     throw new RuntimeException("Failed to refresh access token");
                 }
@@ -81,6 +87,7 @@ public class OAuthConnectionService {
         return cryptoUtil.decryptFromBase64(connection.getAccessToken(), false);
     }
 
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public OAuthConnection refreshAndUpdateCredentials(OAuthConnection connection) {
         try {
             OAuthAccessCredentialsDTO newCredentials = oAuthProviderFactory.getProvider(connection.getProvider()).refreshOAuthProviderCredentials(connection);

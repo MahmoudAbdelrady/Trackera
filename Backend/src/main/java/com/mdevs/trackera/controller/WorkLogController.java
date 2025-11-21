@@ -92,4 +92,22 @@ public class WorkLogController {
         Map<String, Object> result = workLogService.syncEntriesToJira(uuid, entryUuids);
         return result.containsKey("isError") ? new ResponseEntity<>(result, HttpStatus.BAD_REQUEST) : new ResponseEntity<>(result.get("message"), HttpStatus.OK);
     }
+
+    @PostMapping("/{uuid}/un-sync")
+    public ResponseEntity<?> UnSyncWorkLog(@PathVariable String uuid) {
+        Map<String, Object> result = workLogService.unSyncFromJira(uuid);
+        return result.containsKey("isError") ? new ResponseEntity<>(result, HttpStatus.BAD_REQUEST) : new ResponseEntity<>(result.get("message"), HttpStatus.OK);
+    }
+
+    @PostMapping("/{uuid}/un-sync/tasks")
+    public ResponseEntity<?> UnSyncWorkLogTasks(@PathVariable String uuid, @RequestParam(name = "tasks") List<String> taskNames) {
+        Map<String, Object> result = workLogService.unSyncTasksFromJira(uuid, taskNames);
+        return result.containsKey("isError") ? new ResponseEntity<>(result, HttpStatus.BAD_REQUEST) : new ResponseEntity<>(result.get("message"), HttpStatus.OK);
+    }
+
+    @PostMapping("/{uuid}/un-sync/entries")
+    public ResponseEntity<?> UnSyncWorkLogEntries(@PathVariable String uuid, @RequestParam(name = "ids") List<String> entryUuids) {
+        Map<String, Object> result = workLogService.unSyncEntriesFromJira(uuid, entryUuids);
+        return result.containsKey("isError") ? new ResponseEntity<>(result, HttpStatus.BAD_REQUEST) : new ResponseEntity<>(result.get("message"), HttpStatus.OK);
+    }
 }
