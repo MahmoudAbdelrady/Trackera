@@ -79,14 +79,14 @@ public class JiraService {
     }
 
     public List<JiraProjectDTO> getUserSites(User user) {
-        OAuthConnection connection = oAuthConnectionService.validateAndGetConnection(user, OAuthProvider.JIRA);
+        OAuthConnection connection = oAuthConnectionService.getOrRefresh(user, OAuthProvider.JIRA);
         String cacheKey = USER_JIRA_SITES_FETCH_CACHE_KEY_PREFIX + user.getId();
         List<JiraProjectDTO> resources = cacheService.get(cacheKey, List.class);
         if (resources != null) {
             return resources;
         }
 
-        String accessToken = oAuthConnectionService.resolveValidAccessToken(connection);
+        String accessToken = oAuthConnectionService.getAccessToken(connection);
         resources = Arrays.asList(callJiraApi("https://api.atlassian.com/oauth/token/accessible-resources", HttpMethod.GET, HttpUtil.createBearerAuthEntity(accessToken), connection, JiraProjectDTO[].class));
         cacheService.set(cacheKey, resources, Duration.ofMinutes(JIRA_SITES_FETCH_MINUTES_DURATION));
 
@@ -146,8 +146,8 @@ public class JiraService {
         requestBody.put("timeSpentSeconds", workLogDetail.getDuration() * 60);
 
         String apiUrl = getApiUrl(validateAndGetUserJiraPrimaryProject(user)) + "/issue/" + workLogDetail.getTaskName() + "/worklog";
-        OAuthConnection oAuthConnection = oAuthConnectionService.validateAndGetConnection(user, OAuthProvider.JIRA);
-        String accessToken = oAuthConnectionService.resolveValidAccessToken(oAuthConnection);
+        OAuthConnection oAuthConnection = oAuthConnectionService.getOrRefresh(user, OAuthProvider.JIRA);
+        String accessToken = oAuthConnectionService.getAccessToken(oAuthConnection);
         Map<String, Object> response = callJiraApi(apiUrl, HttpMethod.POST, HttpUtil.createBearerAuthEntity(accessToken, requestBody), oAuthConnection, Map.class);
 
         return response.get("id").toString();
@@ -155,17 +155,17 @@ public class JiraService {
 
     public void deleteWorkLog(User user, WorkLogDetail workLogDetail) {
         String apiUrl = getApiUrl(validateAndGetUserJiraPrimaryProject(user)) + "/issue/" + workLogDetail.getTaskName() + "/worklog/" + workLogDetail.getJiraId();
-        OAuthConnection oAuthConnection = oAuthConnectionService.validateAndGetConnection(user, OAuthProvider.JIRA);
-        String accessToken = oAuthConnectionService.resolveValidAccessToken(oAuthConnection);
+        OAuthConnection oAuthConnection = oAuthConnectionService.getOrRefresh(user, OAuthProvider.JIRA);
+        String accessToken = oAuthConnectionService.getAccessToken(oAuthConnection);
         callJiraApi(apiUrl, HttpMethod.DELETE, HttpUtil.createBearerAuthEntity(accessToken), oAuthConnection, Void.class);
     }
 
     private List<JiraTaskDTO> getTasksFromJira(User user) {
         List<JiraTaskDTO> jiraTasks = new ArrayList<>();
-        OAuthConnection connection = oAuthConnectionService.validateAndGetConnection(user, OAuthProvider.JIRA);
+        OAuthConnection oAuthConnection = oAuthConnectionService.getOrRefresh(user, OAuthProvider.JIRA);
         JiraProjectDTO userJiraPrimaryProject = validateAndGetUserJiraPrimaryProject(user);
 
-        String accessToken = oAuthConnectionService.resolveValidAccessToken(connection);
+        String accessToken = oAuthConnectionService.getAccessToken(oAuthConnection);
         Map<String, Object> jiraResponse;
         String url = getApiUrl(userJiraPrimaryProject) + "/search/jql?jql=" + getJiraTasksSearchCondition() + "&fields=key,summary,status,timetracking,project,resolution";
         String nextPageToken = null;
@@ -173,7 +173,7 @@ public class JiraService {
 
         do {
             String pagedUrl = url + (nextPageToken != null ? "&nextPageToken=" + nextPageToken : "");
-            jiraResponse = callJiraApi(pagedUrl, HttpMethod.GET, HttpUtil.createBearerAuthEntity(accessToken), connection, Map.class);
+            jiraResponse = callJiraApi(pagedUrl, HttpMethod.GET, HttpUtil.createBearerAuthEntity(accessToken), oAuthConnection, Map.class);
             processJiraResponseTasks(jiraResponse, userJiraPrimaryProject, jiraTasks);
             isLast = (boolean) jiraResponse.get("isLast");
             nextPageToken = (String) jiraResponse.get("nextPageToken");
@@ -255,16 +255,16 @@ public class JiraService {
     }
 
     @Retryable(retryFor = Exception.class, backoff = @Backoff(delay = 1000, multiplier = 3))
-    private <T> T callJiraApi(String url, HttpMethod method, HttpEntity<?> entity, OAuthConnection OAuthConnection, Class<T> responseType) {
+    private <T> T callJiraApi(String url, HttpMethod method, HttpEntity<?> entity, OAuthConnection oAuthConnection, Class<T> responseType) {
         try {
             ResponseEntity<T> response = HttpUtil.getRestTemplate().exchange(url, method, entity, responseType);
 
             if (response.getStatusCode() == HttpStatus.UNAUTHORIZED) {
-                String newAccessToken = oAuthConnectionService.resolveValidAccessToken(OAuthConnection);
+                oAuthConnection = oAuthConnectionService.getOrRefresh(oAuthConnection);
 
                 HttpHeaders newHeaders = new HttpHeaders();
                 newHeaders.putAll(entity.getHeaders());
-                newHeaders.setBearerAuth(newAccessToken);
+                newHeaders.setBearerAuth(oAuthConnectionService.getAccessToken(oAuthConnection));
                 entity = new HttpEntity<>(newHeaders);
 
                 response = HttpUtil.getRestTemplate().exchange(url, method, entity, responseType);

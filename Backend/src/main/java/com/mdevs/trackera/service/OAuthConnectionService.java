@@ -59,6 +59,30 @@ public class OAuthConnectionService {
         }
         return connection;
     }
+
+    public OAuthConnection getOrRefresh(User user, OAuthProvider provider) {
+        OAuthConnection connection = validateAndGetConnection(user, provider);
+        if (connection.isExpired()) {
+            try {
+                connection = selfRef.refreshAndUpdateCredentials(connection);
+                if (connection.isRevoked()) {
+                    throw new RuntimeException("Failed to refresh access token");
+                }
+            } catch (Exception e) {
+                log.error("Error while resolving access token for provider {}: {}", connection.getProvider(), e.getMessage(), e);
+                throw new RuntimeException("Failed to authenticate with " + connection.getProvider());
+            }
+        }
+        return connection;
+    }
+
+    public OAuthConnection getOrRefresh(OAuthConnection connection) {
+        return getOrRefresh(connection.getUser(), connection.getProvider());
+    }
+
+    public String getAccessToken(OAuthConnection connection) {
+        return cryptoUtil.decryptFromBase64(connection.getAccessToken(), false);
+    }
     //</editor-fold>
 
     //<editor-fold desc="Creation and Update">
@@ -69,22 +93,6 @@ public class OAuthConnectionService {
         }
         existingConnection.setAccountEmail(userEmail);
         updateAccessCredentials(existingConnection, oAuthUserInfoDTO.getAccessCredentials());
-    }
-
-    public String resolveValidAccessToken(OAuthConnection connection) {
-        try {
-            if (connection.isExpired()) {
-                connection = selfRef.refreshAndUpdateCredentials(connection);
-                if (connection.isRevoked()) {
-                    throw new RuntimeException("Failed to refresh access token");
-                }
-            }
-        } catch (Exception e) {
-            log.error("Error while resolving access token for provider {}: {}", connection.getProvider(), e.getMessage(), e);
-            throw new RuntimeException("Failed to authenticate with " + connection.getProvider());
-        }
-
-        return cryptoUtil.decryptFromBase64(connection.getAccessToken(), false);
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
