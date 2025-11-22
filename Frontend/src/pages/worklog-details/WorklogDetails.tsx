@@ -40,6 +40,10 @@ const WorklogDetails = () => {
   const [isFetchingEntries, setIsFetchingEntries] = useState<boolean>(false);
   const [isDeletingEntry, setIsDeletingEntry] = useState<boolean>(false);
 
+  // jira sync
+  const [isSyncingJiraTasks, setIsSyncingJiraTasks] = useState<boolean>(false);
+  const [isSyncingJiraEntries, setIsSyncingJiraEntries] = useState<boolean>(false);
+
   const worklogTaskColumns: TableProps<WorklogTask>["columns"] = [
     {
       title: "Task Name",
@@ -92,7 +96,7 @@ const WorklogDetails = () => {
               <Button
                 type="text"
                 icon={<CalendarX2 />}
-                onClick={() => {}}
+                onClick={() => performJiraTaskSync([record.taskName], false)}
                 className={`${trackeraTableClasses.log_action_btn} ${trackeraTableClasses.unsync} ${!loggedUserData?.jiraLinked && trackeraTableClasses.disabled}`}
                 disabled={!loggedUserData?.jiraLinked}
               />
@@ -102,7 +106,7 @@ const WorklogDetails = () => {
               <Button
                 type="text"
                 icon={<CalendarSync />}
-                onClick={() => {}}
+                onClick={() => performJiraTaskSync([record.taskName], true)}
                 className={`${trackeraTableClasses.log_action_btn} ${trackeraTableClasses.sync} ${!loggedUserData?.jiraLinked && trackeraTableClasses.disabled}`}
                 disabled={!loggedUserData?.jiraLinked}
               />
@@ -178,7 +182,7 @@ const WorklogDetails = () => {
               <Button
                 type="text"
                 icon={<CalendarX2 />}
-                onClick={() => {}}
+                onClick={() => performJiraLogEntrySync([record.id], false)}
                 className={`${trackeraTableClasses.log_action_btn} ${trackeraTableClasses.unsync} ${!loggedUserData?.jiraLinked && trackeraTableClasses.disabled}`}
                 disabled={!loggedUserData?.jiraLinked}
               />
@@ -188,7 +192,7 @@ const WorklogDetails = () => {
               <Button
                 type="text"
                 icon={<CalendarSync />}
-                onClick={() => {}}
+                onClick={() => performJiraLogEntrySync([record.id], true)}
                 className={`${trackeraTableClasses.log_action_btn} ${trackeraTableClasses.sync} ${!loggedUserData?.jiraLinked && trackeraTableClasses.disabled}`}
                 disabled={!loggedUserData?.jiraLinked}
               />
@@ -334,6 +338,32 @@ const WorklogDetails = () => {
     setSelectedEntry(null);
   };
 
+  const performJiraTaskSync = async (taskNames: string[], sync: boolean) => {
+    setIsSyncingJiraTasks(true);
+    await performJiraSync(worklogInfo!.id, taskNames, [], sync);
+    setIsSyncingJiraTasks(false);
+  };
+
+  const performJiraLogEntrySync = async (logIds: (string | number)[], sync: boolean) => {
+    setIsSyncingJiraEntries(true);
+    await performJiraSync(worklogInfo!.id, [], logIds, sync);
+    setIsSyncingJiraEntries(false);
+  };
+
+  const performJiraSync = async (workLogId: string | number, taskNames: string[], logIds: (string | number)[], sync: boolean) => {
+    try {
+      const response = await requestInstance.post(`/worklog/${workLogId}/sync${sync ? "" : "?sync=false"}`, { taskNames, logIds });
+      showSuccessToast(response.data);
+      setCanFetchWorkLogInfo(true);
+      setCanFetchTasks(true);
+      if (viewTaskVisible) {
+        setCanFetchEntries(true);
+      }
+    } catch (error: any) {
+      showErrorToast(error);
+    }
+  };
+
   return (
     <>
       {viewTaskVisible && (
@@ -352,6 +382,7 @@ const WorklogDetails = () => {
             properties={{
               columns: worklogEntryColumns,
               dataSource: worklogEntries,
+              loading: isFetchingEntries || isSyncingJiraEntries,
               rowSelection: {
                 selectedRowKeys: selectedWorklogEntries,
                 onChange: (_, selectedRows: WorklogEntry[]) => {
@@ -430,7 +461,7 @@ const WorklogDetails = () => {
                         disabled: !loggedUserData?.jiraLinked || record.status === "SYNCED",
                       }),
                     },
-                    loading: isFetchingTasks,
+                    loading: isFetchingTasks || isSyncingJiraTasks,
                   }}
                   actionButtons={[
                     {
