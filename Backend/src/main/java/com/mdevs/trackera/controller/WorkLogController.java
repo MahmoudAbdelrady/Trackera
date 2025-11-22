@@ -70,9 +70,9 @@ public class WorkLogController {
         return new ResponseEntity<>(workLogService.deleteWorkLogTaskDetails(uuid, taskName), HttpStatus.OK);
     }
 
-    @DeleteMapping("/details/entry/{uuid}")
-    public ResponseEntity<?> DeleteWorkLogTaskEntry(@PathVariable String uuid) {
-        return new ResponseEntity<>(workLogService.deleteWorkLogTaskEntry(uuid), HttpStatus.OK);
+    @DeleteMapping("/{uuid}/details/entry")
+    public ResponseEntity<?> DeleteWorkLogTaskEntry(@PathVariable String uuid, @RequestParam String entryId) {
+        return new ResponseEntity<>(workLogService.deleteWorkLogTaskEntry(uuid, entryId), HttpStatus.OK);
     }
 
     @PostMapping("/{uuid}/sync")

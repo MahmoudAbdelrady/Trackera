@@ -242,16 +242,12 @@ public class WorkLogService {
     }
 
     @Transactional
-    public Map<String, Object> deleteWorkLogTaskEntry(String uuid) {
-        WorkLogDetail workLogEntry = workLogDetailRepository.findByUuid(uuid);
+    public Map<String, Object> deleteWorkLogTaskEntry(String uuid, String entryId) {
+        WorkLog workLog = ensureWorkLogExistsAndHasPermission(uuid);
+        WorkLogDetail workLogEntry = workLogDetailRepository.findByUuid(entryId);
         if (workLogEntry == null) {
             throw new NotFoundException("WorkLog entry not found");
         }
-        WorkLog workLog = workLogEntry.getWorkLog();
-        if (!workLog.getUser().getId().equals(AppConfig.getAuthenticatedCurrentUser().getId())) {
-            throw new UnauthorizedException("You are not authorized to access this entry");
-        }
-
         if (workLogEntry.isSynced()) {
             performJiraSync(workLog.getUuid(), new JiraSyncRequestDTO(null, List.of(workLogEntry.getUuid())), false);
         }
