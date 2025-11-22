@@ -1,8 +1,8 @@
-import { CalendarSync, CalendarX2, ExternalLink, Eye, Info, Trash } from "lucide-react";
+import { CalendarSync, CalendarX2, ExternalLink, Eye, Trash } from "lucide-react";
 import { AppLayout, WorklogInfo, WorklogModal, TrackeraTable, StatusBadge } from "../../components";
 import classes from "./scss/worklog-details.module.css";
 import trackeraTableClasses from "../../components/trackera-table/scss/trackera-table.module.css";
-import { Button, Empty, Popconfirm, Skeleton, Switch, Tooltip, type TableProps } from "antd";
+import { Alert, Button, Empty, Popconfirm, Skeleton, Tooltip, type TableProps } from "antd";
 import { statusMetadata, type Worklog, type WorklogEntry, type WorkLogStatusType, type WorklogTask } from "../../shared/types";
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
@@ -39,6 +39,10 @@ const WorklogDetails = () => {
   const [canFetchEntries, setCanFetchEntries] = useState<boolean>(false);
   const [isFetchingEntries, setIsFetchingEntries] = useState<boolean>(false);
   const [isDeletingEntry, setIsDeletingEntry] = useState<boolean>(false);
+
+  // jira sync
+  const [isSyncingJiraTasks, setIsSyncingJiraTasks] = useState<boolean>(false);
+  const [isSyncingJiraEntries, setIsSyncingJiraEntries] = useState<boolean>(false);
 
   const worklogTaskColumns: TableProps<WorklogTask>["columns"] = [
     {
@@ -92,7 +96,7 @@ const WorklogDetails = () => {
               <Button
                 type="text"
                 icon={<CalendarX2 />}
-                onClick={() => {}}
+                onClick={() => performJiraTaskSync([record.taskName], false)}
                 className={`${trackeraTableClasses.log_action_btn} ${trackeraTableClasses.unsync} ${!loggedUserData?.jiraLinked && trackeraTableClasses.disabled}`}
                 disabled={!loggedUserData?.jiraLinked}
               />
@@ -102,7 +106,7 @@ const WorklogDetails = () => {
               <Button
                 type="text"
                 icon={<CalendarSync />}
-                onClick={() => {}}
+                onClick={() => performJiraTaskSync([record.taskName], true)}
                 className={`${trackeraTableClasses.log_action_btn} ${trackeraTableClasses.sync} ${!loggedUserData?.jiraLinked && trackeraTableClasses.disabled}`}
                 disabled={!loggedUserData?.jiraLinked}
               />
@@ -178,7 +182,7 @@ const WorklogDetails = () => {
               <Button
                 type="text"
                 icon={<CalendarX2 />}
-                onClick={() => {}}
+                onClick={() => performJiraLogEntrySync([record.id], false)}
                 className={`${trackeraTableClasses.log_action_btn} ${trackeraTableClasses.unsync} ${!loggedUserData?.jiraLinked && trackeraTableClasses.disabled}`}
                 disabled={!loggedUserData?.jiraLinked}
               />
@@ -188,7 +192,7 @@ const WorklogDetails = () => {
               <Button
                 type="text"
                 icon={<CalendarSync />}
-                onClick={() => {}}
+                onClick={() => performJiraLogEntrySync([record.id], true)}
                 className={`${trackeraTableClasses.log_action_btn} ${trackeraTableClasses.sync} ${!loggedUserData?.jiraLinked && trackeraTableClasses.disabled}`}
                 disabled={!loggedUserData?.jiraLinked}
               />
@@ -197,17 +201,9 @@ const WorklogDetails = () => {
           <Popconfirm
             title="Are you sure to delete this entry?"
             description={
-              <div className={worklogModalClasses.switch_option}>
-                <span className={worklogModalClasses.label} style={{ marginRight: 8 }}>
-                  Also unsync from Jira:
-                </span>
-                <Switch disabled={!loggedUserData?.jiraLinked} />
-                {!loggedUserData?.jiraLinked && (
-                  <Tooltip title="Link your Jira account in settings to enable this option.">
-                    <Info size={16} color="#dc2626" style={{ marginLeft: "4px" }} />
-                  </Tooltip>
-                )}
-              </div>
+              record?.status === "SYNCED" && (
+                <Alert message="This entry is synced with Jira and will be unsynced upon deletion." type="warning" showIcon className={worklogModalClasses.alert_message} />
+              )
             }
             onConfirm={() => {
               setSelectedEntry(record);
@@ -313,7 +309,7 @@ const WorklogDetails = () => {
   const handleDeleteWorkLogEntry = async (entryId: string | number) => {
     setIsDeletingEntry(true);
     try {
-      const response = await requestInstance.delete(`/worklog/details/entry/${entryId}`);
+      const response = await requestInstance.delete(`/worklog/${worklogId}/details/entry?entryId=${entryId}`);
       if (response.data.isLast) {
         navigate("/");
       } else {
@@ -334,6 +330,32 @@ const WorklogDetails = () => {
     setSelectedEntry(null);
   };
 
+  const performJiraTaskSync = async (taskNames: string[], sync: boolean) => {
+    setIsSyncingJiraTasks(true);
+    await performJiraSync(taskNames, [], sync);
+    setIsSyncingJiraTasks(false);
+  };
+
+  const performJiraLogEntrySync = async (logIds: (string | number)[], sync: boolean) => {
+    setIsSyncingJiraEntries(true);
+    await performJiraSync([], logIds, sync);
+    setIsSyncingJiraEntries(false);
+  };
+
+  const performJiraSync = async (taskNames: string[], logIds: (string | number)[], sync: boolean) => {
+    try {
+      const response = await requestInstance.post(`/worklog/${worklogId}/sync${sync ? "" : "?sync=false"}`, { taskNames, logIds });
+      showSuccessToast(response.data);
+      setCanFetchWorkLogInfo(true);
+      setCanFetchTasks(true);
+      if (viewTaskVisible) {
+        setCanFetchEntries(true);
+      }
+    } catch (error: any) {
+      showErrorToast(error);
+    }
+  };
+
   return (
     <>
       {viewTaskVisible && (
@@ -352,6 +374,7 @@ const WorklogDetails = () => {
             properties={{
               columns: worklogEntryColumns,
               dataSource: worklogEntries,
+              loading: isFetchingEntries || isSyncingJiraEntries,
               rowSelection: {
                 selectedRowKeys: selectedWorklogEntries,
                 onChange: (_, selectedRows: WorklogEntry[]) => {
@@ -391,15 +414,9 @@ const WorklogDetails = () => {
           }}
         >
           <p className={worklogModalClasses.delete_message}>Are you sure you want to delete this task log? This action cannot be undone.</p>
-          <div className={worklogModalClasses.switch_option}>
-            <span className={worklogModalClasses.label}>Also unsync from Jira:</span>
-            <Switch disabled={!loggedUserData?.jiraLinked || isDeletingTask} />
-            {!loggedUserData?.jiraLinked && (
-              <Tooltip title="Link your Jira account in settings to enable this option.">
-                <Info size={16} color="#dc2626" />
-              </Tooltip>
-            )}
-          </div>
+          {selectedTask?.status === "SYNCED" && (
+            <Alert message="This task is synced with Jira and will be unsynced upon deletion." type="warning" showIcon className={worklogModalClasses.alert_message} />
+          )}
         </WorklogModal>
       )}
 
@@ -430,7 +447,7 @@ const WorklogDetails = () => {
                         disabled: !loggedUserData?.jiraLinked || record.status === "SYNCED",
                       }),
                     },
-                    loading: isFetchingTasks,
+                    loading: isFetchingTasks || isSyncingJiraTasks,
                   }}
                   actionButtons={[
                     {

@@ -11,7 +11,11 @@ import com.mdevs.trackera.oauth.OAuthProvider;
 import com.mdevs.trackera.oauth.OAuthProviderFactory;
 import com.mdevs.trackera.utils.CryptoUtil;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.HttpClientErrorException;
 
 import java.time.LocalDateTime;
 import java.util.Map;
@@ -23,12 +27,15 @@ import java.util.stream.Collectors;
 public class OAuthConnectionService {
     private final OAuthConnectionRepository oAuthConnectionRepository;
 
+    private final OAuthConnectionService selfRef;
+
     private final OAuthProviderFactory oAuthProviderFactory;
 
     private final CryptoUtil cryptoUtil;
 
-    public OAuthConnectionService(OAuthConnectionRepository oAuthConnectionRepository, OAuthProviderFactory oAuthProviderFactory, CryptoUtil cryptoUtil) {
+    public OAuthConnectionService(OAuthConnectionRepository oAuthConnectionRepository, @Lazy OAuthConnectionService selfRef, OAuthProviderFactory oAuthProviderFactory, CryptoUtil cryptoUtil) {
         this.oAuthConnectionRepository = oAuthConnectionRepository;
+        this.selfRef = selfRef;
         this.oAuthProviderFactory = oAuthProviderFactory;
         this.cryptoUtil = cryptoUtil;
     }
@@ -53,6 +60,30 @@ public class OAuthConnectionService {
         }
         return connection;
     }
+
+    public OAuthConnection getOrRefresh(User user, OAuthProvider provider) {
+        OAuthConnection connection = validateAndGetConnection(user, provider);
+        if (connection.isExpired()) {
+            try {
+                connection = selfRef.refreshAndUpdateCredentials(connection.getId());
+            } catch (Exception e) {
+                log.error("Error while resolving access token for provider {}: {}", connection.getProvider(), e.getMessage(), e);
+                throw new RuntimeException("Failed to authenticate with " + connection.getProvider());
+            }
+            if (connection.isRevoked()) {
+                throw new RuntimeException("Failed to refresh access token");
+            }
+        }
+        return connection;
+    }
+
+    public OAuthConnection getOrRefresh(OAuthConnection connection) {
+        return getOrRefresh(connection.getUser(), connection.getProvider());
+    }
+
+    public String getAccessToken(OAuthConnection connection) {
+        return cryptoUtil.decryptFromBase64(connection.getAccessToken(), false);
+    }
     //</editor-fold>
 
     //<editor-fold desc="Creation and Update">
@@ -65,27 +96,13 @@ public class OAuthConnectionService {
         updateAccessCredentials(existingConnection, oAuthUserInfoDTO.getAccessCredentials());
     }
 
-    public String resolveValidAccessToken(OAuthConnection connection) {
-        try {
-            if (connection.isExpired()) {
-                connection = refreshAndUpdateCredentials(connection);
-                if (connection.isRevoked()) {
-                    throw new RuntimeException("Failed to refresh access token");
-                }
-            }
-        } catch (Exception e) {
-            log.error("Error while resolving access token for provider {}: {}", connection.getProvider(), e.getMessage(), e);
-            throw new RuntimeException("Failed to authenticate with " + connection.getProvider());
-        }
-
-        return cryptoUtil.decryptFromBase64(connection.getAccessToken(), false);
-    }
-
-    public OAuthConnection refreshAndUpdateCredentials(OAuthConnection connection) {
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public OAuthConnection refreshAndUpdateCredentials(Long connectionId) {
+        OAuthConnection connection = oAuthConnectionRepository.findOne(connectionId);
         try {
             OAuthAccessCredentialsDTO newCredentials = oAuthProviderFactory.getProvider(connection.getProvider()).refreshOAuthProviderCredentials(connection);
             connection = updateAccessCredentials(connection, newCredentials);
-        } catch (Exception e) {
+        } catch (HttpClientErrorException exception) {
             connection.setRevoked(true);
             connection = oAuthConnectionRepository.save(connection);
         }

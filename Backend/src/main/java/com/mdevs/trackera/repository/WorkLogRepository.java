@@ -2,6 +2,7 @@ package com.mdevs.trackera.repository;
 
 import com.mdevs.trackera.entity.User;
 import com.mdevs.trackera.entity.WorkLog;
+import com.mdevs.trackera.shared.enums.WorkLogStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
@@ -20,4 +21,10 @@ public interface WorkLogRepository extends BaseRepository<WorkLog> {
     Integer sumTotalMinutesByUserAndWorkDateBetween(@Param("user") User user, @Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
 
     WorkLog findByUserAndUuid(User user, String uuid);
+
+    @Query("SELECT CASE WHEN SUM(CASE WHEN wld.synced = false THEN 1 ELSE 0 END) = 0 THEN 'SYNCED' " +
+            "WHEN SUM(CASE WHEN wld.synced = true THEN 1 ELSE 0 END) = 0 THEN 'NOT_SYNCED' " +
+            "ELSE 'PARTIALLY' END " +
+            "FROM WorkLog w JOIN WorkLogDetail wld on wld.workLog = w WHERE w = :worklog")
+    WorkLogStatus calculateWorkLogStatus(@Param("worklog") WorkLog worklog);
 }

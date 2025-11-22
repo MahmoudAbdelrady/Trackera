@@ -2,6 +2,7 @@ package com.mdevs.trackera.shared.exceptions;
 
 import com.mdevs.trackera.config.general.AppConfig;
 import com.mdevs.trackera.shared.exceptions.types.BusinessException;
+import com.mdevs.trackera.shared.exceptions.types.JiraException;
 import com.mdevs.trackera.shared.exceptions.types.NotFoundException;
 import com.mdevs.trackera.shared.exceptions.types.UnauthorizedException;
 import com.mdevs.trackera.utils.ExceptionResponseMaker;
@@ -62,6 +63,15 @@ public class TrackeraExceptionHandler {
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     public ResponseEntity<?> handleMaxSizeException(MaxUploadSizeExceededException exception) {
         return ExceptionResponseMaker.makeResponse("File size exceeds the allowed limit of 5MB", HttpStatus.PAYLOAD_TOO_LARGE);
+    }
+
+    @ExceptionHandler(JiraException.class)
+    public ResponseEntity<?> handleJiraException(JiraException exception) {
+        HttpStatus status = HttpStatus.resolve(exception.getStatusCode());
+        if (status == null) {
+            status = HttpStatus.INTERNAL_SERVER_ERROR;
+        }
+        return ExceptionResponseMaker.makeResponse(exception.getMessage(), status);
     }
 
     @ExceptionHandler(Exception.class)

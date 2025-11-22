@@ -1,30 +1,39 @@
 package com.mdevs.trackera.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.mdevs.trackera.config.general.AppConfig;
 import com.mdevs.trackera.dto.jira.JiraProjectDTO;
 import com.mdevs.trackera.dto.jira.JiraTaskDTO;
 import com.mdevs.trackera.dto.jira.JiraTaskResponse;
 import com.mdevs.trackera.entity.User;
 import com.mdevs.trackera.entity.OAuthConnection;
+import com.mdevs.trackera.entity.WorkLogDetail;
 import com.mdevs.trackera.shared.CacheService;
 import com.mdevs.trackera.shared.enums.UserPreferenceOption;
 import com.mdevs.trackera.shared.enums.JiraTaskEvaluation;
 import com.mdevs.trackera.shared.exceptions.types.BusinessException;
 import com.mdevs.trackera.oauth.OAuthProvider;
 import com.mdevs.trackera.shared.DurationFormatter;
+import com.mdevs.trackera.shared.exceptions.types.JiraException;
 import com.mdevs.trackera.shared.exceptions.types.NotFoundException;
+import com.mdevs.trackera.utils.AppUtils;
 import com.mdevs.trackera.utils.HttpUtil;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.*;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpClientErrorException;
 
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 @Service
+@Slf4j
 public class JiraService {
     private final OAuthConnectionService oAuthConnectionService;
 
@@ -43,6 +52,8 @@ public class JiraService {
     private static final int JIRA_SITES_FETCH_MINUTES_DURATION = 10;
 
     private static final Duration USER_JIRA_TASKS_CACHE_TTL = Duration.ofHours(JIRA_TASKS_FETCH_HOURS_DURATION);
+
+    private static final DateTimeFormatter JIRA_DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
 
     public JiraService(OAuthConnectionService oAuthConnectionService, UserPreferenceService userPreferenceService, CacheService cacheService) {
         this.oAuthConnectionService = oAuthConnectionService;
@@ -69,14 +80,14 @@ public class JiraService {
     }
 
     public List<JiraProjectDTO> getUserSites(User user) {
-        OAuthConnection connection = oAuthConnectionService.validateAndGetConnection(user, OAuthProvider.JIRA);
+        OAuthConnection connection = oAuthConnectionService.getOrRefresh(user, OAuthProvider.JIRA);
         String cacheKey = USER_JIRA_SITES_FETCH_CACHE_KEY_PREFIX + user.getId();
         List<JiraProjectDTO> resources = cacheService.get(cacheKey, List.class);
         if (resources != null) {
             return resources;
         }
 
-        String accessToken = oAuthConnectionService.resolveValidAccessToken(connection);
+        String accessToken = oAuthConnectionService.getAccessToken(connection);
         resources = Arrays.asList(callJiraApi("https://api.atlassian.com/oauth/token/accessible-resources", HttpMethod.GET, HttpUtil.createBearerAuthEntity(accessToken), connection, JiraProjectDTO[].class));
         cacheService.set(cacheKey, resources, Duration.ofMinutes(JIRA_SITES_FETCH_MINUTES_DURATION));
 
@@ -129,15 +140,33 @@ public class JiraService {
     //</editor-fold>
 
     //<editor-fold desc="Integration & Processing">
+    public String addWorkLog(User user, WorkLogDetail workLogDetail) {
+        Map<String, Object> requestBody = new HashMap<>();
+        requestBody.put("comment", createJiraCommentObject(workLogDetail.getDescription()));
+        requestBody.put("started", JIRA_DATE_FORMATTER.format(LocalDateTime.of(workLogDetail.getWorkLog().getWorkDate(), workLogDetail.getStartTime()).atZone(ZoneId.systemDefault())));
+        requestBody.put("timeSpentSeconds", workLogDetail.getDuration() * 60);
+
+        String apiUrl = getApiUrl(validateAndGetUserJiraPrimaryProject(user)) + "/issue/" + workLogDetail.getTaskName() + "/worklog";
+        OAuthConnection oAuthConnection = oAuthConnectionService.getOrRefresh(user, OAuthProvider.JIRA);
+        String accessToken = oAuthConnectionService.getAccessToken(oAuthConnection);
+        Map<String, Object> response = callJiraApi(apiUrl, HttpMethod.POST, HttpUtil.createBearerAuthEntity(accessToken, requestBody), oAuthConnection, Map.class);
+
+        return response.get("id").toString();
+    }
+
+    public void deleteWorkLog(User user, WorkLogDetail workLogDetail) {
+        String apiUrl = getApiUrl(validateAndGetUserJiraPrimaryProject(user)) + "/issue/" + workLogDetail.getTaskName() + "/worklog/" + workLogDetail.getJiraId();
+        OAuthConnection oAuthConnection = oAuthConnectionService.getOrRefresh(user, OAuthProvider.JIRA);
+        String accessToken = oAuthConnectionService.getAccessToken(oAuthConnection);
+        callJiraApi(apiUrl, HttpMethod.DELETE, HttpUtil.createBearerAuthEntity(accessToken), oAuthConnection, Void.class);
+    }
+
     private List<JiraTaskDTO> getTasksFromJira(User user) {
         List<JiraTaskDTO> jiraTasks = new ArrayList<>();
-        OAuthConnection connection = oAuthConnectionService.validateAndGetConnection(user, OAuthProvider.JIRA);
-        JiraProjectDTO userJiraPrimaryProject = (JiraProjectDTO) userPreferenceService.getPreferenceValue(user, UserPreferenceOption.JIRA_PRIMARY_PROJECT);
-        if (userJiraPrimaryProject == null) {
-            throw new BusinessException("Jira primary project not set. Please set it in your settings.");
-        }
+        OAuthConnection oAuthConnection = oAuthConnectionService.getOrRefresh(user, OAuthProvider.JIRA);
+        JiraProjectDTO userJiraPrimaryProject = validateAndGetUserJiraPrimaryProject(user);
 
-        String accessToken = oAuthConnectionService.resolveValidAccessToken(connection);
+        String accessToken = oAuthConnectionService.getAccessToken(oAuthConnection);
         Map<String, Object> jiraResponse;
         String url = getApiUrl(userJiraPrimaryProject) + "/search/jql?jql=" + getJiraTasksSearchCondition() + "&fields=key,summary,status,timetracking,project,resolution";
         String nextPageToken = null;
@@ -145,13 +174,21 @@ public class JiraService {
 
         do {
             String pagedUrl = url + (nextPageToken != null ? "&nextPageToken=" + nextPageToken : "");
-            jiraResponse = callJiraApi(pagedUrl, HttpMethod.GET, HttpUtil.createBearerAuthEntity(accessToken), connection, Map.class);
+            jiraResponse = callJiraApi(pagedUrl, HttpMethod.GET, HttpUtil.createBearerAuthEntity(accessToken), oAuthConnection, Map.class);
             processJiraResponseTasks(jiraResponse, userJiraPrimaryProject, jiraTasks);
             isLast = (boolean) jiraResponse.get("isLast");
             nextPageToken = (String) jiraResponse.get("nextPageToken");
         } while (!isLast);
 
         return jiraTasks;
+    }
+
+    private JiraProjectDTO validateAndGetUserJiraPrimaryProject(User user) {
+        JiraProjectDTO userJiraPrimaryProject = (JiraProjectDTO) userPreferenceService.getPreferenceValue(user, UserPreferenceOption.JIRA_PRIMARY_PROJECT);
+        if (userJiraPrimaryProject == null) {
+            throw new BusinessException("Jira primary project not set. Please set it in your settings.");
+        }
+        return userJiraPrimaryProject;
     }
 
     private void processJiraResponseTasks(Map<String, Object> jiraResponse, JiraProjectDTO userJiraPrimaryProject, List<JiraTaskDTO> jiraTasks) {
@@ -219,16 +256,16 @@ public class JiraService {
     }
 
     @Retryable(retryFor = Exception.class, backoff = @Backoff(delay = 1000, multiplier = 3))
-    private <T> T callJiraApi(String url, HttpMethod method, HttpEntity<Void> entity, OAuthConnection OAuthConnection, Class<T> responseType) {
+    private <T> T callJiraApi(String url, HttpMethod method, HttpEntity<?> entity, OAuthConnection oAuthConnection, Class<T> responseType) {
         try {
             ResponseEntity<T> response = HttpUtil.getRestTemplate().exchange(url, method, entity, responseType);
 
             if (response.getStatusCode() == HttpStatus.UNAUTHORIZED) {
-                String newAccessToken = oAuthConnectionService.resolveValidAccessToken(OAuthConnection);
+                oAuthConnection = oAuthConnectionService.getOrRefresh(oAuthConnection);
 
                 HttpHeaders newHeaders = new HttpHeaders();
                 newHeaders.putAll(entity.getHeaders());
-                newHeaders.setBearerAuth(newAccessToken);
+                newHeaders.setBearerAuth(oAuthConnectionService.getAccessToken(oAuthConnection));
                 entity = new HttpEntity<>(newHeaders);
 
                 response = HttpUtil.getRestTemplate().exchange(url, method, entity, responseType);
@@ -239,9 +276,57 @@ public class JiraService {
             }
 
             return response.getBody();
-        } catch (Exception e) {
-            throw new RuntimeException("Error while calling Jira API", e);
+        } catch (HttpClientErrorException exception) {
+            log.error("Error while calling Jira API with url: {}", url, exception);
+            extractErrorAndThrow(exception);
+            return null; // Unreachable, but required for compilation
         }
+    }
+
+    private void extractErrorAndThrow(HttpClientErrorException e) {
+        String responseBody = e.getResponseBodyAsString();
+
+        JsonNode root;
+        try {
+            root = AppUtils.getObjectMapper().readTree(responseBody);
+        } catch (Exception parseErr) {
+            throw new JiraException("Jira API Error: " + responseBody, e.getStatusCode().value());
+        }
+
+        // 1. handle "errorMessages" list
+        if (root.has("errorMessages") && root.get("errorMessages").isArray() && !root.get("errorMessages").isEmpty()) {
+            List<String> errors = new ArrayList<>();
+            root.get("errorMessages").forEach(msg -> errors.add(msg.asText()));
+
+            String message = String.join(" | ", errors);
+            throw new JiraException(message, e.getStatusCode().value());
+        }
+
+        // 3. fallback unknown Jira error
+        throw new JiraException("Jira API Error: " + responseBody, e.getStatusCode().value());
+    }
+
+    private Object createJiraCommentObject(String comment) {
+        Map<String, Object> commentObject = new HashMap<>();
+        commentObject.put("type", "doc");
+        commentObject.put("version", 1);
+
+        List<Object> paragraphContent = new ArrayList<>();
+        Map<String, Object> textNode = new HashMap<>();
+        textNode.put("type", "text");
+        textNode.put("text", comment);
+        paragraphContent.add(textNode);
+
+        Map<String, Object> paragraph = new HashMap<>();
+        paragraph.put("type", "paragraph");
+        paragraph.put("content", paragraphContent);
+
+        List<Object> contentList = new ArrayList<>();
+        contentList.add(paragraph);
+
+        commentObject.put("content", contentList);
+
+        return commentObject;
     }
     //</editor-fold>
 }

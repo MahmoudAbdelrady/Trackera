@@ -1,5 +1,6 @@
 package com.mdevs.trackera.controller;
 
+import com.mdevs.trackera.dto.jira.JiraSyncRequestDTO;
 import com.mdevs.trackera.dto.worklog.ManageWorkLogDTO;
 import com.mdevs.trackera.dto.worklog.WorkLogSearchFilterDTO;
 import com.mdevs.trackera.service.WorkLogService;
@@ -69,8 +70,14 @@ public class WorkLogController {
         return new ResponseEntity<>(workLogService.deleteWorkLogTaskDetails(uuid, taskName), HttpStatus.OK);
     }
 
-    @DeleteMapping("/details/entry/{uuid}")
-    public ResponseEntity<?> DeleteWorkLogTaskEntry(@PathVariable String uuid) {
-        return new ResponseEntity<>(workLogService.deleteWorkLogTaskEntry(uuid), HttpStatus.OK);
+    @DeleteMapping("/{uuid}/details/entry")
+    public ResponseEntity<?> DeleteWorkLogTaskEntry(@PathVariable String uuid, @RequestParam String entryId) {
+        return new ResponseEntity<>(workLogService.deleteWorkLogTaskEntry(uuid, entryId), HttpStatus.OK);
+    }
+
+    @PostMapping("/{uuid}/sync")
+    public ResponseEntity<?> syncWorkLog(@PathVariable String uuid, @RequestBody(required = false) JiraSyncRequestDTO syncRequest, @RequestParam(defaultValue = "true") boolean sync) {
+        Map<String, Object> result = workLogService.performJiraSync(uuid, syncRequest, sync);
+        return result.containsKey("isError") ? new ResponseEntity<>(result, HttpStatus.BAD_REQUEST) : new ResponseEntity<>(result.get("message"), HttpStatus.OK);
     }
 }

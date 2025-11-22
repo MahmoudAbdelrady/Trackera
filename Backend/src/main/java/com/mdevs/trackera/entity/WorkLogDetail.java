@@ -39,4 +39,6 @@ public class WorkLogDetail extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     private WorkLog workLog;
+
+    private String jiraId;
 }
