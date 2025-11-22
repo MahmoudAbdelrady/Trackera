@@ -14,6 +14,7 @@ import com.mdevs.trackera.shared.enums.JiraTaskEvaluation;
 import com.mdevs.trackera.shared.exceptions.types.BusinessException;
 import com.mdevs.trackera.oauth.OAuthProvider;
 import com.mdevs.trackera.shared.DurationFormatter;
+import com.mdevs.trackera.shared.exceptions.types.JiraException;
 import com.mdevs.trackera.shared.exceptions.types.NotFoundException;
 import com.mdevs.trackera.utils.AppUtils;
 import com.mdevs.trackera.utils.HttpUtil;
@@ -289,7 +290,7 @@ public class JiraService {
         try {
             root = AppUtils.getObjectMapper().readTree(responseBody);
         } catch (Exception parseErr) {
-            throw new RuntimeException("Jira API Error: " + e.getMessage(), e);
+            throw new JiraException("Jira API Error: " + responseBody, e.getStatusCode().value());
         }
 
         // 1. handle "errorMessages" list
@@ -298,11 +299,11 @@ public class JiraService {
             root.get("errorMessages").forEach(msg -> errors.add(msg.asText()));
 
             String message = String.join(" | ", errors);
-            throw new RuntimeException(message);
+            throw new JiraException(message, e.getStatusCode().value());
         }
 
         // 3. fallback unknown Jira error
-        throw new RuntimeException("Jira API Error: " + responseBody);
+        throw new JiraException("Jira API Error: " + responseBody, e.getStatusCode().value());
     }
 
     private Object createJiraCommentObject(String comment) {

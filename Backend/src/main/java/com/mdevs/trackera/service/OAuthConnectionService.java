@@ -15,6 +15,7 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.HttpClientErrorException;
 
 import java.time.LocalDateTime;
 import java.util.Map;
@@ -64,13 +65,13 @@ public class OAuthConnectionService {
         OAuthConnection connection = validateAndGetConnection(user, provider);
         if (connection.isExpired()) {
             try {
-                connection = selfRef.refreshAndUpdateCredentials(connection);
-                if (connection.isRevoked()) {
-                    throw new RuntimeException("Failed to refresh access token");
-                }
+                connection = selfRef.refreshAndUpdateCredentials(connection.getId());
             } catch (Exception e) {
                 log.error("Error while resolving access token for provider {}: {}", connection.getProvider(), e.getMessage(), e);
                 throw new RuntimeException("Failed to authenticate with " + connection.getProvider());
+            }
+            if (connection.isRevoked()) {
+                throw new RuntimeException("Failed to refresh access token");
             }
         }
         return connection;
@@ -96,11 +97,12 @@ public class OAuthConnectionService {
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public OAuthConnection refreshAndUpdateCredentials(OAuthConnection connection) {
+    public OAuthConnection refreshAndUpdateCredentials(Long connectionId) {
+        OAuthConnection connection = oAuthConnectionRepository.findOne(connectionId);
         try {
             OAuthAccessCredentialsDTO newCredentials = oAuthProviderFactory.getProvider(connection.getProvider()).refreshOAuthProviderCredentials(connection);
             connection = updateAccessCredentials(connection, newCredentials);
-        } catch (Exception e) {
+        } catch (HttpClientErrorException exception) {
             connection.setRevoked(true);
             connection = oAuthConnectionRepository.save(connection);
         }

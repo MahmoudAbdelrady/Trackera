@@ -1,5 +1,6 @@
 package com.mdevs.trackera.controller;
 
+import com.mdevs.trackera.dto.jira.JiraSyncRequestDTO;
 import com.mdevs.trackera.dto.worklog.ManageWorkLogDTO;
 import com.mdevs.trackera.dto.worklog.WorkLogSearchFilterDTO;
 import com.mdevs.trackera.service.WorkLogService;
@@ -10,7 +11,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -76,38 +76,8 @@ public class WorkLogController {
     }
 
     @PostMapping("/{uuid}/sync")
-    public ResponseEntity<?> SyncWorkLog(@PathVariable String uuid) {
-        Map<String, Object> result = workLogService.syncToJira(uuid);
-        return result.containsKey("isError") ? new ResponseEntity<>(result, HttpStatus.BAD_REQUEST) : new ResponseEntity<>(result.get("message"), HttpStatus.OK);
-    }
-
-    @PostMapping("/{uuid}/sync/tasks")
-    public ResponseEntity<?> SyncWorkLogTasks(@PathVariable String uuid, @RequestParam(name = "tasks") List<String> taskNames) {
-        Map<String, Object> result = workLogService.syncTasksToJira(uuid, taskNames);
-        return result.containsKey("isError") ? new ResponseEntity<>(result, HttpStatus.BAD_REQUEST) : new ResponseEntity<>(result.get("message"), HttpStatus.OK);
-    }
-
-    @PostMapping("/{uuid}/sync/entries")
-    public ResponseEntity<?> SyncWorkLogEntries(@PathVariable String uuid, @RequestParam(name = "ids") List<String> entryUuids) {
-        Map<String, Object> result = workLogService.syncEntriesToJira(uuid, entryUuids);
-        return result.containsKey("isError") ? new ResponseEntity<>(result, HttpStatus.BAD_REQUEST) : new ResponseEntity<>(result.get("message"), HttpStatus.OK);
-    }
-
-    @PostMapping("/{uuid}/un-sync")
-    public ResponseEntity<?> UnSyncWorkLog(@PathVariable String uuid) {
-        Map<String, Object> result = workLogService.unSyncFromJira(uuid);
-        return result.containsKey("isError") ? new ResponseEntity<>(result, HttpStatus.BAD_REQUEST) : new ResponseEntity<>(result.get("message"), HttpStatus.OK);
-    }
-
-    @PostMapping("/{uuid}/un-sync/tasks")
-    public ResponseEntity<?> UnSyncWorkLogTasks(@PathVariable String uuid, @RequestParam(name = "tasks") List<String> taskNames) {
-        Map<String, Object> result = workLogService.unSyncTasksFromJira(uuid, taskNames);
-        return result.containsKey("isError") ? new ResponseEntity<>(result, HttpStatus.BAD_REQUEST) : new ResponseEntity<>(result.get("message"), HttpStatus.OK);
-    }
-
-    @PostMapping("/{uuid}/un-sync/entries")
-    public ResponseEntity<?> UnSyncWorkLogEntries(@PathVariable String uuid, @RequestParam(name = "ids") List<String> entryUuids) {
-        Map<String, Object> result = workLogService.unSyncEntriesFromJira(uuid, entryUuids);
+    public ResponseEntity<?> syncWorkLog(@PathVariable String uuid, @RequestBody(required = false) JiraSyncRequestDTO syncRequest, @RequestParam(defaultValue = "true") boolean sync) {
+        Map<String, Object> result = workLogService.performJiraSync(uuid, syncRequest, sync);
         return result.containsKey("isError") ? new ResponseEntity<>(result, HttpStatus.BAD_REQUEST) : new ResponseEntity<>(result.get("message"), HttpStatus.OK);
     }
 }

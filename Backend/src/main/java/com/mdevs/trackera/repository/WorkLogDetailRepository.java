@@ -32,4 +32,6 @@ public interface WorkLogDetailRepository extends BaseRepository<WorkLogDetail> {
     WorkLogDetail findByUuid(String uuid);
 
     List<WorkLogDetail> findByWorkLogAndUuidIn(WorkLog workLog, List<String> uuids);
+
+    boolean existsByWorkLogAndSynced(WorkLog workLog, boolean synced);
 }
