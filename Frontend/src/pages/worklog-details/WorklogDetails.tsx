@@ -1,8 +1,8 @@
-import { CalendarSync, CalendarX2, ExternalLink, Eye, Info, Trash } from "lucide-react";
+import { CalendarSync, CalendarX2, ExternalLink, Eye, Trash } from "lucide-react";
 import { AppLayout, WorklogInfo, WorklogModal, TrackeraTable, StatusBadge } from "../../components";
 import classes from "./scss/worklog-details.module.css";
 import trackeraTableClasses from "../../components/trackera-table/scss/trackera-table.module.css";
-import { Button, Empty, Popconfirm, Skeleton, Switch, Tooltip, type TableProps } from "antd";
+import { Alert, Button, Empty, Popconfirm, Skeleton, Tooltip, type TableProps } from "antd";
 import { statusMetadata, type Worklog, type WorklogEntry, type WorkLogStatusType, type WorklogTask } from "../../shared/types";
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
@@ -201,17 +201,9 @@ const WorklogDetails = () => {
           <Popconfirm
             title="Are you sure to delete this entry?"
             description={
-              <div className={worklogModalClasses.switch_option}>
-                <span className={worklogModalClasses.label} style={{ marginRight: 8 }}>
-                  Also unsync from Jira:
-                </span>
-                <Switch disabled={!loggedUserData?.jiraLinked} />
-                {!loggedUserData?.jiraLinked && (
-                  <Tooltip title="Link your Jira account in settings to enable this option.">
-                    <Info size={16} color="#dc2626" style={{ marginLeft: "4px" }} />
-                  </Tooltip>
-                )}
-              </div>
+              record?.status === "SYNCED" && (
+                <Alert message="This entry is synced with Jira and will be unsynced upon deletion." type="warning" showIcon className={worklogModalClasses.alert_message} />
+              )
             }
             onConfirm={() => {
               setSelectedEntry(record);
@@ -317,7 +309,7 @@ const WorklogDetails = () => {
   const handleDeleteWorkLogEntry = async (entryId: string | number) => {
     setIsDeletingEntry(true);
     try {
-      const response = await requestInstance.delete(`/worklog/details/entry/${entryId}`);
+      const response = await requestInstance.delete(`/worklog/${worklogId}/details/entry?entryId=${entryId}`);
       if (response.data.isLast) {
         navigate("/");
       } else {
@@ -340,19 +332,19 @@ const WorklogDetails = () => {
 
   const performJiraTaskSync = async (taskNames: string[], sync: boolean) => {
     setIsSyncingJiraTasks(true);
-    await performJiraSync(worklogInfo!.id, taskNames, [], sync);
+    await performJiraSync(taskNames, [], sync);
     setIsSyncingJiraTasks(false);
   };
 
   const performJiraLogEntrySync = async (logIds: (string | number)[], sync: boolean) => {
     setIsSyncingJiraEntries(true);
-    await performJiraSync(worklogInfo!.id, [], logIds, sync);
+    await performJiraSync([], logIds, sync);
     setIsSyncingJiraEntries(false);
   };
 
-  const performJiraSync = async (workLogId: string | number, taskNames: string[], logIds: (string | number)[], sync: boolean) => {
+  const performJiraSync = async (taskNames: string[], logIds: (string | number)[], sync: boolean) => {
     try {
-      const response = await requestInstance.post(`/worklog/${workLogId}/sync${sync ? "" : "?sync=false"}`, { taskNames, logIds });
+      const response = await requestInstance.post(`/worklog/${worklogId}/sync${sync ? "" : "?sync=false"}`, { taskNames, logIds });
       showSuccessToast(response.data);
       setCanFetchWorkLogInfo(true);
       setCanFetchTasks(true);
@@ -422,15 +414,9 @@ const WorklogDetails = () => {
           }}
         >
           <p className={worklogModalClasses.delete_message}>Are you sure you want to delete this task log? This action cannot be undone.</p>
-          <div className={worklogModalClasses.switch_option}>
-            <span className={worklogModalClasses.label}>Also unsync from Jira:</span>
-            <Switch disabled={!loggedUserData?.jiraLinked || isDeletingTask} />
-            {!loggedUserData?.jiraLinked && (
-              <Tooltip title="Link your Jira account in settings to enable this option.">
-                <Info size={16} color="#dc2626" />
-              </Tooltip>
-            )}
-          </div>
+          {selectedTask?.status === "SYNCED" && (
+            <Alert message="This task is synced with Jira and will be unsynced upon deletion." type="warning" showIcon className={worklogModalClasses.alert_message} />
+          )}
         </WorklogModal>
       )}
 
