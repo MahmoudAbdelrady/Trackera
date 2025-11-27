@@ -1,10 +1,7 @@
 package com.mdevs.trackera.entity;
 
 import com.mdevs.trackera.shared.enums.BackgroundJobStatus;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Index;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -24,6 +21,7 @@ public class BackgroundJob extends BaseEntity {
     private String name;
 
     @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
     private BackgroundJobStatus status;
 
     @Column(nullable = false, columnDefinition = "LONGTEXT")

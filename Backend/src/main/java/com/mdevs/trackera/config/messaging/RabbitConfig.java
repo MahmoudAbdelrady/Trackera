@@ -94,11 +94,11 @@ public class RabbitConfig {
     }
 
     // helper methods
-    public String retryQueueName(int delay) {
+    public static String retryQueueName(int delay) {
         return RETRY_KEY_PREFIX + delay;
     }
 
-    public String retryRoutingKey(int delay) {
+    public static String retryRoutingKey(int delay) {
         return RETRY_ROUTING_KEY_PREFIX + delay;
     }
 
