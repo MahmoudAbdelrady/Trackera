@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @Slf4j
 @Component
@@ -36,25 +37,26 @@ public class BackgroundJobConsumer {
     @RabbitListener(queues = RabbitConfig.JOB_QUEUE)
     public void processJob(BackgroundJobMessage message, Channel channel, @Header(AmqpHeaders.DELIVERY_TAG) long deliveryTag, @Header(value = "x-death", required = false) List<Map<String, Object>> xDeathHeader) {
         int retryCount = getRetryCount(xDeathHeader);
+        System.out.println("Retry Count: " + retryCount);
         BackgroundJob job = null;
 
         try {
             log.info("Processing job [{}, {}] (attempt {})", message.getJobId(), message.getJobName(), retryCount + 1);
 
             // Load job from database
-            job = jobRepository.findById(message.getJobId()).orElseThrow(() -> new IllegalStateException("Job not found: [" + message.getJobId() + ", " + message.getJobName() + "]"));
+            job = Optional.ofNullable(jobRepository.findOne(message.getJobId())).orElseThrow(() -> new IllegalStateException("Job not found: [" + message.getJobId() + ", " + message.getJobName() + "]"));
 
             // Update status to PROCESSING
             job.setStatus(BackgroundJobStatus.IN_PROGRESS);
             job.setRetryCount(retryCount);
-            jobRepository.save(job);
+            job = jobRepository.save(job);
 
             // Process the job (actual business logic)
             jobProcessor.process(job);
 
             // Success - update status
             job.setStatus(BackgroundJobStatus.COMPLETED);
-            jobRepository.save(job);
+            job = jobRepository.save(job);
 
             // Acknowledge message (remove from queue)
             channel.basicAck(deliveryTag, false);
@@ -83,10 +85,7 @@ public class BackgroundJobConsumer {
             return 0;
         }
 
-        // Count how many times message has been through retry queues
-        return (int) xDeathHeader.stream()
-                .filter(death -> death.get("queue").toString().startsWith(RabbitConfig.RETRY_KEY_PREFIX))
-                .count();
+        return xDeathHeader.stream().map(death -> Integer.parseInt(death.get("count").toString())).findFirst().orElse(0);
     }
 
     private void handleRetry(BackgroundJob job, BackgroundJobMessage message, int retryCount) {
@@ -103,6 +102,7 @@ public class BackgroundJobConsumer {
         }
 
         // Send to retry queue
+        System.out.println("Routing to: " + retryRoutingKey);
         rabbitTemplate.convertAndSend(RabbitConfig.JOB_EXCHANGE, retryRoutingKey, message);
     }
 

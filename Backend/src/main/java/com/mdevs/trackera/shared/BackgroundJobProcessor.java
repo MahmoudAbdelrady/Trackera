@@ -9,6 +9,10 @@ import org.springframework.stereotype.Component;
 public class BackgroundJobProcessor {
     public void process(BackgroundJob job) {
         log.info("Processing job: {} (type: {})", job.getId(), job.getName());
+        System.out.println("Count: " + job.getRetryCount());
+        if (job.getRetryCount() < 2) {
+            throw new RuntimeException("Simulated job failure for testing retries.");
+        }
         printHelloWorld(job);
     }
 

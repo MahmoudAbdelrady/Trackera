@@ -46,14 +46,17 @@ public class RabbitConfig {
         return QueueBuilder.durable(JOB_QUEUE).build();
     }
 
-    // Retry Queues with TTL
+    // Retry Declarables
     @Bean
-    List<Queue> retryQueues() {
-        List<Queue> queues = new ArrayList<>();
+    public Declarables retryDeclarables(DirectExchange jobExchange) {
+        List<Declarable> declarables = new ArrayList<>();
         for (int delay : RETRY_DELAYS) {
-            queues.add(createRetryQueue(delay));
+            Queue q = createRetryQueue(delay);
+            Binding b = BindingBuilder.bind(q).to(jobExchange).with(retryRoutingKey(delay));
+            declarables.add(q);
+            declarables.add(b);
         }
-        return queues;
+        return new Declarables(declarables);
     }
 
     private Queue createRetryQueue(int delay) {
@@ -72,25 +75,13 @@ public class RabbitConfig {
 
     // Bindings
     @Bean
-    public Binding jobBinding() {
-        return BindingBuilder.bind(jobQueue()).to(jobExchange()).with(JOB_ROUTING_KEY);
+    public Binding jobBinding(DirectExchange jobExchange) {
+        return BindingBuilder.bind(jobQueue()).to(jobExchange).with(JOB_ROUTING_KEY);
     }
 
     @Bean
-    List<Binding> retryBindings(List<Queue> retryQueues) {
-        List<Binding> bindings = new ArrayList<>();
-        for (int i = 0; i < RETRY_DELAYS.length; i++) {
-            bindings.add(BindingBuilder
-                    .bind(retryQueues.get(i))
-                    .to(jobExchange())
-                    .with(retryRoutingKey(RETRY_DELAYS[i])));
-        }
-        return bindings;
-    }
-
-    @Bean
-    public Binding dlqBinding() {
-        return BindingBuilder.bind(dlq()).to(jobExchange()).with(DLQ_ROUTING_KEY);
+    public Binding dlqBinding(DirectExchange jobExchange) {
+        return BindingBuilder.bind(dlq()).to(jobExchange).with(DLQ_ROUTING_KEY);
     }
 
     // helper methods
