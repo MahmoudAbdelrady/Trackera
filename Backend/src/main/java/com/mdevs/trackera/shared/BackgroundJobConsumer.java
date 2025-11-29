@@ -5,6 +5,7 @@ import com.mdevs.trackera.dto.backgroundjob.BackgroundJobMessage;
 import com.mdevs.trackera.entity.BackgroundJob;
 import com.mdevs.trackera.repository.BackgroundJobRepository;
 import com.mdevs.trackera.shared.enums.BackgroundJobStatus;
+import com.mdevs.trackera.shared.exceptions.types.NotFoundException;
 import com.rabbitmq.client.Channel;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
@@ -14,10 +15,11 @@ import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Component
@@ -35,23 +37,23 @@ public class BackgroundJobConsumer {
     }
 
     @RabbitListener(queues = RabbitConfig.JOB_QUEUE)
-    public void processJob(BackgroundJobMessage message, Channel channel, @Header(AmqpHeaders.DELIVERY_TAG) long deliveryTag, @Header(value = "x-death", required = false) List<Map<String, Object>> xDeathHeader) {
-        int retryCount = getRetryCount(xDeathHeader);
-        System.out.println("Retry Count: " + retryCount);
+    public void processJob(BackgroundJobMessage message, Channel channel, @Header(AmqpHeaders.DELIVERY_TAG) long deliveryTag,
+                           @Header(value = "x-death", required = false) List<Map<String, Object>> xDeathHeader, @Header(value = "x-retry-count", required = false) Integer retryCountHeader) {
+        int retryCount = getRetryCount(xDeathHeader, retryCountHeader);
         BackgroundJob job = null;
 
         try {
-            log.info("Processing job [{}, {}] (attempt {})", message.getJobId(), message.getJobName(), retryCount + 1);
+            log.info("Processing job [{}, {}] (attempt {})", message.getJobId(), message.getJobName(), retryCount);
 
             // Load job from database
-            job = Optional.ofNullable(jobRepository.findOne(message.getJobId())).orElseThrow(() -> new IllegalStateException("Job not found: [" + message.getJobId() + ", " + message.getJobName() + "]"));
+            job = Optional.ofNullable(jobRepository.findOne(message.getJobId())).orElseThrow(() -> new NotFoundException("Job not found: [" + message.getJobId() + ", " + message.getJobName() + "]"));
 
             // Update status to PROCESSING
             job.setStatus(BackgroundJobStatus.IN_PROGRESS);
             job.setRetryCount(retryCount);
             job = jobRepository.save(job);
 
-            // Process the job (actual business logic)
+            // Process the job
             jobProcessor.process(job);
 
             // Success - update status
@@ -62,7 +64,7 @@ public class BackgroundJobConsumer {
             channel.basicAck(deliveryTag, false);
             log.info("Job [{}, {}] completed successfully", message.getJobId(), message.getJobName());
         } catch (Exception e) {
-            log.error("Job [{}, {}] failed (attempt {}): {}", message.getJobId(), message.getJobName(), retryCount + 1, e.getMessage(), e);
+            log.error("Job [{}, {}] failed (attempt {}): {}", message.getJobId(), message.getJobName(), retryCount, e.getMessage(), e);
 
             try {
                 if (retryCount >= RabbitConfig.MAX_RETRIES) {
@@ -80,7 +82,11 @@ public class BackgroundJobConsumer {
         }
     }
 
-    private int getRetryCount(List<Map<String, Object>> xDeathHeader) {
+    private int getRetryCount(List<Map<String, Object>> xDeathHeader, @Header(value = "x-retry-count", required = false) Integer headerRetryCount) {
+        if (headerRetryCount != null) {
+            return headerRetryCount;
+        }
+
         if (xDeathHeader == null || xDeathHeader.isEmpty()) {
             return 0;
         }
@@ -102,8 +108,15 @@ public class BackgroundJobConsumer {
         }
 
         // Send to retry queue
-        System.out.println("Routing to: " + retryRoutingKey);
-        rabbitTemplate.convertAndSend(RabbitConfig.JOB_EXCHANGE, retryRoutingKey, message);
+        rabbitTemplate.convertAndSend(
+                RabbitConfig.JOB_EXCHANGE,
+                retryRoutingKey,
+                message,
+                msg -> {
+                    msg.getMessageProperties().setHeader("x-retry-count", retryCount + 1);
+                    return msg;
+                }
+        );
     }
 
     private void handleMaxRetriesExceeded(BackgroundJob job, BackgroundJobMessage message, Exception error) {
@@ -113,21 +126,12 @@ public class BackgroundJobConsumer {
         if (job != null) {
             job.setStatus(BackgroundJobStatus.FAILED);
             job.setRetryCount(RabbitConfig.MAX_RETRIES);
+            job.setFailureReason(error.getMessage());
+            job.setFailureStackTrace(Arrays.stream(error.getStackTrace()).map(StackTraceElement::toString).collect(Collectors.joining("\n")));
             jobRepository.save(job);
         }
 
         // Send to DLQ with error details
-        rabbitTemplate.convertAndSend(
-                RabbitConfig.JOB_EXCHANGE,
-                RabbitConfig.DLQ_ROUTING_KEY,
-                message,
-                msg -> {
-                    msg.getMessageProperties().setHeader("error-message", error.getMessage());
-                    msg.getMessageProperties().setHeader("error-class", error.getClass().getName());
-                    msg.getMessageProperties().setHeader("failed-at", LocalDateTime.now().toLocalDate());
-                    msg.getMessageProperties().setHeader("retry-count", RabbitConfig.MAX_RETRIES);
-                    return msg;
-                }
-        );
+        rabbitTemplate.convertAndSend(RabbitConfig.JOB_EXCHANGE, RabbitConfig.DLQ_ROUTING_KEY, message);
     }
 }

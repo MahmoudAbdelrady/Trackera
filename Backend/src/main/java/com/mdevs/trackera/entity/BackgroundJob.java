@@ -30,4 +30,9 @@ public class BackgroundJob extends BaseEntity {
     @Column(nullable = false)
     @ColumnDefault("0")
     private int retryCount;
+
+    private String failureReason;
+
+    @Column(columnDefinition = "LONGTEXT")
+    private String failureStackTrace;
 }
