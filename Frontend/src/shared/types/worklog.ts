@@ -3,7 +3,7 @@ import type { StatusBadgeProps, TrackeraTableEntity } from "./global";
 
 type WorkLogEvaluationType = "EXCELLENT" | "GOOD" | "MODERATE" | "POOR";
 
-type WorkLogStatusType = "SYNCED" | "PARTIALLY" | "NOT_SYNCED";
+type WorkLogStatusType = "SYNCED" | "PARTIALLY" | "NOT_SYNCED" | "SYNC_IN_PROGRESS" | "UNSYNC_IN_PROGRESS";
 
 interface Worklog extends TrackeraTableEntity {
   name: string;
@@ -45,6 +45,8 @@ const statusMetadata: Record<WorkLogStatusType, StatusBadgeProps> = {
   SYNCED: { label: "Synced", type: "success" },
   PARTIALLY: { label: "Partially", type: "warning" },
   NOT_SYNCED: { label: "Not Synced", type: "danger" },
+  SYNC_IN_PROGRESS: { label: "Sync in Progress", type: "warning" },
+  UNSYNC_IN_PROGRESS: { label: "Unsync in Progress", type: "warning" },
 };
 
 interface WorklogTableActionButtonProps {
