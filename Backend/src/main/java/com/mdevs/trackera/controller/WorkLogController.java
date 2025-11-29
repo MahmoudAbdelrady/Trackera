@@ -77,7 +77,7 @@ public class WorkLogController {
 
     @PostMapping("/{uuid}/sync")
     public ResponseEntity<?> syncWorkLog(@PathVariable String uuid, @RequestBody(required = false) JiraSyncRequestDTO syncRequest, @RequestParam(defaultValue = "true") boolean sync) {
-        Map<String, Object> result = workLogService.performJiraSync(uuid, syncRequest, sync);
-        return result.containsKey("isError") ? new ResponseEntity<>(result, HttpStatus.BAD_REQUEST) : new ResponseEntity<>(result.get("message"), HttpStatus.OK);
+        workLogService.performJiraSync(uuid, syncRequest, sync);
+        return new ResponseEntity<>((sync ? "Sync" : "Unsync") + " request initiated successfully", HttpStatus.OK);
     }
 }

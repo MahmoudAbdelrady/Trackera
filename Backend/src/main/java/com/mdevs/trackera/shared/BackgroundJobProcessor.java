@@ -5,6 +5,7 @@ import com.mdevs.trackera.job.handlers.BackgroundJobHandler;
 import com.mdevs.trackera.shared.exceptions.types.NotFoundException;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.aop.support.AopUtils;
 import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
@@ -24,12 +25,11 @@ public class BackgroundJobProcessor {
     @PostConstruct
     public void init() {
         for (BackgroundJobHandler handler : handlers.values()) {
-            handlerRegistry.put(handler.getClass().getSimpleName(), handler);
+            handlerRegistry.put((AopUtils.getTargetClass(handler)).getSimpleName(), handler);
         }
 
-        log.info("Registered {} job handlers", handlerRegistry.size());
+        log.info("Registered {} background job handlers", handlerRegistry.size());
     }
-
 
     public void process(BackgroundJob job) {
         log.info("Processing job: {} (type: {})", job.getId(), job.getName());

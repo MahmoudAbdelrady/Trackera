@@ -8,8 +8,9 @@ import lombok.Getter;
 public enum WorkLogStatus implements BaseEnum {
     NOT_SYNCED("Not Synced"),
     SYNCED("Synced"),
-    SYNCING("Syncing"),
-    PARTIALLY("Partially");
+    PARTIALLY("Partially"),
+    SYNC_IN_PROGRESS("Sync In Progress"),
+    UNSYNC_IN_PROGRESS("Unsync In Progress");
 
     private final String label;
 }

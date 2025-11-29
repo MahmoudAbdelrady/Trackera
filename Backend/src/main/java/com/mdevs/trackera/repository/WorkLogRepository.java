@@ -22,8 +22,8 @@ public interface WorkLogRepository extends BaseRepository<WorkLog> {
 
     WorkLog findByUserAndUuid(User user, String uuid);
 
-    @Query("SELECT CASE WHEN SUM(CASE WHEN wld.synced = false THEN 1 ELSE 0 END) = 0 THEN 'SYNCED' " +
-            "WHEN SUM(CASE WHEN wld.synced = true THEN 1 ELSE 0 END) = 0 THEN 'NOT_SYNCED' " +
+    @Query("SELECT CASE WHEN SUM(CASE WHEN wld.status = 'NOT_SYNCED' THEN 1 ELSE 0 END) = 0 THEN 'SYNCED' " +
+            "WHEN SUM(CASE WHEN wld.status = 'SYNCED' THEN 1 ELSE 0 END) = 0 THEN 'NOT_SYNCED' " +
             "ELSE 'PARTIALLY' END " +
             "FROM WorkLog w JOIN WorkLogDetail wld on wld.workLog = w WHERE w = :worklog")
     WorkLogStatus calculateWorkLogStatus(@Param("worklog") WorkLog worklog);
