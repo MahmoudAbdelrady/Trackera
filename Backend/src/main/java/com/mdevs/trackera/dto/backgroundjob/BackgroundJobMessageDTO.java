@@ -9,7 +9,7 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class BackgroundJobMessage {
+public class BackgroundJobMessageDTO {
     private Long jobId;
 
     private String jobName;

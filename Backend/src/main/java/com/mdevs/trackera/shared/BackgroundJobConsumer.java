@@ -1,7 +1,7 @@
 package com.mdevs.trackera.shared;
 
 import com.mdevs.trackera.config.messaging.RabbitConfig;
-import com.mdevs.trackera.dto.backgroundjob.BackgroundJobMessage;
+import com.mdevs.trackera.dto.backgroundjob.BackgroundJobMessageDTO;
 import com.mdevs.trackera.entity.BackgroundJob;
 import com.mdevs.trackera.repository.BackgroundJobRepository;
 import com.mdevs.trackera.shared.enums.BackgroundJobStatus;
@@ -37,7 +37,7 @@ public class BackgroundJobConsumer {
     }
 
     @RabbitListener(queues = RabbitConfig.JOB_QUEUE)
-    public void processJob(BackgroundJobMessage message, Channel channel, @Header(AmqpHeaders.DELIVERY_TAG) long deliveryTag,
+    public void processJob(BackgroundJobMessageDTO message, Channel channel, @Header(AmqpHeaders.DELIVERY_TAG) long deliveryTag,
                            @Header(value = "x-death", required = false) List<Map<String, Object>> xDeathHeader, @Header(value = "x-retry-count", required = false) Integer retryCountHeader) {
         int retryCount = getRetryCount(xDeathHeader, retryCountHeader);
         BackgroundJob job = null;
@@ -94,7 +94,7 @@ public class BackgroundJobConsumer {
         return xDeathHeader.stream().map(death -> Integer.parseInt(death.get("count").toString())).findFirst().orElse(0);
     }
 
-    private void handleRetry(BackgroundJob job, BackgroundJobMessage message, int retryCount) {
+    private void handleRetry(BackgroundJob job, BackgroundJobMessageDTO message, int retryCount) {
         int delay = RabbitConfig.RETRY_DELAYS[retryCount];
         String retryRoutingKey = RabbitConfig.retryRoutingKey(delay);
 
@@ -119,7 +119,7 @@ public class BackgroundJobConsumer {
         );
     }
 
-    private void handleMaxRetriesExceeded(BackgroundJob job, BackgroundJobMessage message, Exception error) {
+    private void handleMaxRetriesExceeded(BackgroundJob job, BackgroundJobMessageDTO message, Exception error) {
         log.error("Job [{}, {}] exceeded max retries, sending to DLQ", message.getJobId(), message.getJobName());
 
         // Update job status in database
