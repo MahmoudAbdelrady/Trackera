@@ -57,6 +57,7 @@ public class BackgroundJobConsumer {
             jobProcessor.process(job);
 
             // Success - update status
+            job = jobRepository.findOne(job.getId());
             job.setStatus(BackgroundJobStatus.COMPLETED);
             job = jobRepository.save(job);
 
@@ -102,6 +103,7 @@ public class BackgroundJobConsumer {
 
         // Update job status
         if (job != null) {
+            job = jobRepository.findOne(job.getId());
             job.setStatus(BackgroundJobStatus.PENDING_RETRY);
             job.setRetryCount(retryCount + 1);
             jobRepository.save(job);
@@ -124,6 +126,7 @@ public class BackgroundJobConsumer {
 
         // Update job status in database
         if (job != null) {
+            job = jobRepository.findOne(job.getId());
             job.setStatus(BackgroundJobStatus.FAILED);
             job.setRetryCount(RabbitConfig.MAX_RETRIES);
             job.setFailureReason(error.getMessage());

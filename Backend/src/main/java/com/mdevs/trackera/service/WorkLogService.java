@@ -16,7 +16,6 @@ import com.mdevs.trackera.shared.enums.UserPreferenceOption;
 import com.mdevs.trackera.shared.enums.WorkLogColumn;
 import com.mdevs.trackera.shared.enums.WorkLogStatus;
 import com.mdevs.trackera.shared.exceptions.types.BusinessException;
-import com.mdevs.trackera.shared.exceptions.types.JiraException;
 import com.mdevs.trackera.shared.exceptions.types.NotFoundException;
 import com.mdevs.trackera.shared.exceptions.types.UnauthorizedException;
 import com.mdevs.trackera.shared.DurationFormatter;
@@ -27,7 +26,6 @@ import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.TypedQuery;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -55,11 +53,7 @@ public class WorkLogService {
 
     private final OAuthConnectionService oAuthConnectionService;
 
-    private final JiraService jiraService;
-
     private final BackgroundJobService backgroundJobService;
-
-    private final WorkLogService selfRef;
 
     private final WorkLogMapper workLogMapper;
 
@@ -69,14 +63,12 @@ public class WorkLogService {
     private static final Pattern DURATION_PATTERN = Pattern.compile("(?:(\\d+)h)?\\s*(?:(\\d+)m)?");
 
     public WorkLogService(WorkLogRepository workLogRepository, WorkLogDetailRepository workLogDetailRepository, UserPreferenceService userPreferenceService, OAuthConnectionService oAuthConnectionService,
-                          JiraService jiraService, BackgroundJobService backgroundJobService, @Lazy WorkLogService selfRef, WorkLogMapper workLogMapper) {
+                          BackgroundJobService backgroundJobService, WorkLogMapper workLogMapper) {
         this.workLogRepository = workLogRepository;
         this.workLogDetailRepository = workLogDetailRepository;
         this.userPreferenceService = userPreferenceService;
         this.oAuthConnectionService = oAuthConnectionService;
-        this.jiraService = jiraService;
         this.backgroundJobService = backgroundJobService;
-        this.selfRef = selfRef;
         this.workLogMapper = workLogMapper;
     }
 
@@ -176,7 +168,6 @@ public class WorkLogService {
             WorkLogSyncPayloadDTO workLogSyncPayloadDTO = new WorkLogSyncPayloadDTO(workLog.getUser().getId(), workLog.getId());
             workLogSyncPayloadDTO.setDetailsToSync(workLogDetails.stream().map(WorkLogDetail::getId).toList());
             backgroundJobService.enqueueJob(WorkLogSyncJobHandler.class, AppUtils.convertObjectToJsonString(workLogSyncPayloadDTO));
-//            performJiraSync(workLog.getUuid(), null, true);
         }
         return Map.of("message", "Worklog uploaded successfully");
     }
@@ -322,18 +313,17 @@ public class WorkLogService {
         WorkLog workLog = ensureWorkLogExistsAndHasPermission(uuid);
         validateSyncRequest(workLog, sync);
         List<WorkLogDetail> workLogDetails;
+
         if (syncRequest != null && syncRequest.getTaskNames() != null && !syncRequest.getTaskNames().isEmpty()) {
-            workLogDetails = workLogDetailRepository.findByWorkLogAndTaskNameIn(workLog, syncRequest.getTaskNames());
+            workLogDetails = workLogDetailRepository.findByWorkLogAndTaskNameInAndStatusNot(workLog, syncRequest.getTaskNames(), sync ? WorkLogStatus.SYNCED : WorkLogStatus.NOT_SYNCED);
             if (workLogDetails.isEmpty()) {
                 throw new NotFoundException("No logs found for the specified tasks in this worklog");
             }
-            // @TODO --> Send notification for the invalid tasks
         } else if (syncRequest != null && syncRequest.getLogIds() != null && !syncRequest.getLogIds().isEmpty()) {
-            workLogDetails = workLogDetailRepository.findByWorkLogAndUuidIn(workLog, syncRequest.getLogIds());
+            workLogDetails = workLogDetailRepository.findByWorkLogAndUuidInAndStatusNot(workLog, syncRequest.getLogIds(), sync ? WorkLogStatus.SYNCED : WorkLogStatus.NOT_SYNCED);
             if (workLogDetails.isEmpty()) {
                 throw new NotFoundException("Logs not found");
             }
-            // @TODO --> Send notification for the invalid logs
         } else {
             workLogDetails = workLogDetailRepository.findAllByWorkLog(workLog);
         }
@@ -344,7 +334,6 @@ public class WorkLogService {
     }
 
     private void handleJiraSyncing(WorkLog workLog, List<WorkLogDetail> workLogDetails, boolean sync) {
-        workLogDetails = getValidWorkLogDetailsForSyncing(workLogDetails, sync);
         workLogDetails.forEach(detail -> {
             if (sync) {
                 detail.setStatus(WorkLogStatus.SYNC_IN_PROGRESS);
@@ -360,27 +349,6 @@ public class WorkLogService {
             workLogSyncPayloadDTO.setDetailsToUnsync(workLogDetails.stream().map(detail -> new WorkLogDetailSyncRequestDTO(detail.getId(), detail.getTaskName(), detail.getJiraId())).toList());
         }
         backgroundJobService.enqueueJob(WorkLogSyncJobHandler.class, AppUtils.convertObjectToJsonString(workLogSyncPayloadDTO));
-    }
-
-    private List<WorkLogDetail> getValidWorkLogDetailsForSyncing(List<WorkLogDetail> workLogDetails, boolean sync) {
-        List<WorkLogDetail> validWorkLogDetails = new ArrayList<>();
-        for (WorkLogDetail workLogDetail : workLogDetails) {
-            if (sync && workLogDetail.getStatus().equals(WorkLogStatus.SYNCED)) {
-                log.warn("Skipping already synced WorkLogDetail with UUID {}", workLogDetail.getUuid());
-                continue;
-            }
-            if (!sync && workLogDetail.getStatus().equals(WorkLogStatus.NOT_SYNCED)) {
-                log.warn("Skipping not synced WorkLogDetail with UUID {}", workLogDetail.getUuid());
-                continue;
-            }
-            validWorkLogDetails.add(workLogDetail);
-        }
-
-        if (validWorkLogDetails.isEmpty()) {
-            throw new BusinessException("No valid worklogs found to " + (sync ? "sync" : "unsync"));
-        }
-
-        return validWorkLogDetails;
     }
     //</editor-fold>
 
