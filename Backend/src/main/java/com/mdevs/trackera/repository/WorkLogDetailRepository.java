@@ -24,6 +24,8 @@ public interface WorkLogDetailRepository extends BaseRepository<WorkLogDetail> {
 
     List<WorkLogDetail> findAllByWorkLog(WorkLog workLog);
 
+    List<WorkLogDetail> findAllByWorkLogAndStatusNot(WorkLog workLog, WorkLogStatus status);
+
     boolean existsByWorkLog(WorkLog workLog);
 
     List<WorkLogDetail> findByWorkLogAndTaskName(WorkLog workLog, String taskName);

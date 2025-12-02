@@ -21,6 +21,7 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 
@@ -58,10 +59,12 @@ public class WorkLogSyncJobHandler implements BackgroundJobHandler {
 
         List<WorkLogDetailSyncRequestDTO> detailsToUnsync = workLogSyncPayloadDTO.getDetailsToUnsync();
         if (detailsToUnsync != null && !detailsToUnsync.isEmpty()) {
-            for (WorkLogDetailSyncRequestDTO detailSyncRequestDTO : detailsToUnsync) {
+            Iterator<WorkLogDetailSyncRequestDTO> iterator = detailsToUnsync.iterator();
+            while (iterator.hasNext()) {
+                WorkLogDetailSyncRequestDTO detailSyncRequestDTO = iterator.next();
                 try {
                     selfRef.unSyncWorkLogDetailFromJira(syncUser, detailSyncRequestDTO);
-                    detailsToUnsync.remove(detailSyncRequestDTO);
+                    iterator.remove();
                 } catch (Exception e) {
                     exceptionMessage = e.getMessage();
                     break;
@@ -75,10 +78,12 @@ public class WorkLogSyncJobHandler implements BackgroundJobHandler {
 
         List<Long> detailsToSync = workLogSyncPayloadDTO.getDetailsToSync();
         if (StringUtils.isEmpty(exceptionMessage) && (detailsToSync != null && !detailsToSync.isEmpty())) {
-            for (Long detailId : detailsToSync) {
+            Iterator<Long> iterator = detailsToSync.iterator();
+            while (iterator.hasNext()) {
+                Long detailId = iterator.next();
                 try {
                     selfRef.syncWorkLogDetailToJira(syncUser, detailId);
-                    detailsToSync.remove(detailId);
+                    iterator.remove();
                 } catch (Exception e) {
                     exceptionMessage = e.getMessage();
                     break;
@@ -105,9 +110,18 @@ public class WorkLogSyncJobHandler implements BackgroundJobHandler {
     public void syncWorkLogDetailToJira(User user, Long detailId) {
         log.info("Synchronizing WorkLogDetail with Id {} to Jira", detailId);
         WorkLogDetail workLogDetail = workLogDetailRepository.findOne(detailId);
-        String jiraId = jiraService.addWorkLog(user, workLogDetail);
-        workLogDetail.setStatus(WorkLogStatus.SYNCED);
-        workLogDetail.setJiraId(jiraId);
+        try {
+            String jiraId = jiraService.addWorkLog(user, workLogDetail);
+            workLogDetail.setStatus(WorkLogStatus.SYNCED);
+            workLogDetail.setJiraId(jiraId);
+        } catch (JiraException exception) {
+            if (exception.getStatusCode() == 404) {
+                workLogDetail.setStatus(WorkLogStatus.NOT_SYNCED);
+                log.warn("Jira WorkLog [{}, {}] not found. Proceeding to skip synchronization locally.", workLogDetail.getId(), workLogDetail.getTaskName());
+            } else {
+                throw exception;
+            }
+        }
         workLogDetailRepository.save(workLogDetail);
     }
 

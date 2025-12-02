@@ -165,6 +165,8 @@ public class WorkLogService {
         WorkLog workLog = saveWorkLog(manageWorkLogDTO, (int) processResult.get("totalMinutes"));
         List<WorkLogDetail> workLogDetails =  saveWorkLogDetails((List<WorkLogDetail>) processResult.get("workLogDetails"), workLog);
         if (manageWorkLogDTO.getSyncToJira()) {
+            workLog.setStatus(WorkLogStatus.SYNC_IN_PROGRESS);
+            workLogRepository.save(workLog);
             WorkLogSyncPayloadDTO workLogSyncPayloadDTO = new WorkLogSyncPayloadDTO(workLog.getUser().getId(), workLog.getId());
             workLogSyncPayloadDTO.setDetailsToSync(workLogDetails.stream().map(WorkLogDetail::getId).toList());
             backgroundJobService.enqueueJob(WorkLogSyncJobHandler.class, AppUtils.convertObjectToJsonString(workLogSyncPayloadDTO));
@@ -175,6 +177,7 @@ public class WorkLogService {
     @Transactional
     public Map<String, Object> updateWorkLog(String uuid, ManageWorkLogDTO manageWorkLogDTO, MultipartFile worklogFile) {
         WorkLog workLog = ensureWorkLogExistsAndHasPermission(uuid);
+        ensureWorkLogSyncNotInProgress(workLog);
         validateWorkLog(manageWorkLogDTO, workLog.getId());
 
         if (worklogFile != null) {
@@ -223,6 +226,7 @@ public class WorkLogService {
     @Transactional
     public void deleteWorkLog(String uuid) {
         WorkLog workLog = ensureWorkLogExistsAndHasPermission(uuid);
+        ensureWorkLogSyncNotInProgress(workLog);
         WorkLogSyncPayloadDTO workLogSyncPayloadDTO = new WorkLogSyncPayloadDTO(workLog.getUser().getId());
         List<WorkLogDetailSyncRequestDTO> detailsToUnsync = workLogDetailRepository.findByWorkLogAndStatus(workLog, WorkLogStatus.SYNCED).stream()
                 .map(detail -> {
@@ -243,6 +247,7 @@ public class WorkLogService {
     @Transactional
     public Map<String, Object> deleteWorkLogTaskDetails(String uuid, String taskName) {
         WorkLog workLog = ensureWorkLogExistsAndHasPermission(uuid);
+        ensureWorkLogSyncNotInProgress(workLog);
         List<WorkLogDetail> detailsToDelete = workLogDetailRepository.findByWorkLogAndTaskName(workLog, taskName);
         if (detailsToDelete.isEmpty()) {
             throw new NotFoundException("No logs found for the specified task in this worklog");
@@ -275,6 +280,7 @@ public class WorkLogService {
     @Transactional
     public Map<String, Object> deleteWorkLogTaskEntry(String uuid, String entryId) {
         WorkLog workLog = ensureWorkLogExistsAndHasPermission(uuid);
+        ensureWorkLogSyncNotInProgress(workLog);
         WorkLogDetail workLogEntry = workLogDetailRepository.findByUuid(entryId);
         if (workLogEntry == null) {
             throw new NotFoundException("WorkLog entry not found");
@@ -325,7 +331,7 @@ public class WorkLogService {
                 throw new NotFoundException("Logs not found");
             }
         } else {
-            workLogDetails = workLogDetailRepository.findAllByWorkLog(workLog);
+            workLogDetails = workLogDetailRepository.findAllByWorkLogAndStatusNot(workLog, sync ? WorkLogStatus.SYNCED : WorkLogStatus.NOT_SYNCED);
         }
 
         workLog.setStatus(sync ? WorkLogStatus.SYNC_IN_PROGRESS : WorkLogStatus.UNSYNC_IN_PROGRESS);
@@ -548,7 +554,13 @@ public class WorkLogService {
             throw new BusinessException("WorkLog is already synced to Jira");
         } else if (!sync && workLog.getStatus().equals(WorkLogStatus.NOT_SYNCED)) {
             throw new BusinessException("WorkLog is not synced to Jira");
-        } else if (workLog.getStatus().equals(WorkLogStatus.SYNC_IN_PROGRESS) || workLog.getStatus().equals(WorkLogStatus.UNSYNC_IN_PROGRESS)) {
+        } else {
+            ensureWorkLogSyncNotInProgress(workLog);
+        }
+    }
+
+    private void ensureWorkLogSyncNotInProgress(WorkLog workLog) {
+        if (workLog.getStatus().equals(WorkLogStatus.SYNC_IN_PROGRESS) || workLog.getStatus().equals(WorkLogStatus.UNSYNC_IN_PROGRESS)) {
             throw new BusinessException("WorkLog synchronization is already in progress");
         }
     }
