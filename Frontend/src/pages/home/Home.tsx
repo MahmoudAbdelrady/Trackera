@@ -124,24 +124,28 @@ const Home = () => {
       key: "actions",
       render: (_, record) => (
         <div className={trackeraTableClasses.actions_container}>
-          {record.status === "SYNCED" ? (
-            <Tooltip title={`${loggedUserData?.jiraLinked ? "Unsync from Jira" : "Link your Jira account in settings to enable this option."}`}>
+          {record.status === "SYNCED" || record.status === "UNSYNC_IN_PROGRESS" ? (
+            <Tooltip title={`${loggedUserData?.jiraLinked || record.status === "UNSYNC_IN_PROGRESS" ? "Unsync from Jira" : "Link your Jira account in settings to enable this option."}`}>
               <Button
                 type="text"
                 icon={<CalendarX2 />}
                 onClick={() => performJiraSync(record.id, false)}
-                className={`${trackeraTableClasses.log_action_btn} ${trackeraTableClasses.unsync} ${!loggedUserData?.jiraLinked && trackeraTableClasses.disabled}`}
-                disabled={!loggedUserData?.jiraLinked}
+                className={`${trackeraTableClasses.log_action_btn} ${trackeraTableClasses.unsync} ${
+                  (!loggedUserData?.jiraLinked || record.status === "UNSYNC_IN_PROGRESS") && trackeraTableClasses.disabled
+                }`}
+                disabled={!loggedUserData?.jiraLinked || record.status === "UNSYNC_IN_PROGRESS"}
               />
             </Tooltip>
           ) : (
-            <Tooltip title={`${loggedUserData?.jiraLinked ? "Sync to Jira" : "Link your Jira account in settings to enable this option."}`}>
+            <Tooltip title={`${loggedUserData?.jiraLinked || record.status === "SYNC_IN_PROGRESS" ? "Sync to Jira" : "Link your Jira account in settings to enable this option."}`}>
               <Button
                 type="text"
                 icon={<CalendarSync />}
                 onClick={() => performJiraSync(record.id, true)}
-                className={`${trackeraTableClasses.log_action_btn} ${trackeraTableClasses.sync} ${!loggedUserData?.jiraLinked && trackeraTableClasses.disabled}`}
-                disabled={!loggedUserData?.jiraLinked}
+                className={`${trackeraTableClasses.log_action_btn} ${trackeraTableClasses.sync} ${
+                  (!loggedUserData?.jiraLinked || record.status === "SYNC_IN_PROGRESS") && trackeraTableClasses.disabled
+                }`}
+                disabled={!loggedUserData?.jiraLinked || record.status === "SYNC_IN_PROGRESS"}
               />
             </Tooltip>
           )}
@@ -204,8 +208,8 @@ const Home = () => {
         }}
       >
         <p className={worklogModalClasses.delete_message}>Are you sure you want to delete this worklog? This action cannot be undone.</p>
-        {selectedWorkLog?.status === "SYNCED" && (
-          <Alert message="This worklog is synced with Jira and will be unsynced upon deletion." type="warning" showIcon className={worklogModalClasses.alert_message} />
+        {(selectedWorkLog?.status === "SYNCED" || selectedWorkLog?.status === "PARTIALLY") && (
+          <Alert message="This worklog has synced data with Jira and will be unsynced upon deletion." type="warning" showIcon className={worklogModalClasses.alert_message} />
         )}
       </WorklogModal>
       <AppLayout>
