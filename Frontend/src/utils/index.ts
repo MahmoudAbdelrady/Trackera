@@ -3,5 +3,6 @@ import { getFormikFieldError, getFormikFieldStatus } from "./formik/getFormikVal
 import getContrastColor from "./getContrastColor";
 import createPaginationConfig from "./createPaginationConfig";
 import formatDate from "./formatDate";
+import buildWorkLogSyncButtonProps from "./buildWorkLogSyncButtonProps";
 
-export { getFormikErrors, getFormikFieldError, getFormikFieldStatus, getContrastColor, createPaginationConfig, formatDate };
+export { getFormikErrors, getFormikFieldError, getFormikFieldStatus, getContrastColor, createPaginationConfig, formatDate, buildWorkLogSyncButtonProps };

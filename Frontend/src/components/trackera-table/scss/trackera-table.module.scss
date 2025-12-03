@@ -44,6 +44,15 @@
         }
       }
     }
+    .log_button_dropdown {
+      color: #fff;
+      padding: 12px 18px;
+      background-color: $mainColor;
+      border-radius: 6px;
+      font-size: 14px;
+      cursor: pointer;
+      user-select: none;
+    }
   }
   .table_details {
     .worklogs_table {

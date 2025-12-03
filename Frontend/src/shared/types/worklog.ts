@@ -49,12 +49,21 @@ const statusMetadata: Record<WorkLogStatusType, StatusBadgeProps> = {
   UNSYNC_IN_PROGRESS: { label: "Unsync in Progress", type: "warning" },
 };
 
+interface WorklogTableActionButtonOptions {
+  label: string;
+  onClick: () => void;
+  disabled?: boolean;
+  icon?: React.ReactNode;
+  customClasses?: string[];
+}
+
 interface WorklogTableActionButtonProps {
   label: string;
-  icon: React.ReactNode;
+  icon?: React.ReactNode;
   customClasses?: string[];
   disabled?: boolean;
-  onClick: () => void;
+  onClick?: () => void;
+  options?: WorklogTableActionButtonOptions[];
 }
 
 interface WorklogTableProps<T = TrackeraTableEntity> {

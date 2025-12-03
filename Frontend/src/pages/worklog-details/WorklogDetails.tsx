@@ -10,6 +10,7 @@ import worklogModalClasses from "../../components/worklogs/modals/worklog-modal/
 import requestInstance from "../../shared/axios/request-instance";
 import { showErrorToast, showSuccessToast } from "../../utils/toast-handler/showToast";
 import { userQueries } from "../../state/queries";
+import buildSyncButtonProps from "../../utils/buildWorkLogSyncButtonProps";
 
 const WorklogDetails = () => {
   const { worklogId } = useParams();
@@ -25,7 +26,7 @@ const WorklogDetails = () => {
   // worklog tasks
   const [worklogTasks, setWorklogTasks] = useState<WorklogTask[]>([]);
   const [selectedTask, setSelectedTask] = useState<WorklogTask | null>(null);
-  const [selectedWorklogTasks, setSelectedWorklogTasks] = useState<string[]>([]);
+  const [selectedWorklogTasks, setSelectedWorklogTasks] = useState<WorklogTask[]>([]);
   const [viewTaskVisible, setViewTaskVisible] = useState<boolean>(false);
   const [deleteTaskVisible, setDeleteTaskVisible] = useState<boolean>(false);
   const [canFetchTasks, setCanFetchTasks] = useState<boolean>(false);
@@ -35,7 +36,7 @@ const WorklogDetails = () => {
   // worklog entries
   const [worklogEntries, setWorklogEntries] = useState<WorklogEntry[]>([]);
   const [selectedEntry, setSelectedEntry] = useState<WorklogEntry | null>(null);
-  const [selectedWorklogEntries, setSelectedWorklogEntries] = useState<string[]>([]);
+  const [selectedWorklogEntries, setSelectedWorklogEntries] = useState<WorklogEntry[]>([]);
   const [canFetchEntries, setCanFetchEntries] = useState<boolean>(false);
   const [isFetchingEntries, setIsFetchingEntries] = useState<boolean>(false);
   const [isDeletingEntry, setIsDeletingEntry] = useState<boolean>(false);
@@ -384,23 +385,21 @@ const WorklogDetails = () => {
               dataSource: worklogEntries,
               loading: isFetchingEntries || isSyncingJiraEntries,
               rowSelection: {
-                selectedRowKeys: selectedWorklogEntries,
+                selectedRowKeys: selectedWorklogEntries.map((entry) => entry.id.toString()),
                 onChange: (_, selectedRows: WorklogEntry[]) => {
-                  setSelectedWorklogEntries(selectedRows.map((row) => row.id.toString()));
+                  setSelectedWorklogEntries(selectedRows);
                 },
                 getCheckboxProps: (record) => ({
-                  disabled: !loggedUserData?.jiraLinked || record.status === "SYNCED" || record.status === "SYNC_IN_PROGRESS" || record.status === "UNSYNC_IN_PROGRESS",
+                  disabled: !loggedUserData?.jiraLinked || ["SYNC_IN_PROGRESS", "UNSYNC_IN_PROGRESS"].includes(record.status),
                 }),
               },
             }}
-            actionButtons={[
-              {
-                label: `Sync to Jira${loggedUserData?.jiraLinked ? "" : " (Jira not linked)"}`,
-                icon: <CalendarSync />,
-                onClick: () => {},
-                disabled: !loggedUserData?.jiraLinked || selectedWorklogEntries.length === 0,
-              },
-            ]}
+            actionButtons={buildSyncButtonProps({
+              loggedUserData: loggedUserData,
+              selectedItems: selectedWorklogEntries,
+              extractIdentifier: (entry: WorklogEntry) => entry.id.toString(),
+              performSync: performJiraLogEntrySync,
+            })}
           />
         </WorklogModal>
       )}
@@ -447,24 +446,22 @@ const WorklogDetails = () => {
                     columns: worklogTaskColumns,
                     dataSource: worklogTasks,
                     rowSelection: {
-                      selectedRowKeys: selectedWorklogTasks,
+                      selectedRowKeys: selectedWorklogTasks.map((task) => task.id.toString()),
                       onChange: (_, selectedRows: WorklogTask[]) => {
-                        setSelectedWorklogTasks(selectedRows.map((row) => row.id.toString()));
+                        setSelectedWorklogTasks(selectedRows);
                       },
                       getCheckboxProps: (record) => ({
-                        disabled: !loggedUserData?.jiraLinked || record.status === "SYNCED",
+                        disabled: !loggedUserData?.jiraLinked || ["SYNC_IN_PROGRESS", "UNSYNC_IN_PROGRESS"].includes(record.status),
                       }),
                     },
                     loading: isFetchingTasks || isSyncingJiraTasks,
                   }}
-                  actionButtons={[
-                    {
-                      label: `Sync to Jira${loggedUserData?.jiraLinked ? "" : " (Jira not linked)"}`,
-                      icon: <CalendarSync />,
-                      disabled: !loggedUserData?.jiraLinked || selectedWorklogTasks.length === 0,
-                      onClick: () => {},
-                    },
-                  ]}
+                  actionButtons={buildSyncButtonProps({
+                    loggedUserData: loggedUserData,
+                    selectedItems: selectedWorklogTasks,
+                    extractIdentifier: (task: WorklogTask) => task.taskName,
+                    performSync: performJiraTaskSync,
+                  })}
                 />
               )}
             </div>
