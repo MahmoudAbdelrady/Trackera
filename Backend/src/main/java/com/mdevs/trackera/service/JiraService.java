@@ -155,14 +155,7 @@ public class JiraService {
         return response.get("id").toString();
     }
 
-    public void deleteWorkLog(User user, WorkLogDetail workLogDetail) {
-        String apiUrl = getApiUrl(validateAndGetUserJiraPrimaryProject(user)) + "/issue/" + workLogDetail.getTaskName() + "/worklog/" + workLogDetail.getJiraId();
-        OAuthConnection oAuthConnection = oAuthConnectionService.getOrRefresh(user, OAuthProvider.JIRA);
-        String accessToken = oAuthConnectionService.getAccessToken(oAuthConnection);
-        callJiraApi(apiUrl, HttpMethod.DELETE, HttpUtil.createBearerAuthEntity(accessToken), oAuthConnection, Void.class);
-    }
-
-    public void deleteWorkLogV2(User user, WorkLogDetailSyncRequestDTO detailSyncRequestDTO) {
+    public void deleteWorkLog(User user, WorkLogDetailSyncRequestDTO detailSyncRequestDTO) {
         String apiUrl = getApiUrl(validateAndGetUserJiraPrimaryProject(user)) + "/issue/" + detailSyncRequestDTO.getTaskName() + "/worklog/" + detailSyncRequestDTO.getJiraId();
         OAuthConnection oAuthConnection = oAuthConnectionService.getOrRefresh(user, OAuthProvider.JIRA);
         String accessToken = oAuthConnectionService.getAccessToken(oAuthConnection);

@@ -165,6 +165,7 @@ public class WorkLogService {
         WorkLog workLog = saveWorkLog(manageWorkLogDTO, (int) processResult.get("totalMinutes"));
         List<WorkLogDetail> workLogDetails =  saveWorkLogDetails((List<WorkLogDetail>) processResult.get("workLogDetails"), workLog);
         if (manageWorkLogDTO.getSyncToJira()) {
+            oAuthConnectionService.validateAndGetConnection(workLog.getUser(), OAuthProvider.JIRA);
             workLog.setStatus(WorkLogStatus.SYNC_IN_PROGRESS);
             workLogRepository.save(workLog);
             WorkLogSyncPayloadDTO workLogSyncPayloadDTO = new WorkLogSyncPayloadDTO(workLog.getUser().getId(), workLog.getId());
@@ -209,6 +210,7 @@ public class WorkLogService {
             }
 
             if (workLogSyncPayloadDTO.getDetailsToSync() != null || workLogSyncPayloadDTO.getDetailsToUnsync() != null) {
+                oAuthConnectionService.validateAndGetConnection(workLog.getUser(), OAuthProvider.JIRA);
                 backgroundJobService.enqueueJob(WorkLogSyncJobHandler.class, AppUtils.convertObjectToJsonString(workLogSyncPayloadDTO));
             }
         }
@@ -237,6 +239,7 @@ public class WorkLogService {
                 }).toList();
 
         if (!detailsToUnsync.isEmpty()) {
+            oAuthConnectionService.validateAndGetConnection(workLog.getUser(), OAuthProvider.JIRA);
             workLogSyncPayloadDTO.setDetailsToUnsync(detailsToUnsync);
             backgroundJobService.enqueueJob(WorkLogSyncJobHandler.class, AppUtils.convertObjectToJsonString(workLogSyncPayloadDTO));
         }
@@ -267,6 +270,7 @@ public class WorkLogService {
 
         List<WorkLogDetail> syncedDetails = detailsToDelete.stream().filter(detail -> detail.getStatus().equals(WorkLogStatus.SYNCED)).toList();
         if (!syncedDetails.isEmpty()) {
+            oAuthConnectionService.validateAndGetConnection(workLog.getUser(), OAuthProvider.JIRA);
             WorkLogSyncPayloadDTO workLogSyncPayloadDTO = new WorkLogSyncPayloadDTO(workLog.getUser().getId(), result.containsKey("isLast") ? null : workLog.getId());
             List<WorkLogDetailSyncRequestDTO> detailsToUnsync = syncedDetails.stream().map(detail -> new WorkLogDetailSyncRequestDTO(detail.getTaskName(), detail.getJiraId())).toList();
             workLogSyncPayloadDTO.setDetailsToUnsync(detailsToUnsync);
@@ -302,6 +306,7 @@ public class WorkLogService {
         }
 
         if (workLogEntry.getStatus().equals(WorkLogStatus.SYNCED)) {
+            oAuthConnectionService.validateAndGetConnection(workLog.getUser(), OAuthProvider.JIRA);
             WorkLogSyncPayloadDTO workLogSyncPayloadDTO = new WorkLogSyncPayloadDTO(workLog.getUser().getId(), result.containsKey("isLast") ? null : workLog.getId());
             workLogSyncPayloadDTO.setDetailsToUnsync(List.of(new WorkLogDetailSyncRequestDTO(workLogEntry.getTaskName(), workLogEntry.getJiraId())));
             backgroundJobService.enqueueJob(WorkLogSyncJobHandler.class, AppUtils.convertObjectToJsonString(workLogSyncPayloadDTO));

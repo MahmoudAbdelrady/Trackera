@@ -129,7 +129,7 @@ public class WorkLogSyncJobHandler implements BackgroundJobHandler {
     public void unSyncWorkLogDetailFromJira(User user, WorkLogDetailSyncRequestDTO detailSyncRequestDTO) {
         log.info("UnSynchronizing [{}] task WorkLogDetail from Jira for User Id: {}", detailSyncRequestDTO.getTaskName(), user.getId());
         try {
-            jiraService.deleteWorkLogV2(user, detailSyncRequestDTO);
+            jiraService.deleteWorkLog(user, detailSyncRequestDTO);
         } catch (JiraException exception) {
             if (exception.getStatusCode() == 404) {
                 log.warn("Jira WorkLog with ID {} not found. Proceeding to mark as unsynced locally.", detailSyncRequestDTO.getJiraId());
