@@ -1,4 +1,4 @@
-import { Eye, SquarePen, Trash, ClipboardPlus, CalendarSync, CalendarX2 } from "lucide-react";
+import { Eye, SquarePen, Trash, ClipboardPlus, CalendarSync, CalendarX2, CalendarOff } from "lucide-react";
 import { ManageWorkLogModal, AppLayout, SearchFilter, WorklogModal, WorklogStatusCard, TrackeraTable, StatusBadge } from "../../components";
 import classes from "./scss/home.module.css";
 import { Alert, Button, Tooltip, type TableProps } from "antd";
@@ -67,12 +67,12 @@ const Home = () => {
       showSuccessToast(response.data);
       setFetchWorkLog(true);
       setFetchSummary(true);
+      setDeleteWorkLogVisible(false);
+      setSelectedWorkLog(undefined);
     } catch (error: any) {
       showErrorToast(error);
     }
     setIsDeletingWorkLog(false);
-    setDeleteWorkLogVisible(false);
-    setSelectedWorkLog(undefined);
   };
 
   const performJiraSync = async (workLogId: string | number, sync: boolean) => {
@@ -128,7 +128,7 @@ const Home = () => {
             <Tooltip title={`${loggedUserData?.jiraLinked || record.status === "UNSYNC_IN_PROGRESS" ? "Unsync from Jira" : "Link your Jira account in settings to enable this option."}`}>
               <Button
                 type="text"
-                icon={<CalendarX2 />}
+                icon={!loggedUserData?.jiraLinked ? <CalendarOff /> : <CalendarX2 />}
                 onClick={() => performJiraSync(record.id, false)}
                 className={`${trackeraTableClasses.log_action_btn} ${trackeraTableClasses.unsync} ${
                   (!loggedUserData?.jiraLinked || record.status === "UNSYNC_IN_PROGRESS") && trackeraTableClasses.disabled
@@ -140,7 +140,7 @@ const Home = () => {
             <Tooltip title={`${loggedUserData?.jiraLinked || record.status === "SYNC_IN_PROGRESS" ? "Sync to Jira" : "Link your Jira account in settings to enable this option."}`}>
               <Button
                 type="text"
-                icon={<CalendarSync />}
+                icon={!loggedUserData?.jiraLinked ? <CalendarOff /> : <CalendarSync />}
                 onClick={() => performJiraSync(record.id, true)}
                 className={`${trackeraTableClasses.log_action_btn} ${trackeraTableClasses.sync} ${
                   (!loggedUserData?.jiraLinked || record.status === "SYNC_IN_PROGRESS") && trackeraTableClasses.disabled

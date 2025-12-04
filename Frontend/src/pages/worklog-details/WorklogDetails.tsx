@@ -1,4 +1,4 @@
-import { CalendarSync, CalendarX2, ExternalLink, Eye, Trash } from "lucide-react";
+import { CalendarOff, CalendarSync, CalendarX2, ExternalLink, Eye, Trash } from "lucide-react";
 import { AppLayout, WorklogInfo, WorklogModal, TrackeraTable, StatusBadge } from "../../components";
 import classes from "./scss/worklog-details.module.css";
 import trackeraTableClasses from "../../components/trackera-table/scss/trackera-table.module.css";
@@ -93,10 +93,10 @@ const WorklogDetails = () => {
       render: (_, record) => (
         <div className={trackeraTableClasses.actions_container}>
           {record.status === "SYNCED" || record.status === "UNSYNC_IN_PROGRESS" ? (
-            <Tooltip title={`Unsync from Jira${loggedUserData?.jiraLinked || record.status === "UNSYNC_IN_PROGRESS" ? "" : " (Jira not linked)"}`}>
+            <Tooltip title={`${loggedUserData?.jiraLinked || record.status === "UNSYNC_IN_PROGRESS" ? "Unsync from Jira" : "Link your Jira account in settings to enable this option."}`}>
               <Button
                 type="text"
-                icon={<CalendarX2 />}
+                icon={!loggedUserData?.jiraLinked ? <CalendarOff /> : <CalendarX2 />}
                 onClick={() => performJiraTaskSync([record.taskName], false)}
                 className={`${trackeraTableClasses.log_action_btn} ${trackeraTableClasses.unsync} ${
                   (!loggedUserData?.jiraLinked || record.status === "UNSYNC_IN_PROGRESS") && trackeraTableClasses.disabled
@@ -105,10 +105,10 @@ const WorklogDetails = () => {
               />
             </Tooltip>
           ) : (
-            <Tooltip title={`Sync to Jira${loggedUserData?.jiraLinked || record.status === "SYNC_IN_PROGRESS" ? "" : " (Jira not linked)"}`}>
+            <Tooltip title={`${loggedUserData?.jiraLinked || record.status === "SYNC_IN_PROGRESS" ? "Sync to Jira" : "Link your Jira account in settings to enable this option."}`}>
               <Button
                 type="text"
-                icon={<CalendarSync />}
+                icon={!loggedUserData?.jiraLinked ? <CalendarOff /> : <CalendarSync />}
                 onClick={() => performJiraTaskSync([record.taskName], true)}
                 className={`${trackeraTableClasses.log_action_btn} ${trackeraTableClasses.sync} ${
                   (!loggedUserData?.jiraLinked || record.status === "SYNC_IN_PROGRESS") && trackeraTableClasses.disabled
@@ -186,7 +186,7 @@ const WorklogDetails = () => {
             <Tooltip title={`${loggedUserData?.jiraLinked || record.status === "UNSYNC_IN_PROGRESS" ? "Unsync from Jira" : "Link your Jira account in settings to enable this option."}`}>
               <Button
                 type="text"
-                icon={<CalendarX2 />}
+                icon={!loggedUserData?.jiraLinked ? <CalendarOff /> : <CalendarX2 />}
                 onClick={() => performJiraLogEntrySync([record.id], false)}
                 className={`${trackeraTableClasses.log_action_btn} ${trackeraTableClasses.unsync} ${
                   (!loggedUserData?.jiraLinked || record.status === "UNSYNC_IN_PROGRESS") && trackeraTableClasses.disabled
@@ -198,7 +198,7 @@ const WorklogDetails = () => {
             <Tooltip title={`${loggedUserData?.jiraLinked || record.status === "SYNC_IN_PROGRESS" ? "Sync to Jira" : "Link your Jira account in settings to enable this option."}`}>
               <Button
                 type="text"
-                icon={<CalendarSync />}
+                icon={!loggedUserData?.jiraLinked ? <CalendarOff /> : <CalendarSync />}
                 onClick={() => performJiraLogEntrySync([record.id], true)}
                 className={`${trackeraTableClasses.log_action_btn} ${trackeraTableClasses.sync} ${
                   (!loggedUserData?.jiraLinked || record.status === "SYNC_IN_PROGRESS") && trackeraTableClasses.disabled
@@ -297,6 +297,26 @@ const WorklogDetails = () => {
     }
   }, [canFetchEntries]);
 
+  useEffect(() => {
+    if (selectedWorklogTasks.length > 0) {
+      const updatedSelectedTasks = selectedWorklogTasks
+        .map((selectedTask) => worklogTasks.find((task) => task.taskName === selectedTask.taskName))
+        .filter((task): task is WorklogTask => task !== undefined);
+
+      setSelectedWorklogTasks(updatedSelectedTasks);
+    }
+  }, [worklogTasks]);
+
+  useEffect(() => {
+    if (selectedWorklogEntries.length > 0) {
+      const updatedSelectedEntries = selectedWorklogEntries
+        .map((selectedEntry) => worklogEntries.find((entry) => entry.id === selectedEntry.id))
+        .filter((entry): entry is WorklogEntry => entry !== undefined);
+
+      setSelectedWorklogEntries(updatedSelectedEntries);
+    }
+  }, [worklogEntries]);
+
   const handleDeleteWorkLogTask = async () => {
     setIsDeletingTask(true);
     try {
@@ -376,7 +396,6 @@ const WorklogDetails = () => {
             footer: null,
             width: "80%",
             onCancel: viewTaskModalCloseHandler,
-            loading: isFetchingEntries,
           }}
         >
           <TrackeraTable<WorklogEntry>
