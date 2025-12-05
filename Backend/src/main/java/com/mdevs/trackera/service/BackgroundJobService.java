@@ -8,18 +8,24 @@ import com.mdevs.trackera.repository.BackgroundJobRepository;
 import com.mdevs.trackera.shared.enums.BackgroundJobStatus;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.event.TransactionPhase;
+import org.springframework.transaction.event.TransactionalEventListener;
 
 @Slf4j
 @Service
 public class BackgroundJobService {
     private final BackgroundJobRepository jobRepository;
 
+    private final ApplicationEventPublisher applicationEventPublisher;
+
     private final RabbitTemplate rabbitTemplate;
 
-    public BackgroundJobService(BackgroundJobRepository jobRepository, RabbitTemplate rabbitTemplate) {
+    public BackgroundJobService(BackgroundJobRepository jobRepository, ApplicationEventPublisher applicationEventPublisher, RabbitTemplate rabbitTemplate) {
         this.jobRepository = jobRepository;
+        this.applicationEventPublisher = applicationEventPublisher;
         this.rabbitTemplate = rabbitTemplate;
     }
 
@@ -34,8 +40,14 @@ public class BackgroundJobService {
 
         BackgroundJobMessageDTO message = new BackgroundJobMessageDTO(job.getId(), job.getName(), job.getPayload());
 
-        rabbitTemplate.convertAndSend(RabbitConfig.JOB_EXCHANGE, RabbitConfig.JOB_ROUTING_KEY, message);
+        applicationEventPublisher.publishEvent(message);
 
-        log.info("Enqueued job: {} (type: {})", job.getId(), jobName);
+        log.info("Enqueued job: {} (name: {})", job.getId(), jobName);
+    }
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void onBackgroundJobCreated(BackgroundJobMessageDTO messageDTO) {
+        rabbitTemplate.convertAndSend(RabbitConfig.JOB_EXCHANGE, RabbitConfig.JOB_ROUTING_KEY, messageDTO);
+        log.info("Sent job to RabbitMQ: {} (name: {})", messageDTO.getJobId(), messageDTO.getJobName());
     }
 }

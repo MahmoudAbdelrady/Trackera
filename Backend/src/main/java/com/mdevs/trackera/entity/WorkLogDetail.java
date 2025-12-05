@@ -20,8 +20,6 @@ public class WorkLogDetail extends BaseEntity {
     @Column(nullable = false)
     private String taskName;
 
-    private String taskUrl;
-
     @Column(nullable = false, columnDefinition = "TIME(0)")
     private LocalTime startTime;
 

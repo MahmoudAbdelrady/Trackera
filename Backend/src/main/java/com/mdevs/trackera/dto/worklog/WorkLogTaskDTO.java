@@ -11,16 +11,13 @@ import lombok.Setter;
 public class WorkLogTaskDTO {
     private String taskName;
 
-    private String taskUrl;
-
     private String totalHours;
 
     private Integer totalMinutes;
 
     private WorkLogStatus status;
 
-    public WorkLogTaskDTO(String taskName, String taskUrl) {
+    public WorkLogTaskDTO(String taskName) {
         this.taskName = taskName;
-        this.taskUrl = taskUrl;
     }
 }

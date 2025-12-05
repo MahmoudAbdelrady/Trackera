@@ -1,6 +1,6 @@
 package com.mdevs.trackera.controller;
 
-import com.mdevs.trackera.dto.jira.JiraSyncRequestDTO;
+import com.mdevs.trackera.dto.worklog.WorkLogSelectionDTO;
 import com.mdevs.trackera.dto.worklog.ManageWorkLogDTO;
 import com.mdevs.trackera.dto.worklog.WorkLogSearchFilterDTO;
 import com.mdevs.trackera.service.WorkLogService;
@@ -76,8 +76,8 @@ public class WorkLogController {
     }
 
     @PostMapping("/{uuid}/sync")
-    public ResponseEntity<?> syncWorkLog(@PathVariable String uuid, @RequestBody(required = false) JiraSyncRequestDTO syncRequest, @RequestParam(defaultValue = "true") boolean sync) {
-        workLogService.performJiraSync(uuid, syncRequest, sync);
+    public ResponseEntity<?> syncWorkLog(@PathVariable String uuid, @RequestBody(required = false) WorkLogSelectionDTO workLogSelectionDTO, @RequestParam(defaultValue = "true") boolean sync) {
+        workLogService.performJiraSync(uuid, workLogSelectionDTO, sync);
         return new ResponseEntity<>((sync ? "Sync" : "Unsync") + " request initiated successfully", HttpStatus.OK);
     }
 }

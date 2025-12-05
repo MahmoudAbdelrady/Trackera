@@ -1,4 +1,4 @@
-package com.mdevs.trackera.dto.jira;
+package com.mdevs.trackera.dto.worklog;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -11,7 +11,7 @@ import java.util.List;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class JiraSyncRequestDTO {
+public class WorkLogSelectionDTO {
     private List<String> taskNames;
 
     private List<String> logIds;

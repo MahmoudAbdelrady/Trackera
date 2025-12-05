@@ -13,7 +13,7 @@ import java.util.Map;
 public interface WorkLogDetailRepository extends BaseRepository<WorkLogDetail> {
     void deleteAllByWorkLog(WorkLog workLog);
 
-    @Query("SELECT NEW MAP(wld.taskName as taskName, MIN(wld.taskUrl) AS taskUrl, SUM(wld.duration) AS totalMinutes, " +
+    @Query("SELECT NEW MAP(wld.taskName as taskName, SUM(wld.duration) AS totalMinutes, " +
             "CASE WHEN SUM(CASE WHEN wld.status = 'SYNC_IN_PROGRESS' THEN 1 ELSE 0 END) > 0 THEN 'SYNC_IN_PROGRESS' " +
             "     WHEN SUM(CASE WHEN wld.status = 'UNSYNC_IN_PROGRESS' THEN 1 ELSE 0 END) > 0 THEN 'UNSYNC_IN_PROGRESS' " +
             "     WHEN SUM(CASE WHEN wld.status = 'NOT_SYNCED' THEN 1 ELSE 0 END) = 0 THEN 'SYNCED' " +
