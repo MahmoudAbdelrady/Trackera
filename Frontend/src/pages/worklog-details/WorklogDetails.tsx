@@ -1,11 +1,11 @@
-import { CalendarOff, CalendarSync, CalendarX2, ExternalLink, Eye, Trash } from "lucide-react";
+import { CalendarOff, CalendarSync, CalendarX2, Eye, Trash } from "lucide-react";
 import { AppLayout, WorklogInfo, WorklogModal, TrackeraTable, StatusBadge } from "../../components";
 import classes from "./scss/worklog-details.module.css";
 import trackeraTableClasses from "../../components/trackera-table/scss/trackera-table.module.css";
 import { Alert, Button, Empty, Popconfirm, Skeleton, Tooltip, type TableProps } from "antd";
 import { statusMetadata, type Worklog, type WorklogEntry, type WorkLogStatusType, type WorklogTask } from "../../shared/types";
 import { useEffect, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import worklogModalClasses from "../../components/worklogs/modals/worklog-modal/scss/worklog-modal.module.css";
 import requestInstance from "../../shared/axios/request-instance";
 import { showErrorToast, showSuccessToast } from "../../utils/toast-handler/showToast";
@@ -51,14 +51,7 @@ const WorklogDetails = () => {
       dataIndex: "taskName",
       key: "taskName",
       render: (_, record) => {
-        return record.taskUrl ? (
-          <Link to={record.taskUrl} className={trackeraTableClasses.task_link} target="_blank">
-            {record.taskName}
-            <ExternalLink className={trackeraTableClasses.link_icon} />
-          </Link>
-        ) : (
-          record.taskName
-        );
+        return record.taskName;
       },
       filters: worklogTasks.map((detail) => ({
         text: detail.taskName,
