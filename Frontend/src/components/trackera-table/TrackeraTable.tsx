@@ -9,8 +9,12 @@ const TrackeraTable = <T extends TrackeraTableEntity>(props: WorklogTableProps<T
     return (
       button.options?.map((option) => ({
         key: option.label,
-        label: option.label,
-        icon: option.icon,
+        label: (
+          <div className={`${classes.sync_item} ${option.customClasses?.map((className) => classes[className]).join(" ")}`}>
+            {option.icon}
+            <span className={classes.sync_item_label}>{option.label}</span>
+          </div>
+        ),
         onClick: option.onClick,
         disabled: option.disabled,
       })) ?? []
@@ -24,7 +28,10 @@ const TrackeraTable = <T extends TrackeraTableEntity>(props: WorklogTableProps<T
           {tableActionBtns.map((button, index) => {
             return button.options && button.options.length > 0 ? (
               <Dropdown trigger={["click"]} menu={{ items: getTableActionButtons(button) }} className={classes.log_button_dropdown}>
-                {button.label}
+                <div className={classes.btn_info}>
+                  {button.icon}
+                  {button.label}
+                </div>
               </Dropdown>
             ) : (
               <Button

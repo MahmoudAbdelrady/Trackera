@@ -52,6 +52,8 @@
       font-size: 14px;
       cursor: pointer;
       user-select: none;
+      @include center;
+      gap: 8px;
     }
   }
   .table_details {
@@ -99,5 +101,20 @@
         }
       }
     }
+  }
+}
+
+.sync_item {
+  @include start;
+  padding: 8px 6px;
+  transition: $mainTransition;
+  .sync_item_label {
+    margin-left: 8px;
+  }
+  &.sync:hover {
+    color: $mainColor;
+  }
+  &.unsync:hover {
+    color: $orangeColor;
   }
 }
