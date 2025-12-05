@@ -4,6 +4,8 @@ import com.mdevs.trackera.entity.WorkLog;
 import com.mdevs.trackera.entity.WorkLogDetail;
 import com.mdevs.trackera.shared.enums.WorkLogStatus;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.security.core.parameters.P;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -22,21 +24,20 @@ public interface WorkLogDetailRepository extends BaseRepository<WorkLogDetail> {
             "FROM WorkLogDetail wld WHERE wld.workLog = :workLog GROUP BY wld.taskName")
     List<Map<String, Object>> getGroupedWorkLogDetailsByWorkLog(WorkLog workLog);
 
-    List<WorkLogDetail> findAllByWorkLog(WorkLog workLog);
-
-    List<WorkLogDetail> findAllByWorkLogAndStatusNot(WorkLog workLog, WorkLogStatus status);
-
     boolean existsByWorkLog(WorkLog workLog);
-
-    List<WorkLogDetail> findByWorkLogAndTaskName(WorkLog workLog, String taskName);
-
-    List<WorkLogDetail> findByWorkLogAndTaskNameInAndStatusNot(WorkLog workLog, List<String> taskNames, WorkLogStatus status);
 
     boolean existsByWorkLogAndTaskName(WorkLog workLog, String taskName);
 
-    WorkLogDetail findByUuid(String uuid);
-
-    List<WorkLogDetail> findByWorkLogAndUuidInAndStatusNot(WorkLog workLog, List<String> uuids, WorkLogStatus status);
+    List<WorkLogDetail> findByWorkLogAndTaskName(WorkLog workLog, String taskName);
 
     List<WorkLogDetail> findByWorkLogAndStatus(WorkLog workLog, WorkLogStatus status);
+
+    @Query("SELECT wld FROM WorkLogDetail wld WHERE wld.workLog = :workLog AND (:status IS NULL OR wld.status = :status)")
+    List<WorkLogDetail> findAllByWorkLogAndStatus(@Param("workLog") WorkLog workLog, @Param("status") WorkLogStatus status);
+
+    @Query("SELECT wld FROM WorkLogDetail wld WHERE wld.workLog = :workLog AND wld.taskName IN :taskNames AND (:status IS NULL OR wld.status = :status)")
+    List<WorkLogDetail> findByWorkLogAndTaskNameInAndStatus(@Param("workLog") WorkLog workLog, @Param("taskNames") List<String> taskNames, @Param("status") WorkLogStatus status);
+
+    @Query("SELECT wld FROM WorkLogDetail wld WHERE wld.workLog = :workLog AND wld.uuid IN :uuids AND (:status IS NULL OR wld.status = :status)")
+    List<WorkLogDetail> findByWorkLogAndUuidInAndStatus(@P("workLog") WorkLog workLog, @Param("uuids") List<String> uuids, @Param("status") WorkLogStatus status);
 }

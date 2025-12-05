@@ -14,5 +14,5 @@ import java.util.List;
 public class WorkLogSelectionDTO {
     private List<String> taskNames;
 
-    private List<String> logIds;
+    private List<String> entryIds;
 }

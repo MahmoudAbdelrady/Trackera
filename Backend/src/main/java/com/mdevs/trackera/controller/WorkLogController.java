@@ -45,9 +45,8 @@ public class WorkLogController {
     }
 
     @DeleteMapping("/{uuid}")
-    public ResponseEntity<?> DeleteWorkLog(@PathVariable String uuid) {
-        workLogService.deleteWorkLog(uuid);
-        return new ResponseEntity<>("Worklog deleted successfully", HttpStatus.OK);
+    public ResponseEntity<?> DeleteWorkLog(@PathVariable String uuid, @RequestBody(required = false) WorkLogSelectionDTO workLogSelectionDTO) {
+        return new ResponseEntity<>(workLogService.deleteWorkLog(uuid, workLogSelectionDTO), HttpStatus.OK);
     }
 
     @GetMapping("/summary")
@@ -56,23 +55,13 @@ public class WorkLogController {
     }
 
     @GetMapping("/{uuid}/details")
-    public ResponseEntity<?> GetWorkLogDetailSummary(@PathVariable String uuid) {
-        return new ResponseEntity<>(workLogService.getWorkLogDetailSummary(uuid), HttpStatus.OK);
+    public ResponseEntity<?> GetWorkLogTasks(@PathVariable String uuid) {
+        return new ResponseEntity<>(workLogService.getWorkLogTasks(uuid), HttpStatus.OK);
     }
 
     @GetMapping("/{uuid}/details/task")
-    public ResponseEntity<?> GetWorkLogTaskDetails(@PathVariable String uuid, @RequestParam String taskName) {
-        return new ResponseEntity<>(workLogService.getWorkLogTaskDetails(uuid, taskName), HttpStatus.OK);
-    }
-
-    @DeleteMapping("/{uuid}/details/task")
-    public ResponseEntity<?> DeleteWorkLogTaskDetails(@PathVariable String uuid, @RequestParam String taskName) {
-        return new ResponseEntity<>(workLogService.deleteWorkLogTaskDetails(uuid, taskName), HttpStatus.OK);
-    }
-
-    @DeleteMapping("/{uuid}/details/entry")
-    public ResponseEntity<?> DeleteWorkLogTaskEntry(@PathVariable String uuid, @RequestParam String entryId) {
-        return new ResponseEntity<>(workLogService.deleteWorkLogTaskEntry(uuid, entryId), HttpStatus.OK);
+    public ResponseEntity<?> GetWorkLogTaskEntries(@PathVariable String uuid, @RequestParam String taskName) {
+        return new ResponseEntity<>(workLogService.getWorkLogTaskEntries(uuid, taskName), HttpStatus.OK);
     }
 
     @PostMapping("/{uuid}/sync")

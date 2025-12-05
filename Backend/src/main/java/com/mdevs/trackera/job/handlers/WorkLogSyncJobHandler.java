@@ -59,40 +59,12 @@ public class WorkLogSyncJobHandler implements BackgroundJobHandler {
 
         List<WorkLogDetailSyncRequestDTO> detailsToUnsync = workLogSyncPayloadDTO.getDetailsToUnsync();
         if (detailsToUnsync != null && !detailsToUnsync.isEmpty()) {
-            Iterator<WorkLogDetailSyncRequestDTO> iterator = detailsToUnsync.iterator();
-            while (iterator.hasNext()) {
-                WorkLogDetailSyncRequestDTO detailSyncRequestDTO = iterator.next();
-                try {
-                    selfRef.unSyncWorkLogDetailFromJira(syncUser, detailSyncRequestDTO);
-                    iterator.remove();
-                } catch (Exception e) {
-                    exceptionMessage = e.getMessage();
-                    break;
-                }
-            }
-
-            if (!StringUtils.isEmpty(exceptionMessage) && isLastRetry) {
-                selfRef.handleFailedSync(detailsToUnsync.stream().map(WorkLogDetailSyncRequestDTO::getDetailId).filter(Objects::nonNull).toList(), WorkLogStatus.SYNCED);
-            }
+            exceptionMessage = processUnsyncDetails(detailsToUnsync, syncUser, isLastRetry);
         }
 
         List<Long> detailsToSync = workLogSyncPayloadDTO.getDetailsToSync();
         if (StringUtils.isEmpty(exceptionMessage) && (detailsToSync != null && !detailsToSync.isEmpty())) {
-            Iterator<Long> iterator = detailsToSync.iterator();
-            while (iterator.hasNext()) {
-                Long detailId = iterator.next();
-                try {
-                    selfRef.syncWorkLogDetailToJira(syncUser, detailId);
-                    iterator.remove();
-                } catch (Exception e) {
-                    exceptionMessage = e.getMessage();
-                    break;
-                }
-            }
-
-            if (!StringUtils.isEmpty(exceptionMessage) && isLastRetry) {
-                selfRef.handleFailedSync(detailsToSync, WorkLogStatus.NOT_SYNCED);
-            }
+            exceptionMessage = processSyncDetails(detailsToSync, syncUser, isLastRetry);
         }
 
         if (workLogSyncPayloadDTO.getWorkLogId() != null) {
@@ -104,6 +76,41 @@ public class WorkLogSyncJobHandler implements BackgroundJobHandler {
         if (!StringUtils.isEmpty(exceptionMessage)) {
             throw new RuntimeException(exceptionMessage);
         }
+    }
+
+    private String processUnsyncDetails(List<WorkLogDetailSyncRequestDTO> detailsToUnsync, User syncUser, boolean isLastRetry) {
+        Iterator<WorkLogDetailSyncRequestDTO> iterator = detailsToUnsync.iterator();
+        while (iterator.hasNext()) {
+            WorkLogDetailSyncRequestDTO detail = iterator.next();
+            try {
+                selfRef.unSyncWorkLogDetailFromJira(syncUser, detail);
+                iterator.remove();
+            } catch (Exception e) {
+                if (isLastRetry) {
+                    List<Long> failedIds = detailsToUnsync.stream().map(WorkLogDetailSyncRequestDTO::getDetailId).filter(Objects::nonNull).toList();
+                    selfRef.handleFailedSync(failedIds, WorkLogStatus.SYNCED);
+                }
+                return e.getMessage();
+            }
+        }
+        return null;
+    }
+
+    private String processSyncDetails(List<Long> detailsToSync, User syncUser, boolean isLastRetry) {
+        Iterator<Long> iterator = detailsToSync.iterator();
+        while (iterator.hasNext()) {
+            Long detailId = iterator.next();
+            try {
+                selfRef.syncWorkLogDetailToJira(syncUser, detailId);
+                iterator.remove();
+            } catch (Exception e) {
+                if (isLastRetry) {
+                    selfRef.handleFailedSync(detailsToSync, WorkLogStatus.NOT_SYNCED);
+                }
+                return e.getMessage();
+            }
+        }
+        return null;
     }
 
     @Transactional

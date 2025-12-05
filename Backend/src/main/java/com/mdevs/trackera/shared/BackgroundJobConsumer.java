@@ -37,49 +37,22 @@ public class BackgroundJobConsumer {
     }
 
     @RabbitListener(queues = RabbitConfig.JOB_QUEUE)
-    public void processJob(BackgroundJobMessageDTO message, Channel channel, @Header(AmqpHeaders.DELIVERY_TAG) long deliveryTag,
-                           @Header(value = "x-death", required = false) List<Map<String, Object>> xDeathHeader, @Header(value = "x-retry-count", required = false) Integer retryCountHeader) {
+    public void processJob(BackgroundJobMessageDTO message, Channel channel,
+                           @Header(AmqpHeaders.DELIVERY_TAG) long deliveryTag,
+                           @Header(value = "x-death", required = false) List<Map<String, Object>> xDeathHeader,
+                           @Header(value = "x-retry-count", required = false) Integer retryCountHeader) {
         int retryCount = getRetryCount(xDeathHeader, retryCountHeader);
-        BackgroundJob job = null;
-
         try {
             log.info("Processing job [{}, {}] (attempt {})", message.getJobId(), message.getJobName(), retryCount);
 
-            // Load job from database
-            job = Optional.ofNullable(jobRepository.findOne(message.getJobId())).orElseThrow(() -> new NotFoundException("Job not found: [" + message.getJobId() + ", " + message.getJobName() + "]"));
-
-            // Update status to PROCESSING
-            job.setStatus(BackgroundJobStatus.IN_PROGRESS);
-            job.setRetryCount(retryCount);
-            job = jobRepository.save(job);
-
-            // Process the job
-            jobProcessor.process(job);
-
-            // Success - update status
-            job = jobRepository.findOne(job.getId());
-            job.setStatus(BackgroundJobStatus.COMPLETED);
-            job = jobRepository.save(job);
+            executeJob(message, retryCount);
 
             // Acknowledge message (remove from queue)
             channel.basicAck(deliveryTag, false);
             log.info("Job [{}, {}] completed successfully", message.getJobId(), message.getJobName());
         } catch (Exception e) {
             log.error("Job [{}, {}] failed (attempt {}): {}", message.getJobId(), message.getJobName(), retryCount, e.getMessage(), e);
-
-            try {
-                if (retryCount >= RabbitConfig.MAX_RETRIES) {
-                    // Max retries exceeded - send to DLQ
-                    handleMaxRetriesExceeded(job, message, e);
-                    channel.basicAck(deliveryTag, false); // ACK to remove from queue
-                } else {
-                    // Retry - send to appropriate retry queue
-                    handleRetry(job, message, retryCount);
-                    channel.basicAck(deliveryTag, false); // ACK original message
-                }
-            } catch (IOException ioException) {
-                log.error("Failed to acknowledge message: {}", ioException.getMessage());
-            }
+            handleJobFailure(message, channel, deliveryTag, retryCount, e);
         }
     }
 
@@ -93,6 +66,36 @@ public class BackgroundJobConsumer {
         }
 
         return xDeathHeader.stream().map(death -> Integer.parseInt(death.get("count").toString())).findFirst().orElse(0);
+    }
+
+    private void executeJob(BackgroundJobMessageDTO message, int retryCount) {
+        BackgroundJob job = Optional.ofNullable(jobRepository.findOne(message.getJobId())).orElseThrow(() -> new NotFoundException("Job not found: [" + message.getJobId() + ", " + message.getJobName() + "]"));
+
+        job.setStatus(BackgroundJobStatus.IN_PROGRESS);
+        job.setRetryCount(retryCount);
+        job = jobRepository.save(job);
+
+        // Process the job
+        jobProcessor.process(job);
+
+        job = jobRepository.findOne(job.getId());
+        job.setStatus(BackgroundJobStatus.COMPLETED);
+        jobRepository.save(job);
+    }
+
+    private void handleJobFailure(BackgroundJobMessageDTO message, Channel channel, long deliveryTag, int retryCount, Exception e) {
+        try {
+            BackgroundJob job = jobRepository.findOne(message.getJobId());
+            if (retryCount >= RabbitConfig.MAX_RETRIES) {
+                handleMaxRetriesExceeded(job, message, e);
+            } else {
+                handleRetry(job, message, retryCount);
+            }
+
+            channel.basicAck(deliveryTag, false);
+        } catch (IOException ioException) {
+            log.error("Failed to acknowledge message: {}", ioException.getMessage());
+        }
     }
 
     private void handleRetry(BackgroundJob job, BackgroundJobMessageDTO message, int retryCount) {
