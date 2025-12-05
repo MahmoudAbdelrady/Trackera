@@ -3,7 +3,7 @@ import { AppLayout, WorklogInfo, WorklogModal, TrackeraTable, StatusBadge } from
 import classes from "./scss/worklog-details.module.css";
 import trackeraTableClasses from "../../components/trackera-table/scss/trackera-table.module.css";
 import { Alert, Button, Empty, Popconfirm, Skeleton, Tooltip, type TableProps } from "antd";
-import { statusMetadata, type Worklog, type WorklogEntry, type WorkLogStatusType, type WorklogTask } from "../../shared/types";
+import { statusMetadata, type Worklog, type WorklogEntry, type WorklogSelection, type WorkLogStatusType, type WorklogTask } from "../../shared/types";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import worklogModalClasses from "../../components/worklogs/modals/worklog-modal/scss/worklog-modal.module.css";
@@ -35,7 +35,6 @@ const WorklogDetails = () => {
 
   // worklog entries
   const [worklogEntries, setWorklogEntries] = useState<WorklogEntry[]>([]);
-  const [selectedEntry, setSelectedEntry] = useState<WorklogEntry | null>(null);
   const [selectedWorklogEntries, setSelectedWorklogEntries] = useState<WorklogEntry[]>([]);
   const [canFetchEntries, setCanFetchEntries] = useState<boolean>(false);
   const [isFetchingEntries, setIsFetchingEntries] = useState<boolean>(false);
@@ -121,12 +120,17 @@ const WorklogDetails = () => {
             />
           </Tooltip>
           <Tooltip title="Delete">
-            <Trash
+            <Button
+              type="text"
+              icon={<Trash />}
               onClick={() => {
                 setDeleteTaskVisible(true);
                 setSelectedTask(record);
               }}
-              className={`${trackeraTableClasses.log_action_btn} ${trackeraTableClasses.delete}`}
+              className={`${trackeraTableClasses.log_action_btn} ${trackeraTableClasses.delete} ${
+                (record.status === "SYNC_IN_PROGRESS" || record.status === "UNSYNC_IN_PROGRESS") && trackeraTableClasses.disabled
+              }`}
+              disabled={record.status === "SYNC_IN_PROGRESS" || record.status === "UNSYNC_IN_PROGRESS"}
             />
           </Tooltip>
         </div>
@@ -208,7 +212,6 @@ const WorklogDetails = () => {
               )
             }
             onConfirm={() => {
-              setSelectedEntry(record);
               handleDeleteWorkLogEntry(record.id);
             }}
             okText="Yes"
@@ -218,7 +221,14 @@ const WorklogDetails = () => {
             cancelButtonProps={{ disabled: isDeletingEntry }}
           >
             <Tooltip title="Delete">
-              <Trash className={`${trackeraTableClasses.log_action_btn} ${trackeraTableClasses.delete} ${isDeletingEntry && selectedEntry?.id !== record.id && trackeraTableClasses.disabled}`} />
+              <Button
+                type="text"
+                icon={<Trash />}
+                className={`${trackeraTableClasses.log_action_btn} ${trackeraTableClasses.delete} ${
+                  (record.status === "SYNC_IN_PROGRESS" || record.status === "UNSYNC_IN_PROGRESS") && trackeraTableClasses.disabled
+                }`}
+                disabled={record.status === "SYNC_IN_PROGRESS" || record.status === "UNSYNC_IN_PROGRESS"}
+              />
             </Tooltip>
           </Popconfirm>
         </div>
@@ -312,30 +322,32 @@ const WorklogDetails = () => {
 
   const handleDeleteWorkLogTask = async () => {
     setIsDeletingTask(true);
+
     try {
-      const response = await requestInstance.delete(`/worklog/${worklogId}/details/task?taskName=${selectedTask?.taskName}`);
-      if (response.data.isLast) {
+      const result = await handleWorkLogDeletion({ taskNames: [selectedTask?.taskName ?? ""] });
+      if (result.isLast) {
         navigate("/");
       } else {
         setCanFetchTasks(true);
         setCanFetchWorkLogInfo(true);
       }
-      showSuccessToast(response.data.message);
     } catch (error: any) {
       showErrorToast(error);
     }
+
     setIsDeletingTask(false);
     setDeleteTaskVisible(false);
   };
 
   const handleDeleteWorkLogEntry = async (entryId: string | number) => {
     setIsDeletingEntry(true);
+
     try {
-      const response = await requestInstance.delete(`/worklog/${worklogId}/details/entry?entryId=${entryId}`);
-      if (response.data.isLast) {
+      const result = await handleWorkLogDeletion({ entryIds: [entryId.toString()] });
+      if (result.isLast) {
         navigate("/");
       } else {
-        if (response.data.isLastOfTask) {
+        if (result.isLastOfTask) {
           setViewTaskVisible(false);
           setSelectedTask(null);
         } else {
@@ -344,37 +356,49 @@ const WorklogDetails = () => {
         setCanFetchTasks(true);
         setCanFetchWorkLogInfo(true);
       }
-      showSuccessToast(response.data.message);
     } catch (error: any) {
       showErrorToast(error);
     }
+
     setIsDeletingEntry(false);
-    setSelectedEntry(null);
+  };
+
+  const handleWorkLogDeletion = async (selection: WorklogSelection) => {
+    const response = await requestInstance.delete(`/worklog/${worklogId}`, { data: { ...selection } });
+    showSuccessToast(response.data.message);
+    return response.data;
   };
 
   const performJiraTaskSync = async (taskNames: string[], sync: boolean) => {
     setIsSyncingJiraTasks(true);
-    await performJiraSync(taskNames, [], sync);
+    try {
+      await performJiraSync(taskNames, [], sync);
+    } catch (error: any) {
+      showErrorToast(error);
+    }
     setIsSyncingJiraTasks(false);
   };
 
-  const performJiraLogEntrySync = async (logIds: (string | number)[], sync: boolean) => {
+  const performJiraLogEntrySync = async (entryIds: (string | number)[], sync: boolean) => {
     setIsSyncingJiraEntries(true);
-    await performJiraSync([], logIds, sync);
+    try {
+      await performJiraSync([], entryIds, sync);
+    } catch (error: any) {
+      showErrorToast(error);
+    }
     setIsSyncingJiraEntries(false);
   };
 
-  const performJiraSync = async (taskNames: string[], logIds: (string | number)[], sync: boolean) => {
-    try {
-      const response = await requestInstance.post(`/worklog/${worklogId}/sync${sync ? "" : "?sync=false"}`, { taskNames, logIds });
-      showSuccessToast(response.data);
-      setCanFetchWorkLogInfo(true);
-      setCanFetchTasks(true);
-      if (viewTaskVisible) {
-        setCanFetchEntries(true);
-      }
-    } catch (error: any) {
-      showErrorToast(error);
+  const performJiraSync = async (taskNames: string[], entryIds: (string | number)[], sync: boolean) => {
+    const response = await requestInstance.post(`/worklog/${worklogId}/sync${sync ? "" : "?sync=false"}`, {
+      taskNames,
+      entryIds,
+    });
+    showSuccessToast(response.data);
+    setCanFetchWorkLogInfo(true);
+    setCanFetchTasks(true);
+    if (viewTaskVisible) {
+      setCanFetchEntries(true);
     }
   };
 
@@ -396,6 +420,7 @@ const WorklogDetails = () => {
               columns: worklogEntryColumns,
               dataSource: worklogEntries,
               loading: isFetchingEntries || isSyncingJiraEntries,
+              pagination: { pageSize: 5 },
               rowSelection: {
                 selectedRowKeys: selectedWorklogEntries.map((entry) => entry.id.toString()),
                 onChange: (_, selectedRows: WorklogEntry[]) => {

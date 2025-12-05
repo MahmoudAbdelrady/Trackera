@@ -29,6 +29,11 @@ interface WorklogEntry extends TrackeraTableEntity {
   status: WorkLogStatusType;
 }
 
+interface WorklogSelection {
+  taskNames?: string[];
+  entryIds?: string[];
+}
+
 interface WorklogError extends TrackeraTableEntity {
   row: number;
   error: string;
@@ -112,6 +117,7 @@ export type {
   Worklog,
   WorklogTask,
   WorklogEntry,
+  WorklogSelection,
   WorklogError,
   StatusBadgeProps,
   WorklogTableActionButtonProps,

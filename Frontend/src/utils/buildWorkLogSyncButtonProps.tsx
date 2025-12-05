@@ -36,7 +36,7 @@ function buildSyncButtonProps<T extends SyncableItem>({
   }
 
   if (hasInProgress) {
-    return [{ label: "Actions unavailable", icon: <CalendarOff />, disabled: true }];
+    return [{ label: "Actions Unavailable", icon: <CalendarOff />, disabled: true }];
   }
 
   if (hasSynced && hasNotSynced) {

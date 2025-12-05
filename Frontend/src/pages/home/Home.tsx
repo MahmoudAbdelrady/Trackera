@@ -4,7 +4,16 @@ import classes from "./scss/home.module.css";
 import { Alert, Button, Tooltip, type TableProps } from "antd";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { worklogEvaluationMetadata, statusMetadata, type WorkLogSummaryCard, type PaginatedResponse, type Worklog, type WorkLogEvaluationType, type WorkLogStatusType } from "../../shared/types";
+import {
+  worklogEvaluationMetadata,
+  statusMetadata,
+  type WorkLogSummaryCard,
+  type PaginatedResponse,
+  type Worklog,
+  type WorkLogEvaluationType,
+  type WorkLogStatusType,
+  type WorklogSelection,
+} from "../../shared/types";
 import { createPaginationConfig } from "../../utils";
 import trackeraTableClasses from "../../components/trackera-table/scss/trackera-table.module.css";
 import worklogModalClasses from "../../components/worklogs/modals/worklog-modal/scss/worklog-modal.module.css";
@@ -63,8 +72,7 @@ const Home = () => {
   const deleteWorkLog = async (workLogId: string | number) => {
     setIsDeletingWorkLog(true);
     try {
-      const response = await requestInstance.delete(`/worklog/${workLogId}`);
-      showSuccessToast(response.data);
+      await handleWorkLogDeletion(workLogId, null);
       setFetchWorkLog(true);
       setFetchSummary(true);
       setDeleteWorkLogVisible(false);
@@ -73,6 +81,12 @@ const Home = () => {
       showErrorToast(error);
     }
     setIsDeletingWorkLog(false);
+  };
+
+  const handleWorkLogDeletion = async (worklogId: string | number, selection: WorklogSelection | null) => {
+    const response = await requestInstance.delete(`/worklog/${worklogId}`, { data: { ...selection } });
+    showSuccessToast(response.data.message);
+    return response.data;
   };
 
   const performJiraSync = async (workLogId: string | number, sync: boolean) => {
@@ -164,12 +178,17 @@ const Home = () => {
             </Link>
           </Tooltip>
           <Tooltip title="Delete">
-            <Trash
+            <Button
+              type="text"
+              icon={<Trash />}
               onClick={() => {
                 setSelectedWorkLog(record);
                 setDeleteWorkLogVisible(true);
               }}
-              className={`${trackeraTableClasses.log_action_btn} ${trackeraTableClasses.delete}`}
+              className={`${trackeraTableClasses.log_action_btn} ${trackeraTableClasses.delete} ${
+                (record.status === "SYNC_IN_PROGRESS" || record.status === "UNSYNC_IN_PROGRESS") && trackeraTableClasses.disabled
+              }`}
+              disabled={record.status === "SYNC_IN_PROGRESS" || record.status === "UNSYNC_IN_PROGRESS"}
             />
           </Tooltip>
         </div>
