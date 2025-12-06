@@ -28,4 +28,8 @@ public class WorkLogSyncPayloadDTO {
         this.userId = userId;
         this.workLogId = workLogId;
     }
+
+    public boolean hasWork() {
+        return (detailsToSync != null && !detailsToSync.isEmpty()) || (detailsToUnsync != null && !detailsToUnsync.isEmpty());
+    }
 }

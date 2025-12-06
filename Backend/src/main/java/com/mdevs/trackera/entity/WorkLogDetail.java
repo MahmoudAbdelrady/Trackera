@@ -34,7 +34,7 @@ public class WorkLogDetail extends BaseEntity {
 
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
-    private WorkLogStatus status;
+    private WorkLogStatus status = WorkLogStatus.NOT_SYNCED;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     private WorkLog workLog;

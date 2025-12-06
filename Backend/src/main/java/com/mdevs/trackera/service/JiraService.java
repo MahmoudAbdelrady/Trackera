@@ -20,6 +20,7 @@ import com.mdevs.trackera.shared.exceptions.types.NotFoundException;
 import com.mdevs.trackera.utils.AppUtils;
 import com.mdevs.trackera.utils.HttpUtil;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.*;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
@@ -141,16 +142,17 @@ public class JiraService {
     //</editor-fold>
 
     //<editor-fold desc="Integration & Processing">
-    public String addWorkLog(User user, WorkLogDetail workLogDetail) {
+    public String addOrUpdateWorkLog(User user, WorkLogDetail workLogDetail) {
         Map<String, Object> requestBody = new HashMap<>();
         requestBody.put("comment", createJiraCommentObject(workLogDetail.getDescription()));
         requestBody.put("started", JIRA_DATE_FORMATTER.format(LocalDateTime.of(workLogDetail.getWorkLog().getWorkDate(), workLogDetail.getStartTime()).atZone(ZoneId.systemDefault())));
         requestBody.put("timeSpentSeconds", workLogDetail.getDuration() * 60);
 
-        String apiUrl = getApiUrl(validateAndGetUserJiraPrimaryProject(user)) + "/issue/" + workLogDetail.getTaskName() + "/worklog";
+        boolean isUpdate = !StringUtils.isEmpty(workLogDetail.getJiraId());
+        String apiUrl = getApiUrl(validateAndGetUserJiraPrimaryProject(user)) + "/issue/" + workLogDetail.getTaskName() + "/worklog" + (isUpdate ? ("/" + workLogDetail.getJiraId()) : "");
         OAuthConnection oAuthConnection = oAuthConnectionService.getOrRefresh(user, OAuthProvider.JIRA);
         String accessToken = oAuthConnectionService.getAccessToken(oAuthConnection);
-        Map<String, Object> response = callJiraApi(apiUrl, HttpMethod.POST, HttpUtil.createBearerAuthEntity(accessToken, requestBody), oAuthConnection, Map.class);
+        Map<String, Object> response = callJiraApi(apiUrl, isUpdate ? HttpMethod.PUT : HttpMethod.POST, HttpUtil.createBearerAuthEntity(accessToken, requestBody), oAuthConnection, Map.class);
 
         return response.get("id").toString();
     }

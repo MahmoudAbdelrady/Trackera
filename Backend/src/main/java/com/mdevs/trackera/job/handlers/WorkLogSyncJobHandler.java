@@ -118,7 +118,7 @@ public class WorkLogSyncJobHandler implements BackgroundJobHandler {
         log.info("Synchronizing WorkLogDetail with Id {} to Jira", detailId);
         WorkLogDetail workLogDetail = workLogDetailRepository.findOne(detailId);
         try {
-            String jiraId = jiraService.addWorkLog(user, workLogDetail);
+            String jiraId = jiraService.addOrUpdateWorkLog(user, workLogDetail);
             workLogDetail.setStatus(WorkLogStatus.SYNCED);
             workLogDetail.setJiraId(jiraId);
             workLogDetail.setSyncError(null);

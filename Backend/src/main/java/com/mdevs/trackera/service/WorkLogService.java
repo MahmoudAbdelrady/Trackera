@@ -190,16 +190,33 @@ public class WorkLogService {
         ensureWorkLogSyncNotInProgress(workLog);
         validateWorkLog(manageWorkLogDTO, workLog.getId());
 
+        WorkLogSyncPayloadDTO workLogSyncPayloadDTO = new WorkLogSyncPayloadDTO(workLog.getUser().getId(), workLog.getId());
         if (worklogFile != null) {
-            Map<String, Object> processErrors = handleWorkLogFileUpdate(manageWorkLogDTO, worklogFile, workLog);
+            Map<String, Object> processErrors = handleWorkLogFileUpdate(workLog, worklogFile, workLogSyncPayloadDTO);
             if (processErrors != null) return processErrors;
         }
 
-        if (!StringUtils.isEmpty(manageWorkLogDTO.getLogName())) {
-            workLog.setName(manageWorkLogDTO.getLogName());
+        Set<WorkLogDetail> detailsToSync = new HashSet<>();
+        if (manageWorkLogDTO.isSyncToJira()) {
+            detailsToSync.addAll(workLogDetailRepository.findByWorkLogAndStatus(workLog, WorkLogStatus.NOT_SYNCED));
         }
-        workLog.setWorkDate(manageWorkLogDTO.getLogDate());
-        workLogRepository.save(workLog);
+        if (!workLog.getWorkDate().equals(manageWorkLogDTO.getLogDate())) {
+            detailsToSync.addAll(workLogDetailRepository.findByWorkLogAndStatus(workLog, WorkLogStatus.SYNCED));
+        }
+
+        if (!detailsToSync.isEmpty()) {
+            workLog.setStatus(WorkLogStatus.SYNC_IN_PROGRESS);
+            markDetailsForSync(new ArrayList<>(detailsToSync), true);
+            workLogSyncPayloadDTO.setDetailsToSync(detailsToSync.stream().map(WorkLogDetail::getId).toList());
+        }
+
+        handleUpdateMetaData(manageWorkLogDTO, workLog);
+
+        if (workLogSyncPayloadDTO.hasWork()) {
+            oAuthConnectionService.validateAndGetConnection(workLog.getUser(), OAuthProvider.JIRA);
+            backgroundJobService.enqueueJob(WorkLogSyncJobHandler.class, AppUtils.convertObjectToJsonString(workLogSyncPayloadDTO));
+        }
+
         return Map.of("message", "Worklog updated successfully");
     }
     //</editor-fold>
@@ -231,6 +248,7 @@ public class WorkLogService {
         } else {
             int totalDeletedMinutes = detailsToDelete.stream().mapToInt(WorkLogDetail::getDuration).sum();
             workLog.setTotalMinutes(workLog.getTotalMinutes() - totalDeletedMinutes);
+            workLog.setStatus(workLogRepository.calculateWorkLogStatus(workLog));
             workLogRepository.save(workLog);
             result.put("message", "Selected logs deleted successfully");
 
@@ -286,34 +304,23 @@ public class WorkLogService {
         }
     }
 
-    private Map<String, Object> handleWorkLogFileUpdate(ManageWorkLogDTO manageWorkLogDTO, MultipartFile worklogFile, WorkLog workLog) {
+    private Map<String, Object> handleWorkLogFileUpdate(WorkLog workLog, MultipartFile worklogFile, WorkLogSyncPayloadDTO syncPayloadDTO) {
         Map<String, Object> processResult = processWorkLogFile(worklogFile);
         if (processResult.containsKey("isError")) {
             return processResult;
         }
         workLog.setTotalMinutes((int) processResult.get("totalMinutes"));
 
-        WorkLogSyncPayloadDTO workLogSyncPayloadDTO = new WorkLogSyncPayloadDTO(workLog.getUser().getId(), workLog.getId());
         List<WorkLogDetailSyncRequestDTO> detailsToUnsync = workLogDetailRepository.findByWorkLogAndStatus(workLog, WorkLogStatus.SYNCED).stream()
                 .map(detail -> new WorkLogDetailSyncRequestDTO(detail.getTaskName(), detail.getJiraId())).toList();
 
         if (!detailsToUnsync.isEmpty()) {
             workLog.setStatus(WorkLogStatus.UNSYNC_IN_PROGRESS);
-            workLogSyncPayloadDTO.setDetailsToUnsync(detailsToUnsync);
+            syncPayloadDTO.setDetailsToUnsync(detailsToUnsync);
         }
         workLogDetailRepository.deleteAllByWorkLog(workLog);
 
-        List<WorkLogDetail> newWorkLogDetails = saveWorkLogDetails((List<WorkLogDetail>) processResult.get("workLogDetails"), workLog);
-        if (manageWorkLogDTO.isSyncToJira()) {
-            workLog.setStatus(WorkLogStatus.SYNC_IN_PROGRESS);
-            markDetailsForSync(newWorkLogDetails, true);
-            workLogSyncPayloadDTO.setDetailsToSync(newWorkLogDetails.stream().map(WorkLogDetail::getId).toList());
-        }
-
-        if (workLogSyncPayloadDTO.getDetailsToSync() != null || workLogSyncPayloadDTO.getDetailsToUnsync() != null) {
-            oAuthConnectionService.validateAndGetConnection(workLog.getUser(), OAuthProvider.JIRA);
-            backgroundJobService.enqueueJob(WorkLogSyncJobHandler.class, AppUtils.convertObjectToJsonString(workLogSyncPayloadDTO));
-        }
+        saveWorkLogDetails((List<WorkLogDetail>) processResult.get("workLogDetails"), workLog);
         return null;
     }
 
@@ -374,7 +381,6 @@ public class WorkLogService {
         workLogDetail.setEndTime(toHour);
         workLogDetail.setDuration(taskLogDurationValue);
         workLogDetail.setDescription(taskDescription);
-        workLogDetail.setStatus(WorkLogStatus.NOT_SYNCED);
         allWorkLogDetails.add(workLogDetail);
 
         return taskLogDurationValue;
@@ -440,7 +446,6 @@ public class WorkLogService {
             workLog.setUser(AppConfig.getAuthenticatedCurrentUser());
             workLog.setTotalMinutes(totalMinutes);
             workLog.setWorkDate(manageWorkLogDTO.getLogDate());
-            workLog.setStatus(WorkLogStatus.NOT_SYNCED);
             if (!StringUtils.isEmpty(manageWorkLogDTO.getLogName())) {
                 workLog.setName(manageWorkLogDTO.getLogName());
             } else {
@@ -531,6 +536,14 @@ public class WorkLogService {
             }
         });
         workLogDetailRepository.saveAll(workLogDetails);
+    }
+
+    private void handleUpdateMetaData(ManageWorkLogDTO manageWorkLogDTO, WorkLog workLog) {
+        if (!StringUtils.isEmpty(manageWorkLogDTO.getLogName())) {
+            workLog.setName(manageWorkLogDTO.getLogName());
+        }
+        workLog.setWorkDate(manageWorkLogDTO.getLogDate());
+        workLogRepository.save(workLog);
     }
     //</editor-fold>
 }
