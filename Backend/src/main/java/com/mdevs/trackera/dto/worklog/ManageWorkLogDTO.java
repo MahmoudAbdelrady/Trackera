@@ -14,5 +14,5 @@ public class ManageWorkLogDTO {
     @NotNull(message = "Log date is required")
     private LocalDate logDate;
 
-    private Boolean syncToJira;
+    private boolean syncToJira = false;
 }

@@ -20,4 +20,6 @@ public class WorkLogEntryDTO {
     private String description;
 
     private WorkLogStatus status;
+
+    private String syncError;
 }

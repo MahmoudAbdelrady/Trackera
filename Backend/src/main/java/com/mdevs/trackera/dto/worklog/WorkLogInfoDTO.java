@@ -21,4 +21,6 @@ public class WorkLogInfoDTO {
     private WorkLogEvaluation evaluation;
 
     private WorkLogStatus status;
+
+    private boolean hasError = false;
 }

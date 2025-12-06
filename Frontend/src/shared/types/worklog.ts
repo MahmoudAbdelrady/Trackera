@@ -3,7 +3,7 @@ import type { StatusBadgeProps, TrackeraTableEntity } from "./global";
 
 type WorkLogEvaluationType = "EXCELLENT" | "GOOD" | "MODERATE" | "POOR";
 
-type WorkLogStatusType = "SYNCED" | "PARTIALLY" | "NOT_SYNCED";
+type WorkLogStatusType = "SYNCED" | "PARTIALLY" | "NOT_SYNCED" | "SYNC_IN_PROGRESS" | "UNSYNC_IN_PROGRESS";
 
 interface Worklog extends TrackeraTableEntity {
   name: string;
@@ -11,6 +11,7 @@ interface Worklog extends TrackeraTableEntity {
   workDate: string;
   evaluation: WorkLogEvaluationType;
   status: WorkLogStatusType;
+  hasError: boolean;
 }
 
 interface WorklogTask extends TrackeraTableEntity {
@@ -19,6 +20,7 @@ interface WorklogTask extends TrackeraTableEntity {
   totalHours: string;
   totalMinutes: number;
   status: WorkLogStatusType;
+  hasError: boolean;
 }
 
 interface WorklogEntry extends TrackeraTableEntity {
@@ -27,6 +29,12 @@ interface WorklogEntry extends TrackeraTableEntity {
   duration: string;
   description: string;
   status: WorkLogStatusType;
+  syncError?: string;
+}
+
+interface WorklogSelection {
+  taskNames?: string[];
+  entryIds?: string[];
 }
 
 interface WorklogError extends TrackeraTableEntity {
@@ -45,14 +53,25 @@ const statusMetadata: Record<WorkLogStatusType, StatusBadgeProps> = {
   SYNCED: { label: "Synced", type: "success" },
   PARTIALLY: { label: "Partially", type: "warning" },
   NOT_SYNCED: { label: "Not Synced", type: "danger" },
+  SYNC_IN_PROGRESS: { label: "Sync in Progress", type: "warning" },
+  UNSYNC_IN_PROGRESS: { label: "Unsync in Progress", type: "warning" },
 };
+
+interface WorklogTableActionButtonOptions {
+  label: string;
+  onClick: () => void;
+  disabled?: boolean;
+  icon?: React.ReactNode;
+  customClasses?: string[];
+}
 
 interface WorklogTableActionButtonProps {
   label: string;
-  icon: React.ReactNode;
+  icon?: React.ReactNode;
   customClasses?: string[];
   disabled?: boolean;
-  onClick: () => void;
+  onClick?: () => void;
+  options?: WorklogTableActionButtonOptions[];
 }
 
 interface WorklogTableProps<T = TrackeraTableEntity> {
@@ -101,6 +120,7 @@ export type {
   Worklog,
   WorklogTask,
   WorklogEntry,
+  WorklogSelection,
   WorklogError,
   StatusBadgeProps,
   WorklogTableActionButtonProps,

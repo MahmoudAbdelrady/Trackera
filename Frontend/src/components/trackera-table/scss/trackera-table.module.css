@@ -43,6 +43,21 @@
   background-color: rgb(131.4, 186.3333333333, 255);
   color: #000;
 }
+.worklog_table_container .table_actions .log_button_dropdown {
+  color: #fff;
+  padding: 12px 18px;
+  background-color: #2563eb;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+  -webkit-user-select: none;
+     -moz-user-select: none;
+          user-select: none;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+}
 .worklog_table_container .table_details .worklogs_table {
   border: 1px solid #e5e7eb;
   border-radius: 6px;
@@ -88,4 +103,21 @@
 }
 .worklog_table_container .table_details .actions_container .log_action_btn:hover, .worklog_table_container .table_details .actions_container .log_action_btn:active, .worklog_table_container .table_details .actions_container .log_action_btn:focus {
   background: transparent;
+}
+
+.sync_item {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  padding: 8px 6px;
+  transition: 0.3s;
+}
+.sync_item .sync_item_label {
+  margin-left: 8px;
+}
+.sync_item.sync:hover {
+  color: #2563eb;
+}
+.sync_item.unsync:hover {
+  color: #d97706;
 }/*# sourceMappingURL=trackera-table.module.css.map */

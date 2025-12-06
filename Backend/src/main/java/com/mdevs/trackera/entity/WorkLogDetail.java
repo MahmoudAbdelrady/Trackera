@@ -1,5 +1,6 @@
 package com.mdevs.trackera.entity;
 
+import com.mdevs.trackera.shared.enums.WorkLogStatus;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -19,8 +20,6 @@ public class WorkLogDetail extends BaseEntity {
     @Column(nullable = false)
     private String taskName;
 
-    private String taskUrl;
-
     @Column(nullable = false, columnDefinition = "TIME(0)")
     private LocalTime startTime;
 
@@ -34,11 +33,14 @@ public class WorkLogDetail extends BaseEntity {
     private String description;
 
     @Column(nullable = false)
-    @ColumnDefault("0")
-    private boolean synced = false;
+    @Enumerated(EnumType.STRING)
+    private WorkLogStatus status = WorkLogStatus.NOT_SYNCED;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     private WorkLog workLog;
 
     private String jiraId;
+
+    @Column(columnDefinition = "LONGTEXT")
+    private String syncError;
 }

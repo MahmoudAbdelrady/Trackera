@@ -7,6 +7,7 @@ interface TrackeraTableEntity {
 interface StatusBadgeProps {
   label: string;
   type: BadgeType;
+  icon?: React.ReactNode;
 }
 
 interface InputFieldProps {
