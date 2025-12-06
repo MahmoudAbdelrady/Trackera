@@ -1,4 +1,4 @@
-import { Eye, SquarePen, Trash, ClipboardPlus, CalendarSync, CalendarX2, CalendarOff } from "lucide-react";
+import { Eye, SquarePen, Trash, ClipboardPlus, CalendarSync, CalendarX2, CalendarOff, CircleAlert } from "lucide-react";
 import { ManageWorkLogModal, AppLayout, SearchFilter, WorklogModal, WorklogStatusCard, TrackeraTable, StatusBadge } from "../../components";
 import classes from "./scss/home.module.css";
 import { Alert, Button, Tooltip, type TableProps } from "antd";
@@ -129,8 +129,8 @@ const Home = () => {
       title: "Status",
       dataIndex: "status",
       key: "status",
-      render: (_, { status }) => {
-        return loggedUserData?.jiraLinked ? <StatusBadge badgeProps={statusMetadata[status as WorkLogStatusType]} /> : "-";
+      render: (_, { status, hasError }) => {
+        return loggedUserData?.jiraLinked ? <StatusBadge badgeProps={{ ...statusMetadata[status as WorkLogStatusType], icon: hasError ? <CircleAlert /> : undefined }} /> : "-";
       },
     },
     {

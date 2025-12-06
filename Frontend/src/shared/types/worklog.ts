@@ -11,6 +11,7 @@ interface Worklog extends TrackeraTableEntity {
   workDate: string;
   evaluation: WorkLogEvaluationType;
   status: WorkLogStatusType;
+  hasError: boolean;
 }
 
 interface WorklogTask extends TrackeraTableEntity {
@@ -19,6 +20,7 @@ interface WorklogTask extends TrackeraTableEntity {
   totalHours: string;
   totalMinutes: number;
   status: WorkLogStatusType;
+  hasError: boolean;
 }
 
 interface WorklogEntry extends TrackeraTableEntity {
@@ -27,6 +29,7 @@ interface WorklogEntry extends TrackeraTableEntity {
   duration: string;
   description: string;
   status: WorkLogStatusType;
+  syncError?: string;
 }
 
 interface WorklogSelection {

@@ -1,4 +1,4 @@
-import { CalendarOff, CalendarSync, CalendarX2, Eye, Trash } from "lucide-react";
+import { CalendarOff, CalendarSync, CalendarX2, CircleAlert, Eye, Trash } from "lucide-react";
 import { AppLayout, WorklogInfo, WorklogModal, TrackeraTable, StatusBadge } from "../../components";
 import classes from "./scss/worklog-details.module.css";
 import trackeraTableClasses from "../../components/trackera-table/scss/trackera-table.module.css";
@@ -68,8 +68,8 @@ const WorklogDetails = () => {
       title: "Status",
       dataIndex: "status",
       key: "status",
-      render: (_, { status }) => {
-        return loggedUserData?.jiraLinked ? <StatusBadge badgeProps={statusMetadata[status as WorkLogStatusType]} /> : "-";
+      render: (_, { status, hasError }) => {
+        return loggedUserData?.jiraLinked ? <StatusBadge badgeProps={{ ...statusMetadata[status as WorkLogStatusType], icon: hasError ? <CircleAlert /> : undefined }} /> : "-";
       },
       ...(loggedUserData?.jiraLinked && {
         filters: Array.from(new Set(worklogTasks.map((task) => task.status))).map((status) => ({
@@ -163,8 +163,16 @@ const WorklogDetails = () => {
       title: "Status",
       dataIndex: "status",
       key: "status",
-      render: (_, { status }) => {
-        return loggedUserData?.jiraLinked ? <StatusBadge badgeProps={statusMetadata[status as WorkLogStatusType]} /> : "-";
+      render: (_, { status, syncError }) => {
+        return loggedUserData?.jiraLinked ? (
+          <Tooltip title={syncError && `Sync Error: ${syncError}`}>
+            <span style={{ display: "inline-block" }}>
+              <StatusBadge badgeProps={{ ...statusMetadata[status as WorkLogStatusType], icon: syncError ? <CircleAlert /> : undefined }} />
+            </span>
+          </Tooltip>
+        ) : (
+          "-"
+        );
       },
       ...(loggedUserData?.jiraLinked && {
         filters: Array.from(new Set(worklogEntries.map((task) => task.status))).map((status) => ({
