@@ -40,4 +40,7 @@ public class WorkLogDetail extends BaseEntity {
     private WorkLog workLog;
 
     private String jiraId;
+
+    @Column(columnDefinition = "LONGTEXT")
+    private String syncError;
 }

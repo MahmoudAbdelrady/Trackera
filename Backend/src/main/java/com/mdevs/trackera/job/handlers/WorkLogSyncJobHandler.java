@@ -88,7 +88,7 @@ public class WorkLogSyncJobHandler implements BackgroundJobHandler {
             } catch (Exception e) {
                 if (isLastRetry) {
                     List<Long> failedIds = detailsToUnsync.stream().map(WorkLogDetailSyncRequestDTO::getDetailId).filter(Objects::nonNull).toList();
-                    selfRef.handleFailedSync(failedIds, WorkLogStatus.SYNCED);
+                    selfRef.handleFailedSync(failedIds, WorkLogStatus.SYNCED, e.getMessage());
                 }
                 return e.getMessage();
             }
@@ -105,7 +105,7 @@ public class WorkLogSyncJobHandler implements BackgroundJobHandler {
                 iterator.remove();
             } catch (Exception e) {
                 if (isLastRetry) {
-                    selfRef.handleFailedSync(detailsToSync, WorkLogStatus.NOT_SYNCED);
+                    selfRef.handleFailedSync(detailsToSync, WorkLogStatus.NOT_SYNCED, e.getMessage());
                 }
                 return e.getMessage();
             }
@@ -121,9 +121,11 @@ public class WorkLogSyncJobHandler implements BackgroundJobHandler {
             String jiraId = jiraService.addWorkLog(user, workLogDetail);
             workLogDetail.setStatus(WorkLogStatus.SYNCED);
             workLogDetail.setJiraId(jiraId);
+            workLogDetail.setSyncError(null);
         } catch (JiraException exception) {
             if (exception.getStatusCode() == 404) {
                 workLogDetail.setStatus(WorkLogStatus.NOT_SYNCED);
+                workLogDetail.setSyncError(exception.getMessage());
                 log.warn("Jira WorkLog [{}, {}] not found. Proceeding to skip synchronization locally.", workLogDetail.getId(), workLogDetail.getTaskName());
             } else {
                 throw exception;
@@ -149,6 +151,7 @@ public class WorkLogSyncJobHandler implements BackgroundJobHandler {
             WorkLogDetail workLogDetail = workLogDetailRepository.findOne(detailSyncRequestDTO.getDetailId());
             workLogDetail.setStatus(WorkLogStatus.NOT_SYNCED);
             workLogDetail.setJiraId(null);
+            workLogDetail.setSyncError(null);
             workLogDetailRepository.save(workLogDetail);
         }
     }
@@ -167,10 +170,11 @@ public class WorkLogSyncJobHandler implements BackgroundJobHandler {
     }
 
     @Transactional
-    public void handleFailedSync(List<Long> detailIds, WorkLogStatus status) {
+    public void handleFailedSync(List<Long> detailIds, WorkLogStatus status, String errorMessage) {
         List<WorkLogDetail> workLogDetails = workLogDetailRepository.findAllById(detailIds);
         for (WorkLogDetail workLogDetail : workLogDetails) {
             workLogDetail.setStatus(status);
+            workLogDetail.setSyncError(errorMessage);
         }
         workLogDetailRepository.saveAll(workLogDetails);
     }

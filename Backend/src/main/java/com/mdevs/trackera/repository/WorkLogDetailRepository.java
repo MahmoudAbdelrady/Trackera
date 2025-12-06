@@ -20,7 +20,8 @@ public interface WorkLogDetailRepository extends BaseRepository<WorkLogDetail> {
             "     WHEN SUM(CASE WHEN wld.status = 'UNSYNC_IN_PROGRESS' THEN 1 ELSE 0 END) > 0 THEN 'UNSYNC_IN_PROGRESS' " +
             "     WHEN SUM(CASE WHEN wld.status = 'NOT_SYNCED' THEN 1 ELSE 0 END) = 0 THEN 'SYNCED' " +
             "     WHEN SUM(CASE WHEN wld.status = 'SYNCED' THEN 1 ELSE 0 END) = 0 THEN 'NOT_SYNCED' " +
-            "     ELSE 'PARTIALLY' END AS status) " +
+            "     ELSE 'PARTIALLY' END AS status," +
+            "CASE WHEN SUM(CASE WHEN wld.syncError IS NOT NULL THEN 1 ELSE 0 END) > 0 THEN true ELSE false END AS hasError) " +
             "FROM WorkLogDetail wld WHERE wld.workLog = :workLog GROUP BY wld.taskName")
     List<Map<String, Object>> getGroupedWorkLogDetailsByWorkLog(WorkLog workLog);
 
@@ -40,4 +41,7 @@ public interface WorkLogDetailRepository extends BaseRepository<WorkLogDetail> {
 
     @Query("SELECT wld FROM WorkLogDetail wld WHERE wld.workLog = :workLog AND wld.uuid IN :uuids AND (:status IS NULL OR wld.status = :status)")
     List<WorkLogDetail> findByWorkLogAndUuidInAndStatus(@P("workLog") WorkLog workLog, @Param("uuids") List<String> uuids, @Param("status") WorkLogStatus status);
+
+    @Query("SELECT DISTINCT wld.workLog.uuid FROM WorkLogDetail wld WHERE wld.workLog.id IN :workLogIds AND wld.syncError IS NOT NULL")
+    List<String> findWorkLogUuidsWithSyncErrors(@Param("workLogIds") List<Long> workLogIds);
 }

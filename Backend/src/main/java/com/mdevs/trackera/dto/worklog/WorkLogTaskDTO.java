@@ -17,6 +17,8 @@ public class WorkLogTaskDTO {
 
     private WorkLogStatus status;
 
+    private boolean hasError = false;
+
     public WorkLogTaskDTO(String taskName) {
         this.taskName = taskName;
     }

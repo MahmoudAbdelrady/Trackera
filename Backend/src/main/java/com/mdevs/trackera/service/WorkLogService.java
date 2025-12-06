@@ -83,12 +83,16 @@ public class WorkLogService {
         typedQuery.setFirstResult(pageable.getPageNumber() * pageable.getPageSize());
         typedQuery.setMaxResults(pageable.getPageSize());
 
-        List<WorkLogInfoDTO> workLogInfoDTOList = typedQuery.getResultList().stream().map(workLog -> {
+        List<WorkLog> workLogs = typedQuery.getResultList();
+        List<WorkLogInfoDTO> workLogInfoDTOList = workLogs.stream().map(workLog -> {
             WorkLogInfoDTO workLogInfoDTO = workLogMapper.toDto(workLog);
             workLogInfoDTO.setId(workLog.getUuid());
             workLogInfoDTO.setTotalTime(DurationFormatter.formatDuration(workLog.getTotalMinutes(), true));
             return workLogInfoDTO;
         }).toList();
+
+        List<String> logsWithErrors = workLogDetailRepository.findWorkLogUuidsWithSyncErrors(workLogs.stream().map(WorkLog::getId).collect(Collectors.toList()));
+        workLogInfoDTOList.stream().filter(worklogInfo -> logsWithErrors.contains(worklogInfo.getId())).forEach(worklogInfo -> worklogInfo.setHasError(true));
 
         String countQueryStr = searchQuery.replaceFirst("SELECT wl FROM WorkLog wl", "SELECT COUNT(wl) FROM WorkLog wl");
         TypedQuery<Long> countQuery = entityManager.createQuery(countQueryStr, Long.class);
@@ -115,6 +119,7 @@ public class WorkLogService {
             workLogTaskDTO.setTotalHours(DurationFormatter.formatDuration(totalMinutes, false));
             workLogTaskDTO.setTotalMinutes(totalMinutes); // for sorting purpose
             workLogTaskDTO.setStatus(WorkLogStatus.valueOf(worklogGroup.get("status").toString()));
+            workLogTaskDTO.setHasError(Boolean.parseBoolean(worklogGroup.get("hasError").toString()));
             return workLogTaskDTO;
         }).toList();
     }
@@ -133,6 +138,7 @@ public class WorkLogService {
             workLogEntryDTO.setDuration(DurationFormatter.formatDuration(workLogDetail.getDuration(), false));
             workLogEntryDTO.setDescription(workLogDetail.getDescription());
             workLogEntryDTO.setStatus(workLogDetail.getStatus());
+            workLogEntryDTO.setSyncError(workLogDetail.getSyncError());
             return workLogEntryDTO;
         }).toList();
     }
