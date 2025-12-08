@@ -17,6 +17,7 @@ import com.mdevs.trackera.shared.enums.UserPreferenceOption;
 import com.mdevs.trackera.shared.exceptions.types.BusinessException;
 import com.mdevs.trackera.oauth.OAuthProvider;
 import com.mdevs.trackera.shared.TrackeraEmailTarget;
+import com.mdevs.trackera.shared.exceptions.types.NotFoundException;
 import com.mdevs.trackera.shared.mappers.UserMapper;
 import com.mdevs.trackera.utils.AppUtils;
 import com.mdevs.trackera.utils.EmailTemplateUtil;
@@ -66,6 +67,10 @@ public class UserService implements UserDetailsService {
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
         return Optional.ofNullable(userRepository.findByPrimaryEmail(email)).orElseThrow(() -> new UsernameNotFoundException("Account not found."));
+    }
+
+    public User findByUuidOrThrow(String uuid) {
+        return Optional.ofNullable(userRepository.findByUuid(uuid)).orElseThrow(() -> new NotFoundException("User not found."));
     }
 
     //<editor-fold desc="User Info Retrieval">

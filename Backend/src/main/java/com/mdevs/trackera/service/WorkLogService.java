@@ -103,7 +103,7 @@ public class WorkLogService {
     }
 
     public WorkLogInfoDTO getWorkLogByUUID(String uuid) {
-        WorkLog workLog = ensureWorkLogExistsAndHasPermission(uuid);
+        WorkLog workLog = ensureWorkLogExistsAndHasPermission(uuid, AppConfig.getAuthenticatedCurrentUser());
         WorkLogInfoDTO workLogInfoDTO = workLogMapper.toDto(workLog);
         workLogInfoDTO.setId(workLog.getUuid());
         workLogInfoDTO.setTotalTime(DurationFormatter.formatDuration(workLog.getTotalMinutes(), true));
@@ -111,7 +111,7 @@ public class WorkLogService {
     }
 
     public List<WorkLogTaskDTO> getWorkLogTasks(String uuid) {
-        WorkLog workLog = ensureWorkLogExistsAndHasPermission(uuid);
+        WorkLog workLog = ensureWorkLogExistsAndHasPermission(uuid, AppConfig.getAuthenticatedCurrentUser());
         List<Map<String, Object>> workLogDetailGroups = workLogDetailRepository.getGroupedWorkLogDetailsByWorkLog(workLog);
         return workLogDetailGroups.stream().map(worklogGroup -> {
             WorkLogTaskDTO workLogTaskDTO = new WorkLogTaskDTO(worklogGroup.get("taskName").toString());
@@ -125,7 +125,7 @@ public class WorkLogService {
     }
 
     public List<WorkLogEntryDTO> getWorkLogTaskEntries(String uuid, String taskName) {
-        WorkLog workLog = ensureWorkLogExistsAndHasPermission(uuid);
+        WorkLog workLog = ensureWorkLogExistsAndHasPermission(uuid, AppConfig.getAuthenticatedCurrentUser());
         List<WorkLogDetail> workLogDetails = workLogDetailRepository.findByWorkLogAndTaskName(workLog, taskName);
         if (workLogDetails.isEmpty()) {
             throw new NotFoundException("No logs found for the specified task in this worklog");
@@ -186,7 +186,7 @@ public class WorkLogService {
 
     @Transactional
     public Map<String, Object> updateWorkLog(String uuid, ManageWorkLogDTO manageWorkLogDTO, MultipartFile worklogFile) {
-        WorkLog workLog = ensureWorkLogExistsAndHasPermission(uuid);
+        WorkLog workLog = ensureWorkLogExistsAndHasPermission(uuid, AppConfig.getAuthenticatedCurrentUser());
         ensureWorkLogSyncNotInProgress(workLog);
         validateWorkLog(manageWorkLogDTO, workLog.getId());
 
@@ -224,7 +224,7 @@ public class WorkLogService {
     //<editor-fold desc="Deletion">
     @Transactional
     public Map<String, Object> deleteWorkLog(String uuid, WorkLogSelectionDTO workLogSelectionDTO) {
-        WorkLog workLog = ensureWorkLogExistsAndHasPermission(uuid);
+        WorkLog workLog = ensureWorkLogExistsAndHasPermission(uuid, AppConfig.getAuthenticatedCurrentUser());
         ensureWorkLogSyncNotInProgress(workLog);
         WorkLogSyncPayloadDTO workLogSyncPayloadDTO = new WorkLogSyncPayloadDTO(workLog.getUser().getId());
 
@@ -266,7 +266,7 @@ public class WorkLogService {
     @Transactional
     public void performJiraSync(String uuid, WorkLogSelectionDTO workLogSelectionDTO, boolean sync) {
         oAuthConnectionService.validateAndGetConnection(AppConfig.getAuthenticatedCurrentUser(), OAuthProvider.JIRA);
-        WorkLog workLog = ensureWorkLogExistsAndHasPermission(uuid);
+        WorkLog workLog = ensureWorkLogExistsAndHasPermission(uuid, AppConfig.getAuthenticatedCurrentUser());
         validateSyncRequest(workLog, sync);
         List<WorkLogDetail> workLogDetails = getWorkLogDetailsBySelection(workLog, workLogSelectionDTO, sync ? WorkLogStatus.NOT_SYNCED : WorkLogStatus.SYNCED);
         workLog.setStatus(sync ? WorkLogStatus.SYNC_IN_PROGRESS : WorkLogStatus.UNSYNC_IN_PROGRESS);
@@ -472,12 +472,12 @@ public class WorkLogService {
         }
     }
 
-    private WorkLog ensureWorkLogExistsAndHasPermission(String uuid) {
-        WorkLog workLog = workLogRepository.findByUserAndUuid(AppConfig.getAuthenticatedCurrentUser(), uuid);
+    public WorkLog ensureWorkLogExistsAndHasPermission(String uuid, User user) {
+        WorkLog workLog = workLogRepository.findByUuid(uuid);
         if (workLog == null) {
             throw new NotFoundException("WorkLog not found");
         }
-        if (!workLog.getUser().getId().equals(AppConfig.getAuthenticatedCurrentUser().getId())) {
+        if (!workLog.getUser().getId().equals(user.getId())) {
             throw new UnauthorizedException("You are not authorized to access this worklog");
         }
         return workLog;

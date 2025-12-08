@@ -8,6 +8,7 @@ import org.springframework.data.web.config.EnableSpringDataWebSupport;
 import org.springframework.retry.annotation.EnableRetry;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
 
 @EnableJpaAuditing
 @EnableScheduling
@@ -15,6 +16,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EnableSpringDataWebSupport(pageSerializationMode = EnableSpringDataWebSupport.PageSerializationMode.VIA_DTO)
 @EnableCaching
 @EnableRetry
+@EnableWebSocketMessageBroker
 @SpringBootApplication
 public class TrackeraApplication {
 

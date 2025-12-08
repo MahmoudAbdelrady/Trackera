@@ -2,7 +2,7 @@ package com.mdevs.trackera.config.general;
 
 import com.mdevs.trackera.dto.auth.AuthFilterUserDTO;
 import com.mdevs.trackera.entity.User;
-import com.mdevs.trackera.repository.UserRepository;
+import com.mdevs.trackera.service.UserService;
 import lombok.Getter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationContext;
@@ -62,7 +62,7 @@ public class AppConfig {
 
     public static User getCurrentUser() {
         Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        return (principal instanceof AuthFilterUserDTO) ? applicationContext.getBean(UserRepository.class).findByUuid(((AuthFilterUserDTO) principal).getId()) : null;
+        return (principal instanceof AuthFilterUserDTO) ? applicationContext.getBean(UserService.class).findByUuidOrThrow(((AuthFilterUserDTO) principal).getId()) : null;
     }
 
     public static User getAuthenticatedCurrentUser() {

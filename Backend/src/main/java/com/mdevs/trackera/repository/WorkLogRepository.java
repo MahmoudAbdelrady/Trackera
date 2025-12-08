@@ -17,7 +17,7 @@ public interface WorkLogRepository extends BaseRepository<WorkLog> {
     @Query("SELECT COALESCE(SUM(w.totalMinutes), 0) FROM WorkLog w WHERE w.user = :user AND w.workDate BETWEEN :startDate AND :endDate")
     Integer sumTotalMinutesByUserAndWorkDateBetween(@Param("user") User user, @Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
 
-    WorkLog findByUserAndUuid(User user, String uuid);
+    WorkLog findByUuid(String uuid);
 
     @Query("SELECT CASE WHEN SUM(CASE WHEN wld.status = 'SYNC_IN_PROGRESS' THEN 1 ELSE 0 END) > 0 THEN 'SYNC_IN_PROGRESS' " +
             "WHEN SUM(CASE WHEN wld.status = 'UNSYNC_IN_PROGRESS' THEN 1 ELSE 0 END) > 0 THEN 'UNSYNC_IN_PROGRESS' " +
