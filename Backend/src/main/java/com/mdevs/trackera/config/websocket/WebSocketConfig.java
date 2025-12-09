@@ -1,8 +1,8 @@
 package com.mdevs.trackera.config.websocket;
 
 import com.mdevs.trackera.config.general.AppConfig;
-import com.mdevs.trackera.shared.WebSocketChannelInterceptor;
-import com.mdevs.trackera.shared.WebSocketJwtHandshakeInterceptor;
+import com.mdevs.trackera.shared.WebSocketChannelRuleInterceptor;
+import com.mdevs.trackera.shared.WebSocketJwtChannelInterceptor;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.simp.config.ChannelRegistration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
@@ -11,22 +11,20 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 
 @Configuration
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
-    private final WebSocketJwtHandshakeInterceptor jwtHandshakeInterceptor;
+    private final WebSocketJwtChannelInterceptor jwtChannelInterceptor;
 
-    private final WebSocketChannelInterceptor channelInterceptor;
+    private final WebSocketChannelRuleInterceptor channelRuleInterceptor;
 
-    public WebSocketConfig(WebSocketJwtHandshakeInterceptor jwtHandshakeInterceptor, WebSocketChannelInterceptor channelInterceptor) {
-        this.jwtHandshakeInterceptor = jwtHandshakeInterceptor;
-        this.channelInterceptor = channelInterceptor;
+    public WebSocketConfig(WebSocketJwtChannelInterceptor jwtChannelInterceptor, WebSocketChannelRuleInterceptor channelRuleInterceptor) {
+        this.jwtChannelInterceptor = jwtChannelInterceptor;
+        this.channelRuleInterceptor = channelRuleInterceptor;
     }
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         registry
                 .addEndpoint("/ws")
-                .addInterceptors(jwtHandshakeInterceptor)
-                .setAllowedOrigins(AppConfig.getFrontendUrl())
-                .withSockJS();
+                .setAllowedOrigins(AppConfig.getFrontendUrl());
     }
 
     @Override
@@ -37,6 +35,6 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void configureClientInboundChannel(ChannelRegistration registration) {
-        registration.interceptors(channelInterceptor);
+        registration.interceptors(jwtChannelInterceptor, channelRuleInterceptor);
     }
 }

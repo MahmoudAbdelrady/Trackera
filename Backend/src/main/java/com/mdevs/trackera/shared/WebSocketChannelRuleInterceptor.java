@@ -15,12 +15,14 @@ import java.util.Objects;
 import java.util.function.BiPredicate;
 
 @Component
-public class WebSocketChannelInterceptor implements ChannelInterceptor {
+public class WebSocketChannelRuleInterceptor implements ChannelInterceptor {
     private final UserService userService;
 
     private final WebSocketAuthRegistry webSocketAuthRegistry;
 
-    public WebSocketChannelInterceptor(UserService userService, WebSocketAuthRegistry webSocketAuthRegistry) {
+    private static final AntPathMatcher ANT_PATH_MATCHER = new AntPathMatcher();
+
+    public WebSocketChannelRuleInterceptor(UserService userService, WebSocketAuthRegistry webSocketAuthRegistry) {
         this.userService = userService;
         this.webSocketAuthRegistry = webSocketAuthRegistry;
     }
@@ -30,7 +32,6 @@ public class WebSocketChannelInterceptor implements ChannelInterceptor {
         StompHeaderAccessor accessor = MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
 
         if (accessor != null && StompCommand.SUBSCRIBE.equals(accessor.getCommand())) {
-
             String destination = accessor.getDestination();
             String userId = (String) Objects.requireNonNull(accessor.getSessionAttributes()).get("userId");
             User loggedUser = userService.findByUuidOrThrow(userId);
@@ -50,6 +51,6 @@ public class WebSocketChannelInterceptor implements ChannelInterceptor {
     }
 
     private boolean pathMatch(String pattern, String destination) {
-        return new AntPathMatcher().match(pattern, destination);
+        return ANT_PATH_MATCHER.match(pattern, destination);
     }
 }

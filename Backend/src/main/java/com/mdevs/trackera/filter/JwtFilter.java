@@ -57,6 +57,7 @@ public class JwtFilter extends OncePerRequestFilter {
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
-        return apiConfig.hasAnnotations(request.getRequestURI(), request.getMethod(), Set.of(PublicAPI.class));
+        String path = request.getRequestURI();
+        return path.startsWith("/trackera/ws") || apiConfig.hasAnnotations(path, request.getMethod(), Set.of(PublicAPI.class));
     }
 }
