@@ -1,7 +1,6 @@
 package com.mdevs.trackera.shared;
 
 import com.mdevs.trackera.entity.User;
-import com.mdevs.trackera.service.UserService;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.simp.stomp.StompCommand;
@@ -16,14 +15,12 @@ import java.util.function.BiPredicate;
 
 @Component
 public class WebSocketChannelRuleInterceptor implements ChannelInterceptor {
-    private final UserService userService;
 
     private final WebSocketAuthRegistry webSocketAuthRegistry;
 
     private static final AntPathMatcher ANT_PATH_MATCHER = new AntPathMatcher();
 
-    public WebSocketChannelRuleInterceptor(UserService userService, WebSocketAuthRegistry webSocketAuthRegistry) {
-        this.userService = userService;
+    public WebSocketChannelRuleInterceptor(WebSocketAuthRegistry webSocketAuthRegistry) {
         this.webSocketAuthRegistry = webSocketAuthRegistry;
     }
 
@@ -33,8 +30,7 @@ public class WebSocketChannelRuleInterceptor implements ChannelInterceptor {
 
         if (accessor != null && StompCommand.SUBSCRIBE.equals(accessor.getCommand())) {
             String destination = accessor.getDestination();
-            String userId = (String) Objects.requireNonNull(accessor.getSessionAttributes()).get("userId");
-            User loggedUser = userService.findByUuidOrThrow(userId);
+            User loggedUser = (User) Objects.requireNonNull(accessor.getSessionAttributes()).get("user");
 
             for (var entry : webSocketAuthRegistry.getRules().entrySet()) {
                 String pattern = entry.getKey();
