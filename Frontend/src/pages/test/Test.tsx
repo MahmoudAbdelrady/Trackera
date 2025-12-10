@@ -24,14 +24,8 @@ const Test = () => {
         console.log("Connected to WebSocket!");
 
         // Subscribe to a topic
-        client.subscribe("/topic/test", (message) => {
+        client.subscribe("/topic/log-status/e2035da6-93e3-4c3b-b45e-8da4e6ce00ec", (message) => {
           console.log("Received:", message.body);
-        });
-
-        // Send a message
-        client.publish({
-          destination: "/trackera/test",
-          body: "Hello from frontend",
         });
       },
       onStompError: (frame) => {
