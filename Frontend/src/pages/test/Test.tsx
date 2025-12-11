@@ -1,21 +1,20 @@
 import { Client } from "@stomp/stompjs";
-import { useRef } from "react";
+import { Divider } from "antd";
+import { useRef, useState } from "react";
+import { userApis } from "../../state/api";
 
 const Test = () => {
   const clientRef = useRef<Client | null>(null);
+  const [status, setStatus] = useState("Unsynced");
 
   const connectWs = () => {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      console.error("No token found in localStorage");
-      return;
-    }
-
     // Create a new STOMP client using native WebSocket
     const client = new Client({
       brokerURL: "ws://localhost:8080/trackera/ws", // WebSocket URL with context path
-      connectHeaders: {
-        Authorization: `Bearer ${token}`,
+      beforeConnect: () => {
+        client.connectHeaders = {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        };
       },
       debug: (str) => {
         console.log("[STOMP]", str);
@@ -25,11 +24,18 @@ const Test = () => {
 
         // Subscribe to a topic
         client.subscribe("/topic/log-status/e2035da6-93e3-4c3b-b45e-8da4e6ce00ec", (message) => {
-          console.log("Received:", message.body);
+          const data: Record<string, any> = JSON.parse(message.body);
+          setStatus(data.message);
+          console.log("Received:", data.message);
         });
       },
-      onStompError: (frame) => {
-        console.error("Broker error:", frame.headers["message"]);
+      onStompError: async (frame) => {
+        const errorMsg = frame.headers["message"];
+        if (errorMsg.startsWith("401")) {
+          await userApis.refreshToken();
+          return;
+        }
+        console.error("Broker error:", errorMsg);
       },
     });
 
@@ -48,6 +54,10 @@ const Test = () => {
     <div>
       <button onClick={connectWs}>Connect to WebSocket</button>
       <button onClick={disconnectWs}>Disconnect</button>
+      <Divider />
+      <div>
+        Status: <span>{status}</span>
+      </div>
     </div>
   );
 };

@@ -1,4 +1,5 @@
 import requestInstance from "../../shared/axios/request-instance";
+import { useAuthStore } from "../store";
 
 export interface UserInfo {
   firstname: string;
@@ -21,8 +22,14 @@ const fetchMe = async () => {
   }
 };
 
+const refreshToken = async () => {
+  const response = await requestInstance.post("/auth/jwt/refresh");
+  useAuthStore.getState().login(response.data.token);
+};
+
 const userApis = {
   fetchMe,
+  refreshToken,
 };
 
 export default userApis;
