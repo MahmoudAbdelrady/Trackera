@@ -8,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
+import org.springframework.messaging.MessageDeliveryException;
 import org.springframework.messaging.simp.stomp.StompCommand;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.messaging.support.ChannelInterceptor;
@@ -30,12 +31,16 @@ public class WebSocketJwtChannelInterceptor implements ChannelInterceptor {
     public Message<?> preSend(Message<?> message, MessageChannel channel) {
         StompHeaderAccessor accessor = MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
         if (accessor != null && StompCommand.CONNECT.equals(accessor.getCommand())) {
-            String token = accessor.getFirstNativeHeader(HttpHeaders.AUTHORIZATION);
-            if (token == null) throw new SecurityException("Missing token");
-            token = token.replace("Bearer ", "");
-            Claims claims = jwtUtil.validateAndGetTokenPayload(token, true);
-            User loggedUser = userService.findByUuidOrThrow(claims.get("id", String.class));
-            accessor.getSessionAttributes().put("user", loggedUser);
+            try {
+                String token = accessor.getFirstNativeHeader(HttpHeaders.AUTHORIZATION);
+                if (token == null) throw new SecurityException("Missing token");
+                token = token.replace("Bearer ", "");
+                Claims claims = jwtUtil.validateAndGetTokenPayload(token, true);
+                User loggedUser = userService.findByUuidOrThrow(claims.get("id", String.class));
+                accessor.getSessionAttributes().put("user", loggedUser);
+            } catch (SecurityException e) {
+                throw new MessageDeliveryException(message, "401:Unauthorized", e);
+            }
         }
         return message;
     }
