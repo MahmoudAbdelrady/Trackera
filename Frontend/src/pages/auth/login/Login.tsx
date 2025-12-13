@@ -1,9 +1,4 @@
-import {
-  AuthFooter,
-  AuthForm,
-  AuthLayout,
-  InputField,
-} from "../../../components";
+import { AuthFooter, AuthForm, AuthLayout, InputField } from "../../../components";
 import { Lock, Mail } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useFormik } from "formik";
@@ -26,9 +21,7 @@ const Login = () => {
   const authStore = useAuthStore();
   const navigate = useNavigate();
   const loginFormik = useFormik({
-    initialValues: (
-      Object.keys(loginSchema.fields) as (keyof LoginFormFields)[]
-    ).reduce((acc, key) => {
+    initialValues: (Object.keys(loginSchema.fields) as (keyof LoginFormFields)[]).reduce((acc, key) => {
       acc[key] = "";
       return acc;
     }, {} as LoginFormFields),
@@ -36,11 +29,11 @@ const Login = () => {
     onSubmit: async (values) => {
       setIsLoading(true);
       try {
-        const response = await requestInstance.post("/auth/login", {
+        await requestInstance.post("/auth/login", {
           email: values.email,
           password: values.password,
         });
-        authStore.login(response.data.token);
+        authStore.setAuthenticated(true);
         navigate("/");
       } catch (error: any) {
         if (error.response?.data.message === "Validation Error") {
@@ -62,19 +55,9 @@ const Login = () => {
         description="Enter your credentials to access your account"
         submitButtonText="Login"
         onSubmit={loginFormik.handleSubmit}
-        isSubmitBtnDisabled={
-          !loginFormik.isValid || !loginFormik.dirty || isLoading
-        }
+        isSubmitBtnDisabled={!loginFormik.isValid || !loginFormik.dirty || isLoading}
         isSubmitBtnLoading={isLoading}
-        footer={
-          <AuthFooter
-            hasOAuthBtns={true}
-            isOAuthBtnsDisabled={isLoading}
-            footerText="Don't have an account?"
-            footerLink="/sign-up"
-            footerLinkText="Sign up"
-          />
-        }
+        footer={<AuthFooter hasOAuthBtns={true} isOAuthBtnsDisabled={isLoading} footerText="Don't have an account?" footerLink="/sign-up" footerLinkText="Sign up" />}
       >
         <InputField
           label="Email"
@@ -86,11 +69,7 @@ const Login = () => {
           onBlur={loginFormik.handleBlur}
           type="email"
           disabled={isLoading}
-          error={
-            loginFormik.touched.email && loginFormik.errors.email
-              ? loginFormik.errors.email
-              : undefined
-          }
+          error={loginFormik.touched.email && loginFormik.errors.email ? loginFormik.errors.email : undefined}
         />
         <InputField
           label="Password"
@@ -102,11 +81,7 @@ const Login = () => {
           onBlur={loginFormik.handleBlur}
           type="password"
           disabled={isLoading}
-          error={
-            loginFormik.touched.password && loginFormik.errors.password
-              ? loginFormik.errors.password
-              : undefined
-          }
+          error={loginFormik.touched.password && loginFormik.errors.password ? loginFormik.errors.password : undefined}
         />
         <div className={classes.forget_password_box}>
           <Link to="/forgot-password" className={classes.forget_password_link}>
