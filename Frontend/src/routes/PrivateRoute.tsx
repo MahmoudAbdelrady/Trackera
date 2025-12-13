@@ -4,10 +4,10 @@ import { LoadingSpinner, ServerError } from "../components";
 import { useAuthStore } from "../state/store";
 
 const PrivateRoute = ({ children }: { children: React.JSX.Element }) => {
-  const { isAuthenticated, isLoading: isAuthLoading, isError: isAuthError } = useAuthStore((state) => state);
+  const { isAuthenticated, authChecked, isError: isAuthError } = useAuthStore((state) => state);
   const meQuery = userQueries.useMeQuery();
 
-  if (isAuthLoading || meQuery.isLoading) return <LoadingSpinner />;
+  if (!authChecked || meQuery.isLoading) return <LoadingSpinner />;
 
   if (!isAuthenticated && !isAuthError) return <Navigate to="/login" />;
 
