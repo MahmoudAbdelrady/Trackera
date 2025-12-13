@@ -2,19 +2,19 @@ import { create } from "zustand";
 
 interface AuthState {
   isAuthenticated: boolean;
-  isLoading: boolean;
+  authChecked: boolean;
   isError: boolean;
   setAuthenticated: (isAuthenticated: boolean) => void;
-  setIsLoading: (isLoading: boolean) => void;
+  setAuthChecked: (authChecked: boolean) => void;
   setError: (isError: boolean) => void;
 }
 
 const useAuthStore = create<AuthState>((set) => ({
   isAuthenticated: false,
   isError: false,
-  isLoading: false,
+  authChecked: false,
   setAuthenticated: (val: boolean) => set({ isAuthenticated: val }),
-  setIsLoading: (val: boolean) => set({ isLoading: val }),
+  setAuthChecked: (val: boolean) => set({ authChecked: val }),
   setError: (val: boolean) => set({ isError: val }),
 }));
 

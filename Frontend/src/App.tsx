@@ -93,7 +93,6 @@ const App = () => {
   useEffect(() => {
     const checkAuth = async () => {
       let isAuthenticated: boolean;
-      useAuthStore.getState().setIsLoading(true);
       try {
         await authApis.isAuthenticated();
         isAuthenticated = true;
@@ -104,7 +103,7 @@ const App = () => {
         isAuthenticated = false;
       }
       useAuthStore.getState().setAuthenticated(isAuthenticated);
-      useAuthStore.getState().setIsLoading(false);
+      useAuthStore.getState().setAuthChecked(true);
     };
 
     checkAuth();
