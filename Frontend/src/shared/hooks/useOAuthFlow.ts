@@ -22,6 +22,7 @@ export function useOAuthFlow({ onSuccess, onError }: OAuthCallbacks) {
         const providerOAuthLink = await fetchOAuthFlowLink(provider, forceLink);
         window.open(providerOAuthLink, `Link ${provider} Account`, "width=600,height=600");
       } catch (error: any) {
+        console.error("OAuth Flow Error:", error);
         onError?.(error.message || "Failed to link account");
       }
     },
