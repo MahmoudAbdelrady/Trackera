@@ -1,3 +1,4 @@
+import authApis from "./auth";
 import userApis from "./user";
 
-export { userApis };
+export { authApis, userApis };

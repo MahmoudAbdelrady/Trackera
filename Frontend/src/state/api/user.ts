@@ -16,7 +16,6 @@ const fetchMe = async () => {
     const response = await requestInstance.get<UserInfo>("/user/me");
     return response.data;
   } catch (error) {
-    console.log("Error fetching user data:", error);
     throw error;
   }
 };

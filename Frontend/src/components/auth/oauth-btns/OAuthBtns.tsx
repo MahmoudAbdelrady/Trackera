@@ -10,8 +10,8 @@ const OAuthBtns = ({ disabled }: { disabled?: boolean }) => {
   const authStore = useAuthStore();
   const navigate = useNavigate();
   const { linkProviderAccount } = useOAuthFlow({
-    onSuccess: (data) => {
-      authStore.login(data.token);
+    onSuccess: () => {
+      authStore.setAuthenticated(true);
       navigate("/");
     },
     onError: (error) => {

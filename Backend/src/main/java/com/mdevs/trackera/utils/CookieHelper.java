@@ -9,7 +9,13 @@ import java.util.Arrays;
 
 @Component
 public class CookieHelper {
+    public static final String ACCESS_TOKEN_COOKIE_NAME = "accessToken";
+
     public static final String REFRESH_TOKEN_COOKIE_NAME = "refreshToken";
+
+    public static final String COOKIE_GENERAL_PATH = "/trackera";
+
+    public static final String COOKIE_AUTH_PATH = "/trackera/auth";
 
     public static final int REFRESH_TOKEN_ROTATION_THRESHOLD_DAYS = 3;
 
@@ -22,11 +28,11 @@ public class CookieHelper {
         return cookie;
     }
 
-    public static int getRefreshTokenCookieMaxAge() {
-        return AppConfig.getApplicationContext().getEnvironment().getProperty("trackera.cookie.max-age", Integer.class, 3600);
+    public static int getTokenCookieMaxAge(boolean isAccessToken) {
+        return AppConfig.getApplicationContext().getEnvironment().getProperty(isAccessToken ? "trackera.cookie.access-token-max-age" : "trackera.cookie.refresh-token-max-age", Integer.class, 0);
     }
 
-    public String extractCookieValue(HttpServletRequest request, String cookieName) {
+    public static String extractCookieValue(HttpServletRequest request, String cookieName) {
         Cookie[] cookies = request.getCookies();
         if (cookies == null) {
             return null;

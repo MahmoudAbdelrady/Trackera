@@ -1,12 +1,16 @@
 package com.mdevs.trackera.utils;
 
+import com.mdevs.trackera.config.general.AppConfig;
 import com.mdevs.trackera.entity.UserInvalidToken;
 import com.mdevs.trackera.repository.UserInvalidTokenRepository;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
+import jakarta.servlet.http.HttpServletRequest;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
@@ -31,6 +35,11 @@ public class JwtUtil {
     public JwtUtil(UserInvalidTokenRepository userInvalidTokenRepository, CryptoUtil cryptoUtil) {
         this.userInvalidTokenRepository = userInvalidTokenRepository;
         this.cryptoUtil = cryptoUtil;
+    }
+
+    public String getToken(HttpServletRequest request) {
+        String token = CookieHelper.extractCookieValue(request, CookieHelper.ACCESS_TOKEN_COOKIE_NAME);
+        return !StringUtils.isEmpty(token) ? token : null;
     }
 
     public String generateToken(String userUuid, boolean isAccessToken) {

@@ -14,7 +14,6 @@ import io.jsonwebtoken.Claims;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -111,44 +110,49 @@ public class AuthService {
             return Map.of("isError", true, "message", message);
         }
 
-        return generateLoginInfo(loggedUser, response);
+        generateLoginInfo(loggedUser, response);
+        return null;
     }
 
     @Transactional
     public void logout(HttpServletRequest request, HttpServletResponse response) {
-        String accessToken = request.getHeader(HttpHeaders.AUTHORIZATION).substring(7);
-        String refreshToken = cookieHelper.extractCookieValue(request, CookieHelper.REFRESH_TOKEN_COOKIE_NAME);
+        String accessToken = jwtUtil.getToken(request);
+        String refreshToken = CookieHelper.extractCookieValue(request, CookieHelper.REFRESH_TOKEN_COOKIE_NAME);
         saveInvalidToken(accessToken, true);
         if (!StringUtils.isEmpty(refreshToken)) {
             saveInvalidToken(refreshToken, false);
         }
-        response.addCookie(cookieHelper.create(CookieHelper.REFRESH_TOKEN_COOKIE_NAME, null, true, "/trackera/auth", 0));
+        response.addCookie(cookieHelper.create(CookieHelper.ACCESS_TOKEN_COOKIE_NAME, null, true, CookieHelper.COOKIE_GENERAL_PATH, 0));
+        response.addCookie(cookieHelper.create(CookieHelper.REFRESH_TOKEN_COOKIE_NAME, null, true, CookieHelper.COOKIE_AUTH_PATH, 0));
     }
 
-    public Map<String, Object> refreshJwt(String refreshToken, HttpServletResponse response) {
+    public void getSession(String refreshToken) {
+        jwtUtil.validateAndGetTokenPayload(refreshToken, false);
+    }
+
+    public void refreshJwt(String refreshToken, HttpServletResponse response) {
         Claims refreshTokenClaims = jwtUtil.validateAndGetTokenPayload(refreshToken, false);
         String newAccessToken = jwtUtil.generateToken(refreshTokenClaims.get("id", String.class), true);
+        response.addCookie(cookieHelper.create(CookieHelper.ACCESS_TOKEN_COOKIE_NAME, newAccessToken, true, CookieHelper.COOKIE_GENERAL_PATH, CookieHelper.getTokenCookieMaxAge(true)));
 
         LocalDateTime refreshTokenExpiry = AppUtils.convertDateToLocalDateTime(refreshTokenClaims.getExpiration());
         if (refreshTokenExpiry.isBefore(LocalDateTime.now().plusDays(CookieHelper.REFRESH_TOKEN_ROTATION_THRESHOLD_DAYS))) {
             String newRefreshToken = jwtUtil.generateToken(refreshTokenClaims.get("id", String.class), false);
-            response.addCookie(cookieHelper.create(CookieHelper.REFRESH_TOKEN_COOKIE_NAME, newRefreshToken, true, "/trackera/auth", CookieHelper.getRefreshTokenCookieMaxAge()));
+            response.addCookie(cookieHelper.create(CookieHelper.REFRESH_TOKEN_COOKIE_NAME, newRefreshToken, true, CookieHelper.COOKIE_AUTH_PATH, CookieHelper.getTokenCookieMaxAge(false)));
             saveInvalidToken(refreshToken, false);
         }
-
-        return Map.of("token", newAccessToken);
     }
     //</editor-fold>
 
     //<editor-fold desc="OAuth2 Integration">
     public String oAuth(String providerCode, Boolean forceLink, HttpServletRequest request) {
         OAuthProvider provider = OAuthProvider.fromCode(providerCode);
-        String jwtTokenHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
-        if (StringUtils.isEmpty(jwtTokenHeader) || !jwtTokenHeader.startsWith("Bearer ")) {
+        String jwt = jwtUtil.getToken(request);;
+        if (jwt == null) {
             return oAuthProviderFactory.getProvider(provider).generateAuthFlowUrl(null);
         }
 
-        Claims claims = jwtUtil.validateAndGetTokenPayload(jwtTokenHeader.substring(7), true);
+        Claims claims = jwtUtil.validateAndGetTokenPayload(jwt, true);
         User user = userRepository.findByUuid(claims.get("id", String.class));
         if (!forceLink) {
             oAuthConnectionService.ensureNoConnection(user, provider);
@@ -161,13 +165,13 @@ public class AuthService {
         OAuthProvider provider = OAuthProvider.fromCode(providerCode);
         OAuthUserInfoDTO oAuthUserInfoDTO = oAuthProviderFactory.getProvider(provider).authenticate(oAuthRequestDTO);
 
-        Map<String, Object> result;
+        Map<String, Object> result = null;
         if (oAuthUserInfoDTO.getUserId() != null) {
             handleOAuthLinkingFlow(provider, oAuthUserInfoDTO);
             result = Map.of("message", "Account linked successfully");
         } else {
             User user = handleOAuthLoginOrSignupFlow(provider, oAuthUserInfoDTO);
-            result = generateLoginInfo(user, response);
+            generateLoginInfo(user, response);
         }
 
         return result;
@@ -253,11 +257,11 @@ public class AuthService {
         oAuthProviderFactory.getProvider(provider).handlePostLinkingActions(user, oAuthUserInfoDTO);
     }
 
-    private Map<String, Object> generateLoginInfo(User user, HttpServletResponse response) {
+    private void generateLoginInfo(User user, HttpServletResponse response) {
         String accessToken = jwtUtil.generateToken(user.getUuid(), true);
         String refreshToken = jwtUtil.generateToken(user.getUuid(), false);
-        response.addCookie(cookieHelper.create(CookieHelper.REFRESH_TOKEN_COOKIE_NAME, refreshToken, true, "/trackera/auth", CookieHelper.getRefreshTokenCookieMaxAge()));
-        return Map.of("token", accessToken);
+        response.addCookie(cookieHelper.create(CookieHelper.ACCESS_TOKEN_COOKIE_NAME, accessToken, true, CookieHelper.COOKIE_GENERAL_PATH, CookieHelper.getTokenCookieMaxAge(true)));
+        response.addCookie(cookieHelper.create(CookieHelper.REFRESH_TOKEN_COOKIE_NAME, refreshToken, true, CookieHelper.COOKIE_AUTH_PATH, CookieHelper.getTokenCookieMaxAge(false)));
     }
 
     private void saveInvalidToken(String token, boolean isAccessToken) {

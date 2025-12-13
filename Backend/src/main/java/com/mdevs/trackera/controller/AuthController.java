@@ -4,6 +4,7 @@ import com.mdevs.trackera.dto.auth.*;
 import com.mdevs.trackera.service.AuthService;
 import com.mdevs.trackera.service.SecurityTokenService;
 import com.mdevs.trackera.shared.annotations.PublicAPI;
+import com.mdevs.trackera.utils.CookieHelper;
 import com.mdevs.trackera.utils.ExceptionResponseMaker;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -65,9 +66,17 @@ public class AuthController {
     }
 
     @PublicAPI
+    @GetMapping("/session")
+    public ResponseEntity<?> GetSession(@CookieValue(value = CookieHelper.REFRESH_TOKEN_COOKIE_NAME, required = false) String refreshToken) {
+        authService.getSession(refreshToken);
+        return new ResponseEntity<>(HttpStatus.OK);
+    }
+
+    @PublicAPI
     @PostMapping("/jwt/refresh")
-    public ResponseEntity<?> RefreshJwt(@CookieValue(value = "refreshToken") String refreshToken, HttpServletResponse response) {
-        return new ResponseEntity<>(authService.refreshJwt(refreshToken, response), HttpStatus.OK);
+    public ResponseEntity<?> RefreshJwt(@CookieValue(value = CookieHelper.REFRESH_TOKEN_COOKIE_NAME, required = false) String refreshToken, HttpServletResponse response) {
+        authService.refreshJwt(refreshToken, response);
+        return new ResponseEntity<>(HttpStatus.OK);
     }
 
     @PublicAPI

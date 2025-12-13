@@ -5,6 +5,10 @@ import { Toaster } from "react-hot-toast";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import queryClient from "./state/queries";
+import { useEffect } from "react";
+import { authApis } from "./state/api";
+import { useAuthStore } from "./state/store";
+import type { AxiosError } from "axios";
 
 const router = createBrowserRouter([
   {
@@ -86,6 +90,26 @@ const router = createBrowserRouter([
 ]);
 
 const App = () => {
+  useEffect(() => {
+    const checkAuth = async () => {
+      let isAuthenticated: boolean;
+      useAuthStore.getState().setIsLoading(true);
+      try {
+        await authApis.isAuthenticated();
+        isAuthenticated = true;
+      } catch (error: AxiosError | any) {
+        if (!error.response || error.response.status !== 401) {
+          useAuthStore.getState().setError(true);
+        }
+        isAuthenticated = false;
+      }
+      useAuthStore.getState().setAuthenticated(isAuthenticated);
+      useAuthStore.getState().setIsLoading(false);
+    };
+
+    checkAuth();
+  }, []);
+
   return (
     <GoogleOAuthProvider clientId={import.meta.env.VITE_TRACKERA_GOOGLE_CLIENT_ID}>
       <QueryClientProvider client={queryClient}>
