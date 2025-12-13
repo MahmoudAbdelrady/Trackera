@@ -9,8 +9,6 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.apache.commons.lang3.StringUtils;
-import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -34,16 +32,15 @@ public class JwtFilter extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-        String jwtTokenHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
-        if (StringUtils.isEmpty(jwtTokenHeader) || !jwtTokenHeader.startsWith("Bearer ")) {
+        String jwt = jwtUtil.getToken(request);
+        if (jwt == null) {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             return;
         }
 
-        String jwtToken = jwtTokenHeader.substring(7);
         Claims claims;
         try {
-            claims = jwtUtil.validateAndGetTokenPayload(jwtToken, true);
+            claims = jwtUtil.validateAndGetTokenPayload(jwt, true);
         } catch (SecurityException ex) {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             return;
