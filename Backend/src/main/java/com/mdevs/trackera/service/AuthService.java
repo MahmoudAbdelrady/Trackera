@@ -122,8 +122,8 @@ public class AuthService {
         if (!StringUtils.isEmpty(refreshToken)) {
             saveInvalidToken(refreshToken, false);
         }
-        response.addCookie(cookieHelper.create(CookieHelper.ACCESS_TOKEN_COOKIE_NAME, null, true, "/trackera", 0));
-        response.addCookie(cookieHelper.create(CookieHelper.REFRESH_TOKEN_COOKIE_NAME, null, true, "/trackera/auth", 0));
+        response.addCookie(cookieHelper.create(CookieHelper.ACCESS_TOKEN_COOKIE_NAME, null, true, CookieHelper.COOKIE_GENERAL_PATH, 0));
+        response.addCookie(cookieHelper.create(CookieHelper.REFRESH_TOKEN_COOKIE_NAME, null, true, CookieHelper.COOKIE_AUTH_PATH, 0));
     }
 
     public void getSession(String refreshToken) {
@@ -133,12 +133,12 @@ public class AuthService {
     public void refreshJwt(String refreshToken, HttpServletResponse response) {
         Claims refreshTokenClaims = jwtUtil.validateAndGetTokenPayload(refreshToken, false);
         String newAccessToken = jwtUtil.generateToken(refreshTokenClaims.get("id", String.class), true);
-        response.addCookie(cookieHelper.create(CookieHelper.ACCESS_TOKEN_COOKIE_NAME, newAccessToken, true, "/trackera", CookieHelper.getTokenCookieMaxAge(true)));
+        response.addCookie(cookieHelper.create(CookieHelper.ACCESS_TOKEN_COOKIE_NAME, newAccessToken, true, CookieHelper.COOKIE_GENERAL_PATH, CookieHelper.getTokenCookieMaxAge(true)));
 
         LocalDateTime refreshTokenExpiry = AppUtils.convertDateToLocalDateTime(refreshTokenClaims.getExpiration());
         if (refreshTokenExpiry.isBefore(LocalDateTime.now().plusDays(CookieHelper.REFRESH_TOKEN_ROTATION_THRESHOLD_DAYS))) {
             String newRefreshToken = jwtUtil.generateToken(refreshTokenClaims.get("id", String.class), false);
-            response.addCookie(cookieHelper.create(CookieHelper.REFRESH_TOKEN_COOKIE_NAME, newRefreshToken, true, "/trackera/auth", CookieHelper.getTokenCookieMaxAge(false)));
+            response.addCookie(cookieHelper.create(CookieHelper.REFRESH_TOKEN_COOKIE_NAME, newRefreshToken, true, CookieHelper.COOKIE_AUTH_PATH, CookieHelper.getTokenCookieMaxAge(false)));
             saveInvalidToken(refreshToken, false);
         }
     }
@@ -260,8 +260,8 @@ public class AuthService {
     private void generateLoginInfo(User user, HttpServletResponse response) {
         String accessToken = jwtUtil.generateToken(user.getUuid(), true);
         String refreshToken = jwtUtil.generateToken(user.getUuid(), false);
-        response.addCookie(cookieHelper.create(CookieHelper.ACCESS_TOKEN_COOKIE_NAME, accessToken, true, "/trackera", CookieHelper.getTokenCookieMaxAge(true)));
-        response.addCookie(cookieHelper.create(CookieHelper.REFRESH_TOKEN_COOKIE_NAME, refreshToken, true, "/trackera/auth", CookieHelper.getTokenCookieMaxAge(false)));
+        response.addCookie(cookieHelper.create(CookieHelper.ACCESS_TOKEN_COOKIE_NAME, accessToken, true, CookieHelper.COOKIE_GENERAL_PATH, CookieHelper.getTokenCookieMaxAge(true)));
+        response.addCookie(cookieHelper.create(CookieHelper.REFRESH_TOKEN_COOKIE_NAME, refreshToken, true, CookieHelper.COOKIE_AUTH_PATH, CookieHelper.getTokenCookieMaxAge(false)));
     }
 
     private void saveInvalidToken(String token, boolean isAccessToken) {
