@@ -63,6 +63,8 @@ public class WorkLogService {
 
     private static final Pattern DURATION_PATTERN = Pattern.compile("(?:(\\d+)h)?\\s*(?:(\\d+)m)?");
 
+    public static final String WORKLOG_STATUS_SSE_EVENT_CACHE_KEY_PREFIX = "worklog-sync-event:";
+
     public WorkLogService(WorkLogRepository workLogRepository, WorkLogDetailRepository workLogDetailRepository, UserPreferenceService userPreferenceService, OAuthConnectionService oAuthConnectionService,
                           BackgroundJobService backgroundJobService, WorkLogMapper workLogMapper) {
         this.workLogRepository = workLogRepository;
