@@ -16,9 +16,9 @@ public class WorkLogSyncPayloadDTO {
 
     private Long workLogId;
 
-    private List<WorkLogDetailSyncRequestDTO> detailsToUnsync;
+    private List<WorkLogDetailSyncRequestDTO> detailsToSync;
 
-    private List<Long> detailsToSync;
+    private List<WorkLogDetailSyncRequestDTO> detailsToUnsync;
 
     public WorkLogSyncPayloadDTO(Long userId) {
         this.userId = userId;

@@ -63,7 +63,7 @@ public class WorkLogService {
 
     private static final Pattern DURATION_PATTERN = Pattern.compile("(?:(\\d+)h)?\\s*(?:(\\d+)m)?");
 
-    public static final String WORKLOG_STATUS_SSE_EVENT_CACHE_KEY_PREFIX = "worklog-sync-event:";
+    public static final String WORKLOG_SYNC_STATUS_EVENT_NAME = "worklog-sync-status";
 
     public WorkLogService(WorkLogRepository workLogRepository, WorkLogDetailRepository workLogDetailRepository, UserPreferenceService userPreferenceService, OAuthConnectionService oAuthConnectionService,
                           BackgroundJobService backgroundJobService, WorkLogMapper workLogMapper) {
@@ -180,7 +180,8 @@ public class WorkLogService {
             markDetailsForSync(workLogDetails, true);
 
             WorkLogSyncPayloadDTO workLogSyncPayloadDTO = new WorkLogSyncPayloadDTO(workLog.getUser().getId(), workLog.getId());
-            workLogSyncPayloadDTO.setDetailsToSync(workLogDetails.stream().map(WorkLogDetail::getId).toList());
+            List<WorkLogDetailSyncRequestDTO> detailsToSync = workLogDetails.stream().map(detail -> new WorkLogDetailSyncRequestDTO(workLog.getUuid(), detail.getId(), detail.getTaskName(), null)).toList();
+            workLogSyncPayloadDTO.setDetailsToSync(detailsToSync);
             backgroundJobService.enqueueJob(WorkLogSyncJobHandler.class, AppUtils.convertObjectToJsonString(workLogSyncPayloadDTO));
         }
         return Map.of("message", "Worklog uploaded successfully");
@@ -209,7 +210,8 @@ public class WorkLogService {
         if (!detailsToSync.isEmpty()) {
             workLog.setStatus(WorkLogStatus.SYNC_IN_PROGRESS);
             markDetailsForSync(new ArrayList<>(detailsToSync), true);
-            workLogSyncPayloadDTO.setDetailsToSync(detailsToSync.stream().map(WorkLogDetail::getId).toList());
+            List<WorkLogDetailSyncRequestDTO> detailSyncRequests = detailsToSync.stream().map(detail -> new WorkLogDetailSyncRequestDTO(workLog.getUuid(), detail.getId(), detail.getTaskName(), null)).toList();
+            workLogSyncPayloadDTO.setDetailsToSync(detailSyncRequests);
         }
 
         handleUpdateMetaData(manageWorkLogDTO, workLog);
@@ -521,10 +523,13 @@ public class WorkLogService {
     private void handleJiraSyncing(WorkLog workLog, List<WorkLogDetail> workLogDetails, boolean sync) {
         markDetailsForSync(workLogDetails, sync);
         WorkLogSyncPayloadDTO workLogSyncPayloadDTO = new WorkLogSyncPayloadDTO(workLog.getUser().getId(), workLog.getId());
+        List<WorkLogDetailSyncRequestDTO> detailSyncRequests = workLogDetails.stream()
+                .map(detail -> new WorkLogDetailSyncRequestDTO(workLog.getUuid(), detail.getId(), detail.getTaskName(), detail.getJiraId()))
+                .toList();
         if (sync) {
-            workLogSyncPayloadDTO.setDetailsToSync(workLogDetails.stream().map(WorkLogDetail::getId).toList());
+            workLogSyncPayloadDTO.setDetailsToSync(detailSyncRequests);
         } else {
-            workLogSyncPayloadDTO.setDetailsToUnsync(workLogDetails.stream().map(detail -> new WorkLogDetailSyncRequestDTO(detail.getId(), detail.getTaskName(), detail.getJiraId())).toList());
+            workLogSyncPayloadDTO.setDetailsToUnsync(detailSyncRequests);
         }
         backgroundJobService.enqueueJob(WorkLogSyncJobHandler.class, AppUtils.convertObjectToJsonString(workLogSyncPayloadDTO));
     }
