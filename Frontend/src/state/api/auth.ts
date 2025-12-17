@@ -8,8 +8,17 @@ const isAuthenticated = async () => {
   }
 };
 
+const refreshToken = async () => {
+  try {
+    await requestInstance.post("/auth/jwt/refresh");
+  } catch (error: any) {
+    throw error;
+  }
+};
+
 const authApis = {
   isAuthenticated,
+  refreshToken,
 };
 
 export default authApis;
