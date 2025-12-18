@@ -2,7 +2,7 @@ import { Eye, SquarePen, Trash, ClipboardPlus, CalendarSync, CalendarX2, Calenda
 import { ManageWorkLogModal, AppLayout, SearchFilter, WorklogModal, WorklogStatusCard, TrackeraTable, StatusBadge } from "../../components";
 import classes from "./scss/home.module.css";
 import { Alert, Button, Tooltip, type TableProps } from "antd";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   worklogEvaluationMetadata,
@@ -20,7 +20,7 @@ import worklogModalClasses from "../../components/worklogs/modals/worklog-modal/
 import requestInstance from "../../shared/axios/request-instance";
 import { showErrorToast, showSuccessToast } from "../../utils/toast-handler/showToast";
 import { userQueries } from "../../state/queries";
-import { authApis } from "../../state/api";
+import { useWorklogStatusSSE } from "../../shared/hooks";
 
 const Home = () => {
   const { data: loggedUserData } = userQueries.useMeQuery();
@@ -35,7 +35,6 @@ const Home = () => {
   const [workLogSummary, setWorkLogSummary] = useState<WorkLogSummaryCard[]>([]);
   const [selectedWorkLog, setSelectedWorkLog] = useState<Worklog | undefined>(undefined);
   const [searchFilters, setSearchFilters] = useState<Record<string, any>>({});
-  const eventSourceRef = useRef<EventSource | null>(null);
 
   useEffect(() => {
     if (fetchWorkLog) {
@@ -51,56 +50,19 @@ const Home = () => {
     }
   }, [fetchSummary]);
 
-  useEffect(() => {
-    const hasInProgressLogs = workLogsResponse?.content.some((worklog) => worklog.status === "SYNC_IN_PROGRESS" || worklog.status === "UNSYNC_IN_PROGRESS");
-    if (hasInProgressLogs && !eventSourceRef.current) {
-      subscribeForStatusUpdates();
-    }
-
-    return () => {
-      if (eventSourceRef.current) {
-        eventSourceRef.current.close();
-        eventSourceRef.current = null;
-      }
-    };
-  }, [workLogsResponse]);
-
-  const subscribeForStatusUpdates = () => {
-    if (eventSourceRef.current) return;
-
-    const es = new EventSource(`${import.meta.env.VITE_TRACKERA_BACKEND_URL}/notifications/subscribe`, {
-      withCredentials: true,
-    });
-    es.addEventListener("worklog-sync-status", (event: MessageEvent) => {
-      const workLogStatusEventMessage = JSON.parse(event.data);
+  useWorklogStatusSSE<Worklog>({
+    items: workLogsResponse?.content,
+    isInProgress: (worklog) => worklog.status === "SYNC_IN_PROGRESS" || worklog.status === "UNSYNC_IN_PROGRESS",
+    onStatusEvent: (event) => {
       setWorkLogsResponse((prev) => {
         if (!prev) return prev;
         const updatedContent = prev.content.map((worklog) =>
-          worklog.id === workLogStatusEventMessage.logId && workLogStatusEventMessage.type === "WORKLOG"
-            ? { ...worklog, status: workLogStatusEventMessage.status, hasError: !!workLogStatusEventMessage.syncError }
-            : worklog
+          worklog.id === event.logId && (event.type === "WORKLOG" || event.type === "ALL") ? { ...worklog, status: event.status, hasError: !!event.syncError } : worklog
         );
         return { ...prev, content: updatedContent };
       });
-    });
-    es.addEventListener("error", async (event: MessageEvent) => {
-      const errorResponse = JSON.parse(event.data);
-      if (errorResponse.status === 401) {
-        await authApis.refreshToken();
-        closeEventSource(es);
-        subscribeForStatusUpdates();
-        return;
-      }
-      closeEventSource(es);
-    });
-
-    eventSourceRef.current = es;
-  };
-
-  const closeEventSource = (event: EventSource) => {
-    event.close();
-    eventSourceRef.current = null;
-  };
+    },
+  });
 
   const fetchWorkLogs = async (pageNum: number = 0, pageSize: number = 10) => {
     setIsFetchingWorkLogs(true);

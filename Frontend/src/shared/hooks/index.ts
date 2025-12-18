@@ -1,3 +1,4 @@
 import { useOAuthFlow } from "./useOAuthFlow";
+import { useWorklogStatusSSE } from "./useWorklogStatusSSE";
 
-export { useOAuthFlow };
+export { useOAuthFlow, useWorklogStatusSSE };

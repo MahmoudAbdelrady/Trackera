@@ -11,6 +11,7 @@ import requestInstance from "../../shared/axios/request-instance";
 import { showErrorToast, showSuccessToast } from "../../utils/toast-handler/showToast";
 import { userQueries } from "../../state/queries";
 import buildSyncButtonProps from "../../utils/buildWorkLogSyncButtonProps";
+import { useWorklogStatusSSE } from "../../shared/hooks";
 
 const WorklogDetails = () => {
   const { worklogId } = useParams();
@@ -409,6 +410,22 @@ const WorklogDetails = () => {
       setCanFetchEntries(true);
     }
   };
+
+  useWorklogStatusSSE<WorklogTask>({
+    items: worklogTasks,
+    isInProgress: (worklogTask) => worklogTask.status === "SYNC_IN_PROGRESS" || worklogTask.status === "UNSYNC_IN_PROGRESS",
+    onStatusEvent: (event) => {
+      console.log("Received SSE event for Worklog Task:", event);
+    },
+  });
+
+  useWorklogStatusSSE<WorklogEntry>({
+    items: worklogEntries,
+    isInProgress: (worklogEntry) => worklogEntry.status === "SYNC_IN_PROGRESS" || worklogEntry.status === "UNSYNC_IN_PROGRESS",
+    onStatusEvent: (event) => {
+      console.log("Received SSE event for Worklog Entry:", event);
+    },
+  });
 
   return (
     <>
