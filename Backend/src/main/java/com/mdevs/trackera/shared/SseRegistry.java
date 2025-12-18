@@ -1,5 +1,6 @@
 package com.mdevs.trackera.shared;
 
+import lombok.Getter;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
@@ -9,6 +10,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 @Component
 public class SseRegistry {
+    @Getter
     private final Map<String, Set<SseEmitter>> emitters = new ConcurrentHashMap<>();
 
     public void add(String userUuid, SseEmitter emitter) {
