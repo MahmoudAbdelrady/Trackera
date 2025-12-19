@@ -50,14 +50,13 @@ const Home = () => {
     }
   }, [fetchSummary]);
 
-  useWorklogStatusSSE<Worklog>({
-    items: workLogsResponse?.content,
-    isInProgress: (worklog) => worklog.status === "SYNC_IN_PROGRESS" || worklog.status === "UNSYNC_IN_PROGRESS",
+  useWorklogStatusSSE({
+    enabled: workLogsResponse?.content.some((worklog) => ["SYNC_IN_PROGRESS", "UNSYNC_IN_PROGRESS"].includes(worklog.status)) ?? false,
     onStatusEvent: (event) => {
       setWorkLogsResponse((prev) => {
         if (!prev) return prev;
         const updatedContent = prev.content.map((worklog) =>
-          worklog.id === event.logId && (event.type === "WORKLOG" || event.type === "ALL") ? { ...worklog, status: event.status, hasError: !!event.syncError } : worklog
+          worklog.id === event.logId && ["WORKLOG", "ALL"].includes(event.type) ? { ...worklog, status: event.status, hasError: !!event.syncError } : worklog
         );
         return { ...prev, content: updatedContent };
       });

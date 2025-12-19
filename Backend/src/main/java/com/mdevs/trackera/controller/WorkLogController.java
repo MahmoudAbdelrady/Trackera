@@ -65,7 +65,7 @@ public class WorkLogController {
     }
 
     @PostMapping("/{uuid}/sync")
-    public ResponseEntity<?> syncWorkLog(@PathVariable String uuid, @RequestBody(required = false) WorkLogSelectionDTO workLogSelectionDTO, @RequestParam(defaultValue = "true") boolean sync) {
+    public ResponseEntity<?> syncWorkLog(@PathVariable String uuid, @RequestBody(required = false) WorkLogSelectionDTO workLogSelectionDTO, @RequestParam(required = false, defaultValue = "true") boolean sync) {
         workLogService.performJiraSync(uuid, workLogSelectionDTO, sync);
         return new ResponseEntity<>((sync ? "Sync" : "Unsync") + " request initiated successfully", HttpStatus.OK);
     }

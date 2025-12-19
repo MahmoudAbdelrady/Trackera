@@ -4,7 +4,7 @@ import classes from "./scss/worklog-details.module.css";
 import trackeraTableClasses from "../../components/trackera-table/scss/trackera-table.module.css";
 import { Alert, Button, Empty, Popconfirm, Skeleton, Tooltip, type TableProps } from "antd";
 import { statusMetadata, type Worklog, type WorklogEntry, type WorklogSelection, type WorkLogStatusType, type WorklogTask } from "../../shared/types";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import worklogModalClasses from "../../components/worklogs/modals/worklog-modal/scss/worklog-modal.module.css";
 import requestInstance from "../../shared/axios/request-instance";
@@ -44,6 +44,20 @@ const WorklogDetails = () => {
   // jira sync
   const [isSyncingJiraTasks, setIsSyncingJiraTasks] = useState<boolean>(false);
   const [isSyncingJiraEntries, setIsSyncingJiraEntries] = useState<boolean>(false);
+
+  // sse subscription
+  const [pendingSyncPayload, setPendingSyncPayload] = useState<Record<string, any> | null>(null);
+  const [forceSubscribeToSSE, setForceSubscribeToSSE] = useState<boolean>(false);
+  const [sseReady, setSseReady] = useState<boolean>(false);
+  const [sseAck, setSseAck] = useState<boolean>(false);
+  const hasInProgress = useMemo(() => {
+    const inProgressStatuses: WorkLogStatusType[] = ["SYNC_IN_PROGRESS", "UNSYNC_IN_PROGRESS"];
+    return (
+      worklogTasks.some((task) => inProgressStatuses.includes(task.status)) ||
+      worklogEntries.some((entry) => inProgressStatuses.includes(entry.status)) ||
+      inProgressStatuses.includes(worklogInfo?.status as WorkLogStatusType)
+    );
+  }, [worklogTasks, worklogEntries, worklogInfo]);
 
   const worklogTaskColumns: TableProps<WorklogTask>["columns"] = [
     {
@@ -378,54 +392,67 @@ const WorklogDetails = () => {
     return response.data;
   };
 
-  const performJiraTaskSync = async (taskNames: string[], sync: boolean) => {
+  const performJiraTaskSync = (taskNames: string[], sync: boolean) => {
     setIsSyncingJiraTasks(true);
-    try {
-      await performJiraSync(taskNames, [], sync);
-    } catch (error: any) {
-      showErrorToast(error);
-    }
+    triggerJiraSync(taskNames, [], sync);
     setIsSyncingJiraTasks(false);
   };
 
-  const performJiraLogEntrySync = async (entryIds: (string | number)[], sync: boolean) => {
+  const performJiraLogEntrySync = (entryIds: (string | number)[], sync: boolean) => {
     setIsSyncingJiraEntries(true);
-    try {
-      await performJiraSync([], entryIds, sync);
-    } catch (error: any) {
-      showErrorToast(error);
-    }
+    triggerJiraSync([], entryIds, sync);
     setIsSyncingJiraEntries(false);
   };
 
+  const triggerJiraSync = (taskNames: string[], entryIds: (string | number)[], sync: boolean) => {
+    setPendingSyncPayload({ taskNames, entryIds, sync });
+    setForceSubscribeToSSE(true);
+    setSseAck(false);
+    setSseReady(false);
+  };
+
+  useWorklogStatusSSE({
+    enabled: forceSubscribeToSSE || hasInProgress,
+    onOpen: () => setSseReady(true),
+    onStatusEvent: (event) => {
+      setSseAck(true);
+      if (["TASK", "ALL"].includes(event.type)) {
+        setWorklogTasks((prevTasks) => prevTasks.map((task) => (event.taskNames?.includes(task.taskName) ? { ...task, status: event.status, hasError: !!event.syncError } : task)));
+      }
+
+      if (["ENTRY", "ALL"].includes(event.type)) {
+        setWorklogEntries((prevEntries) => prevEntries.map((entry) => (event.entryIds?.includes(entry.id) ? { ...entry, status: event.status, syncError: event.syncError } : entry)));
+      }
+
+      if (["WORKLOG", "ALL"].includes(event.type)) {
+        setWorklogInfo((prev) => {
+          if (!prev) return prev;
+          return { ...prev, status: event.status, hasError: !!event.syncError };
+        });
+      }
+    },
+  });
+
+  useEffect(() => {
+    if (!sseReady || !pendingSyncPayload) return;
+
+    performJiraSync(pendingSyncPayload.taskNames ?? [], pendingSyncPayload.entryIds ?? [], pendingSyncPayload.sync ?? true);
+
+    setPendingSyncPayload(null);
+  }, [sseReady, pendingSyncPayload]);
+
+  useEffect(() => {
+    if (sseAck && !hasInProgress && !pendingSyncPayload) {
+      setForceSubscribeToSSE(false);
+    }
+  }, [sseAck, hasInProgress, pendingSyncPayload]);
+
   const performJiraSync = async (taskNames: string[], entryIds: (string | number)[], sync: boolean) => {
-    const response = await requestInstance.post(`/worklog/${worklogId}/sync${sync ? "" : "?sync=false"}`, {
+    await requestInstance.post(`/worklog/${worklogId}/sync${sync ? "" : "?sync=false"}`, {
       taskNames,
       entryIds,
     });
-    showSuccessToast(response.data);
-    setCanFetchWorkLogInfo(true);
-    setCanFetchTasks(true);
-    if (viewTaskVisible) {
-      setCanFetchEntries(true);
-    }
   };
-
-  useWorklogStatusSSE<WorklogTask>({
-    items: worklogTasks,
-    isInProgress: (worklogTask) => worklogTask.status === "SYNC_IN_PROGRESS" || worklogTask.status === "UNSYNC_IN_PROGRESS",
-    onStatusEvent: (event) => {
-      console.log("Received SSE event for Worklog Task:", event);
-    },
-  });
-
-  useWorklogStatusSSE<WorklogEntry>({
-    items: worklogEntries,
-    isInProgress: (worklogEntry) => worklogEntry.status === "SYNC_IN_PROGRESS" || worklogEntry.status === "UNSYNC_IN_PROGRESS",
-    onStatusEvent: (event) => {
-      console.log("Received SSE event for Worklog Entry:", event);
-    },
-  });
 
   return (
     <>

@@ -1,6 +1,7 @@
 package com.mdevs.trackera.service;
 
 import com.mdevs.trackera.config.general.AppConfig;
+import com.mdevs.trackera.dto.notification.NotificationDTO;
 import com.mdevs.trackera.dto.worklog.WorkLogSelectionDTO;
 import com.mdevs.trackera.dto.worklog.*;
 import com.mdevs.trackera.entity.User;
@@ -15,6 +16,7 @@ import com.mdevs.trackera.shared.WorkLogQueryBuilder;
 import com.mdevs.trackera.shared.enums.UserPreferenceOption;
 import com.mdevs.trackera.shared.enums.WorkLogColumn;
 import com.mdevs.trackera.shared.enums.WorkLogStatus;
+import com.mdevs.trackera.shared.enums.WorkLogSyncMessageType;
 import com.mdevs.trackera.shared.exceptions.types.BusinessException;
 import com.mdevs.trackera.shared.exceptions.types.NotFoundException;
 import com.mdevs.trackera.shared.exceptions.types.UnauthorizedException;
@@ -56,6 +58,8 @@ public class WorkLogService {
 
     private final BackgroundJobService backgroundJobService;
 
+    private final NotificationService notificationService;
+
     private final WorkLogMapper workLogMapper;
 
     @PersistenceContext
@@ -65,13 +69,14 @@ public class WorkLogService {
 
     public static final String WORKLOG_SYNC_STATUS_EVENT_NAME = "worklog-sync-status";
 
-    public WorkLogService(WorkLogRepository workLogRepository, WorkLogDetailRepository workLogDetailRepository, UserPreferenceService userPreferenceService, OAuthConnectionService oAuthConnectionService,
-                          BackgroundJobService backgroundJobService, WorkLogMapper workLogMapper) {
+    public WorkLogService(WorkLogRepository workLogRepository, WorkLogDetailRepository workLogDetailRepository, UserPreferenceService userPreferenceService,
+                          OAuthConnectionService oAuthConnectionService, BackgroundJobService backgroundJobService, NotificationService notificationService, WorkLogMapper workLogMapper) {
         this.workLogRepository = workLogRepository;
         this.workLogDetailRepository = workLogDetailRepository;
         this.userPreferenceService = userPreferenceService;
         this.oAuthConnectionService = oAuthConnectionService;
         this.backgroundJobService = backgroundJobService;
+        this.notificationService = notificationService;
         this.workLogMapper = workLogMapper;
     }
 
@@ -183,6 +188,9 @@ public class WorkLogService {
             List<WorkLogDetailSyncRequestDTO> detailsToSync = workLogDetails.stream().map(detail -> new WorkLogDetailSyncRequestDTO(workLog.getUuid(), detail.getId(), detail.getTaskName(), null)).toList();
             workLogSyncPayloadDTO.setDetailsToSync(detailsToSync);
             backgroundJobService.enqueueJob(WorkLogSyncJobHandler.class, AppUtils.convertObjectToJsonString(workLogSyncPayloadDTO));
+
+            WorkLogSyncMessageDTO syncMessageDTO = new WorkLogSyncMessageDTO(WorkLogSyncMessageType.WORKLOG, workLog.getUuid(), null, null, workLog.getStatus(), null);
+            notificationService.sendNotification(new NotificationDTO(AppConfig.getAuthenticatedCurrentUser().getUuid(), WORKLOG_SYNC_STATUS_EVENT_NAME, syncMessageDTO));
         }
         return Map.of("message", "Worklog uploaded successfully");
     }
@@ -212,6 +220,9 @@ public class WorkLogService {
             markDetailsForSync(new ArrayList<>(detailsToSync), true);
             List<WorkLogDetailSyncRequestDTO> detailSyncRequests = detailsToSync.stream().map(detail -> new WorkLogDetailSyncRequestDTO(workLog.getUuid(), detail.getId(), detail.getTaskName(), null)).toList();
             workLogSyncPayloadDTO.setDetailsToSync(detailSyncRequests);
+
+            WorkLogSyncMessageDTO syncMessageDTO = new WorkLogSyncMessageDTO(WorkLogSyncMessageType.WORKLOG, workLog.getUuid(), null, null, workLog.getStatus(), null);
+            notificationService.sendNotification(new NotificationDTO(AppConfig.getAuthenticatedCurrentUser().getUuid(), WORKLOG_SYNC_STATUS_EVENT_NAME, syncMessageDTO));
         }
 
         handleUpdateMetaData(manageWorkLogDTO, workLog);
@@ -276,6 +287,7 @@ public class WorkLogService {
         workLog.setStatus(sync ? WorkLogStatus.SYNC_IN_PROGRESS : WorkLogStatus.UNSYNC_IN_PROGRESS);
         workLogRepository.save(workLog);
         handleJiraSyncing(workLog, workLogDetails, sync);
+        handleWorkLogSyncNotifications(AppConfig.getAuthenticatedCurrentUser(), workLog, workLogDetails, sync ? WorkLogStatus.SYNC_IN_PROGRESS : WorkLogStatus.UNSYNC_IN_PROGRESS);
     }
     //</editor-fold>
 
@@ -321,6 +333,9 @@ public class WorkLogService {
         if (!detailsToUnsync.isEmpty()) {
             workLog.setStatus(WorkLogStatus.UNSYNC_IN_PROGRESS);
             syncPayloadDTO.setDetailsToUnsync(detailsToUnsync);
+
+            WorkLogSyncMessageDTO syncMessageDTO = new WorkLogSyncMessageDTO(WorkLogSyncMessageType.WORKLOG, workLog.getUuid(), null, null, workLog.getStatus(), null);
+            notificationService.sendNotification(new NotificationDTO(AppConfig.getAuthenticatedCurrentUser().getUuid(), WORKLOG_SYNC_STATUS_EVENT_NAME, syncMessageDTO));
         }
         workLogDetailRepository.deleteAllByWorkLog(workLog);
 
@@ -543,6 +558,14 @@ public class WorkLogService {
             }
         });
         workLogDetailRepository.saveAll(workLogDetails);
+    }
+
+    private void handleWorkLogSyncNotifications(User syncUser, WorkLog workLog, List<WorkLogDetail> workLogDetails, WorkLogStatus status) {
+        Set<String> taskNames = workLogDetails.stream().map(WorkLogDetail::getTaskName).collect(Collectors.toSet());
+        Set<String> detailIds = workLogDetails.stream().map(WorkLogDetail::getUuid).collect(Collectors.toSet());
+
+        WorkLogSyncMessageDTO syncMessageDTO = new WorkLogSyncMessageDTO(WorkLogSyncMessageType.ALL, workLog.getUuid(), new ArrayList<>(taskNames), new ArrayList<>(detailIds), status, null);
+        notificationService.sendNotification(new NotificationDTO(syncUser.getUuid(), WORKLOG_SYNC_STATUS_EVENT_NAME, syncMessageDTO));
     }
 
     private void handleUpdateMetaData(ManageWorkLogDTO manageWorkLogDTO, WorkLog workLog) {

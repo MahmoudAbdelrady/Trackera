@@ -1,55 +1,57 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useRef } from "react";
 import { authApis } from "../../state/api";
 
-type UseStatusSSEOptions<T> = {
-  items: T[] | undefined;
-  isInProgress: (item: T) => boolean;
+type UseStatusSSEOptions = {
+  enabled: boolean;
   onStatusEvent: (event: any) => void;
+  onOpen?: () => void;
 };
 
-export const useWorklogStatusSSE = <T>({ items, isInProgress, onStatusEvent }: UseStatusSSEOptions<T>) => {
+export const useWorklogStatusSSE = ({ enabled, onStatusEvent, onOpen }: UseStatusSSEOptions) => {
   const eventSourceRef = useRef<EventSource | null>(null);
-
-  const hasInProgress = useMemo(() => {
-    return items?.some(isInProgress) ?? false;
-  }, [items, isInProgress]);
 
   const subscribe = () => {
     if (eventSourceRef.current) return;
 
     const es = new EventSource(`${import.meta.env.VITE_TRACKERA_BACKEND_URL}/notifications/subscribe`, { withCredentials: true });
 
+    es.addEventListener("connected", (_) => {
+      onOpen?.();
+    });
+
     es.addEventListener("worklog-sync-status", (event: MessageEvent) => {
       onStatusEvent(JSON.parse(event.data));
     });
 
-    es.addEventListener("error", async (event: MessageEvent) => {
+    es.addEventListener("auth-error", async (_) => {
       try {
-        const errorResponse = JSON.parse(event.data);
-        if (errorResponse.status === 401) {
-          await authApis.refreshToken();
-          closeEventSource();
-          subscribe();
-          return;
-        }
+        await authApis.refreshToken();
+        closeEventSource();
+        subscribe();
+        return;
       } catch {
         // non-JSON error, ignore
       }
       closeEventSource();
     });
 
+    es.onerror = (error: any) => {
+      console.log("SSE error:", error);
+      closeEventSource();
+    };
+
     eventSourceRef.current = es;
   };
 
   useEffect(() => {
-    if (hasInProgress && !eventSourceRef.current) {
+    if (enabled && !eventSourceRef.current) {
       subscribe();
     }
 
-    if (!hasInProgress && eventSourceRef.current) {
+    if (!enabled && eventSourceRef.current) {
       closeEventSource();
     }
-  }, [hasInProgress]);
+  }, [enabled]);
 
   useEffect(() => {
     return closeEventSource;

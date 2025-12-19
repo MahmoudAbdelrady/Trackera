@@ -50,7 +50,7 @@ public interface WorkLogDetailRepository extends BaseRepository<WorkLogDetail> {
             "WHEN SUM(CASE WHEN wld.status = 'NOT_SYNCED' THEN 1 ELSE 0 END) = 0 THEN 'SYNCED' " +
             "WHEN SUM(CASE WHEN wld.status = 'SYNCED' THEN 1 ELSE 0 END) = 0 THEN 'NOT_SYNCED' " +
             "ELSE 'PARTIALLY' END " +
-            "FROM WorkLogDetail wld WHERE wld.taskName = :taskName " +
+            "FROM WorkLogDetail wld WHERE wld.workLog.id = :workLogId AND wld.taskName = :taskName " +
             "GROUP BY wld.taskName")
-    WorkLogStatus calculateWorkLogTaskStatus(@Param("taskName") String taskName);
+    WorkLogStatus calculateWorkLogTaskStatus(@Param("workLogId") Long workLogId, @Param("taskName") String taskName);
 }

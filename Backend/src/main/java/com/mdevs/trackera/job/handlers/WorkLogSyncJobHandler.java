@@ -1,6 +1,7 @@
 package com.mdevs.trackera.job.handlers;
 
 import com.mdevs.trackera.config.messaging.RabbitConfig;
+import com.mdevs.trackera.dto.notification.NotificationDTO;
 import com.mdevs.trackera.dto.worklog.WorkLogDetailSyncRequestDTO;
 import com.mdevs.trackera.dto.worklog.WorkLogSyncMessageDTO;
 import com.mdevs.trackera.dto.worklog.WorkLogSyncPayloadDTO;
@@ -66,12 +67,12 @@ public class WorkLogSyncJobHandler implements BackgroundJobHandler {
         List<WorkLogDetailSyncRequestDTO> detailsToUnsync = workLogSyncPayloadDTO.getDetailsToUnsync();
         WorkLogSyncResultDTO resultDTO = new WorkLogSyncResultDTO();
         if (detailsToUnsync != null && !detailsToUnsync.isEmpty()) {
-            resultDTO = processUnsyncDetails(detailsToUnsync, syncUser, isLastRetry);
+            resultDTO = processUnsyncDetails(workLogSyncPayloadDTO.getWorkLogId(), detailsToUnsync, syncUser, isLastRetry);
         }
 
         List<WorkLogDetailSyncRequestDTO> detailsToSync = workLogSyncPayloadDTO.getDetailsToSync();
         if (StringUtils.isEmpty(resultDTO.getHardError()) && (detailsToSync != null && !detailsToSync.isEmpty())) {
-            resultDTO = processSyncDetails(detailsToSync, syncUser, isLastRetry);
+            resultDTO = processSyncDetails(workLogSyncPayloadDTO.getWorkLogId(), detailsToSync, syncUser, isLastRetry);
         }
 
         if (workLogSyncPayloadDTO.getWorkLogId() != null) {
@@ -85,7 +86,7 @@ public class WorkLogSyncJobHandler implements BackgroundJobHandler {
         }
     }
 
-    private WorkLogSyncResultDTO processUnsyncDetails(List<WorkLogDetailSyncRequestDTO> detailsToUnsync, User syncUser, boolean isLastRetry) {
+    private WorkLogSyncResultDTO processUnsyncDetails(Long workLogId, List<WorkLogDetailSyncRequestDTO> detailsToUnsync, User syncUser, boolean isLastRetry) {
         Map<String, Long> tasksCount = detailsToUnsync.stream().collect(Collectors.groupingBy(WorkLogDetailSyncRequestDTO::getTaskName, Collectors.counting()));
         Iterator<WorkLogDetailSyncRequestDTO> iterator = detailsToUnsync.iterator();
         WorkLogSyncResultDTO resultDTO = new WorkLogSyncResultDTO();
@@ -94,7 +95,7 @@ public class WorkLogSyncJobHandler implements BackgroundJobHandler {
             try {
                 boolean hasError = selfRef.unSyncWorkLogDetailFromJira(syncUser, detail);
                 iterator.remove();
-                handleTasksCountAfterSyncOp(syncUser, detail, tasksCount, hasError);
+                handleTasksCountAfterSyncOp(workLogId, syncUser, detail, tasksCount, hasError);
                 if (hasError) {
                     resultDTO.setHasSoftError(true);
                 }
@@ -110,7 +111,7 @@ public class WorkLogSyncJobHandler implements BackgroundJobHandler {
         return resultDTO;
     }
 
-    private WorkLogSyncResultDTO processSyncDetails(List<WorkLogDetailSyncRequestDTO> detailsToSync, User syncUser, boolean isLastRetry) {
+    private WorkLogSyncResultDTO processSyncDetails(Long workLogId, List<WorkLogDetailSyncRequestDTO> detailsToSync, User syncUser, boolean isLastRetry) {
         Map<String, Long> tasksCount = detailsToSync.stream().collect(Collectors.groupingBy(WorkLogDetailSyncRequestDTO::getTaskName, Collectors.counting()));
         Iterator<WorkLogDetailSyncRequestDTO> iterator = detailsToSync.iterator();
         WorkLogSyncResultDTO resultDTO = new WorkLogSyncResultDTO();
@@ -119,7 +120,7 @@ public class WorkLogSyncJobHandler implements BackgroundJobHandler {
             try {
                 boolean hasError = selfRef.syncWorkLogDetailToJira(syncUser, detail);
                 iterator.remove();
-                handleTasksCountAfterSyncOp(syncUser, detail, tasksCount, hasError);
+                handleTasksCountAfterSyncOp(workLogId, syncUser, detail, tasksCount, hasError);
                 if (hasError) {
                     resultDTO.setHasSoftError(true);
                 }
@@ -158,7 +159,7 @@ public class WorkLogSyncJobHandler implements BackgroundJobHandler {
         workLogDetailRepository.save(workLogDetail);
 
         WorkLogSyncMessageDTO syncMessageDTO = new WorkLogSyncMessageDTO(WorkLogSyncMessageType.ENTRY, detail.getWorkLogId(), null, List.of(workLogDetail.getUuid()), workLogDetail.getStatus(), workLogDetail.getSyncError());
-        notificationService.sendNotification(user.getUuid(), WorkLogService.WORKLOG_SYNC_STATUS_EVENT_NAME, syncMessageDTO);
+        notificationService.sendNotification(new NotificationDTO(user.getUuid(), WorkLogService.WORKLOG_SYNC_STATUS_EVENT_NAME, syncMessageDTO));
         return hasError;
     }
 
@@ -187,20 +188,20 @@ public class WorkLogSyncJobHandler implements BackgroundJobHandler {
             workLogDetailRepository.save(workLogDetail);
 
             WorkLogSyncMessageDTO syncMessageDTO = new WorkLogSyncMessageDTO(WorkLogSyncMessageType.ENTRY, detailSyncRequestDTO.getWorkLogId(), null, List.of(workLogDetail.getUuid()), WorkLogStatus.NOT_SYNCED, syncError);
-            notificationService.sendNotification(user.getUuid(), WorkLogService.WORKLOG_SYNC_STATUS_EVENT_NAME, syncMessageDTO);
+            notificationService.sendNotification(new NotificationDTO(user.getUuid(), WorkLogService.WORKLOG_SYNC_STATUS_EVENT_NAME, syncMessageDTO));
         }
         return hasError;
     }
 
-    private void handleTasksCountAfterSyncOp(User user, WorkLogDetailSyncRequestDTO detail, Map<String, Long> tasksCount, boolean hasError) {
-        if (detail.getDetailId() == null)
+    private void handleTasksCountAfterSyncOp(Long workLogId, User user, WorkLogDetailSyncRequestDTO detail, Map<String, Long> tasksCount, boolean hasError) {
+        if (workLogId == null || detail.getDetailId() == null)
             return;
 
         long count = tasksCount.get(detail.getTaskName()) - 1;
         if (count == 0) {
-            WorkLogStatus taskStatus = workLogDetailRepository.calculateWorkLogTaskStatus(detail.getTaskName());
+            WorkLogStatus taskStatus = workLogDetailRepository.calculateWorkLogTaskStatus(workLogId, detail.getTaskName());
             WorkLogSyncMessageDTO syncMessageDTO = new WorkLogSyncMessageDTO(WorkLogSyncMessageType.TASK, detail.getWorkLogId(), List.of(detail.getTaskName()), null, taskStatus, hasError ? "Some entries had errors during synchronization." : null);
-            notificationService.sendNotification(user.getUuid(), WorkLogService.WORKLOG_SYNC_STATUS_EVENT_NAME, syncMessageDTO);
+            notificationService.sendNotification(new NotificationDTO(user.getUuid(), WorkLogService.WORKLOG_SYNC_STATUS_EVENT_NAME, syncMessageDTO));
         } else {
             tasksCount.put(detail.getTaskName(), count);
         }
@@ -213,7 +214,7 @@ public class WorkLogSyncJobHandler implements BackgroundJobHandler {
         workLogRepository.save(workLog);
 
         WorkLogSyncMessageDTO syncMessageDTO = new WorkLogSyncMessageDTO(WorkLogSyncMessageType.WORKLOG, workLog.getUuid(), null, null, workLog.getStatus(), hasError ? "Some tasks had errors during synchronization." : null);
-        notificationService.sendNotification(user.getUuid(), WorkLogService.WORKLOG_SYNC_STATUS_EVENT_NAME, syncMessageDTO);
+        notificationService.sendNotification(new NotificationDTO(user.getUuid(), WorkLogService.WORKLOG_SYNC_STATUS_EVENT_NAME, syncMessageDTO));
     }
 
     @Transactional
@@ -235,6 +236,6 @@ public class WorkLogSyncJobHandler implements BackgroundJobHandler {
                 new ArrayList<>(workLogDetails.stream().map(WorkLogDetail::getTaskName).collect(Collectors.toSet())),
                 new ArrayList<>(workLogDetails.stream().map(WorkLogDetail::getUuid).collect(Collectors.toSet())),
                 status, errorMessage);
-        notificationService.sendNotification(user.getUuid(), WorkLogService.WORKLOG_SYNC_STATUS_EVENT_NAME, syncMessageDTO);
+        notificationService.sendNotification(new NotificationDTO(user.getUuid(), WorkLogService.WORKLOG_SYNC_STATUS_EVENT_NAME, syncMessageDTO));
     }
 }
