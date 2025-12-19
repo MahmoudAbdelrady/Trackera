@@ -1,13 +1,14 @@
 import { useEffect, useRef } from "react";
 import { authApis } from "../../state/api";
 
-type UseStatusSSEOptions = {
+type SSEOptions = {
+  eventName: string;
   enabled: boolean;
   onStatusEvent: (event: any) => void;
   onOpen?: () => void;
 };
 
-export const useWorklogStatusSSE = ({ enabled, onStatusEvent, onOpen }: UseStatusSSEOptions) => {
+export const useSSE = ({ eventName, enabled, onStatusEvent, onOpen }: SSEOptions) => {
   const eventSourceRef = useRef<EventSource | null>(null);
 
   const subscribe = () => {
@@ -19,7 +20,7 @@ export const useWorklogStatusSSE = ({ enabled, onStatusEvent, onOpen }: UseStatu
       onOpen?.();
     });
 
-    es.addEventListener("worklog-sync-status", (event: MessageEvent) => {
+    es.addEventListener(eventName, (event: MessageEvent) => {
       onStatusEvent(JSON.parse(event.data));
     });
 

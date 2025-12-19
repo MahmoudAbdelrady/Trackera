@@ -1,4 +1,5 @@
 import { useOAuthFlow } from "./useOAuthFlow";
-import { useWorklogStatusSSE } from "./useWorklogStatusSSE";
+import { useSSE } from "./useSSE";
+import { useJiraSyncSSE } from "./useJiraSyncSSE";
 
-export { useOAuthFlow, useWorklogStatusSSE };
+export { useOAuthFlow, useSSE, useJiraSyncSSE };

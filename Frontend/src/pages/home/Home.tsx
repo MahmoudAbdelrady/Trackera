@@ -20,7 +20,7 @@ import worklogModalClasses from "../../components/worklogs/modals/worklog-modal/
 import requestInstance from "../../shared/axios/request-instance";
 import { showErrorToast, showSuccessToast } from "../../utils/toast-handler/showToast";
 import { userQueries } from "../../state/queries";
-import { useWorklogStatusSSE } from "../../shared/hooks";
+import { useJiraSyncSSE } from "../../shared/hooks";
 
 const Home = () => {
   const { data: loggedUserData } = userQueries.useMeQuery();
@@ -28,7 +28,6 @@ const Home = () => {
   const [deleteWorkLogVisible, setDeleteWorkLogVisible] = useState<boolean>(false);
   const [isFetchingWorkLogs, setIsFetchingWorkLogs] = useState<boolean>(true);
   const [isDeletingWorkLog, setIsDeletingWorkLog] = useState<boolean>(false);
-  const [isSyncingJira, setIsSyncingJira] = useState<boolean>(false);
   const [fetchWorkLog, setFetchWorkLog] = useState<boolean>(true);
   const [fetchSummary, setFetchSummary] = useState<boolean>(true);
   const [workLogsResponse, setWorkLogsResponse] = useState<PaginatedResponse<Worklog> | null>(null);
@@ -50,8 +49,8 @@ const Home = () => {
     }
   }, [fetchSummary]);
 
-  useWorklogStatusSSE({
-    enabled: workLogsResponse?.content.some((worklog) => ["SYNC_IN_PROGRESS", "UNSYNC_IN_PROGRESS"].includes(worklog.status)) ?? false,
+  const { triggerSync } = useJiraSyncSSE({
+    hasInProgress: workLogsResponse?.content.some((worklog) => ["SYNC_IN_PROGRESS", "UNSYNC_IN_PROGRESS"].includes(worklog.status)) ?? false,
     onStatusEvent: (event) => {
       setWorkLogsResponse((prev) => {
         if (!prev) return prev;
@@ -103,18 +102,6 @@ const Home = () => {
     return response.data;
   };
 
-  const performJiraSync = async (workLogId: string | number, sync: boolean) => {
-    setIsSyncingJira(true);
-    try {
-      const response = await requestInstance.post(`/worklog/${workLogId}/sync${sync ? "" : "?sync=false"}`);
-      showSuccessToast(response.data);
-      setFetchWorkLog(true);
-    } catch (error: any) {
-      showErrorToast(error);
-    }
-    setIsSyncingJira(false);
-  };
-
   const tableColumns: TableProps<Worklog>["columns"] = [
     {
       title: "Log Name",
@@ -157,7 +144,7 @@ const Home = () => {
               <Button
                 type="text"
                 icon={!loggedUserData?.jiraLinked ? <CalendarOff /> : <CalendarX2 />}
-                onClick={() => performJiraSync(record.id, false)}
+                onClick={() => triggerSync({ workLogId: record.id, sync: false })}
                 className={`${trackeraTableClasses.log_action_btn} ${trackeraTableClasses.unsync} ${
                   (!loggedUserData?.jiraLinked || record.status === "UNSYNC_IN_PROGRESS") && trackeraTableClasses.disabled
                 }`}
@@ -169,7 +156,7 @@ const Home = () => {
               <Button
                 type="text"
                 icon={!loggedUserData?.jiraLinked ? <CalendarOff /> : <CalendarSync />}
-                onClick={() => performJiraSync(record.id, true)}
+                onClick={() => triggerSync({ workLogId: record.id, sync: true })}
                 className={`${trackeraTableClasses.log_action_btn} ${trackeraTableClasses.sync} ${
                   (!loggedUserData?.jiraLinked || record.status === "SYNC_IN_PROGRESS") && trackeraTableClasses.disabled
                 }`}
@@ -258,7 +245,7 @@ const Home = () => {
               properties={{
                 columns: tableColumns,
                 dataSource: workLogsResponse?.content || [],
-                loading: isFetchingWorkLogs || isSyncingJira,
+                loading: isFetchingWorkLogs,
                 locale: {
                   emptyText: isFetchingWorkLogs ? "Loading..." : "No worklogs found",
                 },
