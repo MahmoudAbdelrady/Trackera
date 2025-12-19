@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useSSE } from "./";
 import requestInstance from "../axios/request-instance";
 import type { SyncPayload } from "../types";
+import { showErrorToast } from "../../utils/toast-handler/showToast";
 
 type JiraSyncSSEReturn = {
   triggerSync: (payload: SyncPayload) => void;
@@ -18,12 +19,12 @@ export const useJiraSyncSSE = ({ hasInProgress, onStatusEvent }: JiraSyncSSEOpti
   const [sseReady, setSseReady] = useState(false);
   const [sseAck, setSseAck] = useState(false);
 
-  const enabled = forceSubscribe || hasInProgress;
+  const sseEnabled = forceSubscribe || hasInProgress;
 
   // --- Subscribe to SSE ---
   useSSE({
     eventName: "worklog-sync-status",
-    enabled,
+    enabled: sseEnabled,
     onOpen: () => setSseReady(true),
     onStatusEvent: (event) => {
       setSseAck(true);
@@ -33,11 +34,13 @@ export const useJiraSyncSSE = ({ hasInProgress, onStatusEvent }: JiraSyncSSEOpti
 
   // --- Fire sync after SSE connection is ready ---
   useEffect(() => {
-    if (!sseReady || !pendingSyncPayload) return;
+    if (!pendingSyncPayload) return;
 
-    fireSync(pendingSyncPayload);
-    setPendingSyncPayload(null);
-  }, [sseReady, pendingSyncPayload]);
+    if (sseReady || !sseEnabled) {
+      fireSync(pendingSyncPayload);
+      setPendingSyncPayload(null);
+    }
+  }, [sseReady, pendingSyncPayload, sseEnabled]);
 
   // --- Auto-close connection when no in-progress worklogs and no pending sync ---
   useEffect(() => {
@@ -49,15 +52,23 @@ export const useJiraSyncSSE = ({ hasInProgress, onStatusEvent }: JiraSyncSSEOpti
   // --- Public API ---
   const triggerSync = (payload: SyncPayload) => {
     setPendingSyncPayload(payload);
-    setForceSubscribe(true);
-    setSseReady(false);
     setSseAck(false);
+
+    // Only force subscription if there are no in-progress logs
+    if (!hasInProgress) {
+      setForceSubscribe(true);
+      setSseReady(false);
+    }
   };
 
   const fireSync = async (payload: SyncPayload) => {
     const { workLogId, taskNames, entryIds, sync } = payload;
 
-    await requestInstance.post(`/worklog/${workLogId}/sync${sync ? "" : "?sync=false"}`, { taskNames, entryIds });
+    try {
+      await requestInstance.post(`/worklog/${workLogId}/sync${sync ? "" : "?sync=false"}`, { taskNames, entryIds });
+    } catch (error) {
+      showErrorToast(error);
+    }
   };
 
   return { triggerSync };

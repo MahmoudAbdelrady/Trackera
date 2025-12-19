@@ -438,7 +438,7 @@ const WorklogDetails = () => {
               selectedItems: selectedWorklogEntries,
               extractIdentifier: (entry: WorklogEntry) => entry.id.toString(),
               isEntry: true,
-              triggerSync,
+              triggerSync: ({ entryIds, sync }) => triggerSync({ workLogId: worklogId, entryIds, sync }),
             })}
           />
         </WorklogModal>
@@ -501,7 +501,7 @@ const WorklogDetails = () => {
                     selectedItems: selectedWorklogTasks,
                     extractIdentifier: (task: WorklogTask) => task.taskName,
                     isEntry: false,
-                    triggerSync,
+                    triggerSync: ({ taskNames, sync }) => triggerSync({ workLogId: worklogId, taskNames, sync }),
                   })}
                 />
               )}

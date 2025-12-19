@@ -6,9 +6,9 @@ type WorkLogEvaluationType = "EXCELLENT" | "GOOD" | "MODERATE" | "POOR";
 type WorkLogStatusType = "SYNCED" | "PARTIALLY" | "NOT_SYNCED" | "SYNC_IN_PROGRESS" | "UNSYNC_IN_PROGRESS";
 
 type SyncPayload = {
-  workLogId?: string | number;
+  workLogId?: string;
   taskNames?: string[];
-  entryIds?: (string | number)[];
+  entryIds?: string[];
   sync: boolean;
 };
 
