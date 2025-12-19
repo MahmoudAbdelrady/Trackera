@@ -1,6 +1,5 @@
 package com.mdevs.trackera.dto.worklog;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
 import com.mdevs.trackera.shared.enums.WorkLogStatus;
 import com.mdevs.trackera.shared.enums.WorkLogSyncMessageType;
 import lombok.AllArgsConstructor;
@@ -14,10 +13,7 @@ import java.util.List;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@JsonInclude(JsonInclude.Include.NON_NULL)
 public class WorkLogSyncMessageDTO {
-    private String userUuid;
-
     private WorkLogSyncMessageType type;
 
     private String logId;

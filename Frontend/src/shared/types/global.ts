@@ -1,7 +1,7 @@
 type BadgeType = "main" | "success" | "warning" | "danger" | "default";
 
 interface TrackeraTableEntity {
-  id: string | number;
+  id: string;
 }
 
 interface StatusBadgeProps {
