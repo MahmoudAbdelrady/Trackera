@@ -3,6 +3,7 @@ import type { TrackeraTableEntity, StatusBadgeProps, InputFieldProps, PaginatedR
 import type { AuthLayoutProps, AuthFormProps, AuthResultFields, AuthResultProps, AuthFooterProps, OAuthBtnProps, UpdatePasswordFormFields } from "./auth";
 
 import type {
+  SyncPayload,
   WorkLogEvaluationType,
   WorkLogStatusType,
   Worklog,
@@ -28,6 +29,7 @@ import { jiraTaskEvaluationMetadata } from "./jira";
 import type { SettingsSectionProps, LinkedAccountProps, UserEmailType, UserEmailProps, PreferencesProps } from "./settings";
 
 export type {
+  SyncPayload,
   TrackeraTableEntity,
   StatusBadgeProps,
   InputFieldProps,

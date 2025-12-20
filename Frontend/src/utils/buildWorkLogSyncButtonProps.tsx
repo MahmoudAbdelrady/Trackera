@@ -1,21 +1,25 @@
-import type { WorklogTableActionButtonProps } from "../shared/types";
+import type { SyncPayload, WorklogTableActionButtonProps } from "../shared/types";
 import type { UserInfo } from "../state/api/user";
 import { CalendarCog, CalendarOff, CalendarSync, CalendarX2 } from "lucide-react";
 type SyncableItem = {
   status: string;
 };
 
+interface BuildSyncButtonPropsOptions<T extends SyncableItem> {
+  loggedUserData: UserInfo | undefined;
+  selectedItems: T[];
+  extractIdentifier: (item: T) => string;
+  triggerSync: (payload: SyncPayload) => void;
+  isEntry?: boolean;
+}
+
 function buildSyncButtonProps<T extends SyncableItem>({
   loggedUserData,
   selectedItems,
   extractIdentifier,
-  performSync,
-}: {
-  loggedUserData: UserInfo | undefined;
-  selectedItems: T[];
-  extractIdentifier: (item: T) => string;
-  performSync: (identifiers: string[], sync: boolean) => void;
-}): WorklogTableActionButtonProps[] {
+  triggerSync,
+  isEntry = false,
+}: BuildSyncButtonPropsOptions<T>): WorklogTableActionButtonProps[] {
   const hasSynced = selectedItems.some((e) => e.status === "SYNCED");
   const hasNotSynced = selectedItems.some((e) => e.status === "NOT_SYNCED");
   const hasInProgress = selectedItems.some((e) => ["SYNC_IN_PROGRESS", "UNSYNC_IN_PROGRESS"].includes(e.status));
@@ -24,6 +28,8 @@ function buildSyncButtonProps<T extends SyncableItem>({
   const notSyncedItems = selectedItems.filter((e) => e.status === "NOT_SYNCED");
 
   const toIds = (arr: T[]) => arr.map(extractIdentifier);
+
+  const createPayload = (items: T[], sync: boolean): SyncPayload => (isEntry ? { entryIds: toIds(items), sync } : { taskNames: toIds(items), sync });
 
   let actions: WorklogTableActionButtonProps[] = [];
 
@@ -45,8 +51,8 @@ function buildSyncButtonProps<T extends SyncableItem>({
         label: "Bulk Actions",
         icon: <CalendarCog />,
         options: [
-          { label: `Sync to Jira (${notSyncedItems.length})`, icon: <CalendarSync />, onClick: () => performSync(toIds(notSyncedItems), true), customClasses: ["sync"] },
-          { label: `Unsync from Jira (${syncedItems.length})`, icon: <CalendarX2 />, onClick: () => performSync(toIds(syncedItems), false), customClasses: ["unsync"] },
+          { label: `Sync to Jira (${notSyncedItems.length})`, icon: <CalendarSync />, onClick: () => triggerSync(createPayload(notSyncedItems, true)), customClasses: ["sync"] },
+          { label: `Unsync from Jira (${syncedItems.length})`, icon: <CalendarX2 />, onClick: () => triggerSync(createPayload(syncedItems, false)), customClasses: ["unsync"] },
         ],
       },
     ];
@@ -57,7 +63,7 @@ function buildSyncButtonProps<T extends SyncableItem>({
       {
         label: `Sync to Jira (${notSyncedItems.length})`,
         icon: <CalendarSync />,
-        onClick: () => performSync(toIds(notSyncedItems), true),
+        onClick: () => triggerSync(createPayload(notSyncedItems, true)),
       },
     ];
   }
@@ -67,7 +73,7 @@ function buildSyncButtonProps<T extends SyncableItem>({
       {
         label: `Unsync from Jira (${syncedItems.length})`,
         icon: <CalendarX2 />,
-        onClick: () => performSync(toIds(syncedItems), false),
+        onClick: () => triggerSync(createPayload(syncedItems, false)),
       },
     ];
   }

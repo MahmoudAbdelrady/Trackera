@@ -4,13 +4,14 @@ import classes from "./scss/worklog-details.module.css";
 import trackeraTableClasses from "../../components/trackera-table/scss/trackera-table.module.css";
 import { Alert, Button, Empty, Popconfirm, Skeleton, Tooltip, type TableProps } from "antd";
 import { statusMetadata, type Worklog, type WorklogEntry, type WorklogSelection, type WorkLogStatusType, type WorklogTask } from "../../shared/types";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import worklogModalClasses from "../../components/worklogs/modals/worklog-modal/scss/worklog-modal.module.css";
 import requestInstance from "../../shared/axios/request-instance";
 import { showErrorToast, showSuccessToast } from "../../utils/toast-handler/showToast";
 import { userQueries } from "../../state/queries";
 import buildSyncButtonProps from "../../utils/buildWorkLogSyncButtonProps";
+import { useJiraSyncSSE } from "../../shared/hooks";
 
 const WorklogDetails = () => {
   const { worklogId } = useParams();
@@ -40,9 +41,15 @@ const WorklogDetails = () => {
   const [isFetchingEntries, setIsFetchingEntries] = useState<boolean>(false);
   const [isDeletingEntry, setIsDeletingEntry] = useState<boolean>(false);
 
-  // jira sync
-  const [isSyncingJiraTasks, setIsSyncingJiraTasks] = useState<boolean>(false);
-  const [isSyncingJiraEntries, setIsSyncingJiraEntries] = useState<boolean>(false);
+  // sse subscription
+  const hasInProgress = useMemo(() => {
+    const inProgressStatuses: WorkLogStatusType[] = ["SYNC_IN_PROGRESS", "UNSYNC_IN_PROGRESS"];
+    return (
+      worklogTasks.some((task) => inProgressStatuses.includes(task.status)) ||
+      worklogEntries.some((entry) => inProgressStatuses.includes(entry.status)) ||
+      inProgressStatuses.includes(worklogInfo?.status as WorkLogStatusType)
+    );
+  }, [worklogTasks, worklogEntries, worklogInfo]);
 
   const worklogTaskColumns: TableProps<WorklogTask>["columns"] = [
     {
@@ -89,7 +96,7 @@ const WorklogDetails = () => {
               <Button
                 type="text"
                 icon={!loggedUserData?.jiraLinked ? <CalendarOff /> : <CalendarX2 />}
-                onClick={() => performJiraTaskSync([record.taskName], false)}
+                onClick={() => triggerSync({ workLogId: worklogId, taskNames: [record.taskName], sync: false })}
                 className={`${trackeraTableClasses.log_action_btn} ${trackeraTableClasses.unsync} ${
                   (!loggedUserData?.jiraLinked || record.status === "UNSYNC_IN_PROGRESS") && trackeraTableClasses.disabled
                 }`}
@@ -101,7 +108,7 @@ const WorklogDetails = () => {
               <Button
                 type="text"
                 icon={!loggedUserData?.jiraLinked ? <CalendarOff /> : <CalendarSync />}
-                onClick={() => performJiraTaskSync([record.taskName], true)}
+                onClick={() => triggerSync({ workLogId: worklogId, taskNames: [record.taskName], sync: true })}
                 className={`${trackeraTableClasses.log_action_btn} ${trackeraTableClasses.sync} ${
                   (!loggedUserData?.jiraLinked || record.status === "SYNC_IN_PROGRESS") && trackeraTableClasses.disabled
                 }`}
@@ -192,7 +199,7 @@ const WorklogDetails = () => {
               <Button
                 type="text"
                 icon={!loggedUserData?.jiraLinked ? <CalendarOff /> : <CalendarX2 />}
-                onClick={() => performJiraLogEntrySync([record.id], false)}
+                onClick={() => triggerSync({ workLogId: worklogId, entryIds: [record.id], sync: false })}
                 className={`${trackeraTableClasses.log_action_btn} ${trackeraTableClasses.unsync} ${
                   (!loggedUserData?.jiraLinked || record.status === "UNSYNC_IN_PROGRESS") && trackeraTableClasses.disabled
                 }`}
@@ -204,7 +211,7 @@ const WorklogDetails = () => {
               <Button
                 type="text"
                 icon={!loggedUserData?.jiraLinked ? <CalendarOff /> : <CalendarSync />}
-                onClick={() => performJiraLogEntrySync([record.id], true)}
+                onClick={() => triggerSync({ workLogId: worklogId, entryIds: [record.id], sync: true })}
                 className={`${trackeraTableClasses.log_action_btn} ${trackeraTableClasses.sync} ${
                   (!loggedUserData?.jiraLinked || record.status === "SYNC_IN_PROGRESS") && trackeraTableClasses.disabled
                 }`}
@@ -377,38 +384,25 @@ const WorklogDetails = () => {
     return response.data;
   };
 
-  const performJiraTaskSync = async (taskNames: string[], sync: boolean) => {
-    setIsSyncingJiraTasks(true);
-    try {
-      await performJiraSync(taskNames, [], sync);
-    } catch (error: any) {
-      showErrorToast(error);
-    }
-    setIsSyncingJiraTasks(false);
-  };
+  const { triggerSync } = useJiraSyncSSE({
+    hasInProgress: hasInProgress,
+    onStatusEvent: (event) => {
+      if (["TASK", "ALL"].includes(event.type)) {
+        setWorklogTasks((prevTasks) => prevTasks.map((task) => (event.taskNames?.includes(task.taskName) ? { ...task, status: event.status, hasError: !!event.syncError } : task)));
+      }
 
-  const performJiraLogEntrySync = async (entryIds: (string | number)[], sync: boolean) => {
-    setIsSyncingJiraEntries(true);
-    try {
-      await performJiraSync([], entryIds, sync);
-    } catch (error: any) {
-      showErrorToast(error);
-    }
-    setIsSyncingJiraEntries(false);
-  };
+      if (["ENTRY", "ALL"].includes(event.type)) {
+        setWorklogEntries((prevEntries) => prevEntries.map((entry) => (event.entryIds?.includes(entry.id) ? { ...entry, status: event.status, syncError: event.syncError } : entry)));
+      }
 
-  const performJiraSync = async (taskNames: string[], entryIds: (string | number)[], sync: boolean) => {
-    const response = await requestInstance.post(`/worklog/${worklogId}/sync${sync ? "" : "?sync=false"}`, {
-      taskNames,
-      entryIds,
-    });
-    showSuccessToast(response.data);
-    setCanFetchWorkLogInfo(true);
-    setCanFetchTasks(true);
-    if (viewTaskVisible) {
-      setCanFetchEntries(true);
-    }
-  };
+      if (["WORKLOG", "ALL"].includes(event.type)) {
+        setWorklogInfo((prev) => {
+          if (!prev) return prev;
+          return { ...prev, status: event.status, hasError: !!event.syncError };
+        });
+      }
+    },
+  });
 
   return (
     <>
@@ -427,7 +421,7 @@ const WorklogDetails = () => {
             properties={{
               columns: worklogEntryColumns,
               dataSource: worklogEntries,
-              loading: isFetchingEntries || isSyncingJiraEntries,
+              loading: isFetchingEntries,
               pagination: { pageSize: 5 },
               rowSelection: {
                 selectedRowKeys: selectedWorklogEntries.map((entry) => entry.id.toString()),
@@ -443,7 +437,8 @@ const WorklogDetails = () => {
               loggedUserData: loggedUserData,
               selectedItems: selectedWorklogEntries,
               extractIdentifier: (entry: WorklogEntry) => entry.id.toString(),
-              performSync: performJiraLogEntrySync,
+              isEntry: true,
+              triggerSync: ({ entryIds, sync }) => triggerSync({ workLogId: worklogId, entryIds, sync }),
             })}
           />
         </WorklogModal>
@@ -499,13 +494,14 @@ const WorklogDetails = () => {
                         disabled: !loggedUserData?.jiraLinked || ["SYNC_IN_PROGRESS", "UNSYNC_IN_PROGRESS"].includes(record.status),
                       }),
                     },
-                    loading: isFetchingTasks || isSyncingJiraTasks,
+                    loading: isFetchingTasks,
                   }}
                   actionButtons={buildSyncButtonProps({
                     loggedUserData: loggedUserData,
                     selectedItems: selectedWorklogTasks,
                     extractIdentifier: (task: WorklogTask) => task.taskName,
-                    performSync: performJiraTaskSync,
+                    isEntry: false,
+                    triggerSync: ({ taskNames, sync }) => triggerSync({ workLogId: worklogId, taskNames, sync }),
                   })}
                 />
               )}

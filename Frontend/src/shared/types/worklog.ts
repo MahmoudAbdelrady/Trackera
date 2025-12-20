@@ -5,6 +5,13 @@ type WorkLogEvaluationType = "EXCELLENT" | "GOOD" | "MODERATE" | "POOR";
 
 type WorkLogStatusType = "SYNCED" | "PARTIALLY" | "NOT_SYNCED" | "SYNC_IN_PROGRESS" | "UNSYNC_IN_PROGRESS";
 
+type SyncPayload = {
+  workLogId?: string;
+  taskNames?: string[];
+  entryIds?: string[];
+  sync: boolean;
+};
+
 interface Worklog extends TrackeraTableEntity {
   name: string;
   totalTime: string;
@@ -115,6 +122,7 @@ interface WorkLogsFilterProps {
 }
 
 export type {
+  SyncPayload,
   WorkLogEvaluationType,
   WorkLogStatusType,
   Worklog,
