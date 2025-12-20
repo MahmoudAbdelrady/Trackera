@@ -1,9 +1,24 @@
-import { CalendarOff, CalendarSync, CalendarX2, CircleAlert, Eye, Trash } from "lucide-react";
-import { AppLayout, WorklogInfo, WorklogModal, TrackeraTable, StatusBadge } from "../../components";
+import { CalendarOff, CalendarSync, CalendarX2, CircleAlert, Trash } from "lucide-react";
+import {
+  AppLayout,
+  WorklogInfo,
+  WorklogModal,
+  TrackeraTable,
+  StatusBadge,
+  WorkLogTaskColumns,
+  WorkLogEntryColumns,
+} from "../../components";
 import classes from "./scss/worklog-details.module.css";
 import trackeraTableClasses from "../../components/trackera-table/scss/trackera-table.module.css";
 import { Alert, Button, Empty, Popconfirm, Skeleton, Tooltip, type TableProps } from "antd";
-import { statusMetadata, type Worklog, type WorklogEntry, type WorklogSelection, type WorkLogStatusType, type WorklogTask } from "../../shared/types";
+import {
+  statusMetadata,
+  type Worklog,
+  type WorklogEntry,
+  type WorklogSelection,
+  type WorkLogStatusType,
+  type WorklogTask,
+} from "../../shared/types";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import worklogModalClasses from "../../components/worklogs/modals/worklog-modal/scss/worklog-modal.module.css";
@@ -51,100 +66,6 @@ const WorklogDetails = () => {
     );
   }, [worklogTasks, worklogEntries, worklogInfo]);
 
-  const worklogTaskColumns: TableProps<WorklogTask>["columns"] = [
-    {
-      title: "Task Name",
-      dataIndex: "taskName",
-      key: "taskName",
-      render: (_, record) => {
-        return record.taskName;
-      },
-      filters: worklogTasks.map((detail) => ({
-        text: detail.taskName,
-        value: detail.taskName,
-      })),
-      onFilter: (value, record) => record.taskName.includes(value as string),
-    },
-    {
-      title: "Total Hours",
-      dataIndex: "totalHours",
-      key: "totalHours",
-      sorter: (a, b) => a.totalMinutes - b.totalMinutes,
-    },
-    {
-      title: "Status",
-      dataIndex: "status",
-      key: "status",
-      render: (_, { status, hasError }) => {
-        return loggedUserData?.jiraLinked ? <StatusBadge badgeProps={{ ...statusMetadata[status as WorkLogStatusType], icon: hasError ? <CircleAlert /> : undefined }} /> : "-";
-      },
-      ...(loggedUserData?.jiraLinked && {
-        filters: Array.from(new Set(worklogTasks.map((task) => task.status))).map((status) => ({
-          text: statusMetadata[status as WorkLogStatusType]?.label ?? status,
-          value: status,
-        })),
-        onFilter: (value, record) => record.status === value,
-      }),
-    },
-    {
-      title: "Actions",
-      key: "actions",
-      render: (_, record) => (
-        <div className={trackeraTableClasses.actions_container}>
-          {record.status === "SYNCED" || record.status === "UNSYNC_IN_PROGRESS" ? (
-            <Tooltip title={`${loggedUserData?.jiraLinked || record.status === "UNSYNC_IN_PROGRESS" ? "Unsync from Jira" : "Link your Jira account in settings to enable this option."}`}>
-              <Button
-                type="text"
-                icon={!loggedUserData?.jiraLinked ? <CalendarOff /> : <CalendarX2 />}
-                onClick={() => triggerSync({ workLogId: worklogId, taskNames: [record.taskName], sync: false })}
-                className={`${trackeraTableClasses.log_action_btn} ${trackeraTableClasses.unsync} ${
-                  (!loggedUserData?.jiraLinked || record.status === "UNSYNC_IN_PROGRESS") && trackeraTableClasses.disabled
-                }`}
-                disabled={!loggedUserData?.jiraLinked || record.status === "UNSYNC_IN_PROGRESS"}
-              />
-            </Tooltip>
-          ) : (
-            <Tooltip title={`${loggedUserData?.jiraLinked || record.status === "SYNC_IN_PROGRESS" ? "Sync to Jira" : "Link your Jira account in settings to enable this option."}`}>
-              <Button
-                type="text"
-                icon={!loggedUserData?.jiraLinked ? <CalendarOff /> : <CalendarSync />}
-                onClick={() => triggerSync({ workLogId: worklogId, taskNames: [record.taskName], sync: true })}
-                className={`${trackeraTableClasses.log_action_btn} ${trackeraTableClasses.sync} ${
-                  (!loggedUserData?.jiraLinked || record.status === "SYNC_IN_PROGRESS") && trackeraTableClasses.disabled
-                }`}
-                disabled={!loggedUserData?.jiraLinked || record.status === "SYNC_IN_PROGRESS"}
-              />
-            </Tooltip>
-          )}
-          <Tooltip title="View">
-            <Eye
-              className={`${trackeraTableClasses.log_action_btn} ${trackeraTableClasses.view}`}
-              onClick={() => {
-                setSelectedTask(record);
-                setViewTaskVisible(true);
-                setCanFetchEntries(true);
-              }}
-            />
-          </Tooltip>
-          <Tooltip title="Delete">
-            <Button
-              type="text"
-              icon={<Trash />}
-              onClick={() => {
-                setDeleteTaskVisible(true);
-                setSelectedTask(record);
-              }}
-              className={`${trackeraTableClasses.log_action_btn} ${trackeraTableClasses.delete} ${
-                (record.status === "SYNC_IN_PROGRESS" || record.status === "UNSYNC_IN_PROGRESS") && trackeraTableClasses.disabled
-              }`}
-              disabled={record.status === "SYNC_IN_PROGRESS" || record.status === "UNSYNC_IN_PROGRESS"}
-            />
-          </Tooltip>
-        </div>
-      ),
-    },
-  ];
-
   const worklogEntryColumns: TableProps<WorklogEntry>["columns"] = [
     {
       title: "From Time",
@@ -174,7 +95,12 @@ const WorklogDetails = () => {
         return loggedUserData?.jiraLinked ? (
           <Tooltip title={syncError && `Sync Error: ${syncError}`}>
             <span style={{ display: "inline-block" }}>
-              <StatusBadge badgeProps={{ ...statusMetadata[status as WorkLogStatusType], icon: syncError ? <CircleAlert /> : undefined }} />
+              <StatusBadge
+                badgeProps={{
+                  ...statusMetadata[status as WorkLogStatusType],
+                  icon: syncError ? <CircleAlert /> : undefined,
+                }}
+              />
             </span>
           </Tooltip>
         ) : (
@@ -195,19 +121,32 @@ const WorklogDetails = () => {
       render: (_, record) => (
         <div className={trackeraTableClasses.actions_container}>
           {record.status === "SYNCED" || record.status === "UNSYNC_IN_PROGRESS" ? (
-            <Tooltip title={`${loggedUserData?.jiraLinked || record.status === "UNSYNC_IN_PROGRESS" ? "Unsync from Jira" : "Link your Jira account in settings to enable this option."}`}>
+            <Tooltip
+              title={`${
+                loggedUserData?.jiraLinked || record.status === "UNSYNC_IN_PROGRESS"
+                  ? "Unsync from Jira"
+                  : "Link your Jira account in settings to enable this option."
+              }`}
+            >
               <Button
                 type="text"
                 icon={!loggedUserData?.jiraLinked ? <CalendarOff /> : <CalendarX2 />}
                 onClick={() => triggerSync({ workLogId: worklogId, entryIds: [record.id], sync: false })}
                 className={`${trackeraTableClasses.log_action_btn} ${trackeraTableClasses.unsync} ${
-                  (!loggedUserData?.jiraLinked || record.status === "UNSYNC_IN_PROGRESS") && trackeraTableClasses.disabled
+                  (!loggedUserData?.jiraLinked || record.status === "UNSYNC_IN_PROGRESS") &&
+                  trackeraTableClasses.disabled
                 }`}
                 disabled={!loggedUserData?.jiraLinked || record.status === "UNSYNC_IN_PROGRESS"}
               />
             </Tooltip>
           ) : (
-            <Tooltip title={`${loggedUserData?.jiraLinked || record.status === "SYNC_IN_PROGRESS" ? "Sync to Jira" : "Link your Jira account in settings to enable this option."}`}>
+            <Tooltip
+              title={`${
+                loggedUserData?.jiraLinked || record.status === "SYNC_IN_PROGRESS"
+                  ? "Sync to Jira"
+                  : "Link your Jira account in settings to enable this option."
+              }`}
+            >
               <Button
                 type="text"
                 icon={!loggedUserData?.jiraLinked ? <CalendarOff /> : <CalendarSync />}
@@ -223,7 +162,12 @@ const WorklogDetails = () => {
             title="Are you sure to delete this entry?"
             description={
               record?.status === "SYNCED" && (
-                <Alert message="This entry is synced with Jira and will be unsynced upon deletion." type="warning" showIcon className={worklogModalClasses.alert_message} />
+                <Alert
+                  message="This entry is synced with Jira and will be unsynced upon deletion."
+                  type="warning"
+                  showIcon
+                  className={worklogModalClasses.alert_message}
+                />
               )
             }
             onConfirm={() => {
@@ -240,7 +184,8 @@ const WorklogDetails = () => {
                 type="text"
                 icon={<Trash />}
                 className={`${trackeraTableClasses.log_action_btn} ${trackeraTableClasses.delete} ${
-                  (record.status === "SYNC_IN_PROGRESS" || record.status === "UNSYNC_IN_PROGRESS") && trackeraTableClasses.disabled
+                  (record.status === "SYNC_IN_PROGRESS" || record.status === "UNSYNC_IN_PROGRESS") &&
+                  trackeraTableClasses.disabled
                 }`}
                 disabled={record.status === "SYNC_IN_PROGRESS" || record.status === "UNSYNC_IN_PROGRESS"}
               />
@@ -301,7 +246,9 @@ const WorklogDetails = () => {
     const fetchTaskEntries = async () => {
       setIsFetchingEntries(true);
       try {
-        const response = await requestInstance.get(`/worklog/${worklogId}/details/task?taskName=${selectedTask?.taskName}`);
+        const response = await requestInstance.get(
+          `/worklog/${worklogId}/details/task?taskName=${selectedTask?.taskName}`
+        );
         setWorklogEntries(response.data);
       } catch (error: any) {
         showErrorToast(error);
@@ -388,11 +335,21 @@ const WorklogDetails = () => {
     hasInProgress: hasInProgress,
     onStatusEvent: (event) => {
       if (["TASK", "ALL"].includes(event.type)) {
-        setWorklogTasks((prevTasks) => prevTasks.map((task) => (event.taskNames?.includes(task.taskName) ? { ...task, status: event.status, hasError: !!event.syncError } : task)));
+        setWorklogTasks((prevTasks) =>
+          prevTasks.map((task) =>
+            event.taskNames?.includes(task.taskName)
+              ? { ...task, status: event.status, hasError: !!event.syncError }
+              : task
+          )
+        );
       }
 
       if (["ENTRY", "ALL"].includes(event.type)) {
-        setWorklogEntries((prevEntries) => prevEntries.map((entry) => (event.entryIds?.includes(entry.id) ? { ...entry, status: event.status, syncError: event.syncError } : entry)));
+        setWorklogEntries((prevEntries) =>
+          prevEntries.map((entry) =>
+            event.entryIds?.includes(entry.id) ? { ...entry, status: event.status, syncError: event.syncError } : entry
+          )
+        );
       }
 
       if (["WORKLOG", "ALL"].includes(event.type)) {
@@ -403,6 +360,42 @@ const WorklogDetails = () => {
       }
     },
   });
+
+  const worklogTaskColumns = useMemo(
+    () =>
+      WorkLogTaskColumns({
+        worklogId: worklogId!,
+        worklogTasks: worklogTasks,
+        jiraLinked: loggedUserData?.jiraLinked || false,
+        onSync: triggerSync,
+        onView: (record) => {
+          setSelectedTask(record);
+          setViewTaskVisible(true);
+          setCanFetchEntries(true);
+        },
+        onDelete: (record) => {
+          setDeleteTaskVisible(true);
+          setSelectedTask(record);
+        },
+      }),
+    [loggedUserData?.jiraLinked, triggerSync]
+  );
+
+  // const worklogEntryColumns = useMemo(
+  //   () =>
+  //     WorkLogEntryColumns({
+  //       worklogId: worklogId!,
+  //       taskName: selectedTask?.taskName || "",
+  //       worklogEntries: worklogEntries,
+  //       jiraLinked: loggedUserData?.jiraLinked || false,
+  //       onSync: triggerSync,
+  //       onDelete: (record) => {
+  //         setDeleteTaskVisible(true);
+  //         setSelectedTask(record);
+  //       },
+  //     }),
+  //   [loggedUserData?.jiraLinked, triggerSync]
+  // );
 
   return (
     <>
@@ -429,7 +422,8 @@ const WorklogDetails = () => {
                   setSelectedWorklogEntries(selectedRows);
                 },
                 getCheckboxProps: (record) => ({
-                  disabled: !loggedUserData?.jiraLinked || ["SYNC_IN_PROGRESS", "UNSYNC_IN_PROGRESS"].includes(record.status),
+                  disabled:
+                    !loggedUserData?.jiraLinked || ["SYNC_IN_PROGRESS", "UNSYNC_IN_PROGRESS"].includes(record.status),
                 }),
               },
             }}
@@ -460,9 +454,16 @@ const WorklogDetails = () => {
             onCancel: () => setDeleteTaskVisible(false),
           }}
         >
-          <p className={worklogModalClasses.delete_message}>Are you sure you want to delete this task log? This action cannot be undone.</p>
+          <p className={worklogModalClasses.delete_message}>
+            Are you sure you want to delete this task log? This action cannot be undone.
+          </p>
           {(selectedTask?.status === "SYNCED" || selectedTask?.status === "PARTIALLY") && (
-            <Alert message="This task has synced data with Jira and will be unsynced upon deletion." type="warning" showIcon className={worklogModalClasses.alert_message} />
+            <Alert
+              message="This task has synced data with Jira and will be unsynced upon deletion."
+              type="warning"
+              showIcon
+              className={worklogModalClasses.alert_message}
+            />
           )}
         </WorklogModal>
       )}
@@ -491,7 +492,9 @@ const WorklogDetails = () => {
                         setSelectedWorklogTasks(selectedRows);
                       },
                       getCheckboxProps: (record) => ({
-                        disabled: !loggedUserData?.jiraLinked || ["SYNC_IN_PROGRESS", "UNSYNC_IN_PROGRESS"].includes(record.status),
+                        disabled:
+                          !loggedUserData?.jiraLinked ||
+                          ["SYNC_IN_PROGRESS", "UNSYNC_IN_PROGRESS"].includes(record.status),
                       }),
                     },
                     loading: isFetchingTasks,

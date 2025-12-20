@@ -1,19 +1,11 @@
 import requestInstance from "../../shared/axios/request-instance";
 
 const isAuthenticated = async () => {
-  try {
-    await requestInstance.get("/auth/session");
-  } catch (error: any) {
-    throw error;
-  }
+  await requestInstance.get("/auth/session");
 };
 
 const refreshToken = async () => {
-  try {
-    await requestInstance.post("/auth/jwt/refresh");
-  } catch (error: any) {
-    throw error;
-  }
+  await requestInstance.post("/auth/jwt/refresh");
 };
 
 const authApis = {

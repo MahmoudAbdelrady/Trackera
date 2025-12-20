@@ -24,6 +24,11 @@ import PreferencesSection from "./settings/sections/preferences-section/Preferen
 import UserPreference from "./settings/user-preference/UserPreference";
 import ServerError from "./server-error/ServerError";
 import AccessDenied from "./access-denied/AccessDenied";
+import WorklogSyncActions from "./worklogs/worklog-sync-actions/WorklogSyncActions";
+import WorklogActionButtons from "./worklogs/worklog-action-buttons/WorklogActionButtons";
+import WorkLogColumns from "./worklogs/worklog-columns/WorkLogColumns";
+import WorkLogTaskColumns from "./worklogs/worklog-columns/WorkLogTaskColumns";
+import WorkLogEntryColumns from "./worklogs/worklog-columns/WorkLogEntryColumns";
 
 export {
   AuthLayout,
@@ -52,4 +57,9 @@ export {
   UserPreference,
   ServerError,
   AccessDenied,
+  WorklogSyncActions,
+  WorklogActionButtons,
+  WorkLogColumns,
+  WorkLogTaskColumns,
+  WorkLogEntryColumns,
 };

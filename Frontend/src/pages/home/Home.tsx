@@ -1,26 +1,23 @@
-import { Eye, SquarePen, Trash, ClipboardPlus, CalendarSync, CalendarX2, CalendarOff, CircleAlert } from "lucide-react";
-import { ManageWorkLogModal, AppLayout, SearchFilter, WorklogModal, WorklogStatusCard, TrackeraTable, StatusBadge } from "../../components";
-import classes from "./scss/home.module.css";
-import { Alert, Button, Tooltip, type TableProps } from "antd";
-import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { ClipboardPlus } from "lucide-react";
 import {
-  worklogEvaluationMetadata,
-  statusMetadata,
-  type WorkLogSummaryCard,
-  type PaginatedResponse,
-  type Worklog,
-  type WorkLogEvaluationType,
-  type WorkLogStatusType,
-  type WorklogSelection,
-} from "../../shared/types";
+  ManageWorkLogModal,
+  AppLayout,
+  SearchFilter,
+  WorklogModal,
+  WorklogStatusCard,
+  TrackeraTable,
+  WorkLogColumns,
+} from "../../components";
+import classes from "./scss/home.module.css";
+import { Alert } from "antd";
+import { useEffect, useMemo, useState } from "react";
+import { type WorkLogSummaryCard, type PaginatedResponse, type Worklog } from "../../shared/types";
 import { createPaginationConfig } from "../../utils";
-import trackeraTableClasses from "../../components/trackera-table/scss/trackera-table.module.css";
 import worklogModalClasses from "../../components/worklogs/modals/worklog-modal/scss/worklog-modal.module.css";
-import requestInstance from "../../shared/axios/request-instance";
 import { showErrorToast, showSuccessToast } from "../../utils/toast-handler/showToast";
 import { userQueries } from "../../state/queries";
 import { useJiraSyncSSE } from "../../shared/hooks";
+import { workLogApis } from "../../state/api";
 
 const Home = () => {
   const { data: loggedUserData } = userQueries.useMeQuery();
@@ -50,12 +47,17 @@ const Home = () => {
   }, [fetchSummary]);
 
   const { triggerSync } = useJiraSyncSSE({
-    hasInProgress: workLogsResponse?.content.some((worklog) => ["SYNC_IN_PROGRESS", "UNSYNC_IN_PROGRESS"].includes(worklog.status)) ?? false,
+    hasInProgress:
+      workLogsResponse?.content.some((worklog) =>
+        ["SYNC_IN_PROGRESS", "UNSYNC_IN_PROGRESS"].includes(worklog.status)
+      ) ?? false,
     onStatusEvent: (event) => {
       setWorkLogsResponse((prev) => {
         if (!prev) return prev;
         const updatedContent = prev.content.map((worklog) =>
-          worklog.id === event.logId && ["WORKLOG", "ALL"].includes(event.type) ? { ...worklog, status: event.status, hasError: !!event.syncError } : worklog
+          worklog.id === event.logId && ["WORKLOG", "ALL"].includes(event.type)
+            ? { ...worklog, status: event.status, hasError: !!event.syncError }
+            : worklog
         );
         return { ...prev, content: updatedContent };
       });
@@ -65,8 +67,7 @@ const Home = () => {
   const fetchWorkLogs = async (pageNum: number = 0, pageSize: number = 10) => {
     setIsFetchingWorkLogs(true);
     try {
-      const response = await requestInstance.post(`/worklog/search?page=${pageNum}&size=${pageSize}`, searchFilters);
-      setWorkLogsResponse(response.data);
+      setWorkLogsResponse(await workLogApis.getWorkLogs(pageNum, pageSize, searchFilters));
     } catch (error) {
       showErrorToast(error);
     }
@@ -75,17 +76,17 @@ const Home = () => {
 
   const fetchWorkLogSummary = async () => {
     try {
-      const response = await requestInstance.get("/worklog/summary");
-      setWorkLogSummary(response.data);
+      setWorkLogSummary(await workLogApis.getWorkLogSummary());
     } catch (error: any) {
       showErrorToast(error);
     }
   };
 
-  const deleteWorkLog = async (workLogId: string | number) => {
+  const deleteWorkLog = async (workLogId: string) => {
     setIsDeletingWorkLog(true);
     try {
-      await handleWorkLogDeletion(workLogId, null);
+      const result = await workLogApis.deleteWorkLog(workLogId);
+      showSuccessToast(result.message);
       setFetchWorkLog(true);
       setFetchSummary(true);
       setDeleteWorkLogVisible(false);
@@ -96,106 +97,22 @@ const Home = () => {
     setIsDeletingWorkLog(false);
   };
 
-  const handleWorkLogDeletion = async (worklogId: string | number, selection: WorklogSelection | null) => {
-    const response = await requestInstance.delete(`/worklog/${worklogId}`, { data: { ...selection } });
-    showSuccessToast(response.data.message);
-    return response.data;
-  };
-
-  const tableColumns: TableProps<Worklog>["columns"] = [
-    {
-      title: "Log Name",
-      dataIndex: "name",
-      key: "name",
-    },
-    {
-      title: "Total Time",
-      dataIndex: "totalTime",
-      key: "totalTime",
-    },
-    {
-      title: "Date",
-      dataIndex: "workDate",
-      key: "workDate",
-    },
-    {
-      title: "Evaluation",
-      dataIndex: "evaluation",
-      key: "evaluation",
-      render: (_, { evaluation }) => {
-        return <StatusBadge badgeProps={worklogEvaluationMetadata[evaluation as WorkLogEvaluationType]} />;
-      },
-    },
-    {
-      title: "Status",
-      dataIndex: "status",
-      key: "status",
-      render: (_, { status, hasError }) => {
-        return loggedUserData?.jiraLinked ? <StatusBadge badgeProps={{ ...statusMetadata[status as WorkLogStatusType], icon: hasError ? <CircleAlert /> : undefined }} /> : "-";
-      },
-    },
-    {
-      title: "Actions",
-      key: "actions",
-      render: (_, record) => (
-        <div className={trackeraTableClasses.actions_container}>
-          {record.status === "SYNCED" || record.status === "UNSYNC_IN_PROGRESS" ? (
-            <Tooltip title={`${loggedUserData?.jiraLinked || record.status === "UNSYNC_IN_PROGRESS" ? "Unsync from Jira" : "Link your Jira account in settings to enable this option."}`}>
-              <Button
-                type="text"
-                icon={!loggedUserData?.jiraLinked ? <CalendarOff /> : <CalendarX2 />}
-                onClick={() => triggerSync({ workLogId: record.id, sync: false })}
-                className={`${trackeraTableClasses.log_action_btn} ${trackeraTableClasses.unsync} ${
-                  (!loggedUserData?.jiraLinked || record.status === "UNSYNC_IN_PROGRESS") && trackeraTableClasses.disabled
-                }`}
-                disabled={!loggedUserData?.jiraLinked || record.status === "UNSYNC_IN_PROGRESS"}
-              />
-            </Tooltip>
-          ) : (
-            <Tooltip title={`${loggedUserData?.jiraLinked || record.status === "SYNC_IN_PROGRESS" ? "Sync to Jira" : "Link your Jira account in settings to enable this option."}`}>
-              <Button
-                type="text"
-                icon={!loggedUserData?.jiraLinked ? <CalendarOff /> : <CalendarSync />}
-                onClick={() => triggerSync({ workLogId: record.id, sync: true })}
-                className={`${trackeraTableClasses.log_action_btn} ${trackeraTableClasses.sync} ${
-                  (!loggedUserData?.jiraLinked || record.status === "SYNC_IN_PROGRESS") && trackeraTableClasses.disabled
-                }`}
-                disabled={!loggedUserData?.jiraLinked || record.status === "SYNC_IN_PROGRESS"}
-              />
-            </Tooltip>
-          )}
-          <Tooltip title="Edit">
-            <SquarePen
-              onClick={() => {
-                setSelectedWorkLog(record);
-                setManageWorkLogVisible(true);
-              }}
-              className={`${trackeraTableClasses.log_action_btn} ${trackeraTableClasses.edit}`}
-            />
-          </Tooltip>
-          <Tooltip title="View">
-            <Link to={`/worklog-details/${record.id}`} className={`${trackeraTableClasses.log_action_btn} ${trackeraTableClasses.view}`}>
-              <Eye />
-            </Link>
-          </Tooltip>
-          <Tooltip title="Delete">
-            <Button
-              type="text"
-              icon={<Trash />}
-              onClick={() => {
-                setSelectedWorkLog(record);
-                setDeleteWorkLogVisible(true);
-              }}
-              className={`${trackeraTableClasses.log_action_btn} ${trackeraTableClasses.delete} ${
-                (record.status === "SYNC_IN_PROGRESS" || record.status === "UNSYNC_IN_PROGRESS") && trackeraTableClasses.disabled
-              }`}
-              disabled={record.status === "SYNC_IN_PROGRESS" || record.status === "UNSYNC_IN_PROGRESS"}
-            />
-          </Tooltip>
-        </div>
-      ),
-    },
-  ];
+  const tableColumns = useMemo(
+    () =>
+      WorkLogColumns({
+        jiraLinked: loggedUserData?.jiraLinked || false,
+        onSync: triggerSync,
+        onEdit: (record) => {
+          setSelectedWorkLog(record);
+          setManageWorkLogVisible(true);
+        },
+        onDelete: (record) => {
+          setSelectedWorkLog(record);
+          setDeleteWorkLogVisible(true);
+        },
+      }),
+    [loggedUserData?.jiraLinked, triggerSync]
+  );
 
   return (
     <>
@@ -227,19 +144,37 @@ const Home = () => {
           },
         }}
       >
-        <p className={worklogModalClasses.delete_message}>Are you sure you want to delete this worklog? This action cannot be undone.</p>
+        <p className={worklogModalClasses.delete_message}>
+          Are you sure you want to delete this worklog? This action cannot be undone.
+        </p>
         {(selectedWorkLog?.status === "SYNCED" || selectedWorkLog?.status === "PARTIALLY") && (
-          <Alert message="This worklog has synced data with Jira and will be unsynced upon deletion." type="warning" showIcon className={worklogModalClasses.alert_message} />
+          <Alert
+            message="This worklog has synced data with Jira and will be unsynced upon deletion."
+            type="warning"
+            showIcon
+            className={worklogModalClasses.alert_message}
+          />
         )}
       </WorklogModal>
       <AppLayout>
         <div className={classes.worklog_status_cards_container}>
           {workLogSummary.map((card, index) => (
-            <WorklogStatusCard key={index} label={card.label} subLabel={card.subLabel} code={card.code} value={card.value} />
+            <WorklogStatusCard
+              key={index}
+              label={card.label}
+              subLabel={card.subLabel}
+              code={card.code}
+              value={card.value}
+            />
           ))}
         </div>
         <div className={classes.worklogs_content}>
-          <SearchFilter filters={searchFilters} setFilters={setSearchFilters} setFetchWorkLog={setFetchWorkLog} jiraLinked={loggedUserData?.jiraLinked || false} />
+          <SearchFilter
+            filters={searchFilters}
+            setFilters={setSearchFilters}
+            setFetchWorkLog={setFetchWorkLog}
+            jiraLinked={loggedUserData?.jiraLinked || false}
+          />
           <div className={classes.worklogs_container}>
             <TrackeraTable<Worklog>
               properties={{

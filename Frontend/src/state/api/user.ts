@@ -12,12 +12,8 @@ export interface UserInfo {
 }
 
 const fetchMe = async () => {
-  try {
-    const response = await requestInstance.get<UserInfo>("/user/me");
-    return response.data;
-  } catch (error) {
-    throw error;
-  }
+  const response = await requestInstance.get<UserInfo>("/user/me");
+  return response.data;
 };
 
 const userApis = {

@@ -1,0 +1,47 @@
+import { CalendarOff, CalendarSync, CalendarX2 } from "lucide-react";
+import type { SyncPayload, WorkLogStatusType } from "../../../shared/types";
+import { Button, Tooltip } from "antd";
+import trackeraTableClasses from "../../trackera-table/scss/trackera-table.module.css";
+
+interface SyncActionProps {
+  record: { id: string; status: WorkLogStatusType };
+  jiraLinked: boolean;
+  onSync: (params: SyncPayload) => void;
+  syncParams: SyncPayload;
+}
+
+const WorklogSyncActions = ({ record, jiraLinked, onSync, syncParams }: SyncActionProps) => {
+  const isSynced = record.status === "SYNCED";
+  const isSyncing = record.status === "SYNC_IN_PROGRESS";
+  const isUnsyncing = record.status === "UNSYNC_IN_PROGRESS";
+
+  const getTooltipTitle = () => {
+    if (!jiraLinked) {
+      return "Link your Jira account in settings to enable this option.";
+    }
+    return isSynced || isUnsyncing ? "Unsync from Jira" : "Sync to Jira";
+  };
+
+  const getIcon = () => {
+    if (!jiraLinked) return <CalendarOff />;
+    return isSynced || isUnsyncing ? <CalendarX2 /> : <CalendarSync />;
+  };
+
+  const isDisabled = !jiraLinked || isSyncing || isUnsyncing;
+
+  return (
+    <Tooltip title={getTooltipTitle()}>
+      <Button
+        type="text"
+        icon={getIcon()}
+        onClick={() => onSync(syncParams)}
+        className={`${trackeraTableClasses.log_action_btn} ${
+          isSynced ? trackeraTableClasses.unsync : trackeraTableClasses.sync
+        } ${isDisabled && trackeraTableClasses.disabled}`}
+        disabled={isDisabled}
+      />
+    </Tooltip>
+  );
+};
+
+export default WorklogSyncActions;
