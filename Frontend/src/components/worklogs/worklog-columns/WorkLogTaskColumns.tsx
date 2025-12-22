@@ -1,5 +1,5 @@
 import type { TableProps } from "antd";
-import { statusMetadata, type WorkLogStatusType, type WorklogTask } from "../../../shared/types";
+import { statusMetadata, type SyncPayload, type WorkLogStatusType, type WorklogTask } from "../../../shared/types";
 import StatusBadge from "../../status-badge/StatusBadge";
 import { CircleAlert } from "lucide-react";
 import WorklogActionButtons from "../worklog-action-buttons/WorklogActionButtons";
@@ -8,7 +8,7 @@ interface WorklogTaskColumnsParams {
   worklogId: string;
   worklogTasks: WorklogTask[];
   jiraLinked: boolean;
-  onSync: (params: any) => void;
+  onSync: (params: SyncPayload) => void;
   onView: (task: WorklogTask) => void;
   onDelete: (task: WorklogTask) => void;
 }
