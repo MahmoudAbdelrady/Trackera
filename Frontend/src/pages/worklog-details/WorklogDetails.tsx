@@ -4,7 +4,7 @@ import {
   WorklogModal,
   TrackeraTable,
   WorkLogTaskColumns,
-  WorkLogEntryColumns,
+  WorklogTaskEntries,
 } from "../../components";
 import classes from "./scss/worklog-details.module.css";
 import { Alert, Empty, Skeleton } from "antd";
@@ -48,12 +48,8 @@ const WorklogDetails = () => {
 
   // worklog entries
   const [worklogEntries, setWorklogEntries] = useState<WorklogEntry[]>([]);
-  const [selectedWorklogEntries, setSelectedWorklogEntries] = useState<WorklogEntry[]>([]);
   const [canFetchEntries, setCanFetchEntries] = useState<boolean>(false);
   const [isFetchingEntries, setIsFetchingEntries] = useState<boolean>(false);
-  const [isDeletingEntry, setIsDeletingEntry] = useState<boolean>(false);
-  const [selectedEntry, setSelectedEntry] = useState<WorklogEntry | null>(null);
-  const [deleteEntryVisible, setDeleteEntryVisible] = useState<boolean>(false);
 
   // sse subscription
   const hasInProgress = useMemo(() => {
@@ -65,17 +61,11 @@ const WorklogDetails = () => {
     );
   }, [worklogTasks, worklogEntries, worklogInfo]);
 
-  const viewTaskModalCloseHandler = () => {
-    setSelectedTask(null);
-    setViewTaskVisible(false);
-    selectedWorklogEntries.length > 0 && setSelectedWorklogEntries([]);
-  };
-
   useEffect(() => {
     const fetchWorklogInfo = async () => {
       try {
-        const response = await requestInstance.get(`/worklog/${worklogId}`);
-        setWorklogInfo(response.data);
+        const result = await workLogApis.getWorkLogInfo(worklogId!);
+        setWorklogInfo(result);
         setCanFetchTasks(true);
       } catch (error: any) {
         if (error.response?.status === 404) {
@@ -97,8 +87,8 @@ const WorklogDetails = () => {
     const fetchWorklogTasks = async () => {
       setIsFetchingTasks(true);
       try {
-        const response = await requestInstance.get(`/worklog/${worklogId}/details`);
-        setWorklogTasks(response.data.map((task: WorklogTask, idx: number) => ({ ...task, id: idx + 1 })));
+        const result = await workLogApis.getWorkLogTasks(worklogId!);
+        setWorklogTasks(result.map((task: WorklogTask, idx: number) => ({ ...task, id: idx + 1 })));
       } catch (error: any) {
         showErrorToast(error);
       }
@@ -140,16 +130,6 @@ const WorklogDetails = () => {
       setSelectedWorklogTasks(updatedSelectedTasks);
     }
   }, [worklogTasks]);
-
-  useEffect(() => {
-    if (selectedWorklogEntries.length > 0) {
-      const updatedSelectedEntries = selectedWorklogEntries
-        .map((selectedEntry) => worklogEntries.find((entry) => entry.id === selectedEntry.id))
-        .filter((entry): entry is WorklogEntry => entry !== undefined);
-
-      setSelectedWorklogEntries(updatedSelectedEntries);
-    }
-  }, [worklogEntries]);
 
   const handleDeleteWorkLogTask = async () => {
     setIsDeletingTask(true);
@@ -226,96 +206,31 @@ const WorklogDetails = () => {
     [loggedUserData?.jiraLinked, triggerSync]
   );
 
-  const worklogEntryColumns = useMemo(
-    () =>
-      WorkLogEntryColumns({
-        worklogId: worklogId!,
-        taskName: selectedTask?.taskName || "",
-        worklogEntries: worklogEntries,
-        jiraLinked: loggedUserData?.jiraLinked || false,
-        onSync: triggerSync,
-        onDelete: (record) => {
-          setDeleteEntryVisible(true);
-          setSelectedEntry(record);
-        },
-      }),
-    [loggedUserData?.jiraLinked, triggerSync]
-  );
-
-  const handleDeleteWorkLogEntry = async () => {
-    setIsDeletingEntry(true);
-
-    try {
-      const result = await handleWorkLogDeletion({ entryIds: [selectedEntry?.id.toString() ?? ""] });
-      if (result.isLast) {
-        navigate("/");
-      } else {
-        if (result.isLastOfTask) {
-          setViewTaskVisible(false);
-          setSelectedTask(null);
-        } else {
-          setCanFetchEntries(true);
-        }
-        setCanFetchTasks(true);
-        setCanFetchWorkLogInfo(true);
-      }
-    } catch (error: any) {
-      showErrorToast(error);
-    }
-
-    setIsDeletingEntry(false);
-    clearDeleteEntryModalFields();
-  };
-
   const clearDeleteTaskModalFields = () => {
     setDeleteTaskVisible(false);
     setSelectedTask(null);
   };
 
-  const clearDeleteEntryModalFields = () => {
-    setDeleteEntryVisible(false);
-    setSelectedEntry(null);
-  };
-
   return (
     <>
       {viewTaskVisible && (
-        <WorklogModal
-          title={`${selectedTask?.taskName} Task Logs`}
-          properties={{
-            open: true,
-            centered: true,
-            footer: null,
-            width: "80%",
-            onCancel: viewTaskModalCloseHandler,
+        <WorklogTaskEntries
+          loggedUserData={loggedUserData!}
+          worklogId={worklogId!}
+          selectedTask={selectedTask!}
+          worklogEntries={worklogEntries}
+          isFetchingEntries={isFetchingEntries}
+          setCanFetchEntries={setCanFetchEntries}
+          refetchData={() => {
+            setCanFetchTasks(true);
+            setCanFetchWorkLogInfo(true);
           }}
-        >
-          <TrackeraTable<WorklogEntry>
-            properties={{
-              columns: worklogEntryColumns,
-              dataSource: worklogEntries,
-              loading: isFetchingEntries,
-              pagination: { pageSize: 5 },
-              rowSelection: {
-                selectedRowKeys: selectedWorklogEntries.map((entry) => entry.id.toString()),
-                onChange: (_, selectedRows: WorklogEntry[]) => {
-                  setSelectedWorklogEntries(selectedRows);
-                },
-                getCheckboxProps: (record) => ({
-                  disabled:
-                    !loggedUserData?.jiraLinked || ["SYNC_IN_PROGRESS", "UNSYNC_IN_PROGRESS"].includes(record.status),
-                }),
-              },
-            }}
-            actionButtons={buildSyncButtonProps({
-              loggedUserData: loggedUserData,
-              selectedItems: selectedWorklogEntries,
-              extractIdentifier: (entry: WorklogEntry) => entry.id.toString(),
-              isEntry: true,
-              triggerSync: ({ entryIds, sync }) => triggerSync({ workLogId: worklogId, entryIds, sync }),
-            })}
-          />
-        </WorklogModal>
+          triggerSync={triggerSync}
+          onCloseHandler={() => {
+            setSelectedTask(null);
+            setViewTaskVisible(false);
+          }}
+        />
       )}
 
       {deleteTaskVisible && (
@@ -340,36 +255,6 @@ const WorklogDetails = () => {
           {(selectedTask?.status === "SYNCED" || selectedTask?.status === "PARTIALLY") && (
             <Alert
               message="This task has synced data with Jira and will be unsynced upon deletion."
-              type="warning"
-              showIcon
-              className={worklogModalClasses.alert_message}
-            />
-          )}
-        </WorklogModal>
-      )}
-
-      {deleteEntryVisible && (
-        <WorklogModal
-          title={`Delete ${selectedTask?.taskName} Entry`}
-          properties={{
-            open: true,
-            centered: true,
-            closable: !isDeletingEntry,
-            keyboard: !isDeletingEntry,
-            maskClosable: !isDeletingEntry,
-            okText: "Delete",
-            onOk: handleDeleteWorkLogEntry,
-            okButtonProps: { loading: isDeletingEntry, disabled: isDeletingEntry, danger: true },
-            cancelButtonProps: { disabled: isDeletingEntry },
-            onCancel: clearDeleteEntryModalFields,
-          }}
-        >
-          <p className={worklogModalClasses.delete_message}>
-            Are you sure you want to delete this entry? This action cannot be undone.
-          </p>
-          {(selectedTask?.status === "SYNCED" || selectedTask?.status === "PARTIALLY") && (
-            <Alert
-              message="This entry is synced with Jira and will be unsynced upon deletion."
               type="warning"
               showIcon
               className={worklogModalClasses.alert_message}

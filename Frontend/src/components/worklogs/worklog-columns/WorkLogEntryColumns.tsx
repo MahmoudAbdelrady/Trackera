@@ -6,7 +6,6 @@ import WorklogActionButtons from "../worklog-action-buttons/WorklogActionButtons
 
 interface WorklogEntryColumnsParams {
   worklogId: string;
-  taskName: string;
   worklogEntries: WorklogEntry[];
   jiraLinked: boolean;
   onSync: (params: SyncPayload) => void;
@@ -14,7 +13,7 @@ interface WorklogEntryColumnsParams {
 }
 
 const WorkLogEntryColumns = (props: WorklogEntryColumnsParams): TableProps<WorklogEntry>["columns"] => {
-  const { worklogId, taskName, worklogEntries, jiraLinked, onSync, onDelete } = props;
+  const { worklogId, worklogEntries, jiraLinked, onSync, onDelete } = props;
   return [
     {
       title: "From Time",
@@ -75,7 +74,7 @@ const WorkLogEntryColumns = (props: WorklogEntryColumnsParams): TableProps<Workl
           onDelete={() => onDelete(record)}
           syncParams={{
             workLogId: worklogId,
-            taskNames: [taskName],
+            entryIds: [record.id],
             sync: record.status !== "SYNCED",
           }}
         />

@@ -29,6 +29,7 @@ import WorklogActionButtons from "./worklogs/worklog-action-buttons/WorklogActio
 import WorkLogColumns from "./worklogs/worklog-columns/WorkLogColumns";
 import WorkLogTaskColumns from "./worklogs/worklog-columns/WorkLogTaskColumns";
 import WorkLogEntryColumns from "./worklogs/worklog-columns/WorkLogEntryColumns";
+import WorklogTaskEntries from "./worklogs/worklog-task-entries/WorklogTaskEntries";
 
 export {
   AuthLayout,
@@ -62,4 +63,5 @@ export {
   WorkLogColumns,
   WorkLogTaskColumns,
   WorkLogEntryColumns,
+  WorklogTaskEntries,
 };
