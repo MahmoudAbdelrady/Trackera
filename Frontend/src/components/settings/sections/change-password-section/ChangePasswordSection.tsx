@@ -3,24 +3,21 @@ import { userQueries } from "../../../../state/queries";
 import classes from "./scss/change-password.module.css";
 import { useFormik } from "formik";
 import { updatePasswordSchema } from "../../../../shared/yup-schemas";
-import requestInstance from "../../../../shared/axios/request-instance";
 import { showErrorToast, showSuccessToast } from "../../../../utils/toast-handler/showToast";
 import inputFieldClasses from "../../../input-field/scss/input-field.module.css";
 import InputField from "../../../input-field/InputField";
 import { Lock } from "lucide-react";
 import { Button } from "antd";
-
-interface ChangePasswordFormFields {
-  currentPassword?: string;
-  newPassword: string;
-  confirmNewPassword: string;
-}
+import type { ChangePasswordFormFields } from "../../../../shared/types";
+import { userApis } from "../../../../state/api";
 
 const ChangePasswordSection = () => {
   const { data: userData, refetch: refetchUser } = userQueries.useMeQuery();
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
   const changePasswordFormik = useFormik({
-    initialValues: (Object.keys(updatePasswordSchema(!!userData?.passwordSet).fields) as (keyof ChangePasswordFormFields)[]).reduce((acc, key) => {
+    initialValues: (
+      Object.keys(updatePasswordSchema(!!userData?.passwordSet).fields) as (keyof ChangePasswordFormFields)[]
+    ).reduce((acc, key) => {
       acc[key] = "";
       return acc;
     }, {} as ChangePasswordFormFields),
@@ -28,12 +25,10 @@ const ChangePasswordSection = () => {
     onSubmit: async (values) => {
       setIsUpdatingPassword(true);
       try {
-        const response = await requestInstance.post("/user/password", {
-          ...values,
-        });
+        const result = await userApis.changePassword(values);
         changePasswordFormik.resetForm();
         await refetchUser();
-        showSuccessToast(response.data);
+        showSuccessToast(result);
       } catch (error: any) {
         showErrorToast(error);
         changePasswordFormik.setFieldValue("currentPassword", "");
@@ -55,7 +50,11 @@ const ChangePasswordSection = () => {
           onBlur={changePasswordFormik.handleBlur}
           type="password"
           disabled={isUpdatingPassword}
-          error={changePasswordFormik.touched.currentPassword && changePasswordFormik.errors.currentPassword ? changePasswordFormik.errors.currentPassword : undefined}
+          error={
+            changePasswordFormik.touched.currentPassword && changePasswordFormik.errors.currentPassword
+              ? changePasswordFormik.errors.currentPassword
+              : undefined
+          }
         />
       )}
       <InputField
@@ -68,7 +67,11 @@ const ChangePasswordSection = () => {
         onBlur={changePasswordFormik.handleBlur}
         type="password"
         disabled={isUpdatingPassword}
-        error={changePasswordFormik.touched.newPassword && changePasswordFormik.errors.newPassword ? changePasswordFormik.errors.newPassword : undefined}
+        error={
+          changePasswordFormik.touched.newPassword && changePasswordFormik.errors.newPassword
+            ? changePasswordFormik.errors.newPassword
+            : undefined
+        }
       />
       <InputField
         label="Confirm New Password"
@@ -80,7 +83,11 @@ const ChangePasswordSection = () => {
         onBlur={changePasswordFormik.handleBlur}
         type="password"
         disabled={isUpdatingPassword}
-        error={changePasswordFormik.touched.confirmNewPassword && changePasswordFormik.errors.confirmNewPassword ? changePasswordFormik.errors.confirmNewPassword : undefined}
+        error={
+          changePasswordFormik.touched.confirmNewPassword && changePasswordFormik.errors.confirmNewPassword
+            ? changePasswordFormik.errors.confirmNewPassword
+            : undefined
+        }
       />
       <Button
         type="primary"

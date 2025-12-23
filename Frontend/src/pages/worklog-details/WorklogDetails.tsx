@@ -18,7 +18,6 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import worklogModalClasses from "../../components/worklogs/modals/worklog-modal/scss/worklog-modal.module.css";
-import requestInstance from "../../shared/axios/request-instance";
 import { showErrorToast, showSuccessToast } from "../../utils/toast-handler/showToast";
 import { userQueries } from "../../state/queries";
 import buildSyncButtonProps from "../../utils/buildWorkLogSyncButtonProps";
@@ -105,10 +104,8 @@ const WorklogDetails = () => {
     const fetchTaskEntries = async () => {
       setIsFetchingEntries(true);
       try {
-        const response = await requestInstance.get(
-          `/worklog/${worklogId}/details/task?taskName=${selectedTask?.taskName}`
-        );
-        setWorklogEntries(response.data);
+        const result = await workLogApis.getWorkLogTaskEntries(worklogId!, selectedTask!.taskName);
+        setWorklogEntries(result);
       } catch (error: any) {
         showErrorToast(error);
       }

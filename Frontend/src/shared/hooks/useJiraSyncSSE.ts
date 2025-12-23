@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import { useSSE } from "./";
-import requestInstance from "../axios/request-instance";
 import type { SyncPayload } from "../types";
 import { showErrorToast } from "../../utils/toast-handler/showToast";
+import { workLogApis } from "../../state/api";
 
 type JiraSyncSSEReturn = {
   triggerSync: (payload: SyncPayload) => void;
@@ -62,10 +62,8 @@ export const useJiraSyncSSE = ({ hasInProgress, onStatusEvent }: JiraSyncSSEOpti
   };
 
   const fireSync = async (payload: SyncPayload) => {
-    const { workLogId, taskNames, entryIds, sync } = payload;
-
     try {
-      await requestInstance.post(`/worklog/${workLogId}/sync${sync ? "" : "?sync=false"}`, { taskNames, entryIds });
+      workLogApis.syncWorkLog(payload);
     } catch (error) {
       showErrorToast(error);
     }

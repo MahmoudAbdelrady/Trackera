@@ -9,12 +9,8 @@ import { showErrorToast } from "../../../utils/toast-handler/showToast";
 import inputFieldClasses from "../../../components/input-field/scss/input-field.module.css";
 import classes from "./scss/login.module.css";
 import { useAuthStore } from "../../../state/store";
-import requestInstance from "../../../shared/axios/request-instance";
-
-interface LoginFormFields {
-  email: string;
-  password: string;
-}
+import type { LoginFormFields } from "../../../shared/types";
+import { authApis } from "../../../state/api";
 
 const Login = () => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -29,10 +25,7 @@ const Login = () => {
     onSubmit: async (values) => {
       setIsLoading(true);
       try {
-        await requestInstance.post("/auth/login", {
-          email: values.email,
-          password: values.password,
-        });
+        await authApis.login(values);
         authStore.setAuthenticated(true);
         navigate("/");
       } catch (error: any) {
@@ -57,7 +50,15 @@ const Login = () => {
         onSubmit={loginFormik.handleSubmit}
         isSubmitBtnDisabled={!loginFormik.isValid || !loginFormik.dirty || isLoading}
         isSubmitBtnLoading={isLoading}
-        footer={<AuthFooter hasOAuthBtns={true} isOAuthBtnsDisabled={isLoading} footerText="Don't have an account?" footerLink="/sign-up" footerLinkText="Sign up" />}
+        footer={
+          <AuthFooter
+            hasOAuthBtns={true}
+            isOAuthBtnsDisabled={isLoading}
+            footerText="Don't have an account?"
+            footerLink="/sign-up"
+            footerLinkText="Sign up"
+          />
+        }
       >
         <InputField
           label="Email"

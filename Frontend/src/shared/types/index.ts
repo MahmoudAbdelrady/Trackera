@@ -1,6 +1,16 @@
 import type { TrackeraTableEntity, StatusBadgeProps, InputFieldProps, PaginatedResponse } from "./global";
 
-import type { AuthLayoutProps, AuthFormProps, AuthResultFields, AuthResultProps, AuthFooterProps, OAuthBtnProps, UpdatePasswordFormFields } from "./auth";
+import type {
+  LoginFormFields,
+  SignUpFormFields,
+  ChangePasswordFormFields,
+  AuthLayoutProps,
+  AuthFormProps,
+  AuthResultFields,
+  AuthResultProps,
+  AuthFooterProps,
+  OAuthBtnProps,
+} from "./auth";
 
 import type {
   SyncPayload,
@@ -26,7 +36,13 @@ import type { JiraTask, JiraTaskEvaluationType, JiraSite } from "./jira";
 
 import { jiraTaskEvaluationMetadata } from "./jira";
 
-import type { SettingsSectionProps, LinkedAccountProps, UserEmailType, UserEmailProps, PreferencesProps } from "./settings";
+import type {
+  SettingsSectionProps,
+  LinkedAccountProps,
+  UserEmailType,
+  UserEmailProps,
+  PreferencesProps,
+} from "./settings";
 
 export type {
   SyncPayload,
@@ -51,7 +67,9 @@ export type {
   ManageWorkLogModalProps,
   AuthFooterProps,
   OAuthBtnProps,
-  UpdatePasswordFormFields,
+  LoginFormFields,
+  SignUpFormFields,
+  ChangePasswordFormFields,
   WorkLogSummaryCard,
   WorkLogSearchFilter,
   WorkLogsFilterProps,

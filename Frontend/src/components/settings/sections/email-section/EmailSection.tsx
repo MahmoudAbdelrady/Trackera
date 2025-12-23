@@ -7,10 +7,10 @@ import { Mail } from "lucide-react";
 import inputFieldClasses from "../../../input-field/scss/input-field.module.css";
 import classes from "./scss/email-section.module.css";
 import { showErrorToast, showSuccessToast } from "../../../../utils/toast-handler/showToast";
-import requestInstance from "../../../../shared/axios/request-instance";
 import { userQueries } from "../../../../state/queries";
 import StatusBadge from "../../../status-badge/StatusBadge";
 import { isEqual } from "lodash";
+import { userApis } from "../../../../state/api";
 
 const EmailSection = () => {
   const [isPerformingAction, setIsPerformingAction] = useState(false);
@@ -26,8 +26,8 @@ const EmailSection = () => {
     onSubmit: async (values) => {
       setIsPerformingAction(true);
       try {
-        const response = await requestInstance.post("/user/email/request-change", { email: values.email });
-        showSuccessToast(response.data);
+        const result = await userApis.requestEmailChange(values.email);
+        showSuccessToast(result);
         setShowChangeEmail(false);
         changeEmailFormik.resetForm();
         meQuery.refetch();
@@ -41,8 +41,8 @@ const EmailSection = () => {
   const resendVerificationEmail = async () => {
     setIsPerformingAction(true);
     try {
-      const response = await requestInstance.post("/user/email/send-verification");
-      showSuccessToast(response.data);
+      const result = await userApis.sendEmailVerification();
+      showSuccessToast(result);
     } catch (error: any) {
       showErrorToast(error);
     }
@@ -52,8 +52,8 @@ const EmailSection = () => {
   const removePendingEmail = async () => {
     setIsPerformingAction(true);
     try {
-      const response = await requestInstance.delete("/user/email/pending");
-      showSuccessToast(response.data);
+      const result = await userApis.removePendingEmail();
+      showSuccessToast(result);
       meQuery.refetch();
     } catch (error: any) {
       showErrorToast(error);
@@ -75,7 +75,11 @@ const EmailSection = () => {
               onBlur={changeEmailFormik.handleBlur}
               type="email"
               disabled={isPerformingAction}
-              error={changeEmailFormik.touched.email && changeEmailFormik.errors.email ? changeEmailFormik.errors.email : undefined}
+              error={
+                changeEmailFormik.touched.email && changeEmailFormik.errors.email
+                  ? changeEmailFormik.errors.email
+                  : undefined
+              }
             />
           ) : (
             <>
@@ -92,7 +96,11 @@ const EmailSection = () => {
                 htmlType="submit"
                 className={classes.action_btn}
                 loading={isPerformingAction}
-                disabled={isPerformingAction || !changeEmailFormik.isValid || isEqual(changeEmailFormik.initialValues, changeEmailFormik.values)}
+                disabled={
+                  isPerformingAction ||
+                  !changeEmailFormik.isValid ||
+                  isEqual(changeEmailFormik.initialValues, changeEmailFormik.values)
+                }
                 onClick={() => {
                   changeEmailFormik.handleSubmit();
                 }}
@@ -112,7 +120,12 @@ const EmailSection = () => {
             </>
           ) : (
             !userData?.pendingEmail && (
-              <Button type="primary" htmlType="submit" className={classes.action_btn} onClick={() => setShowChangeEmail(true)}>
+              <Button
+                type="primary"
+                htmlType="submit"
+                className={classes.action_btn}
+                onClick={() => setShowChangeEmail(true)}
+              >
                 Change Email
               </Button>
             )
@@ -136,7 +149,14 @@ const EmailSection = () => {
             >
               Resend Verification
             </Button>
-            <Button type="default" danger className={classes.action_btn} onClick={removePendingEmail} loading={isPerformingAction} disabled={isPerformingAction}>
+            <Button
+              type="default"
+              danger
+              className={classes.action_btn}
+              onClick={removePendingEmail}
+              loading={isPerformingAction}
+              disabled={isPerformingAction}
+            >
               Delete
             </Button>
           </div>

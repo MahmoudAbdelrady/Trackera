@@ -6,9 +6,9 @@ import { Link } from "react-router-dom";
 import trackeraTableClasses from "../../components/trackera-table/scss/trackera-table.module.css";
 import classes from "./scss/jira-tasks.module.css";
 import { showErrorToast } from "../../utils/toast-handler/showToast";
-import requestInstance from "../../shared/axios/request-instance";
 import { useEffect, useState } from "react";
 import { userQueries } from "../../state/queries";
+import { jiraApis } from "../../state/api";
 
 const JiraTasks = () => {
   const { data: loggedUserData } = userQueries.useMeQuery();
@@ -87,7 +87,11 @@ const JiraTasks = () => {
       dataIndex: "evaluation",
       key: "evaluation",
       render: (_, { timeTracking }) => {
-        return timeTracking.evaluation ? <StatusBadge badgeProps={jiraTaskEvaluationMetadata[timeTracking.evaluation as JiraTaskEvaluationType]} /> : "-";
+        return timeTracking.evaluation ? (
+          <StatusBadge badgeProps={jiraTaskEvaluationMetadata[timeTracking.evaluation as JiraTaskEvaluationType]} />
+        ) : (
+          "-"
+        );
       },
     },
     {
@@ -153,10 +157,9 @@ const JiraTasks = () => {
   const fetchJiraTasks = async (forceUpdate: boolean = false) => {
     setIsLoading(true);
     try {
-      const response = await requestInstance.get(`/jira/tasks${forceUpdate ? "?forceUpdate=true" : ""}`);
-      const fetchedData = response.data;
-      setLastUpdated(fetchedData.lastUpdated);
-      setJiraTasks(fetchedData.tasks);
+      const result = await jiraApis.getJiraTasks(forceUpdate);
+      setLastUpdated(result.lastUpdated);
+      setJiraTasks(result.tasks);
     } catch (error: any) {
       showErrorToast(error);
     }

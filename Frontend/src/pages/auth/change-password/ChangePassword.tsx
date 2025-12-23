@@ -5,10 +5,10 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import inputFieldClasses from "../../../components/input-field/scss/input-field.module.css";
 import { useFormik } from "formik";
 import { updatePasswordSchema } from "../../../shared/yup-schemas";
-import requestInstance from "../../../shared/axios/request-instance";
-import type { AuthResultFields, UpdatePasswordFormFields } from "../../../shared/types";
+import type { AuthResultFields, ChangePasswordFormFields } from "../../../shared/types";
 import { showErrorToast } from "../../../utils/toast-handler/showToast";
 import { useAuthStore } from "../../../state/store";
+import { authApis } from "../../../state/api";
 
 const ChangePassword = () => {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -21,20 +21,20 @@ const ChangePassword = () => {
   const token = searchParams.get("token");
 
   const changePasswordFormik = useFormik({
-    initialValues: (Object.keys(updatePasswordSchema().fields) as (keyof UpdatePasswordFormFields)[]).reduce((acc, key) => {
-      acc[key] = "";
-      return acc;
-    }, {} as UpdatePasswordFormFields),
+    initialValues: (Object.keys(updatePasswordSchema().fields) as (keyof ChangePasswordFormFields)[]).reduce(
+      (acc, key) => {
+        acc[key] = "";
+        return acc;
+      },
+      {} as ChangePasswordFormFields
+    ),
     validationSchema: updatePasswordSchema(),
     onSubmit: async (values) => {
       setIsLoading(true);
       try {
-        const { currentPassword, ...newPasswordInfo } = values;
-        const response = await requestInstance.post(`/auth/password?token=${token}`, {
-          ...newPasswordInfo,
-        });
+        const result = await authApis.changePassword(token!, values);
         setPasswordChangeResult({
-          description: response.data,
+          description: result,
         });
         setShowAuthResult(true);
       } catch (error: any) {
@@ -64,7 +64,7 @@ const ChangePassword = () => {
     } else {
       const validateToken = async () => {
         try {
-          await requestInstance.post(`/auth/token/validate?token=${token}`);
+          await authApis.validateToken(token);
         } catch (error: any) {
           setPasswordChangeResult({
             description: error.response?.data?.message,
@@ -86,8 +86,14 @@ const ChangePassword = () => {
       {showAuthResult ? (
         <AuthResult
           title="Password Change"
-          description={passwordChangeResult.isError ? "Error occurred while changing password" : passwordChangeResult.description!}
-          message={passwordChangeResult.isError ? passwordChangeResult.description! : "You can now sign in with your new password"}
+          description={
+            passwordChangeResult.isError ? "Error occurred while changing password" : passwordChangeResult.description!
+          }
+          message={
+            passwordChangeResult.isError
+              ? passwordChangeResult.description!
+              : "You can now sign in with your new password"
+          }
           buttonText={`Back to ${isAuthenticated ? "Home" : "Sign In"}`}
           isError={passwordChangeResult.isError}
           onClick={() => navigate(`${isAuthenticated ? "/" : "/login"}`)}
@@ -111,7 +117,11 @@ const ChangePassword = () => {
             onBlur={changePasswordFormik.handleBlur}
             type="password"
             disabled={isLoading}
-            error={changePasswordFormik.touched.newPassword && changePasswordFormik.errors.newPassword ? changePasswordFormik.errors.newPassword : undefined}
+            error={
+              changePasswordFormik.touched.newPassword && changePasswordFormik.errors.newPassword
+                ? changePasswordFormik.errors.newPassword
+                : undefined
+            }
           />
           <InputField
             label="Confirm New Password"
@@ -123,7 +133,11 @@ const ChangePassword = () => {
             onBlur={changePasswordFormik.handleBlur}
             type="password"
             disabled={isLoading}
-            error={changePasswordFormik.touched.confirmNewPassword && changePasswordFormik.errors.confirmNewPassword ? changePasswordFormik.errors.confirmNewPassword : undefined}
+            error={
+              changePasswordFormik.touched.confirmNewPassword && changePasswordFormik.errors.confirmNewPassword
+                ? changePasswordFormik.errors.confirmNewPassword
+                : undefined
+            }
           />
         </AuthForm>
       )}

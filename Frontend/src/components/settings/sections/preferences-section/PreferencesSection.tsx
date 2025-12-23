@@ -2,10 +2,10 @@ import { Alert, Button, InputNumber, Select, Spin } from "antd";
 import { UserPreference } from "../../../";
 import classes from "./scss/preferences-section.module.css";
 import { showErrorToast, showSuccessToast } from "../../../../utils/toast-handler/showToast";
-import requestInstance from "../../../../shared/axios/request-instance";
 import { useEffect, useState } from "react";
 import type { JiraSite, PreferencesProps } from "../../../../shared/types";
 import { isEqual } from "lodash";
+import { jiraApis, userApis } from "../../../../state/api";
 
 const PreferencesSection = (props: PreferencesProps) => {
   const { jiraLinked, fetchPreferences, setFetchPreferences } = props;
@@ -29,8 +29,7 @@ const PreferencesSection = (props: PreferencesProps) => {
     const fetchUserPreferences = async () => {
       setIsLoadingPreferences(true);
       try {
-        const response = await requestInstance.get("/user/preferences");
-        const preferences: Record<string, any> = response.data;
+        const preferences: Record<string, any> = await userApis.getPreferences();
 
         setInitialPreferences(preferences);
         setUpdatedPreferences(preferences);
@@ -50,8 +49,8 @@ const PreferencesSection = (props: PreferencesProps) => {
   const fetchJiraSites = async () => {
     setIsFetchingSites(true);
     try {
-      const response = await requestInstance.get("/jira/sites");
-      setJiraSites(response.data);
+      const result = await jiraApis.getJiraSites();
+      setJiraSites(result);
     } catch (error: any) {
       showErrorToast(error);
     }
@@ -80,9 +79,9 @@ const PreferencesSection = (props: PreferencesProps) => {
           .filter(([key, value]) => !isEqual(initialPreferences[key], value))
           .map(([key, value]) => [key, transformPreferenceValue(key, value)])
       );
-      const response = await requestInstance.post("/user/preferences", preferencesToUpdate);
+      const result = await userApis.updatePreferences(preferencesToUpdate);
       setInitialPreferences(updatedPreferences);
-      showSuccessToast(response.data);
+      showSuccessToast(result);
     } catch (error: any) {
       showErrorToast(error);
     }
@@ -126,7 +125,13 @@ const PreferencesSection = (props: PreferencesProps) => {
               className={classes.preference_input}
             />
           </UserPreference>
-          <Button type="primary" onClick={updateUserPreferences} loading={isLoadingPreferences} disabled={isEqual(initialPreferences, updatedPreferences)} className={classes.update_button}>
+          <Button
+            type="primary"
+            onClick={updateUserPreferences}
+            loading={isLoadingPreferences}
+            disabled={isEqual(initialPreferences, updatedPreferences)}
+            className={classes.update_button}
+          >
             Update Preferences
           </Button>
         </>

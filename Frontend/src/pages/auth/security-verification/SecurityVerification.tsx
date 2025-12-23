@@ -1,9 +1,9 @@
 import { AuthLayout, AuthResult, LoadingSpinner } from "../../../components";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useEffect, useState } from "react";
-import requestInstance from "../../../shared/axios/request-instance";
 import type { AuthResultFields } from "../../../shared/types";
 import { useAuthStore } from "../../../state/store";
+import { authApis } from "../../../state/api";
 
 const SecurityVerification = () => {
   const verificationTypeMessage: Record<string, string> = {
@@ -29,10 +29,10 @@ const SecurityVerification = () => {
     } else {
       const consumeToken = async () => {
         try {
-          const response = await requestInstance.post(`/auth/token/consume?token=${token}`);
+          const result = await authApis.consumeToken(token);
           setVerificationResult({
-            title: response.data.title,
-            description: response.data.desc,
+            title: result.title,
+            description: result.desc,
           });
         } catch (error: any) {
           setVerificationResult({

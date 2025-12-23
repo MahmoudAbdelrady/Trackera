@@ -1,12 +1,19 @@
 import { Link, Lock, Mail, Sliders } from "lucide-react";
-import { AppLayout, ChangePasswordSection, EmailSection, LinkedAccount, LoadingSpinner, PreferencesSection } from "../../components";
+import {
+  AppLayout,
+  ChangePasswordSection,
+  EmailSection,
+  LinkedAccount,
+  LoadingSpinner,
+  PreferencesSection,
+} from "../../components";
 import { SettingsSection } from "../../components";
 import { showErrorToast, showSuccessToast } from "../../utils/toast-handler/showToast";
-import requestInstance from "../../shared/axios/request-instance";
 import { useEffect, useState } from "react";
 import { useOAuthFlow } from "../../shared/hooks";
 import { userQueries } from "../../state/queries";
 import classes from "./scss/settings.module.css";
+import { authApis, userApis } from "../../state/api";
 
 interface OAuthAccount {
   provider: Record<string, string>;
@@ -39,8 +46,8 @@ const Settings = () => {
 
   const unlinkProviderAccount = async (provider: string) => {
     try {
-      const response = await requestInstance.post(`/auth/oauth/unlink/${provider}`);
-      showSuccessToast(response.data);
+      const result = await authApis.unLinkOAuthProvider(provider);
+      showSuccessToast(result);
       refetchUser();
       setFetchOAuthAccounts(true);
     } catch (error: any) {
@@ -52,8 +59,8 @@ const Settings = () => {
     const fetchAccounts = async () => {
       setIsFetchingAccounts(true);
       try {
-        const response = await requestInstance.get("/user/oauth-providers");
-        setOAuthAccounts(response.data);
+        const result = await userApis.getOAuthProviders();
+        setOAuthAccounts(result);
       } catch (error: any) {
         showErrorToast(error);
       }
@@ -92,7 +99,11 @@ const Settings = () => {
           )}
         </SettingsSection>
         <SettingsSection title="Preferences" icon={<Sliders />}>
-          <PreferencesSection jiraLinked={userData?.jiraLinked || false} fetchPreferences={fetchPreferences} setFetchPreferences={setFetchPreferences} />
+          <PreferencesSection
+            jiraLinked={userData?.jiraLinked || false}
+            fetchPreferences={fetchPreferences}
+            setFetchPreferences={setFetchPreferences}
+          />
         </SettingsSection>
       </div>
     </AppLayout>

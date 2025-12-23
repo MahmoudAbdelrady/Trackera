@@ -6,8 +6,8 @@ import inputFieldClasses from "../../../components/input-field/scss/input-field.
 import { useFormik } from "formik";
 import { emailSchema } from "../../../shared/yup-schemas";
 import { showErrorToast } from "../../../utils/toast-handler/showToast";
-import requestInstance from "../../../shared/axios/request-instance";
 import type { AuthResultFields } from "../../../shared/types";
+import { authApis } from "../../../state/api";
 
 interface ForgotPasswordFormFields {
   email: string;
@@ -28,9 +28,9 @@ const ForgotPassword = () => {
     onSubmit: async (values) => {
       setIsLoading(true);
       try {
-        const response = await requestInstance.post("/auth/password/request-reset", values);
+        const result = await authApis.requestResetPassword(values.email);
         setPasswordResetResult({
-          description: response.data,
+          description: result,
         });
         setShowAuthResult(true);
       } catch (error) {
@@ -44,7 +44,12 @@ const ForgotPassword = () => {
   return (
     <AuthLayout>
       {showAuthResult ? (
-        <AuthResult title="Password Reset" message={passwordResetResult.description!} buttonText="Back to Sign In" onClick={() => navigate("/login")} />
+        <AuthResult
+          title="Password Reset"
+          message={passwordResetResult.description!}
+          buttonText="Back to Sign In"
+          onClick={() => navigate("/login")}
+        />
       ) : (
         <AuthForm
           title="Reset your password"
@@ -65,7 +70,11 @@ const ForgotPassword = () => {
             onBlur={forgotPasswordFormik.handleBlur}
             type="email"
             disabled={isLoading}
-            error={forgotPasswordFormik.touched.email && forgotPasswordFormik.errors.email ? forgotPasswordFormik.errors.email : undefined}
+            error={
+              forgotPasswordFormik.touched.email && forgotPasswordFormik.errors.email
+                ? forgotPasswordFormik.errors.email
+                : undefined
+            }
           />
         </AuthForm>
       )}

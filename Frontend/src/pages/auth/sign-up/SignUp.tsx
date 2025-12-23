@@ -1,10 +1,4 @@
-import {
-  AuthFooter,
-  AuthForm,
-  AuthLayout,
-  AuthResult,
-  InputField,
-} from "../../../components";
+import { AuthFooter, AuthForm, AuthLayout, AuthResult, InputField } from "../../../components";
 import authClasses from "../scss/auth.module.css";
 import inputFieldClasses from "../../../components/input-field/scss/input-field.module.css";
 import { Lock, Mail, User } from "lucide-react";
@@ -12,26 +6,17 @@ import { useFormik } from "formik";
 import { signUpSchema } from "../../../shared/yup-schemas";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import requestInstance from "../../../shared/axios/request-instance";
 import { showErrorToast } from "../../../utils/toast-handler/showToast";
 import { getFormikErrors } from "../../../utils";
-
-interface SignUpFormFields {
-  firstname: string;
-  lastname: string;
-  email: string;
-  password: string;
-  confirmPassword: string;
-}
+import type { SignUpFormFields } from "../../../shared/types";
+import { authApis } from "../../../state/api";
 
 const SignUp = () => {
   const [showAuthResult, setShowAuthResult] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const navigate = useNavigate();
   const signUpFormik = useFormik({
-    initialValues: (
-      Object.keys(signUpSchema.fields) as (keyof SignUpFormFields)[]
-    ).reduce((acc, key) => {
+    initialValues: (Object.keys(signUpSchema.fields) as (keyof SignUpFormFields)[]).reduce((acc, key) => {
       acc[key] = "";
       return acc;
     }, {} as SignUpFormFields),
@@ -39,7 +24,7 @@ const SignUp = () => {
     onSubmit: async (values) => {
       setIsLoading(true);
       try {
-        await requestInstance.post("/auth/signup", values);
+        await authApis.signUp(values);
         setShowAuthResult(true);
       } catch (error: any) {
         if (error.response?.data.message === "Validation Error") {
@@ -74,9 +59,7 @@ const SignUp = () => {
           description="Sign up to get started with Trackera"
           submitButtonText="Create Account"
           onSubmit={signUpFormik.handleSubmit}
-          isSubmitBtnDisabled={
-            !signUpFormik.isValid || !signUpFormik.dirty || isLoading
-          }
+          isSubmitBtnDisabled={!signUpFormik.isValid || !signUpFormik.dirty || isLoading}
           isSubmitBtnLoading={isLoading}
           footer={
             <AuthFooter
@@ -116,9 +99,7 @@ const SignUp = () => {
               type="text"
               disabled={isLoading}
               error={
-                signUpFormik.touched.lastname && signUpFormik.errors.lastname
-                  ? signUpFormik.errors.lastname
-                  : undefined
+                signUpFormik.touched.lastname && signUpFormik.errors.lastname ? signUpFormik.errors.lastname : undefined
               }
             />
           </div>
@@ -132,11 +113,7 @@ const SignUp = () => {
             onBlur={signUpFormik.handleBlur}
             type="email"
             disabled={isLoading}
-            error={
-              signUpFormik.touched.email && signUpFormik.errors.email
-                ? signUpFormik.errors.email
-                : undefined
-            }
+            error={signUpFormik.touched.email && signUpFormik.errors.email ? signUpFormik.errors.email : undefined}
           />
           <InputField
             label="Password"
@@ -149,9 +126,7 @@ const SignUp = () => {
             type="password"
             disabled={isLoading}
             error={
-              signUpFormik.touched.password && signUpFormik.errors.password
-                ? signUpFormik.errors.password
-                : undefined
+              signUpFormik.touched.password && signUpFormik.errors.password ? signUpFormik.errors.password : undefined
             }
           />
           <InputField
@@ -165,8 +140,7 @@ const SignUp = () => {
             type="password"
             disabled={isLoading}
             error={
-              signUpFormik.touched.confirmPassword &&
-              signUpFormik.errors.confirmPassword
+              signUpFormik.touched.confirmPassword && signUpFormik.errors.confirmPassword
                 ? signUpFormik.errors.confirmPassword
                 : undefined
             }

@@ -1,3 +1,22 @@
+interface LoginFormFields {
+  email: string;
+  password: string;
+}
+
+interface SignUpFormFields {
+  firstname: string;
+  lastname: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+}
+
+interface ChangePasswordFormFields {
+  currentPassword?: string;
+  newPassword: string;
+  confirmNewPassword: string;
+}
+
 interface AuthLayoutProps {
   children: React.ReactNode;
 }
@@ -39,10 +58,14 @@ interface OAuthBtnProps {
   onClick: () => void;
 }
 
-interface UpdatePasswordFormFields {
-  currentPassword?: string;
-  newPassword: string;
-  confirmNewPassword: string;
-}
-
-export type { AuthLayoutProps, AuthFormProps, AuthResultFields, AuthResultProps, AuthFooterProps, OAuthBtnProps, UpdatePasswordFormFields };
+export type {
+  LoginFormFields,
+  SignUpFormFields,
+  ChangePasswordFormFields,
+  AuthLayoutProps,
+  AuthFormProps,
+  AuthResultFields,
+  AuthResultProps,
+  AuthFooterProps,
+  OAuthBtnProps,
+};
