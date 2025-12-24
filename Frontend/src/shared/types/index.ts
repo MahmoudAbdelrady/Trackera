@@ -10,6 +10,7 @@ import type {
   AuthResultProps,
   AuthFooterProps,
   OAuthBtnProps,
+  OAuthAccount,
 } from "./auth";
 
 import type {
@@ -81,6 +82,7 @@ export type {
   UserEmailType,
   UserEmailProps,
   PreferencesProps,
+  OAuthAccount,
 };
 
 export { worklogEvaluationMetadata, statusMetadata, jiraTaskEvaluationMetadata };

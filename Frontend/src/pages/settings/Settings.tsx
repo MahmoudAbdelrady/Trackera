@@ -1,12 +1,5 @@
 import { Link, Lock, Mail, Sliders } from "lucide-react";
-import {
-  AppLayout,
-  ChangePasswordSection,
-  EmailSection,
-  LinkedAccount,
-  LoadingSpinner,
-  PreferencesSection,
-} from "../../components";
+import { AppLayout, ChangePasswordSection, EmailSection, LinkedAccount, PreferencesSection } from "../../components";
 import { SettingsSection } from "../../components";
 import { showErrorToast, showSuccessToast } from "../../utils/toast-handler/showToast";
 import { useEffect, useState } from "react";
@@ -14,29 +7,24 @@ import { useOAuthFlow } from "../../shared/hooks";
 import { userQueries } from "../../state/queries";
 import classes from "./scss/settings.module.css";
 import { authApis, userApis } from "../../state/api";
-
-interface OAuthAccount {
-  provider: Record<string, string>;
-  isLinked: boolean;
-  email?: string;
-}
+import type { OAuthAccount } from "../../shared/types";
+import { Spin } from "antd";
 
 const Settings = () => {
   const { data: userData, refetch: refetchUser } = userQueries.useMeQuery();
 
   // oauth accounts
-  const [isFetchingAccounts, setIsFetchingAccounts] = useState(false);
-  const [fetchOAuthAccounts, setFetchOAuthAccounts] = useState(true);
+  const [isFetchingAccounts, setIsFetchingAccounts] = useState<boolean>(false);
   const [oAuthAccounts, setOAuthAccounts] = useState<OAuthAccount[]>([]);
 
   // preferences
-  const [fetchPreferences, setFetchPreferences] = useState(true);
+  const [fetchPreferences, setFetchPreferences] = useState<boolean>(true);
 
   const { linkProviderAccount } = useOAuthFlow({
     onSuccess: () => {
       showSuccessToast("Account linked successfully");
       refetchUser();
-      setFetchOAuthAccounts(true);
+      fetchOAuthAccounts();
       setFetchPreferences(true);
     },
     onError: (error) => {
@@ -44,34 +32,31 @@ const Settings = () => {
     },
   });
 
+  const fetchOAuthAccounts = async () => {
+    setIsFetchingAccounts(true);
+    try {
+      const result = await userApis.getOAuthProviders();
+      setOAuthAccounts(result);
+    } catch (error: any) {
+      showErrorToast(error);
+    }
+    setIsFetchingAccounts(false);
+  };
+
   const unlinkProviderAccount = async (provider: string) => {
     try {
       const result = await authApis.unLinkOAuthProvider(provider);
       showSuccessToast(result);
       refetchUser();
-      setFetchOAuthAccounts(true);
+      fetchOAuthAccounts();
     } catch (error: any) {
       showErrorToast(error);
     }
   };
 
   useEffect(() => {
-    const fetchAccounts = async () => {
-      setIsFetchingAccounts(true);
-      try {
-        const result = await userApis.getOAuthProviders();
-        setOAuthAccounts(result);
-      } catch (error: any) {
-        showErrorToast(error);
-      }
-      setIsFetchingAccounts(false);
-    };
-
-    if (fetchOAuthAccounts) {
-      fetchAccounts();
-      setFetchOAuthAccounts(false);
-    }
-  }, [fetchOAuthAccounts]);
+    fetchOAuthAccounts();
+  }, []);
 
   return (
     <AppLayout>
@@ -84,11 +69,11 @@ const Settings = () => {
         </SettingsSection>
         <SettingsSection title="Linked Accounts" icon={<Link />}>
           {isFetchingAccounts ? (
-            <LoadingSpinner />
+            <Spin />
           ) : (
-            oAuthAccounts.map((account, idx) => (
+            oAuthAccounts.map((account) => (
               <LinkedAccount
-                key={idx}
+                key={account.provider.code}
                 platform={account.provider}
                 accountIdentifier={account.email}
                 isLinked={account.isLinked}

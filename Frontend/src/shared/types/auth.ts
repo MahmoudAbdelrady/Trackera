@@ -58,6 +58,12 @@ interface OAuthBtnProps {
   onClick: () => void;
 }
 
+interface OAuthAccount {
+  provider: Record<string, string>;
+  isLinked: boolean;
+  email?: string;
+}
+
 export type {
   LoginFormFields,
   SignUpFormFields,
@@ -68,4 +74,5 @@ export type {
   AuthResultProps,
   AuthFooterProps,
   OAuthBtnProps,
+  OAuthAccount,
 };

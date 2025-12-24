@@ -13,10 +13,9 @@ import { isEqual } from "lodash";
 import { userApis } from "../../../../state/api";
 
 const EmailSection = () => {
+  const { data: userData, refetch: refetchUser } = userQueries.useMeQuery();
   const [isPerformingAction, setIsPerformingAction] = useState(false);
   const [showChangeEmail, setShowChangeEmail] = useState(false);
-  const meQuery = userQueries.useMeQuery();
-  const { data: userData } = meQuery;
 
   const changeEmailFormik = useFormik({
     initialValues: {
@@ -27,10 +26,10 @@ const EmailSection = () => {
       setIsPerformingAction(true);
       try {
         const result = await userApis.requestEmailChange(values.email);
-        showSuccessToast(result);
+        await refetchUser();
         setShowChangeEmail(false);
         changeEmailFormik.resetForm();
-        meQuery.refetch();
+        showSuccessToast(result);
       } catch (error: any) {
         showErrorToast(error);
       }
@@ -53,8 +52,8 @@ const EmailSection = () => {
     setIsPerformingAction(true);
     try {
       const result = await userApis.removePendingEmail();
+      await refetchUser();
       showSuccessToast(result);
-      meQuery.refetch();
     } catch (error: any) {
       showErrorToast(error);
     }
@@ -63,7 +62,7 @@ const EmailSection = () => {
 
   return (
     <div className={classes.user_emails}>
-      <div className={classes.email_item}>
+      <form onSubmit={changeEmailFormik.handleSubmit} className={classes.email_item}>
         <div className={classes.info}>
           {showChangeEmail ? (
             <InputField
@@ -97,13 +96,8 @@ const EmailSection = () => {
                 className={classes.action_btn}
                 loading={isPerformingAction}
                 disabled={
-                  isPerformingAction ||
-                  !changeEmailFormik.isValid ||
-                  isEqual(changeEmailFormik.initialValues, changeEmailFormik.values)
+                  !changeEmailFormik.isValid || isEqual(changeEmailFormik.initialValues, changeEmailFormik.values)
                 }
-                onClick={() => {
-                  changeEmailFormik.handleSubmit();
-                }}
               >
                 Save Changes
               </Button>
@@ -120,18 +114,13 @@ const EmailSection = () => {
             </>
           ) : (
             !userData?.pendingEmail && (
-              <Button
-                type="primary"
-                htmlType="submit"
-                className={classes.action_btn}
-                onClick={() => setShowChangeEmail(true)}
-              >
+              <Button type="primary" className={classes.action_btn} onClick={() => setShowChangeEmail(true)}>
                 Change Email
               </Button>
             )
           )}
         </div>
-      </div>
+      </form>
       {userData?.pendingEmail && (
         <div className={classes.email_item}>
           <div className={classes.info}>
@@ -141,10 +130,9 @@ const EmailSection = () => {
           <div className={classes.actions}>
             <Button
               type="primary"
-              htmlType="submit"
               className={classes.action_btn}
               loading={isPerformingAction}
-              disabled={isPerformingAction || !changeEmailFormik.isValid}
+              disabled={isPerformingAction}
               onClick={resendVerificationEmail}
             >
               Resend Verification

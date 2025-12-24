@@ -7,14 +7,19 @@ import type { JiraSite, PreferencesProps } from "../../../../shared/types";
 import { isEqual } from "lodash";
 import { jiraApis, userApis } from "../../../../state/api";
 
+// preferences keys
+const PREFERENCE_KEYS = {
+  JIRA_PRIMARY_PROJECT: "jiraPrimaryProject",
+  WORKLOGS_MONTHLY_TARGET_HOURS: "worklogsMonthlyTargetHours",
+};
+
+type UserPreferences = {
+  [PREFERENCE_KEYS.JIRA_PRIMARY_PROJECT]?: number; // Store ID, not full object
+  [PREFERENCE_KEYS.WORKLOGS_MONTHLY_TARGET_HOURS]?: number;
+};
+
 const PreferencesSection = (props: PreferencesProps) => {
   const { jiraLinked, fetchPreferences, setFetchPreferences } = props;
-
-  // preferences keys
-  const PREFERENCE_KEYS = {
-    JIRA_PRIMARY_PROJECT: "jiraPrimaryProject",
-    WORKLOGS_MONTHLY_TARGET_HOURS: "worklogsMonthlyTargetHours",
-  };
 
   // user preferences
   const [isLoadingPreferences, setIsLoadingPreferences] = useState<boolean>(false);
@@ -33,7 +38,8 @@ const PreferencesSection = (props: PreferencesProps) => {
 
         setInitialPreferences(preferences);
         setUpdatedPreferences(preferences);
-        setJiraSites([preferences[PREFERENCE_KEYS.JIRA_PRIMARY_PROJECT] || []]);
+        const primarySite = preferences[PREFERENCE_KEYS.JIRA_PRIMARY_PROJECT];
+        setJiraSites(primarySite ? [primarySite] : []);
       } catch (error) {
         showErrorToast(error);
       }
@@ -44,13 +50,18 @@ const PreferencesSection = (props: PreferencesProps) => {
       fetchUserPreferences();
       setFetchPreferences(false);
     }
-  }, [fetchPreferences]);
+  }, [fetchPreferences, setFetchPreferences]);
 
   const fetchJiraSites = async () => {
     setIsFetchingSites(true);
     try {
       const result = await jiraApis.getJiraSites();
-      setJiraSites(result);
+      const selectedSite = updatedPreferences[PREFERENCE_KEYS.JIRA_PRIMARY_PROJECT];
+      if (selectedSite && !result.find((s: JiraSite) => s.id === selectedSite.id)) {
+        setJiraSites([selectedSite, ...result]);
+      } else {
+        setJiraSites(result);
+      }
     } catch (error: any) {
       showErrorToast(error);
     }
