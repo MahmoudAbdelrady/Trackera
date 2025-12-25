@@ -4,44 +4,56 @@ import inputFieldClasses from "../../../components/input-field/scss/input-field.
 import { Lock, Mail, User } from "lucide-react";
 import { useFormik } from "formik";
 import { signUpSchema } from "../../../shared/yup-schemas";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { showErrorToast } from "../../../utils/toast-handler/showToast";
 import { getFormikErrors } from "../../../utils";
 import type { SignUpFormFields } from "../../../shared/types";
 import { authApis } from "../../../state/api";
+import { getFormikFieldProps } from "../../../utils";
 
 const SignUp = () => {
   const [showAuthResult, setShowAuthResult] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const navigate = useNavigate();
-  const signUpFormik = useFormik({
-    initialValues: (Object.keys(signUpSchema.fields) as (keyof SignUpFormFields)[]).reduce((acc, key) => {
-      acc[key] = "";
-      return acc;
-    }, {} as SignUpFormFields),
-    validationSchema: signUpSchema,
-    onSubmit: async (values) => {
-      setIsLoading(true);
-      try {
-        await authApis.signUp(values);
-        setShowAuthResult(true);
-      } catch (error: any) {
-        if (error.response?.data.message === "Validation Error") {
-          signUpFormik.setErrors(getFormikErrors(error.response.data.data));
-        } else {
-          showErrorToast(error);
-        }
 
-        signUpFormik.setValues({
-          ...signUpFormik.values,
-          password: "",
-          confirmPassword: "",
-        });
-      }
-      setIsLoading(false);
-    },
+  const getInitialValues = (): SignUpFormFields => ({
+    firstname: "",
+    lastname: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
   });
+
+  const formikConfig = useMemo(
+    () => ({
+      initialValues: getInitialValues(),
+      validationSchema: signUpSchema,
+      onSubmit: async (values: SignUpFormFields) => {
+        setIsLoading(true);
+        try {
+          await authApis.signUp(values);
+          setShowAuthResult(true);
+        } catch (error: any) {
+          if (error.response?.data?.message === "Validation Error" && error.response?.data?.data) {
+            signUpFormik.setErrors(getFormikErrors(error.response.data.data));
+          } else {
+            showErrorToast(error);
+          }
+
+          signUpFormik.setValues({
+            ...signUpFormik.values,
+            password: "",
+            confirmPassword: "",
+          });
+        }
+        setIsLoading(false);
+      },
+    }),
+    []
+  );
+
+  const signUpFormik = useFormik(formikConfig);
 
   return (
     <AuthLayout>
@@ -76,74 +88,37 @@ const SignUp = () => {
               label="First Name"
               icon={<User className={inputFieldClasses.input_icon} />}
               placeholder="Enter your first name"
-              name="firstname"
-              value={signUpFormik.values.firstname}
-              onChange={signUpFormik.handleChange}
-              onBlur={signUpFormik.handleBlur}
               type="text"
-              disabled={isLoading}
-              error={
-                signUpFormik.touched.firstname && signUpFormik.errors.firstname
-                  ? signUpFormik.errors.firstname
-                  : undefined
-              }
+              {...getFormikFieldProps(signUpFormik, "firstname", isLoading)}
             />
             <InputField
               label="Last Name"
               icon={<User className={inputFieldClasses.input_icon} />}
               placeholder="Enter your last name"
-              name="lastname"
-              value={signUpFormik.values.lastname}
-              onChange={signUpFormik.handleChange}
-              onBlur={signUpFormik.handleBlur}
               type="text"
-              disabled={isLoading}
-              error={
-                signUpFormik.touched.lastname && signUpFormik.errors.lastname ? signUpFormik.errors.lastname : undefined
-              }
+              {...getFormikFieldProps(signUpFormik, "lastname", isLoading)}
             />
           </div>
           <InputField
             label="Email"
             icon={<Mail className={inputFieldClasses.input_icon} />}
             placeholder="Enter your email"
-            name="email"
-            value={signUpFormik.values.email}
-            onChange={signUpFormik.handleChange}
-            onBlur={signUpFormik.handleBlur}
             type="email"
-            disabled={isLoading}
-            error={signUpFormik.touched.email && signUpFormik.errors.email ? signUpFormik.errors.email : undefined}
+            {...getFormikFieldProps(signUpFormik, "email", isLoading)}
           />
           <InputField
             label="Password"
             icon={<Lock className={inputFieldClasses.input_icon} />}
             placeholder="Enter your password"
-            name="password"
-            value={signUpFormik.values.password}
-            onChange={signUpFormik.handleChange}
-            onBlur={signUpFormik.handleBlur}
             type="password"
-            disabled={isLoading}
-            error={
-              signUpFormik.touched.password && signUpFormik.errors.password ? signUpFormik.errors.password : undefined
-            }
+            {...getFormikFieldProps(signUpFormik, "password", isLoading)}
           />
           <InputField
             label="Confirm Password"
             icon={<Lock className={inputFieldClasses.input_icon} />}
             placeholder="Confirm your password"
-            name="confirmPassword"
-            value={signUpFormik.values.confirmPassword}
-            onChange={signUpFormik.handleChange}
-            onBlur={signUpFormik.handleBlur}
             type="password"
-            disabled={isLoading}
-            error={
-              signUpFormik.touched.confirmPassword && signUpFormik.errors.confirmPassword
-                ? signUpFormik.errors.confirmPassword
-                : undefined
-            }
+            {...getFormikFieldProps(signUpFormik, "confirmPassword", isLoading)}
           />
         </AuthForm>
       )}

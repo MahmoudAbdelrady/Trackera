@@ -13,11 +13,6 @@ const PREFERENCE_KEYS = {
   WORKLOGS_MONTHLY_TARGET_HOURS: "worklogsMonthlyTargetHours",
 };
 
-type UserPreferences = {
-  [PREFERENCE_KEYS.JIRA_PRIMARY_PROJECT]?: number; // Store ID, not full object
-  [PREFERENCE_KEYS.WORKLOGS_MONTHLY_TARGET_HOURS]?: number;
-};
-
 const PreferencesSection = (props: PreferencesProps) => {
   const { jiraLinked, fetchPreferences, setFetchPreferences } = props;
 

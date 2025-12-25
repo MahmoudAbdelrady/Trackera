@@ -10,6 +10,7 @@ import { Lock } from "lucide-react";
 import { Button } from "antd";
 import type { ChangePasswordFormFields } from "../../../../shared/types";
 import { userApis } from "../../../../state/api";
+import { getFormikFieldProps } from "../../../../utils";
 
 const ChangePasswordSection = () => {
   const { data: userData, refetch: refetchUser } = userQueries.useMeQuery();
@@ -42,19 +43,6 @@ const ChangePasswordSection = () => {
     },
   });
 
-  const getFieldProps = (fieldName: keyof ChangePasswordFormFields) => ({
-    name: fieldName,
-    value: changePasswordFormik.values[fieldName],
-    onChange: changePasswordFormik.handleChange,
-    onBlur: changePasswordFormik.handleBlur,
-    type: "password" as const,
-    disabled: isUpdatingPassword,
-    error:
-      changePasswordFormik.touched[fieldName] && changePasswordFormik.errors[fieldName]
-        ? changePasswordFormik.errors[fieldName]
-        : undefined,
-  });
-
   return (
     <form onSubmit={changePasswordFormik.handleSubmit} className={classes.password_form}>
       {hasPassword && (
@@ -62,20 +50,23 @@ const ChangePasswordSection = () => {
           label="Current Password"
           icon={<Lock className={inputFieldClasses.input_icon} />}
           placeholder="Enter your current password"
-          {...getFieldProps("currentPassword")}
+          type="password"
+          {...getFormikFieldProps(changePasswordFormik, "currentPassword", isUpdatingPassword)}
         />
       )}
       <InputField
         label="New Password"
         icon={<Lock className={inputFieldClasses.input_icon} />}
         placeholder="Enter your new password"
-        {...getFieldProps("newPassword")}
+        type="password"
+        {...getFormikFieldProps(changePasswordFormik, "newPassword", isUpdatingPassword)}
       />
       <InputField
         label="Confirm New Password"
         icon={<Lock className={inputFieldClasses.input_icon} />}
         placeholder="Confirm your new password"
-        {...getFieldProps("confirmNewPassword")}
+        type="password"
+        {...getFormikFieldProps(changePasswordFormik, "confirmNewPassword", isUpdatingPassword)}
       />
       <Button
         type="primary"

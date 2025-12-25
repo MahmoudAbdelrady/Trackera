@@ -1,6 +1,6 @@
 import { AuthForm, AuthLayout, AuthResult, InputField, LoadingSpinner } from "../../../components";
 import { Lock } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import inputFieldClasses from "../../../components/input-field/scss/input-field.module.css";
 import { useFormik } from "formik";
@@ -9,6 +9,7 @@ import type { AuthResultFields, ChangePasswordFormFields } from "../../../shared
 import { showErrorToast } from "../../../utils/toast-handler/showToast";
 import { useAuthStore } from "../../../state/store";
 import { authApis } from "../../../state/api";
+import { getFormikFieldProps } from "../../../utils";
 
 const ChangePassword = () => {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -20,39 +21,66 @@ const ChangePassword = () => {
   const [searchParams] = useSearchParams();
   const token = searchParams.get("token");
 
-  const changePasswordFormik = useFormik({
-    initialValues: (Object.keys(updatePasswordSchema().fields) as (keyof ChangePasswordFormFields)[]).reduce(
-      (acc, key) => {
-        acc[key] = "";
-        return acc;
-      },
-      {} as ChangePasswordFormFields
-    ),
-    validationSchema: updatePasswordSchema(),
-    onSubmit: async (values) => {
-      setIsLoading(true);
-      try {
-        const result = await authApis.changePassword(token!, values);
+  const getInitialValues = (): ChangePasswordFormFields => ({
+    newPassword: "",
+    confirmNewPassword: "",
+  });
+
+  const changeAccountPassword = async (values: ChangePasswordFormFields) => {
+    if (!token) {
+      showErrorToast({ message: "Invalid or missing token" });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const result = await authApis.changePassword(token, values);
+      setPasswordChangeResult({
+        description: result,
+      });
+      setShowAuthResult(true);
+    } catch (error: any) {
+      if (error.response?.status === 403 && error.response?.data?.message) {
         setPasswordChangeResult({
-          description: result,
+          description: error.response?.data?.message,
+          isError: true,
         });
         setShowAuthResult(true);
-      } catch (error: any) {
-        console.log("Error:", error);
-        if (error.response?.status === 403) {
-          setPasswordChangeResult({
-            description: error.response?.data?.message,
-            isError: true,
-          });
-          setShowAuthResult(true);
-        } else {
-          showErrorToast(error);
-          changePasswordFormik.resetForm();
-        }
+      } else {
+        showErrorToast(error);
+        changePasswordFormik.resetForm();
       }
-      setIsLoading(false);
+    }
+    setIsLoading(false);
+  };
+
+  const validateToken = useCallback(
+    async (token: string) => {
+      try {
+        await authApis.validateToken(token);
+      } catch (error: any) {
+        setPasswordChangeResult({
+          description: error.response?.data?.message,
+          isError: true,
+        });
+        setShowAuthResult(true);
+      }
     },
-  });
+    [token]
+  );
+
+  const formikConfig = useMemo(
+    () => ({
+      initialValues: getInitialValues(),
+      validationSchema: updatePasswordSchema(),
+      onSubmit: async (values: ChangePasswordFormFields) => {
+        await changeAccountPassword(values);
+      },
+    }),
+    [changeAccountPassword]
+  );
+
+  const changePasswordFormik = useFormik(formikConfig);
 
   useEffect(() => {
     if (!token) {
@@ -62,22 +90,10 @@ const ChangePassword = () => {
       });
       setShowAuthResult(true);
     } else {
-      const validateToken = async () => {
-        try {
-          await authApis.validateToken(token);
-        } catch (error: any) {
-          setPasswordChangeResult({
-            description: error.response?.data?.message,
-            isError: true,
-          });
-          setShowAuthResult(true);
-        }
-      };
-
-      validateToken();
+      validateToken(token);
     }
     setIsVerifying(false);
-  }, [token]);
+  }, [token, validateToken]);
 
   return isVerifying ? (
     <LoadingSpinner />
@@ -111,33 +127,15 @@ const ChangePassword = () => {
             label="New Password"
             icon={<Lock className={inputFieldClasses.input_icon} />}
             placeholder="Enter your new password"
-            name="newPassword"
-            value={changePasswordFormik.values.newPassword}
-            onChange={changePasswordFormik.handleChange}
-            onBlur={changePasswordFormik.handleBlur}
             type="password"
-            disabled={isLoading}
-            error={
-              changePasswordFormik.touched.newPassword && changePasswordFormik.errors.newPassword
-                ? changePasswordFormik.errors.newPassword
-                : undefined
-            }
+            {...getFormikFieldProps(changePasswordFormik, "newPassword", isLoading)}
           />
           <InputField
             label="Confirm New Password"
             icon={<Lock className={inputFieldClasses.input_icon} />}
             placeholder="Confirm your new password"
-            name="confirmNewPassword"
-            value={changePasswordFormik.values.confirmNewPassword}
-            onChange={changePasswordFormik.handleChange}
-            onBlur={changePasswordFormik.handleBlur}
             type="password"
-            disabled={isLoading}
-            error={
-              changePasswordFormik.touched.confirmNewPassword && changePasswordFormik.errors.confirmNewPassword
-                ? changePasswordFormik.errors.confirmNewPassword
-                : undefined
-            }
+            {...getFormikFieldProps(changePasswordFormik, "confirmNewPassword", isLoading)}
           />
         </AuthForm>
       )}

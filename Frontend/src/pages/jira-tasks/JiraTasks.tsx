@@ -6,7 +6,7 @@ import { Link } from "react-router-dom";
 import trackeraTableClasses from "../../components/trackera-table/scss/trackera-table.module.css";
 import classes from "./scss/jira-tasks.module.css";
 import { showErrorToast } from "../../utils/toast-handler/showToast";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { userQueries } from "../../state/queries";
 import { jiraApis } from "../../state/api";
 
@@ -117,44 +117,41 @@ const JiraTasks = () => {
     }
   };
 
-  const items: TabsProps["items"] = [
-    {
-      key: "1",
-      label: `Current Tasks (${jiraTasks?.currentTasks?.total || 0})`,
-      children: (
-        <TrackeraTable<JiraTask>
-          properties={{
-            columns: jiraTasksColumns,
-            dataSource: jiraTasks?.currentTasks?.data || [],
-            pagination: { style: { marginRight: "16px" } },
-            loading: isLoading,
-          }}
-        />
-      ),
-    },
-    {
-      key: "2",
-      label: `Overestimated Tasks (${jiraTasks?.overestimatedTasks?.total || 0})`,
-      children: (
-        <TrackeraTable<JiraTask>
-          properties={{
-            columns: jiraTasksColumns.filter((col) => col.key !== "evaluation"),
-            dataSource: jiraTasks?.overestimatedTasks?.data || [],
-            pagination: { style: { marginRight: "16px" } },
-            loading: isLoading,
-          }}
-        />
-      ),
-    },
-  ];
+  const items: TabsProps["items"] = useMemo(
+    () => [
+      {
+        key: "1",
+        label: `Current Tasks (${jiraTasks?.currentTasks?.total || 0})`,
+        children: (
+          <TrackeraTable<JiraTask>
+            properties={{
+              columns: jiraTasksColumns,
+              dataSource: jiraTasks?.currentTasks?.data || [],
+              pagination: { style: { marginRight: "16px" } },
+              loading: isLoading,
+            }}
+          />
+        ),
+      },
+      {
+        key: "2",
+        label: `Overestimated Tasks (${jiraTasks?.overestimatedTasks?.total || 0})`,
+        children: (
+          <TrackeraTable<JiraTask>
+            properties={{
+              columns: jiraTasksColumns.filter((col) => col.key !== "evaluation"),
+              dataSource: jiraTasks?.overestimatedTasks?.data || [],
+              pagination: { style: { marginRight: "16px" } },
+              loading: isLoading,
+            }}
+          />
+        ),
+      },
+    ],
+    [jiraTasksColumns, jiraTasks, isLoading]
+  );
 
-  useEffect(() => {
-    if (loggedUserData?.jiraLinked) {
-      fetchJiraTasks();
-    }
-  }, []);
-
-  const fetchJiraTasks = async (forceUpdate: boolean = false) => {
+  const fetchJiraTasks = useCallback(async (forceUpdate: boolean = false) => {
     setIsLoading(true);
     try {
       const result = await jiraApis.getJiraTasks(forceUpdate);
@@ -164,7 +161,13 @@ const JiraTasks = () => {
       showErrorToast(error);
     }
     setIsLoading(false);
-  };
+  }, []);
+
+  useEffect(() => {
+    if (loggedUserData?.jiraLinked) {
+      fetchJiraTasks();
+    }
+  }, [loggedUserData?.jiraLinked, fetchJiraTasks]);
 
   return (
     <AppLayout>

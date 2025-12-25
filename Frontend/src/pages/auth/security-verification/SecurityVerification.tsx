@@ -1,6 +1,6 @@
 import { AuthLayout, AuthResult, LoadingSpinner } from "../../../components";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { AuthResultFields } from "../../../shared/types";
 import { useAuthStore } from "../../../state/store";
 import { authApis } from "../../../state/api";
@@ -20,6 +20,29 @@ const SecurityVerification = () => {
 
   const [verificationResult, setVerificationResult] = useState<AuthResultFields>({});
 
+  const consumeToken = useCallback(async (token: string) => {
+    if (!token) {
+      setVerificationResult({
+        title: "Url is expired or invalid",
+        isError: true,
+      });
+      return;
+    }
+
+    try {
+      const result = await authApis.consumeToken(token);
+      setVerificationResult({
+        title: result.title,
+        description: result.desc,
+      });
+    } catch (error: any) {
+      setVerificationResult({
+        title: error.response?.data?.message || "Verification Failed",
+        isError: true,
+      });
+    }
+  }, []);
+
   useEffect(() => {
     if (!token) {
       setVerificationResult({
@@ -27,34 +50,19 @@ const SecurityVerification = () => {
         isError: true,
       });
     } else {
-      const consumeToken = async () => {
-        try {
-          const result = await authApis.consumeToken(token);
-          setVerificationResult({
-            title: result.title,
-            description: result.desc,
-          });
-        } catch (error: any) {
-          setVerificationResult({
-            title: error.response?.data?.message,
-            isError: true,
-          });
-        }
-      };
-
-      consumeToken();
+      consumeToken(token);
     }
     setIsVerifying(false);
-  }, [navigate, token]);
+  }, [token]);
 
   return isVerifying ? (
     <LoadingSpinner />
   ) : (
     <AuthLayout>
       <AuthResult
-        title={verificationResult.title!}
+        title={verificationResult.title || "Verification Failed"}
         description={verificationResult.description}
-        message={verificationTypeMessage[verificationResult.title!]}
+        message={verificationResult.title ? verificationTypeMessage[verificationResult.title] : "Something went wrong."}
         buttonText={`Back to ${isAuthenticated ? "Home" : "Login"}`}
         isError={verificationResult.isError}
         onClick={() => navigate(isAuthenticated ? "/" : "/login")}

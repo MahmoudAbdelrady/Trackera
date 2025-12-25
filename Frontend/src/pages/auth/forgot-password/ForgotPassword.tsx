@@ -1,6 +1,6 @@
 import { AuthFooter, AuthForm, AuthLayout, AuthResult, InputField } from "../../../components";
 import { Mail } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import inputFieldClasses from "../../../components/input-field/scss/input-field.module.css";
 import { useFormik } from "formik";
@@ -8,6 +8,7 @@ import { emailSchema } from "../../../shared/yup-schemas";
 import { showErrorToast } from "../../../utils/toast-handler/showToast";
 import type { AuthResultFields } from "../../../shared/types";
 import { authApis } from "../../../state/api";
+import { getFormikFieldProps } from "../../../utils";
 
 interface ForgotPasswordFormFields {
   email: string;
@@ -19,27 +20,33 @@ const ForgotPassword = () => {
   const [passwordResetResult, setPasswordResetResult] = useState<AuthResultFields>({});
   const navigate = useNavigate();
 
-  const forgotPasswordFormik = useFormik({
-    initialValues: (Object.keys(emailSchema.fields) as (keyof ForgotPasswordFormFields)[]).reduce((acc, key) => {
-      acc[key] = "";
-      return acc;
-    }, {} as ForgotPasswordFormFields),
-    validationSchema: emailSchema,
-    onSubmit: async (values) => {
-      setIsLoading(true);
-      try {
-        const result = await authApis.requestResetPassword(values.email);
-        setPasswordResetResult({
-          description: result,
-        });
-        setShowAuthResult(true);
-      } catch (error) {
-        showErrorToast(error);
-        forgotPasswordFormik.resetForm();
-      }
-      setIsLoading(false);
-    },
+  const getInitialValues = (): ForgotPasswordFormFields => ({
+    email: "",
   });
+
+  const formikConfig = useMemo(
+    () => ({
+      initialValues: getInitialValues(),
+      validationSchema: emailSchema,
+      onSubmit: async (values: ForgotPasswordFormFields) => {
+        setIsLoading(true);
+        try {
+          const result = await authApis.requestResetPassword(values.email);
+          setPasswordResetResult({
+            description: result,
+          });
+          setShowAuthResult(true);
+        } catch (error) {
+          showErrorToast(error);
+          forgotPasswordFormik.resetForm();
+        }
+        setIsLoading(false);
+      },
+    }),
+    []
+  );
+
+  const forgotPasswordFormik = useFormik(formikConfig);
 
   return (
     <AuthLayout>
@@ -64,17 +71,8 @@ const ForgotPassword = () => {
             label="Email"
             icon={<Mail className={inputFieldClasses.input_icon} />}
             placeholder="Enter your email"
-            name="email"
-            value={forgotPasswordFormik.values.email}
-            onChange={forgotPasswordFormik.handleChange}
-            onBlur={forgotPasswordFormik.handleBlur}
             type="email"
-            disabled={isLoading}
-            error={
-              forgotPasswordFormik.touched.email && forgotPasswordFormik.errors.email
-                ? forgotPasswordFormik.errors.email
-                : undefined
-            }
+            {...getFormikFieldProps(forgotPasswordFormik, "email", isLoading)}
           />
         </AuthForm>
       )}
