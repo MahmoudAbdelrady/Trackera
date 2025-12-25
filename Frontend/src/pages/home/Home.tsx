@@ -11,7 +11,7 @@ import {
 import classes from "./scss/home.module.css";
 import { Alert } from "antd";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { type WorkLogSummaryCard, type PaginatedResponse, type Worklog } from "../../shared/types";
+import { type WorkLogSummaryCard, type PaginatedResponse, type Worklog, WorkLogStatus } from "../../shared/types";
 import { createPaginationConfig } from "../../utils";
 import worklogModalClasses from "../../components/worklogs/modals/worklog-modal/scss/worklog-modal.module.css";
 import { showErrorToast, showSuccessToast } from "../../utils/toast-handler/showToast";
@@ -31,8 +31,9 @@ const Home = () => {
   const [searchFilters, setSearchFilters] = useState<Record<string, any>>({});
   const hasInProgress = useMemo(
     () =>
-      workLogsResponse?.content.some((worklog) =>
-        ["SYNC_IN_PROGRESS", "UNSYNC_IN_PROGRESS"].includes(worklog.status)
+      workLogsResponse?.content.some(
+        (worklog) =>
+          worklog.status === WorkLogStatus.SYNC_IN_PROGRESS || worklog.status === WorkLogStatus.UNSYNC_IN_PROGRESS
       ) ?? false,
     [workLogsResponse?.content]
   );
@@ -148,7 +149,7 @@ const Home = () => {
         <p className={worklogModalClasses.delete_message}>
           Are you sure you want to delete this worklog? This action cannot be undone.
         </p>
-        {(selectedWorkLog?.status === "SYNCED" || selectedWorkLog?.status === "PARTIALLY") && (
+        {(selectedWorkLog?.status === WorkLogStatus.SYNCED || selectedWorkLog?.status === WorkLogStatus.PARTIALLY) && (
           <Alert
             message="This worklog has synced data with Jira and will be unsynced upon deletion."
             type="warning"

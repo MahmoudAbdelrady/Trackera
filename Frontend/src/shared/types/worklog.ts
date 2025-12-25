@@ -1,17 +1,43 @@
 import type { ModalProps, TableProps } from "antd";
 import type { StatusBadgeProps, TrackeraTableEntity } from "./global";
-import type { UserInfo } from "../../state/api/user";
+import type { UserInfo } from "./auth";
 
-type WorkLogEvaluationType = "EXCELLENT" | "GOOD" | "MODERATE" | "POOR";
+const WorkLogEvaluation = {
+  EXCELLENT: "EXCELLENT",
+  GOOD: "GOOD",
+  MODERATE: "MODERATE",
+  POOR: "POOR",
+} as const;
 
-type WorkLogStatusType = "SYNCED" | "PARTIALLY" | "NOT_SYNCED" | "SYNC_IN_PROGRESS" | "UNSYNC_IN_PROGRESS";
+const WorkLogStatus = {
+  SYNCED: "SYNCED",
+  PARTIALLY: "PARTIALLY",
+  NOT_SYNCED: "NOT_SYNCED",
+  SYNC_IN_PROGRESS: "SYNC_IN_PROGRESS",
+  UNSYNC_IN_PROGRESS: "UNSYNC_IN_PROGRESS",
+} as const;
 
-type SyncPayload = {
+// type JiraSyncEventType = "ALL" | "WORKLOG" | "TASK" | "ENTRY";
+
+const JiraSyncEvent = {
+  ALL: "ALL",
+  WORKLOG: "WORKLOG",
+  TASK: "TASK",
+  ENTRY: "ENTRY",
+} as const;
+
+type WorkLogStatusType = (typeof WorkLogStatus)[keyof typeof WorkLogStatus];
+
+type WorkLogEvaluationType = (typeof WorkLogEvaluation)[keyof typeof WorkLogEvaluation];
+
+type JiraSyncEventType = (typeof JiraSyncEvent)[keyof typeof JiraSyncEvent];
+
+interface SyncPayload {
   workLogId?: string;
   taskNames?: string[];
   entryIds?: string[];
   sync: boolean;
-};
+}
 
 interface Worklog extends TrackeraTableEntity {
   name: string;
@@ -130,6 +156,15 @@ interface WorklogTaskEntriesProps {
   onCloseHandler: () => void;
 }
 
+type JiraSyncEventProps = {
+  type: JiraSyncEventType;
+  logId: string;
+  taskNames?: string[];
+  entryIds?: string[];
+  status: WorkLogStatusType;
+  syncError?: string;
+};
+
 export type {
   SyncPayload,
   WorkLogEvaluationType,
@@ -148,6 +183,8 @@ export type {
   WorkLogSearchFilter,
   WorkLogsFilterProps,
   WorklogTaskEntriesProps,
+  JiraSyncEventType,
+  JiraSyncEventProps,
 };
 
-export { worklogEvaluationMetadata, statusMetadata };
+export { WorkLogStatus, WorkLogEvaluation, worklogEvaluationMetadata, statusMetadata, JiraSyncEvent };

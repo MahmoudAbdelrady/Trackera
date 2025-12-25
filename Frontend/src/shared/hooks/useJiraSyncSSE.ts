@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useSSE } from "./";
-import type { SyncPayload } from "../types";
+import type { JiraSyncEventProps, SyncPayload } from "../types";
 import { showErrorToast } from "../../utils/toast-handler/showToast";
 import { workLogApis } from "../../state/api";
 
@@ -10,7 +10,7 @@ type JiraSyncSSEReturn = {
 
 type JiraSyncSSEOptions = {
   hasInProgress: boolean;
-  onStatusEvent: (event: any) => void;
+  onStatusEvent: (event: JiraSyncEventProps) => void;
 };
 
 export const useJiraSyncSSE = ({ hasInProgress, onStatusEvent }: JiraSyncSSEOptions): JiraSyncSSEReturn => {

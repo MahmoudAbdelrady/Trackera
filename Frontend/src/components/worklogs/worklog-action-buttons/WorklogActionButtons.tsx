@@ -1,4 +1,10 @@
-import type { SyncPayload, Worklog, WorklogEntry, WorklogTask } from "../../../shared/types";
+import {
+  WorkLogStatus,
+  type SyncPayload,
+  type Worklog,
+  type WorklogEntry,
+  type WorklogTask,
+} from "../../../shared/types";
 import trackeraTableClasses from "../../trackera-table/scss/trackera-table.module.css";
 import { WorklogSyncActions } from "../../";
 import { Button, Tooltip } from "antd";
@@ -18,7 +24,8 @@ interface ActionButtonsProps {
 
 const WorklogActionButtons = (props: ActionButtonsProps) => {
   const { record, jiraLinked, viewLink, syncParams, onSync, onEdit, onView, onDelete } = props;
-  const syncInProgress = ["SYNC_IN_PROGRESS", "UNSYNC_IN_PROGRESS"].includes(record.status);
+  const syncInProgress =
+    record.status === WorkLogStatus.SYNC_IN_PROGRESS || record.status === WorkLogStatus.UNSYNC_IN_PROGRESS;
   return (
     <div className={trackeraTableClasses.actions_container}>
       <WorklogSyncActions record={record} jiraLinked={jiraLinked} onSync={onSync} syncParams={syncParams} />

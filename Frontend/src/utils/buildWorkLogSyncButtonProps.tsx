@@ -1,5 +1,5 @@
-import type { SyncPayload, WorklogTableActionButtonProps } from "../shared/types";
-import type { UserInfo } from "../state/api/user";
+import { WorkLogStatus, type SyncPayload, type WorklogTableActionButtonProps } from "../shared/types";
+import type { UserInfo } from "../shared/types/auth";
 import { CalendarCog, CalendarOff, CalendarSync, CalendarX2 } from "lucide-react";
 type SyncableItem = {
   status: string;
@@ -20,16 +20,19 @@ function buildSyncButtonProps<T extends SyncableItem>({
   triggerSync,
   isEntry = false,
 }: BuildSyncButtonPropsOptions<T>): WorklogTableActionButtonProps[] {
-  const hasSynced = selectedItems.some((e) => e.status === "SYNCED");
-  const hasNotSynced = selectedItems.some((e) => e.status === "NOT_SYNCED");
-  const hasInProgress = selectedItems.some((e) => ["SYNC_IN_PROGRESS", "UNSYNC_IN_PROGRESS"].includes(e.status));
+  const hasSynced = selectedItems.some((e) => e.status === WorkLogStatus.SYNCED);
+  const hasNotSynced = selectedItems.some((e) => e.status === WorkLogStatus.NOT_SYNCED);
+  const hasInProgress = selectedItems.some(
+    (e) => e.status === WorkLogStatus.SYNC_IN_PROGRESS || e.status === WorkLogStatus.UNSYNC_IN_PROGRESS
+  );
 
-  const syncedItems = selectedItems.filter((e) => e.status === "SYNCED");
-  const notSyncedItems = selectedItems.filter((e) => e.status === "NOT_SYNCED");
+  const syncedItems = selectedItems.filter((e) => e.status === WorkLogStatus.SYNCED);
+  const notSyncedItems = selectedItems.filter((e) => e.status === WorkLogStatus.NOT_SYNCED);
 
   const toIds = (arr: T[]) => arr.map(extractIdentifier);
 
-  const createPayload = (items: T[], sync: boolean): SyncPayload => (isEntry ? { entryIds: toIds(items), sync } : { taskNames: toIds(items), sync });
+  const createPayload = (items: T[], sync: boolean): SyncPayload =>
+    isEntry ? { entryIds: toIds(items), sync } : { taskNames: toIds(items), sync };
 
   let actions: WorklogTableActionButtonProps[] = [];
 
@@ -51,8 +54,18 @@ function buildSyncButtonProps<T extends SyncableItem>({
         label: "Bulk Actions",
         icon: <CalendarCog />,
         options: [
-          { label: `Sync to Jira (${notSyncedItems.length})`, icon: <CalendarSync />, onClick: () => triggerSync(createPayload(notSyncedItems, true)), customClasses: ["sync"] },
-          { label: `Unsync from Jira (${syncedItems.length})`, icon: <CalendarX2 />, onClick: () => triggerSync(createPayload(syncedItems, false)), customClasses: ["unsync"] },
+          {
+            label: `Sync to Jira (${notSyncedItems.length})`,
+            icon: <CalendarSync />,
+            onClick: () => triggerSync(createPayload(notSyncedItems, true)),
+            customClasses: ["sync"],
+          },
+          {
+            label: `Unsync from Jira (${syncedItems.length})`,
+            icon: <CalendarX2 />,
+            onClick: () => triggerSync(createPayload(syncedItems, false)),
+            customClasses: ["unsync"],
+          },
         ],
       },
     ];

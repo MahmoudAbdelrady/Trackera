@@ -3,7 +3,14 @@ import { Button, DatePicker, Form, Input, InputNumber, Radio, Select, Tooltip } 
 
 import classes from "./scss/search-filter.module.css";
 import CollapsibleSection from "../../collapsible-section/CollapsibleSection";
-import type { WorkLogSearchFilter, WorkLogsFilterProps } from "../../../shared/types";
+import {
+  statusMetadata,
+  WorkLogEvaluation,
+  worklogEvaluationMetadata,
+  WorkLogStatus,
+  type WorkLogSearchFilter,
+  type WorkLogsFilterProps,
+} from "../../../shared/types";
 import { useFormik } from "formik";
 import { searchFilterSchema } from "../../../shared/yup-schemas";
 import { formatDate, getFormikFieldError, getFormikFieldStatus, isNullOrEmpty } from "../../../utils";
@@ -65,16 +72,16 @@ const TOTAL_HOURS_FILTER_OPERATORS = [
 ];
 
 const EVALUATION_FILTER_OPTIONS = [
-  { label: "Excellent", value: "EXCELLENT" },
-  { label: "Good", value: "GOOD" },
-  { label: "Moderate", value: "MODERATE" },
-  { label: "Poor", value: "POOR" },
+  { label: worklogEvaluationMetadata[WorkLogEvaluation.EXCELLENT].label, value: WorkLogEvaluation.EXCELLENT },
+  { label: worklogEvaluationMetadata[WorkLogEvaluation.GOOD].label, value: WorkLogEvaluation.GOOD },
+  { label: worklogEvaluationMetadata[WorkLogEvaluation.MODERATE].label, value: WorkLogEvaluation.MODERATE },
+  { label: worklogEvaluationMetadata[WorkLogEvaluation.POOR].label, value: WorkLogEvaluation.POOR },
 ];
 
 const STATUS_FILTER_OPTIONS = [
-  { label: "Synced", value: "SYNCED" },
-  { label: "Partially", value: "PARTIALLY" },
-  { label: "Not Synced", value: "NOT_SYNCED" },
+  { label: statusMetadata[WorkLogStatus.SYNCED].label, value: WorkLogStatus.SYNCED },
+  { label: statusMetadata[WorkLogStatus.PARTIALLY].label, value: WorkLogStatus.PARTIALLY },
+  { label: statusMetadata[WorkLogStatus.NOT_SYNCED].label, value: WorkLogStatus.NOT_SYNCED },
 ];
 
 const SearchFilter = (props: WorkLogsFilterProps) => {

@@ -30,9 +30,11 @@ import type {
   WorkLogSearchFilter,
   WorkLogsFilterProps,
   WorklogTaskEntriesProps,
+  JiraSyncEventType,
+  JiraSyncEventProps,
 } from "./worklog";
 
-import { worklogEvaluationMetadata, statusMetadata } from "./worklog";
+import { WorkLogStatus, WorkLogEvaluation, worklogEvaluationMetadata, statusMetadata, JiraSyncEvent } from "./worklog";
 
 import type { JiraTask, JiraTaskEvaluationType, JiraSite } from "./jira";
 
@@ -85,6 +87,15 @@ export type {
   PreferencesProps,
   OAuthAccount,
   WorklogTaskEntriesProps,
+  JiraSyncEventType,
+  JiraSyncEventProps,
 };
 
-export { worklogEvaluationMetadata, statusMetadata, jiraTaskEvaluationMetadata };
+export {
+  WorkLogStatus,
+  WorkLogEvaluation,
+  worklogEvaluationMetadata,
+  statusMetadata,
+  jiraTaskEvaluationMetadata,
+  JiraSyncEvent,
+};

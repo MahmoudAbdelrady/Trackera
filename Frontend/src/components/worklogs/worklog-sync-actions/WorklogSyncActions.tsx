@@ -1,5 +1,5 @@
 import { CalendarOff, CalendarSync, CalendarX2 } from "lucide-react";
-import type { SyncPayload, WorkLogStatusType } from "../../../shared/types";
+import { WorkLogStatus, type SyncPayload, type WorkLogStatusType } from "../../../shared/types";
 import { Button, Tooltip } from "antd";
 import trackeraTableClasses from "../../trackera-table/scss/trackera-table.module.css";
 
@@ -11,9 +11,9 @@ interface SyncActionProps {
 }
 
 const WorklogSyncActions = ({ record, jiraLinked, onSync, syncParams }: SyncActionProps) => {
-  const isSynced = record.status === "SYNCED";
-  const isSyncing = record.status === "SYNC_IN_PROGRESS";
-  const isUnsyncing = record.status === "UNSYNC_IN_PROGRESS";
+  const isSynced = record.status === WorkLogStatus.SYNCED;
+  const isSyncing = record.status === WorkLogStatus.SYNC_IN_PROGRESS;
+  const isUnsyncing = record.status === WorkLogStatus.UNSYNC_IN_PROGRESS;
 
   const getTooltipTitle = () => {
     if (!jiraLinked) {

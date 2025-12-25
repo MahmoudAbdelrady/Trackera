@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import type { WorklogEntry, WorklogTaskEntriesProps } from "../../../shared/types";
+import { WorkLogStatus, type WorklogEntry, type WorklogTaskEntriesProps } from "../../../shared/types";
 import TrackeraTable from "../../trackera-table/TrackeraTable";
 import WorklogModal from "../modals/worklog-modal/WorklogModal";
 import { WorkLogEntryColumns } from "../../";
@@ -118,7 +118,7 @@ const WorklogTaskEntries = (props: WorklogTaskEntriesProps) => {
           <p className={worklogModalClasses.delete_message}>
             Are you sure you want to delete this entry? This action cannot be undone.
           </p>
-          {(selectedTask?.status === "SYNCED" || selectedTask?.status === "PARTIALLY") && (
+          {(selectedTask?.status === WorkLogStatus.SYNCED || selectedTask?.status === WorkLogStatus.PARTIALLY) && (
             <Alert
               message="This entry is synced with Jira and will be unsynced upon deletion."
               type="warning"
@@ -155,7 +155,9 @@ const WorklogTaskEntries = (props: WorklogTaskEntriesProps) => {
               },
               getCheckboxProps: (record) => ({
                 disabled:
-                  !loggedUserData?.jiraLinked || ["SYNC_IN_PROGRESS", "UNSYNC_IN_PROGRESS"].includes(record.status),
+                  !loggedUserData?.jiraLinked ||
+                  record.status === WorkLogStatus.SYNC_IN_PROGRESS ||
+                  record.status === WorkLogStatus.UNSYNC_IN_PROGRESS,
               }),
             },
           }}

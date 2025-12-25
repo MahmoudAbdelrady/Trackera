@@ -64,6 +64,17 @@ interface OAuthAccount {
   email?: string;
 }
 
+interface UserInfo {
+  firstname: string;
+  lastname: string;
+  primaryEmail: string;
+  pendingEmail: string | null;
+  profilePicture: string | null;
+  avatarColor: string;
+  passwordSet: boolean;
+  jiraLinked: boolean;
+}
+
 export type {
   LoginFormFields,
   SignUpFormFields,
@@ -75,4 +86,5 @@ export type {
   AuthFooterProps,
   OAuthBtnProps,
   OAuthAccount,
+  UserInfo,
 };

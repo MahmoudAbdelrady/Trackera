@@ -8,7 +8,7 @@ import Dragger from "antd/es/upload/Dragger";
 import { CollapsibleSection, WorklogModal, TrackeraTable } from "../../..";
 import { useMemo, useState } from "react";
 import { showErrorToast, showSuccessToast } from "../../../../utils/toast-handler/showToast";
-import type { ManageWorkLogModalProps, WorklogError } from "../../../../shared/types";
+import { WorkLogStatus, type ManageWorkLogModalProps, type WorklogError } from "../../../../shared/types";
 import { formatDate, getFormikFieldError, getFormikFieldStatus } from "../../../../utils";
 import { workLogApis } from "../../../../state/api";
 
@@ -178,7 +178,7 @@ const ManageWorkLogModal = (props: ManageWorkLogModalProps) => {
             {isEditMode() &&
               manageWorkLogFormik.values.logDate !== null &&
               formatDate(manageWorkLogFormik.values.logDate) !== selectedWorkLog?.workDate &&
-              selectedWorkLog?.status !== "NOT_SYNCED" && (
+              selectedWorkLog?.status !== WorkLogStatus.NOT_SYNCED && (
                 <Alert
                   message="Changing the log date will be applied to the synced worklogs"
                   type="warning"

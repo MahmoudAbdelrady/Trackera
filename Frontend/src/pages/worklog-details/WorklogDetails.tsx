@@ -14,6 +14,8 @@ import {
   type WorklogSelection,
   type WorkLogStatusType,
   type WorklogTask,
+  JiraSyncEvent,
+  WorkLogStatus,
 } from "../../shared/types";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
@@ -38,8 +40,10 @@ const WorklogDetails = () => {
   const [worklogTasks, setWorklogTasks] = useState<WorklogTask[]>([]);
   const [selectedTask, setSelectedTask] = useState<WorklogTask | null>(null);
   const [selectedTaskNames, setSelectedTaskNames] = useState<string[]>([]);
-  const [viewTaskVisible, setViewTaskVisible] = useState<boolean>(false);
-  const [deleteTaskVisible, setDeleteTaskVisible] = useState<boolean>(false);
+  const [taskModalState, setTaskModalState] = useState<{ type: "view" | "delete" | null; task: WorklogTask | null }>({
+    type: null,
+    task: null,
+  });
   const [isFetchingTasks, setIsFetchingTasks] = useState<boolean>(false);
   const [isDeletingTask, setIsDeletingTask] = useState<boolean>(false);
   const selectedWorklogTasks = useMemo(
@@ -52,15 +56,18 @@ const WorklogDetails = () => {
 
   // sse subscription
   const hasInProgress = useMemo(() => {
-    const inProgressStatuses: WorkLogStatusType[] = ["SYNC_IN_PROGRESS", "UNSYNC_IN_PROGRESS"];
+    const inProgressStatuses: WorkLogStatusType[] = [WorkLogStatus.SYNC_IN_PROGRESS, WorkLogStatus.UNSYNC_IN_PROGRESS];
     return (
       worklogTasks.some((task) => inProgressStatuses.includes(task.status)) ||
       worklogEntries.some((entry) => inProgressStatuses.includes(entry.status)) ||
-      !!(worklogInfo?.status && inProgressStatuses.includes(worklogInfo?.status as WorkLogStatusType))
+      !!(worklogInfo?.status && inProgressStatuses.includes(worklogInfo?.status))
     );
   }, [worklogTasks, worklogEntries, worklogInfo]);
 
   const fetchWorklogInfo = useCallback(async () => {
+    if (!worklogId) return;
+
+    setIsFetchingLogInfo(true);
     try {
       const result = await workLogApis.getWorkLogInfo(worklogId!);
       setWorklogInfo(result);
@@ -75,6 +82,8 @@ const WorklogDetails = () => {
   }, [worklogId]);
 
   const fetchWorklogTasks = useCallback(async () => {
+    if (!worklogInfo?.id) return;
+
     setIsFetchingTasks(true);
     try {
       const result = await workLogApis.getWorkLogTasks(worklogId!);
@@ -83,19 +92,15 @@ const WorklogDetails = () => {
       showErrorToast(error);
     }
     setIsFetchingTasks(false);
-  }, [worklogId]);
+  }, [worklogInfo?.id]);
 
   useEffect(() => {
-    if (worklogId) {
-      fetchWorklogInfo();
-    }
-  }, [worklogId, fetchWorklogInfo]);
+    fetchWorklogInfo();
+  }, [fetchWorklogInfo]);
 
   useEffect(() => {
-    if (worklogInfo?.id) {
-      fetchWorklogTasks();
-    }
-  }, [worklogInfo?.id, fetchWorklogTasks]);
+    fetchWorklogTasks();
+  }, [fetchWorklogTasks]);
 
   const handleDeleteWorkLogTask = async () => {
     setIsDeletingTask(true);
@@ -107,6 +112,7 @@ const WorklogDetails = () => {
       } else {
         fetchWorklogTasks();
         fetchWorklogInfo();
+        setSelectedTaskNames([]);
       }
     } catch (error: any) {
       showErrorToast(error);
@@ -125,17 +131,19 @@ const WorklogDetails = () => {
   const { triggerSync } = useJiraSyncSSE({
     hasInProgress,
     onStatusEvent: (event) => {
-      if (["TASK", "ALL"].includes(event.type)) {
-        setWorklogTasks((prevTasks) =>
-          prevTasks.map((task) =>
-            event.taskNames?.includes(task.taskName)
-              ? { ...task, status: event.status, hasError: !!event.syncError }
-              : task
-          )
-        );
+      if (event.type === JiraSyncEvent.TASK || event.type === JiraSyncEvent.ALL) {
+        setWorklogTasks((prevTasks) => {
+          const updatedTasks = [...prevTasks];
+          updatedTasks.forEach((task, index) => {
+            if (event.taskNames?.includes(task.taskName)) {
+              updatedTasks[index] = { ...task, status: event.status, hasError: !!event.syncError };
+            }
+          });
+          return updatedTasks;
+        });
       }
 
-      if (["ENTRY", "ALL"].includes(event.type)) {
+      if (event.type === JiraSyncEvent.ENTRY || event.type === JiraSyncEvent.ALL) {
         setWorklogEntries((prevEntries) =>
           prevEntries.map((entry) =>
             event.entryIds?.includes(entry.id) ? { ...entry, status: event.status, syncError: event.syncError } : entry
@@ -143,7 +151,7 @@ const WorklogDetails = () => {
         );
       }
 
-      if (["WORKLOG", "ALL"].includes(event.type)) {
+      if (event.type === JiraSyncEvent.WORKLOG || event.type === JiraSyncEvent.ALL) {
         setWorklogInfo((prev) => {
           if (!prev) return prev;
           return { ...prev, status: event.status, hasError: !!event.syncError };
@@ -161,10 +169,10 @@ const WorklogDetails = () => {
         onSync: triggerSync,
         onView: (record) => {
           setSelectedTask(record);
-          setViewTaskVisible(true);
+          setTaskModalState({ type: "view", task: record });
         },
         onDelete: (record) => {
-          setDeleteTaskVisible(true);
+          setTaskModalState({ type: "delete", task: record });
           setSelectedTask(record);
         },
       }),
@@ -172,13 +180,13 @@ const WorklogDetails = () => {
   );
 
   const clearDeleteTaskModalFields = () => {
-    setDeleteTaskVisible(false);
+    setTaskModalState({ type: null, task: null });
     setSelectedTask(null);
   };
 
   return (
     <>
-      {viewTaskVisible && (
+      {taskModalState.type === "view" && (
         <WorklogTaskEntries
           loggedUserData={loggedUserData!}
           worklogId={worklogId!}
@@ -192,12 +200,12 @@ const WorklogDetails = () => {
           triggerSync={triggerSync}
           onCloseHandler={() => {
             setSelectedTask(null);
-            setViewTaskVisible(false);
+            setTaskModalState({ type: null, task: null });
           }}
         />
       )}
 
-      {deleteTaskVisible && (
+      {taskModalState.type === "delete" && (
         <WorklogModal
           title={`Delete ${selectedTask?.taskName} Task Log`}
           properties={{
@@ -216,7 +224,7 @@ const WorklogDetails = () => {
           <p className={worklogModalClasses.delete_message}>
             Are you sure you want to delete this task log? This action cannot be undone.
           </p>
-          {(selectedTask?.status === "SYNCED" || selectedTask?.status === "PARTIALLY") && (
+          {(selectedTask?.status === WorkLogStatus.SYNCED || selectedTask?.status === WorkLogStatus.PARTIALLY) && (
             <Alert
               message="This task has synced data with Jira and will be unsynced upon deletion."
               type="warning"
@@ -253,7 +261,8 @@ const WorklogDetails = () => {
                       getCheckboxProps: (record) => ({
                         disabled:
                           !loggedUserData?.jiraLinked ||
-                          ["SYNC_IN_PROGRESS", "UNSYNC_IN_PROGRESS"].includes(record.status),
+                          record.status === WorkLogStatus.SYNC_IN_PROGRESS ||
+                          record.status === WorkLogStatus.UNSYNC_IN_PROGRESS,
                       }),
                     },
                     loading: isFetchingTasks,

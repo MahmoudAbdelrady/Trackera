@@ -2,6 +2,7 @@ import type { TableProps } from "antd";
 import {
   statusMetadata,
   worklogEvaluationMetadata,
+  WorkLogStatus,
   type Worklog,
   type WorkLogEvaluationType,
   type WorkLogStatusType,
@@ -69,7 +70,7 @@ const WorkLogColumns = (props: WorklogColumnsParams): TableProps<Worklog>["colum
           onEdit={() => onEdit(record)}
           onDelete={() => onDelete(record)}
           viewLink={`/worklog-details/${record.id}`}
-          syncParams={{ workLogId: record.id, sync: record.status !== "SYNCED" }}
+          syncParams={{ workLogId: record.id, sync: record.status !== WorkLogStatus.SYNCED }}
         />
       ),
     },

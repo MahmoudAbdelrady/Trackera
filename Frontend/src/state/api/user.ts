@@ -1,16 +1,6 @@
 import requestInstance from "../../shared/axios/request-instance";
 import type { ChangePasswordFormFields } from "../../shared/types";
-
-export interface UserInfo {
-  firstname: string;
-  lastname: string;
-  primaryEmail: string;
-  pendingEmail: string | null;
-  profilePicture: string | null;
-  avatarColor: string;
-  passwordSet: boolean;
-  jiraLinked: boolean;
-}
+import type { UserInfo } from "../../shared/types/auth";
 
 const fetchMe = async () => {
   const response = await requestInstance.get<UserInfo>("/user/me");

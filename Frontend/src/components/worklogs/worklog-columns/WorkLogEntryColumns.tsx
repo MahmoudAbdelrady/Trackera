@@ -1,5 +1,11 @@
 import { Tooltip, type TableProps } from "antd";
-import { statusMetadata, type SyncPayload, type WorklogEntry, type WorkLogStatusType } from "../../../shared/types";
+import {
+  statusMetadata,
+  WorkLogStatus,
+  type SyncPayload,
+  type WorklogEntry,
+  type WorkLogStatusType,
+} from "../../../shared/types";
 import StatusBadge from "../../status-badge/StatusBadge";
 import { CircleAlert } from "lucide-react";
 import WorklogActionButtons from "../worklog-action-buttons/WorklogActionButtons";
@@ -75,7 +81,7 @@ const WorkLogEntryColumns = (props: WorklogEntryColumnsParams): TableProps<Workl
           syncParams={{
             workLogId: worklogId,
             entryIds: [record.id],
-            sync: record.status !== "SYNCED",
+            sync: record.status !== WorkLogStatus.SYNCED,
           }}
         />
       ),
