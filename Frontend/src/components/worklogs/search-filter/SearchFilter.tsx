@@ -105,7 +105,6 @@ const SearchFilter = (props: WorkLogsFilterProps) => {
     validationSchema: searchFilterSchema,
     onSubmit: (values) => {
       props.setFilters(buildSearchFilters(values));
-      props.setFetchWorkLog(true);
     },
   });
 
@@ -176,7 +175,11 @@ const SearchFilter = (props: WorkLogsFilterProps) => {
             <div className={classes.search_filter_input}>
               <span className={classes.filter_label}>Date From:</span>
               <div className={classes.filter_input_box}>
-                <Form.Item className={classes.filter_form_item} validateStatus={getFormikFieldStatus(searchFormik, "dateFrom")} help={getFormikFieldError(searchFormik, "dateFrom") as string}>
+                <Form.Item
+                  className={classes.filter_form_item}
+                  validateStatus={getFormikFieldStatus(searchFormik, "dateFrom")}
+                  help={getFormikFieldError(searchFormik, "dateFrom") as string}
+                >
                   <DatePicker
                     placeholder="Select Date"
                     style={{ width: "100%" }}
@@ -227,7 +230,12 @@ const SearchFilter = (props: WorkLogsFilterProps) => {
             <div className={classes.search_filter_input}>
               <span className={classes.filter_label}>Criteria Type:</span>
               <div className={classes.filter_input_box}>
-                <Radio.Group className={classes.filter_input_radio} options={criteriaTypeItems} value={criteriaType} onChange={(e) => handleCriteriaTypeChange(e.target.value)} />
+                <Radio.Group
+                  className={classes.filter_input_radio}
+                  options={criteriaTypeItems}
+                  value={criteriaType}
+                  onChange={(e) => handleCriteriaTypeChange(e.target.value)}
+                />
               </div>
             </div>
 
@@ -311,7 +319,6 @@ const SearchFilter = (props: WorkLogsFilterProps) => {
                 searchFormik.resetForm();
                 setCriteriaType("totalHours");
                 props.setFilters({});
-                props.setFetchWorkLog(true);
               }}
               className={`${classes.filter_button} ${classes.clear}`}
             >

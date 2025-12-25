@@ -94,8 +94,7 @@ interface WorklogModalProps {
 
 interface ManageWorkLogModalProps {
   setIsOpen: (isOpen: boolean) => void;
-  setFetchWorkLog: (fetch: boolean) => void;
-  setFetchSummary: (fetch: boolean) => void;
+  refreshWorkLogData: () => void;
   selectedWorkLog?: Worklog;
   setSelectedWorkLog?: (worklog: Worklog | undefined) => void;
   jiraLinked: boolean;
@@ -115,9 +114,7 @@ interface WorkLogSearchFilter {
 }
 
 interface WorkLogsFilterProps {
-  filters: Record<string, any>;
   setFilters: (filters: Record<string, any>) => void;
-  setFetchWorkLog: (fetch: boolean) => void;
   jiraLinked: boolean;
 }
 

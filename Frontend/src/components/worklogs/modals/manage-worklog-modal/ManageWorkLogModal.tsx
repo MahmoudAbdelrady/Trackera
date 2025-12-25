@@ -13,12 +13,13 @@ import { formatDate, getFormikFieldError, getFormikFieldStatus } from "../../../
 import { workLogApis } from "../../../../state/api";
 
 const ManageWorkLogModal = (props: ManageWorkLogModalProps) => {
+  const { jiraLinked, selectedWorkLog, setIsOpen, setSelectedWorkLog, refreshWorkLogData } = props;
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [fileList, setFileList] = useState<UploadFile[]>([]);
   const [worklogFileErrors, setWorklogFileErrors] = useState<WorklogError[]>([]);
 
   const isEditMode = (): boolean => {
-    return props.selectedWorkLog !== undefined;
+    return selectedWorkLog !== undefined;
   };
 
   const handleFileUpload = (file: File | null) => {
@@ -38,8 +39,8 @@ const ManageWorkLogModal = (props: ManageWorkLogModalProps) => {
     manageWorkLogFormik.resetForm();
     setFileList([]);
     setWorklogFileErrors([]);
-    props.setIsOpen(false);
-    props.setSelectedWorkLog?.(undefined);
+    setIsOpen(false);
+    setSelectedWorkLog?.(undefined);
   };
 
   const getFormData = (values: typeof manageWorkLogFormik.values, isEdit: boolean): FormData => {
@@ -65,9 +66,9 @@ const ManageWorkLogModal = (props: ManageWorkLogModalProps) => {
     initialValues: useMemo(
       () => ({
         mode: isEditMode() ? "edit" : "add",
-        logName: isEditMode() ? props.selectedWorkLog!.name : "",
+        logName: isEditMode() ? selectedWorkLog!.name : "",
         logDate: isEditMode()
-          ? dayjs(props.selectedWorkLog!.workDate)
+          ? dayjs(selectedWorkLog!.workDate)
           : dayjs().hour() < 12
           ? dayjs().subtract(1, "day")
           : dayjs(),
@@ -75,7 +76,7 @@ const ManageWorkLogModal = (props: ManageWorkLogModalProps) => {
         reEvaluate: false,
         syncToJira: false,
       }),
-      [props.selectedWorkLog]
+      [selectedWorkLog]
     ),
     validationSchema: manageWorkLog,
     enableReinitialize: true,
@@ -83,11 +84,10 @@ const ManageWorkLogModal = (props: ManageWorkLogModalProps) => {
       setIsLoading(true);
       try {
         const formData = getFormData(values, isEditMode());
-        const response = await workLogApis.updateWorkLog(isEditMode() ? props.selectedWorkLog!.id : null, formData);
+        const response = await workLogApis.updateWorkLog(isEditMode() ? selectedWorkLog!.id : null, formData);
         showSuccessToast(response.data);
         handleModalClose();
-        props.setFetchWorkLog(true);
-        props.setFetchSummary(true);
+        refreshWorkLogData();
       } catch (error: any) {
         if (error.response?.data.isError) {
           showErrorToast(error.response?.data.message);
@@ -177,8 +177,8 @@ const ManageWorkLogModal = (props: ManageWorkLogModalProps) => {
             />
             {isEditMode() &&
               manageWorkLogFormik.values.logDate !== null &&
-              formatDate(manageWorkLogFormik.values.logDate) !== props.selectedWorkLog?.workDate &&
-              props.selectedWorkLog?.status !== "NOT_SYNCED" && (
+              formatDate(manageWorkLogFormik.values.logDate) !== selectedWorkLog?.workDate &&
+              selectedWorkLog?.status !== "NOT_SYNCED" && (
                 <Alert
                   message="Changing the log date will be applied to the synced worklogs"
                   type="warning"
@@ -243,11 +243,11 @@ const ManageWorkLogModal = (props: ManageWorkLogModalProps) => {
             <div className={worklogModalClasses.form_group}>
               <span className={worklogModalClasses.label}>Sync to Jira after upload:</span>
               <Switch
-                disabled={!props.jiraLinked || isLoading}
+                disabled={!jiraLinked || isLoading}
                 value={manageWorkLogFormik.values.syncToJira}
                 onChange={(value) => manageWorkLogFormik.setFieldValue("syncToJira", value)}
               />
-              {!props.jiraLinked && (
+              {!jiraLinked && (
                 <Tooltip title="Link your Jira account in settings to enable this option.">
                   <Info size={16} color="#dc2626" style={{ marginLeft: "8px" }} />
                 </Tooltip>

@@ -10,7 +10,7 @@ import {
 } from "../../components";
 import classes from "./scss/home.module.css";
 import { Alert } from "antd";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { type WorkLogSummaryCard, type PaginatedResponse, type Worklog } from "../../shared/types";
 import { createPaginationConfig } from "../../utils";
 import worklogModalClasses from "../../components/worklogs/modals/worklog-modal/scss/worklog-modal.module.css";
@@ -25,32 +25,28 @@ const Home = () => {
   const [deleteWorkLogVisible, setDeleteWorkLogVisible] = useState<boolean>(false);
   const [isFetchingWorkLogs, setIsFetchingWorkLogs] = useState<boolean>(true);
   const [isDeletingWorkLog, setIsDeletingWorkLog] = useState<boolean>(false);
-  const [fetchWorkLog, setFetchWorkLog] = useState<boolean>(true);
-  const [fetchSummary, setFetchSummary] = useState<boolean>(true);
   const [workLogsResponse, setWorkLogsResponse] = useState<PaginatedResponse<Worklog> | null>(null);
   const [workLogSummary, setWorkLogSummary] = useState<WorkLogSummaryCard[]>([]);
   const [selectedWorkLog, setSelectedWorkLog] = useState<Worklog | undefined>(undefined);
   const [searchFilters, setSearchFilters] = useState<Record<string, any>>({});
-
-  useEffect(() => {
-    if (fetchWorkLog) {
-      fetchWorkLogs();
-      setFetchWorkLog(false);
-    }
-  }, [fetchWorkLog]);
-
-  useEffect(() => {
-    if (fetchSummary) {
-      fetchWorkLogSummary();
-      setFetchSummary(false);
-    }
-  }, [fetchSummary]);
-
-  const { triggerSync } = useJiraSyncSSE({
-    hasInProgress:
+  const hasInProgress = useMemo(
+    () =>
       workLogsResponse?.content.some((worklog) =>
         ["SYNC_IN_PROGRESS", "UNSYNC_IN_PROGRESS"].includes(worklog.status)
       ) ?? false,
+    [workLogsResponse?.content]
+  );
+
+  useEffect(() => {
+    fetchWorkLogs();
+  }, [searchFilters]);
+
+  useEffect(() => {
+    fetchWorkLogSummary();
+  }, []);
+
+  const { triggerSync } = useJiraSyncSSE({
+    hasInProgress,
     onStatusEvent: (event) => {
       setWorkLogsResponse((prev) => {
         if (!prev) return prev;
@@ -64,31 +60,34 @@ const Home = () => {
     },
   });
 
-  const fetchWorkLogs = async (pageNum: number = 0, pageSize: number = 10) => {
-    setIsFetchingWorkLogs(true);
-    try {
-      setWorkLogsResponse(await workLogApis.getWorkLogs(pageNum, pageSize, searchFilters));
-    } catch (error) {
-      showErrorToast(error);
-    }
-    setIsFetchingWorkLogs(false);
-  };
+  const fetchWorkLogs = useCallback(
+    async (pageNum: number = 0, pageSize: number = 10) => {
+      setIsFetchingWorkLogs(true);
+      try {
+        setWorkLogsResponse(await workLogApis.getWorkLogs(pageNum, pageSize, searchFilters));
+      } catch (error) {
+        showErrorToast(error);
+      }
+      setIsFetchingWorkLogs(false);
+    },
+    [searchFilters]
+  );
 
-  const fetchWorkLogSummary = async () => {
+  const fetchWorkLogSummary = useCallback(async () => {
     try {
       setWorkLogSummary(await workLogApis.getWorkLogSummary());
     } catch (error: any) {
       showErrorToast(error);
     }
-  };
+  }, []);
 
   const deleteWorkLog = async (workLogId: string) => {
     setIsDeletingWorkLog(true);
     try {
       const result = await workLogApis.deleteWorkLog(workLogId);
       showSuccessToast(result.message);
-      setFetchWorkLog(true);
-      setFetchSummary(true);
+      fetchWorkLogs();
+      fetchWorkLogSummary();
       setDeleteWorkLogVisible(false);
       setSelectedWorkLog(undefined);
     } catch (error: any) {
@@ -119,8 +118,10 @@ const Home = () => {
       {manageWorkLogVisible && (
         <ManageWorkLogModal
           setIsOpen={setManageWorkLogVisible}
-          setFetchWorkLog={setFetchWorkLog}
-          setFetchSummary={setFetchSummary}
+          refreshWorkLogData={() => {
+            fetchWorkLogs();
+            fetchWorkLogSummary();
+          }}
           selectedWorkLog={selectedWorkLog}
           setSelectedWorkLog={setSelectedWorkLog}
           jiraLinked={loggedUserData?.jiraLinked || false}
@@ -169,12 +170,7 @@ const Home = () => {
           ))}
         </div>
         <div className={classes.worklogs_content}>
-          <SearchFilter
-            filters={searchFilters}
-            setFilters={setSearchFilters}
-            setFetchWorkLog={setFetchWorkLog}
-            jiraLinked={loggedUserData?.jiraLinked || false}
-          />
+          <SearchFilter setFilters={setSearchFilters} jiraLinked={loggedUserData?.jiraLinked || false} />
           <div className={classes.worklogs_container}>
             <TrackeraTable<Worklog>
               properties={{
