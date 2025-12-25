@@ -124,8 +124,7 @@ interface WorklogTaskEntriesProps {
   worklogId: string;
   selectedTask: WorklogTask;
   worklogEntries: WorklogEntry[];
-  isFetchingEntries: boolean;
-  fetchEntries: () => void;
+  setWorklogEntries: (entries: WorklogEntry[]) => void;
   refetchData: () => void;
   triggerSync: (params: SyncPayload) => void;
   onCloseHandler: () => void;

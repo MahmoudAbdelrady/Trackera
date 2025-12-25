@@ -37,15 +37,18 @@ const WorklogDetails = () => {
   // worklog tasks
   const [worklogTasks, setWorklogTasks] = useState<WorklogTask[]>([]);
   const [selectedTask, setSelectedTask] = useState<WorklogTask | null>(null);
-  const [selectedWorklogTasks, setSelectedWorklogTasks] = useState<WorklogTask[]>([]);
+  const [selectedTaskNames, setSelectedTaskNames] = useState<string[]>([]);
   const [viewTaskVisible, setViewTaskVisible] = useState<boolean>(false);
   const [deleteTaskVisible, setDeleteTaskVisible] = useState<boolean>(false);
   const [isFetchingTasks, setIsFetchingTasks] = useState<boolean>(false);
   const [isDeletingTask, setIsDeletingTask] = useState<boolean>(false);
+  const selectedWorklogTasks = useMemo(
+    () => worklogTasks.filter((task) => selectedTaskNames.includes(task.taskName)),
+    [worklogTasks, selectedTaskNames]
+  );
 
   // worklog entries
   const [worklogEntries, setWorklogEntries] = useState<WorklogEntry[]>([]);
-  const [isFetchingEntries, setIsFetchingEntries] = useState<boolean>(false);
 
   // sse subscription
   const hasInProgress = useMemo(() => {
@@ -53,7 +56,7 @@ const WorklogDetails = () => {
     return (
       worklogTasks.some((task) => inProgressStatuses.includes(task.status)) ||
       worklogEntries.some((entry) => inProgressStatuses.includes(entry.status)) ||
-      inProgressStatuses.includes(worklogInfo?.status as WorkLogStatusType)
+      !!(worklogInfo?.status && inProgressStatuses.includes(worklogInfo?.status as WorkLogStatusType))
     );
   }, [worklogTasks, worklogEntries, worklogInfo]);
 
@@ -75,51 +78,24 @@ const WorklogDetails = () => {
     setIsFetchingTasks(true);
     try {
       const result = await workLogApis.getWorkLogTasks(worklogId!);
-      setWorklogTasks(result.map((task: WorklogTask, idx: number) => ({ ...task, id: idx + 1 })));
+      setWorklogTasks(result.map((task: WorklogTask) => ({ ...task, id: task.taskName })));
     } catch (error: any) {
       showErrorToast(error);
     }
     setIsFetchingTasks(false);
   }, [worklogId]);
 
-  const fetchTaskEntries = useCallback(async () => {
-    setIsFetchingEntries(true);
-    try {
-      const result = await workLogApis.getWorkLogTaskEntries(worklogId!, selectedTask!.taskName);
-      setWorklogEntries(result);
-    } catch (error: any) {
-      showErrorToast(error);
-    }
-    setIsFetchingEntries(false);
-  }, [worklogId, selectedTask]);
-
   useEffect(() => {
     if (worklogId) {
       fetchWorklogInfo();
     }
-  }, [worklogId]);
+  }, [worklogId, fetchWorklogInfo]);
 
   useEffect(() => {
     if (worklogInfo?.id) {
       fetchWorklogTasks();
     }
-  }, [worklogInfo?.id]);
-
-  useEffect(() => {
-    if (selectedTask?.taskName) {
-      fetchTaskEntries();
-    }
-  }, [selectedTask?.taskName]);
-
-  useEffect(() => {
-    if (selectedWorklogTasks.length > 0) {
-      const updatedSelectedTasks = selectedWorklogTasks
-        .map((selectedTask) => worklogTasks.find((task) => task.taskName === selectedTask.taskName))
-        .filter((task): task is WorklogTask => task !== undefined);
-
-      setSelectedWorklogTasks(updatedSelectedTasks);
-    }
-  }, [worklogTasks]);
+  }, [worklogInfo?.id, fetchWorklogTasks]);
 
   const handleDeleteWorkLogTask = async () => {
     setIsDeletingTask(true);
@@ -147,7 +123,7 @@ const WorklogDetails = () => {
   };
 
   const { triggerSync } = useJiraSyncSSE({
-    hasInProgress: hasInProgress,
+    hasInProgress,
     onStatusEvent: (event) => {
       if (["TASK", "ALL"].includes(event.type)) {
         setWorklogTasks((prevTasks) =>
@@ -192,7 +168,7 @@ const WorklogDetails = () => {
           setSelectedTask(record);
         },
       }),
-    [loggedUserData?.jiraLinked, triggerSync]
+    [loggedUserData?.jiraLinked, worklogId, worklogTasks, triggerSync]
   );
 
   const clearDeleteTaskModalFields = () => {
@@ -208,11 +184,10 @@ const WorklogDetails = () => {
           worklogId={worklogId!}
           selectedTask={selectedTask!}
           worklogEntries={worklogEntries}
-          isFetchingEntries={isFetchingEntries}
-          fetchEntries={fetchTaskEntries}
+          setWorklogEntries={setWorklogEntries}
           refetchData={() => {
-            fetchWorklogTasks();
             fetchWorklogInfo();
+            fetchWorklogTasks();
           }}
           triggerSync={triggerSync}
           onCloseHandler={() => {
@@ -271,9 +246,9 @@ const WorklogDetails = () => {
                     columns: worklogTaskColumns,
                     dataSource: worklogTasks,
                     rowSelection: {
-                      selectedRowKeys: selectedWorklogTasks.map((task) => task.id.toString()),
+                      selectedRowKeys: selectedTaskNames,
                       onChange: (_, selectedRows: WorklogTask[]) => {
-                        setSelectedWorklogTasks(selectedRows);
+                        setSelectedTaskNames(selectedRows.map((task) => task.taskName));
                       },
                       getCheckboxProps: (record) => ({
                         disabled:

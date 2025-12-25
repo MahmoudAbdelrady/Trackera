@@ -63,7 +63,7 @@ export const useJiraSyncSSE = ({ hasInProgress, onStatusEvent }: JiraSyncSSEOpti
 
   const fireSync = async (payload: SyncPayload) => {
     try {
-      workLogApis.syncWorkLog(payload);
+      await workLogApis.syncWorkLog(payload);
     } catch (error) {
       showErrorToast(error);
     }

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { WorklogEntry, WorklogTaskEntriesProps } from "../../../shared/types";
 import TrackeraTable from "../../trackera-table/TrackeraTable";
 import WorklogModal from "../modals/worklog-modal/WorklogModal";
@@ -16,14 +16,14 @@ const WorklogTaskEntries = (props: WorklogTaskEntriesProps) => {
     worklogId,
     selectedTask,
     worklogEntries,
-    isFetchingEntries,
-    fetchEntries,
+    setWorklogEntries,
     refetchData,
     triggerSync,
     onCloseHandler,
   } = props;
   const navigate = useNavigate();
 
+  const [isFetchingEntries, setIsFetchingEntries] = useState<boolean>(false);
   const [selectedWorklogEntries, setSelectedWorklogEntries] = useState<WorklogEntry[]>([]);
   const [isDeletingEntry, setIsDeletingEntry] = useState<boolean>(false);
   const [selectedEntry, setSelectedEntry] = useState<WorklogEntry | null>(null);
@@ -43,6 +43,21 @@ const WorklogTaskEntries = (props: WorklogTaskEntriesProps) => {
       }),
     [loggedUserData?.jiraLinked, triggerSync]
   );
+
+  const fetchEntries = useCallback(async () => {
+    setIsFetchingEntries(true);
+    try {
+      const result = await workLogApis.getWorkLogTaskEntries(worklogId!, selectedTask!.taskName);
+      setWorklogEntries(result);
+    } catch (error: any) {
+      showErrorToast(error);
+    }
+    setIsFetchingEntries(false);
+  }, [worklogId, selectedTask.taskName]);
+
+  useEffect(() => {
+    fetchEntries();
+  }, []);
 
   useEffect(() => {
     if (selectedWorklogEntries.length > 0) {
