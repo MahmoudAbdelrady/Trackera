@@ -15,7 +15,7 @@ import {
   type WorkLogStatusType,
   type WorklogTask,
 } from "../../shared/types";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import worklogModalClasses from "../../components/worklogs/modals/worklog-modal/scss/worklog-modal.module.css";
 import { showErrorToast, showSuccessToast } from "../../utils/toast-handler/showToast";
@@ -32,7 +32,6 @@ const WorklogDetails = () => {
   // worklog info
   const [worklogInfo, setWorklogInfo] = useState<Worklog | null>(null);
   const [isFetchingLogInfo, setIsFetchingLogInfo] = useState<boolean>(true);
-  const [canFetchWorkLogInfo, setCanFetchWorkLogInfo] = useState<boolean>(!!worklogId);
   const [showNotFound, setShowNotFound] = useState<boolean>(false);
 
   // worklog tasks
@@ -41,13 +40,11 @@ const WorklogDetails = () => {
   const [selectedWorklogTasks, setSelectedWorklogTasks] = useState<WorklogTask[]>([]);
   const [viewTaskVisible, setViewTaskVisible] = useState<boolean>(false);
   const [deleteTaskVisible, setDeleteTaskVisible] = useState<boolean>(false);
-  const [canFetchTasks, setCanFetchTasks] = useState<boolean>(false);
   const [isFetchingTasks, setIsFetchingTasks] = useState<boolean>(false);
   const [isDeletingTask, setIsDeletingTask] = useState<boolean>(false);
 
   // worklog entries
   const [worklogEntries, setWorklogEntries] = useState<WorklogEntry[]>([]);
-  const [canFetchEntries, setCanFetchEntries] = useState<boolean>(false);
   const [isFetchingEntries, setIsFetchingEntries] = useState<boolean>(false);
 
   // sse subscription
@@ -60,63 +57,59 @@ const WorklogDetails = () => {
     );
   }, [worklogTasks, worklogEntries, worklogInfo]);
 
-  useEffect(() => {
-    const fetchWorklogInfo = async () => {
-      try {
-        const result = await workLogApis.getWorkLogInfo(worklogId!);
-        setWorklogInfo(result);
-        setCanFetchTasks(true);
-      } catch (error: any) {
-        if (error.response?.status === 404) {
-          setShowNotFound(true);
-        } else {
-          showErrorToast(error);
-        }
+  const fetchWorklogInfo = useCallback(async () => {
+    try {
+      const result = await workLogApis.getWorkLogInfo(worklogId!);
+      setWorklogInfo(result);
+    } catch (error: any) {
+      if (error.response?.status === 404) {
+        setShowNotFound(true);
+      } else {
+        showErrorToast(error);
       }
-      setIsFetchingLogInfo(false);
-    };
+    }
+    setIsFetchingLogInfo(false);
+  }, [worklogId]);
 
-    if (canFetchWorkLogInfo) {
+  const fetchWorklogTasks = useCallback(async () => {
+    setIsFetchingTasks(true);
+    try {
+      const result = await workLogApis.getWorkLogTasks(worklogId!);
+      setWorklogTasks(result.map((task: WorklogTask, idx: number) => ({ ...task, id: idx + 1 })));
+    } catch (error: any) {
+      showErrorToast(error);
+    }
+    setIsFetchingTasks(false);
+  }, [worklogId]);
+
+  const fetchTaskEntries = useCallback(async () => {
+    setIsFetchingEntries(true);
+    try {
+      const result = await workLogApis.getWorkLogTaskEntries(worklogId!, selectedTask!.taskName);
+      setWorklogEntries(result);
+    } catch (error: any) {
+      showErrorToast(error);
+    }
+    setIsFetchingEntries(false);
+  }, [worklogId, selectedTask]);
+
+  useEffect(() => {
+    if (worklogId) {
       fetchWorklogInfo();
-      setCanFetchWorkLogInfo(false);
     }
-  }, [canFetchWorkLogInfo]);
+  }, [worklogId]);
 
   useEffect(() => {
-    const fetchWorklogTasks = async () => {
-      setIsFetchingTasks(true);
-      try {
-        const result = await workLogApis.getWorkLogTasks(worklogId!);
-        setWorklogTasks(result.map((task: WorklogTask, idx: number) => ({ ...task, id: idx + 1 })));
-      } catch (error: any) {
-        showErrorToast(error);
-      }
-      setIsFetchingTasks(false);
-    };
-
-    if (canFetchTasks) {
+    if (worklogInfo?.id) {
       fetchWorklogTasks();
-      setCanFetchTasks(false);
     }
-  }, [canFetchTasks]);
+  }, [worklogInfo?.id]);
 
   useEffect(() => {
-    const fetchTaskEntries = async () => {
-      setIsFetchingEntries(true);
-      try {
-        const result = await workLogApis.getWorkLogTaskEntries(worklogId!, selectedTask!.taskName);
-        setWorklogEntries(result);
-      } catch (error: any) {
-        showErrorToast(error);
-      }
-      setIsFetchingEntries(false);
-    };
-
-    if (canFetchEntries) {
+    if (selectedTask?.taskName) {
       fetchTaskEntries();
-      setCanFetchEntries(false);
     }
-  }, [canFetchEntries]);
+  }, [selectedTask?.taskName]);
 
   useEffect(() => {
     if (selectedWorklogTasks.length > 0) {
@@ -136,8 +129,8 @@ const WorklogDetails = () => {
       if (result.isLast) {
         navigate("/");
       } else {
-        setCanFetchTasks(true);
-        setCanFetchWorkLogInfo(true);
+        fetchWorklogTasks();
+        fetchWorklogInfo();
       }
     } catch (error: any) {
       showErrorToast(error);
@@ -193,7 +186,6 @@ const WorklogDetails = () => {
         onView: (record) => {
           setSelectedTask(record);
           setViewTaskVisible(true);
-          setCanFetchEntries(true);
         },
         onDelete: (record) => {
           setDeleteTaskVisible(true);
@@ -217,10 +209,10 @@ const WorklogDetails = () => {
           selectedTask={selectedTask!}
           worklogEntries={worklogEntries}
           isFetchingEntries={isFetchingEntries}
-          setCanFetchEntries={setCanFetchEntries}
+          fetchEntries={fetchTaskEntries}
           refetchData={() => {
-            setCanFetchTasks(true);
-            setCanFetchWorkLogInfo(true);
+            fetchWorklogTasks();
+            fetchWorklogInfo();
           }}
           triggerSync={triggerSync}
           onCloseHandler={() => {

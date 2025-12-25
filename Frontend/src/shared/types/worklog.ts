@@ -1,5 +1,6 @@
 import type { ModalProps, TableProps } from "antd";
 import type { StatusBadgeProps, TrackeraTableEntity } from "./global";
+import type { UserInfo } from "../../state/api/user";
 
 type WorkLogEvaluationType = "EXCELLENT" | "GOOD" | "MODERATE" | "POOR";
 
@@ -118,6 +119,18 @@ interface WorkLogsFilterProps {
   jiraLinked: boolean;
 }
 
+interface WorklogTaskEntriesProps {
+  loggedUserData: UserInfo;
+  worklogId: string;
+  selectedTask: WorklogTask;
+  worklogEntries: WorklogEntry[];
+  isFetchingEntries: boolean;
+  fetchEntries: () => void;
+  refetchData: () => void;
+  triggerSync: (params: SyncPayload) => void;
+  onCloseHandler: () => void;
+}
+
 export type {
   SyncPayload,
   WorkLogEvaluationType,
@@ -135,6 +148,7 @@ export type {
   WorkLogSummaryCard,
   WorkLogSearchFilter,
   WorkLogsFilterProps,
+  WorklogTaskEntriesProps,
 };
 
 export { worklogEvaluationMetadata, statusMetadata };

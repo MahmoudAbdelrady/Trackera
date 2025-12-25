@@ -1,27 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
-import type { SyncPayload, WorklogEntry, WorklogTask } from "../../../shared/types";
+import type { WorklogEntry, WorklogTaskEntriesProps } from "../../../shared/types";
 import TrackeraTable from "../../trackera-table/TrackeraTable";
 import WorklogModal from "../modals/worklog-modal/WorklogModal";
 import { WorkLogEntryColumns } from "../../";
 import buildSyncButtonProps from "../../../utils/buildWorkLogSyncButtonProps";
 import { workLogApis } from "../../../state/api";
 import { showErrorToast } from "../../../utils/toast-handler/showToast";
-import type { UserInfo } from "../../../state/api/user";
 import { useNavigate } from "react-router-dom";
 import { Alert } from "antd";
 import worklogModalClasses from "../modals/worklog-modal/scss/worklog-modal.module.css";
-
-interface WorklogTaskEntriesProps {
-  loggedUserData: UserInfo;
-  worklogId: string;
-  selectedTask: WorklogTask;
-  worklogEntries: WorklogEntry[];
-  isFetchingEntries: boolean;
-  setCanFetchEntries: (canFetch: boolean) => void;
-  refetchData: () => void;
-  triggerSync: (params: SyncPayload) => void;
-  onCloseHandler: () => void;
-}
 
 const WorklogTaskEntries = (props: WorklogTaskEntriesProps) => {
   const {
@@ -30,7 +17,7 @@ const WorklogTaskEntries = (props: WorklogTaskEntriesProps) => {
     selectedTask,
     worklogEntries,
     isFetchingEntries,
-    setCanFetchEntries,
+    fetchEntries,
     refetchData,
     triggerSync,
     onCloseHandler,
@@ -83,7 +70,7 @@ const WorklogTaskEntries = (props: WorklogTaskEntriesProps) => {
         if (result.isLastOfTask) {
           onCloseHandler();
         } else {
-          setCanFetchEntries(true);
+          fetchEntries();
         }
         refetchData();
       }

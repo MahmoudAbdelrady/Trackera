@@ -159,9 +159,9 @@ const Home = () => {
       </WorklogModal>
       <AppLayout>
         <div className={classes.worklog_status_cards_container}>
-          {workLogSummary.map((card, index) => (
+          {workLogSummary.map((card) => (
             <WorklogStatusCard
-              key={index}
+              key={card.code}
               label={card.label}
               subLabel={card.subLabel}
               code={card.code}

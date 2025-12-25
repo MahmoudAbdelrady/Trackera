@@ -29,6 +29,7 @@ import type {
   WorkLogSummaryCard,
   WorkLogSearchFilter,
   WorkLogsFilterProps,
+  WorklogTaskEntriesProps,
 } from "./worklog";
 
 import { worklogEvaluationMetadata, statusMetadata } from "./worklog";
@@ -83,6 +84,7 @@ export type {
   UserEmailProps,
   PreferencesProps,
   OAuthAccount,
+  WorklogTaskEntriesProps,
 };
 
 export { worklogEvaluationMetadata, statusMetadata, jiraTaskEvaluationMetadata };
