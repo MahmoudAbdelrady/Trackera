@@ -5,6 +5,7 @@ import getContrastColor from "./getContrastColor";
 import createPaginationConfig from "./createPaginationConfig";
 import formatDate from "./formatDate";
 import buildWorkLogSyncButtonProps from "./buildWorkLogSyncButtonProps";
+import { isNullOrEmpty } from "./helpers";
 
 export {
   getFormikErrors,
@@ -15,4 +16,5 @@ export {
   createPaginationConfig,
   formatDate,
   buildWorkLogSyncButtonProps,
+  isNullOrEmpty,
 };
