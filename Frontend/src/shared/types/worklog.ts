@@ -17,8 +17,6 @@ const WorkLogStatus = {
   UNSYNC_IN_PROGRESS: "UNSYNC_IN_PROGRESS",
 } as const;
 
-// type JiraSyncEventType = "ALL" | "WORKLOG" | "TASK" | "ENTRY";
-
 const JiraSyncEvent = {
   ALL: "ALL",
   WORKLOG: "WORKLOG",

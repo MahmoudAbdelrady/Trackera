@@ -11,7 +11,13 @@ import {
 import classes from "./scss/home.module.css";
 import { Alert } from "antd";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { type WorkLogSummaryCard, type PaginatedResponse, type Worklog, WorkLogStatus } from "../../shared/types";
+import {
+  type WorkLogSummaryCard,
+  type PaginatedResponse,
+  type Worklog,
+  WorkLogStatus,
+  JiraSyncEvent,
+} from "../../shared/types";
 import { createPaginationConfig } from "../../utils";
 import worklogModalClasses from "../../components/worklogs/modals/worklog-modal/scss/worklog-modal.module.css";
 import { showErrorToast, showSuccessToast } from "../../utils/toast-handler/showToast";
@@ -52,7 +58,7 @@ const Home = () => {
       setWorkLogsResponse((prev) => {
         if (!prev) return prev;
         const updatedContent = prev.content.map((worklog) =>
-          worklog.id === event.logId && ["WORKLOG", "ALL"].includes(event.type)
+          worklog.id === event.logId && (event.type === JiraSyncEvent.WORKLOG || event.type === JiraSyncEvent.ALL)
             ? { ...worklog, status: event.status, hasError: !!event.syncError }
             : worklog
         );
