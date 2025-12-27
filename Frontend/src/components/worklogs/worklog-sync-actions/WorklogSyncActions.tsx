@@ -10,7 +10,8 @@ interface SyncActionProps {
   syncParams: SyncPayload;
 }
 
-const WorklogSyncActions = ({ record, jiraLinked, onSync, syncParams }: SyncActionProps) => {
+const WorklogSyncActions = (props: SyncActionProps) => {
+  const { record, jiraLinked, onSync, syncParams } = props;
   const isSynced = record.status === WorkLogStatus.SYNCED;
   const isSyncing = record.status === WorkLogStatus.SYNC_IN_PROGRESS;
   const isUnsyncing = record.status === WorkLogStatus.UNSYNC_IN_PROGRESS;

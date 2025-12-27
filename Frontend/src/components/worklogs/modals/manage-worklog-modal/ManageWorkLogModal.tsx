@@ -8,9 +8,17 @@ import Dragger from "antd/es/upload/Dragger";
 import { CollapsibleSection, WorklogModal, TrackeraTable } from "../../..";
 import { useMemo, useState } from "react";
 import { showErrorToast, showSuccessToast } from "../../../../utils/toast-handler/showToast";
-import { WorkLogStatus, type ManageWorkLogModalProps, type WorklogError } from "../../../../shared/types";
+import { WorkLogStatus, type Worklog, type WorklogError } from "../../../../shared/types";
 import { formatDate, getFormikFieldError, getFormikFieldStatus } from "../../../../utils";
 import { workLogApis } from "../../../../state/api";
+
+interface ManageWorkLogModalProps {
+  setIsOpen: (isOpen: boolean) => void;
+  refreshWorkLogData: () => void;
+  selectedWorkLog?: Worklog;
+  setSelectedWorkLog?: (worklog: Worklog | undefined) => void;
+  jiraLinked: boolean;
+}
 
 const ManageWorkLogModal = (props: ManageWorkLogModalProps) => {
   const { jiraLinked, selectedWorkLog, setIsOpen, setSelectedWorkLog, refreshWorkLogData } = props;

@@ -11,7 +11,13 @@ import {
 } from "../../../shared/types";
 import { StatusBadge } from "../../";
 
-const WorklogInfo = ({ worklogInfo, jiraLinked }: { worklogInfo: Worklog; jiraLinked: boolean }) => {
+interface WorklogInfoProps {
+  worklogInfo: Worklog;
+  jiraLinked: boolean;
+}
+
+const WorklogInfo = (props: WorklogInfoProps) => {
+  const { worklogInfo, jiraLinked } = props;
   const evaluationMetaItem = worklogEvaluationMetadata[worklogInfo?.evaluation as WorkLogEvaluationType];
   const statusMetaItem = statusMetadata[worklogInfo?.status as WorkLogStatusType];
 

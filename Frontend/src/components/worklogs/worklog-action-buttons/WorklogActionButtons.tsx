@@ -1,9 +1,26 @@
-import { WorkLogStatus, type ActionButtonsProps } from "../../../shared/types";
+import {
+  WorkLogStatus,
+  type SyncPayload,
+  type Worklog,
+  type WorklogEntry,
+  type WorklogTask,
+} from "../../../shared/types";
 import trackeraTableClasses from "../../trackera-table/scss/trackera-table.module.css";
 import { WorklogSyncActions } from "../../";
 import { Button, Tooltip } from "antd";
 import { Eye, SquarePen, Trash } from "lucide-react";
 import { Link } from "react-router-dom";
+
+interface ActionButtonsProps {
+  record: Worklog | WorklogTask | WorklogEntry;
+  jiraLinked: boolean;
+  viewLink?: string;
+  syncParams: SyncPayload;
+  onSync: (params: SyncPayload) => void;
+  onEdit?: () => void;
+  onView?: () => void;
+  onDelete: () => void;
+}
 
 const WorklogActionButtons = (props: ActionButtonsProps) => {
   const { record, jiraLinked, viewLink, syncParams, onSync, onEdit, onView, onDelete } = props;

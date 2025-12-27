@@ -1,6 +1,18 @@
 import { Form, Input } from "antd";
 import classes from "./scss/input-field.module.css";
-import type { InputFieldProps } from "../../shared/types";
+
+interface InputFieldProps {
+  label?: string;
+  icon?: React.ReactNode;
+  type: string;
+  name: string;
+  placeholder?: string;
+  value?: string;
+  onChange?: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  onBlur?: (event: React.FocusEvent<HTMLInputElement>) => void;
+  error?: string;
+  disabled?: boolean;
+}
 
 const InputField = (props: InputFieldProps) => {
   const fieldProps = {
@@ -23,9 +35,18 @@ const InputField = (props: InputFieldProps) => {
     <div className={classes.input_group}>
       {props.label && <div className={classes.input_label}>{props.label}</div>}
 
-      <Form.Item style={{ marginBottom: 0, width: "100%" }} validateStatus={props.error ? "error" : ""} help={props.error ? props.error : ""}>
+      <Form.Item
+        style={{ marginBottom: 0, width: "100%" }}
+        validateStatus={props.error ? "error" : ""}
+        help={props.error ? props.error : ""}
+      >
         {props.type === "password" ? (
-          <Input.Password {...fieldProps} onCut={handlePreventPasswordCopyPaste} onCopy={handlePreventPasswordCopyPaste} onPaste={handlePreventPasswordCopyPaste} />
+          <Input.Password
+            {...fieldProps}
+            onCut={handlePreventPasswordCopyPaste}
+            onCopy={handlePreventPasswordCopyPaste}
+            onPaste={handlePreventPasswordCopyPaste}
+          />
         ) : (
           <Input {...fieldProps} />
         )}

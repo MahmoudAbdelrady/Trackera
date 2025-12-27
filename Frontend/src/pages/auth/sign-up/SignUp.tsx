@@ -8,9 +8,16 @@ import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { showErrorToast } from "../../../utils/toast-handler/showToast";
 import { getFormikErrors } from "../../../utils";
-import type { SignUpFormFields } from "../../../shared/types";
 import { authApis } from "../../../state/api";
 import { getFormikFieldProps } from "../../../utils";
+
+export interface SignUpFormFields {
+  firstname: string;
+  lastname: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+}
 
 const SignUp = () => {
   const [showAuthResult, setShowAuthResult] = useState<boolean>(false);

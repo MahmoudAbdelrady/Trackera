@@ -9,9 +9,13 @@ import { showErrorToast } from "../../../utils/toast-handler/showToast";
 import inputFieldClasses from "../../../components/input-field/scss/input-field.module.css";
 import classes from "./scss/login.module.css";
 import { useAuthStore } from "../../../state/store";
-import type { LoginFormFields } from "../../../shared/types";
 import { authApis } from "../../../state/api";
 import { getFormikFieldProps } from "../../../utils";
+
+export interface LoginFormFields {
+  email: string;
+  password: string;
+}
 
 const Login = () => {
   const [isLoading, setIsLoading] = useState<boolean>(false);

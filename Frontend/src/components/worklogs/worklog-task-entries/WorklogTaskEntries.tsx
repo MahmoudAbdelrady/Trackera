@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { WorkLogStatus, type WorklogEntry, type WorklogTaskEntriesProps } from "../../../shared/types";
+import { WorkLogStatus, type SyncPayload, type WorklogEntry, type WorklogTask } from "../../../shared/types";
 import TrackeraTable from "../../trackera-table/TrackeraTable";
 import WorklogModal from "../modals/worklog-modal/WorklogModal";
 import { WorkLogEntryColumns } from "../../";
@@ -9,6 +9,18 @@ import { showErrorToast } from "../../../utils/toast-handler/showToast";
 import { useNavigate } from "react-router-dom";
 import { Alert } from "antd";
 import worklogModalClasses from "../modals/worklog-modal/scss/worklog-modal.module.css";
+import type { UserInfo } from "../../../shared/types/auth";
+
+interface WorklogTaskEntriesProps {
+  loggedUserData: UserInfo;
+  worklogId: string;
+  selectedTask: WorklogTask;
+  worklogEntries: WorklogEntry[];
+  setWorklogEntries: (entries: WorklogEntry[]) => void;
+  refetchData: () => void;
+  triggerSync: (params: SyncPayload) => void;
+  onCloseHandler: () => void;
+}
 
 const WorklogTaskEntries = (props: WorklogTaskEntriesProps) => {
   const {

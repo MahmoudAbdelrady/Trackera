@@ -1,6 +1,4 @@
-import type { ModalProps, TableProps } from "antd";
 import type { StatusBadgeProps, TrackeraTableEntity } from "./global";
-import type { UserInfo } from "./auth";
 
 const WorkLogEvaluation = {
   EXCELLENT: "EXCELLENT",
@@ -106,63 +104,10 @@ interface WorklogTableActionButtonProps {
   options?: WorklogTableActionButtonOptions[];
 }
 
-interface WorklogTableProps<T = TrackeraTableEntity> {
-  properties: TableProps<T>;
-  actionButtons?: WorklogTableActionButtonProps[];
-}
-
-interface WorklogModalProps {
-  title: string;
-  properties: ModalProps;
-  children: React.ReactNode;
-}
-
-interface ManageWorkLogModalProps {
-  setIsOpen: (isOpen: boolean) => void;
-  refreshWorkLogData: () => void;
-  selectedWorkLog?: Worklog;
-  setSelectedWorkLog?: (worklog: Worklog | undefined) => void;
-  jiraLinked: boolean;
-}
-
-interface WorkLogSummaryCard {
-  label: string;
-  subLabel: string;
-  code: string;
-  value: string;
-}
-
 interface WorkLogSearchFilter {
   operator: string | undefined | null;
   value: any | undefined | null;
   secondValue?: any | undefined | null;
-}
-
-interface WorkLogsFilterProps {
-  setFilters: (filters: Record<string, any>) => void;
-  jiraLinked: boolean;
-}
-
-interface ActionButtonsProps {
-  record: Worklog | WorklogTask | WorklogEntry;
-  jiraLinked: boolean;
-  viewLink?: string;
-  syncParams: SyncPayload;
-  onSync: (params: SyncPayload) => void;
-  onEdit?: () => void;
-  onView?: () => void;
-  onDelete: () => void;
-}
-
-interface WorklogTaskEntriesProps {
-  loggedUserData: UserInfo;
-  worklogId: string;
-  selectedTask: WorklogTask;
-  worklogEntries: WorklogEntry[];
-  setWorklogEntries: (entries: WorklogEntry[]) => void;
-  refetchData: () => void;
-  triggerSync: (params: SyncPayload) => void;
-  onCloseHandler: () => void;
 }
 
 type JiraSyncEventProps = {
@@ -185,14 +130,7 @@ export type {
   WorklogError,
   StatusBadgeProps,
   WorklogTableActionButtonProps,
-  WorklogTableProps,
-  WorklogModalProps,
-  ManageWorkLogModalProps,
-  WorkLogSummaryCard,
   WorkLogSearchFilter,
-  WorkLogsFilterProps,
-  ActionButtonsProps,
-  WorklogTaskEntriesProps,
   JiraSyncEventType,
   JiraSyncEventProps,
 };

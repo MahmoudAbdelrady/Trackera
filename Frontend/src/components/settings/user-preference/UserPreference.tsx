@@ -1,6 +1,12 @@
 import classes from "./scss/user-preference.module.css";
 
-const UserPreference = ({ label, children }: { label: string; children: React.ReactNode }) => {
+interface UserPreferenceProps {
+  label: string;
+  children: React.ReactNode;
+}
+
+const UserPreference = (props: UserPreferenceProps) => {
+  const { label, children } = props;
   return (
     <div className={classes.preference}>
       <span className={classes.preference_label}>{label}:</span>

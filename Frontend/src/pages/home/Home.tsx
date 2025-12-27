@@ -11,19 +11,14 @@ import {
 import classes from "./scss/home.module.css";
 import { Alert } from "antd";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import {
-  type WorkLogSummaryCard,
-  type PaginatedResponse,
-  type Worklog,
-  WorkLogStatus,
-  JiraSyncEvent,
-} from "../../shared/types";
+import { type PaginatedResponse, type Worklog, WorkLogStatus, JiraSyncEvent } from "../../shared/types";
 import { createPaginationConfig } from "../../utils";
 import worklogModalClasses from "../../components/worklogs/modals/worklog-modal/scss/worklog-modal.module.css";
 import { showErrorToast, showSuccessToast } from "../../utils/toast-handler/showToast";
 import { userQueries } from "../../state/queries";
 import { useJiraSyncSSE } from "../../shared/hooks";
 import { workLogApis } from "../../state/api";
+import type { WorkLogSummaryCard } from "../../components/worklogs/worklog-status-card/WorklogStatusCard";
 
 const Home = () => {
   const { data: loggedUserData } = userQueries.useMeQuery();

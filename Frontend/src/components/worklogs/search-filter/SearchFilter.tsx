@@ -4,14 +4,11 @@ import { Button, DatePicker, Form, Input, InputNumber, Radio, Select, Tooltip } 
 import classes from "./scss/search-filter.module.css";
 import CollapsibleSection from "../../collapsible-section/CollapsibleSection";
 import {
-  FILTER_OPERATORS_METADATA,
-  OPERATORS,
   statusMetadata,
   WorkLogEvaluation,
   worklogEvaluationMetadata,
   WorkLogStatus,
   type WorkLogSearchFilter,
-  type WorkLogsFilterProps,
 } from "../../../shared/types";
 import { useFormik } from "formik";
 import { searchFilterSchema } from "../../../shared/yup-schemas";
@@ -65,6 +62,31 @@ const STATUS_FILTER_OPTIONS = [
   { label: statusMetadata[WorkLogStatus.PARTIALLY].label, value: WorkLogStatus.PARTIALLY },
   { label: statusMetadata[WorkLogStatus.NOT_SYNCED].label, value: WorkLogStatus.NOT_SYNCED },
 ];
+
+const OPERATORS = {
+  BETWEEN: "BETWEEN",
+  EQ: "=",
+  NE: "!=",
+  GT: ">",
+  GTE: ">=",
+  LT: "<",
+  LTE: "<=",
+} as const;
+
+const FILTER_OPERATORS_METADATA = [
+  { label: "=", value: OPERATORS.EQ },
+  { label: "!=", value: OPERATORS.NE },
+  { label: ">", value: OPERATORS.GT },
+  { label: ">=", value: OPERATORS.GTE },
+  { label: "<", value: OPERATORS.LT },
+  { label: "<=", value: OPERATORS.LTE },
+  { label: "Between", value: OPERATORS.BETWEEN },
+];
+
+interface WorkLogsFilterProps {
+  setFilters: (filters: Record<string, any>) => void;
+  jiraLinked: boolean;
+}
 
 const SearchFilter = (props: WorkLogsFilterProps) => {
   const { jiraLinked, setFilters } = props;

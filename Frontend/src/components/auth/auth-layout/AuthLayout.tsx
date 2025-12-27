@@ -1,5 +1,8 @@
-import type { AuthLayoutProps } from "../../../shared/types";
 import classes from "./scss/auth-layout.module.css";
+
+interface AuthLayoutProps {
+  children: React.ReactNode;
+}
 
 const AuthLayout = (props: AuthLayoutProps) => {
   return (

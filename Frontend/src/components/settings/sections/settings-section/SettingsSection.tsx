@@ -1,5 +1,10 @@
-import type { SettingsSectionProps } from "../../../../shared/types";
 import classes from "./scss/settings-section.module.css";
+
+interface SettingsSectionProps {
+  title: string;
+  icon: React.ReactNode;
+  children: React.ReactNode;
+}
 
 const SettingsSection = (props: SettingsSectionProps) => {
   return (

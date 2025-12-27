@@ -3,6 +3,7 @@ import {
   statusMetadata,
   worklogEvaluationMetadata,
   WorkLogStatus,
+  type SyncPayload,
   type Worklog,
   type WorkLogEvaluationType,
   type WorkLogStatusType,
@@ -12,7 +13,7 @@ import { CircleAlert } from "lucide-react";
 
 interface WorklogColumnsParams {
   jiraLinked: boolean;
-  onSync: (params: any) => void;
+  onSync: (params: SyncPayload) => void;
   onEdit: (record: Worklog) => void;
   onDelete: (record: Worklog) => void;
 }

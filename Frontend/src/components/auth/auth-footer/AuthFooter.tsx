@@ -1,7 +1,14 @@
 import { Link } from "react-router-dom";
-import type { AuthFooterProps } from "../../../shared/types";
 import OAuthBtns from "../oauth-btns/OAuthBtns";
 import classes from "./scss/auth-footer.module.css";
+
+interface AuthFooterProps {
+  hasOAuthBtns?: boolean;
+  isOAuthBtnsDisabled?: boolean;
+  footerText: string;
+  footerLink: string;
+  footerLinkText: string;
+}
 
 const AuthFooter = (props: AuthFooterProps) => {
   return (

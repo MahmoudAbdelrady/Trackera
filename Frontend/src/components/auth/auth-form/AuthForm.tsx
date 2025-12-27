@@ -1,6 +1,16 @@
 import { Button } from "antd";
-import type { AuthFormProps } from "../../../shared/types";
 import classes from "./scss/auth-form.module.css";
+
+interface AuthFormProps {
+  title: string;
+  description: string;
+  children: React.ReactNode;
+  submitButtonText: string;
+  onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
+  isSubmitBtnLoading?: boolean;
+  isSubmitBtnDisabled?: boolean;
+  footer?: React.ReactNode;
+}
 
 const AuthForm = (props: AuthFormProps) => {
   return (
@@ -23,9 +33,7 @@ const AuthForm = (props: AuthFormProps) => {
           </Button>
         </div>
       </form>
-      {props.footer && (
-        <div className={classes.auth_footer}>{props.footer}</div>
-      )}
+      {props.footer && <div className={classes.auth_footer}>{props.footer}</div>}
     </div>
   );
 };

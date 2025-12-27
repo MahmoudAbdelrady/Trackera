@@ -6,7 +6,12 @@ import { useAuthStore } from "../../../state/store";
 import classes from "./scss/oauth-btns.module.css";
 import { useOAuthFlow } from "../../../shared/hooks";
 
-const OAuthBtns = ({ disabled }: { disabled?: boolean }) => {
+interface OAuthBtnsProps {
+  disabled?: boolean;
+}
+
+const OAuthBtns = (props: OAuthBtnsProps) => {
+  const { disabled } = props;
   const authStore = useAuthStore();
   const navigate = useNavigate();
   const { linkProviderAccount } = useOAuthFlow({
@@ -35,7 +40,13 @@ const OAuthBtns = ({ disabled }: { disabled?: boolean }) => {
   return (
     <div className={classes.auth_buttons}>
       {oAuthButtons.map((btn, index) => (
-        <Button key={index} className={classes.auth_btn} onClick={btn.onClick} icon={<div className={classes.icon_container}>{btn.icon}</div>} disabled={disabled}>
+        <Button
+          key={index}
+          className={classes.auth_btn}
+          onClick={btn.onClick}
+          icon={<div className={classes.icon_container}>{btn.icon}</div>}
+          disabled={disabled}
+        >
           {btn.label}
         </Button>
       ))}

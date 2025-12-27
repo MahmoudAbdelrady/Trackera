@@ -1,7 +1,7 @@
 import { Button, Tabs, type TableProps, type TabsProps } from "antd";
 import { AppLayout, TrackeraTable, StatusBadge, AccessDenied } from "../../components";
 import { ExternalLink, RefreshCw } from "lucide-react";
-import { jiraTaskEvaluationMetadata, type JiraTask, type JiraTaskEvaluationType } from "../../shared/types";
+import { type JiraTask, type StatusBadgeProps } from "../../shared/types";
 import { Link } from "react-router-dom";
 import trackeraTableClasses from "../../components/trackera-table/scss/trackera-table.module.css";
 import classes from "./scss/jira-tasks.module.css";
@@ -9,6 +9,13 @@ import { showErrorToast } from "../../utils/toast-handler/showToast";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { userQueries } from "../../state/queries";
 import { jiraApis } from "../../state/api";
+
+type JiraTaskEvaluationType = "ON_TIME" | "OVERESTIMATED";
+
+const jiraTaskEvaluationMetadata: Record<JiraTaskEvaluationType, StatusBadgeProps> = {
+  ON_TIME: { label: "On Time", type: "success" },
+  OVERESTIMATED: { label: "Overestimated", type: "warning" },
+};
 
 const JiraTasks = () => {
   const { data: loggedUserData } = userQueries.useMeQuery();

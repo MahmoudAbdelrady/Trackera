@@ -1,11 +1,18 @@
 import { Button } from "antd";
-import type { LinkedAccountProps } from "../../../shared/types";
 import classes from "./scss/linked-account.module.css";
 
 const providerIconMap: Record<string, React.ReactNode> = {
   jira: <img src="/Assets/jira_icon.svg" alt="Jira" />,
   google: <img src="/Assets/google_logo.webp" alt="Google" />,
 };
+
+interface LinkedAccountProps {
+  platform: Record<string, string>;
+  accountIdentifier?: string;
+  isLinked: boolean;
+  onLink: () => void;
+  onUnlink: () => void;
+}
 
 const LinkedAccount = (props: LinkedAccountProps) => {
   return (

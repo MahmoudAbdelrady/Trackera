@@ -1,6 +1,7 @@
 import { WorkLogStatus, type SyncPayload, type WorklogTableActionButtonProps } from "../shared/types";
 import type { UserInfo } from "../shared/types/auth";
 import { CalendarCog, CalendarOff, CalendarSync, CalendarX2 } from "lucide-react";
+
 type SyncableItem = {
   status: string;
 };

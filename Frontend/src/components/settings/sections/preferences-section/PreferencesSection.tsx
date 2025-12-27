@@ -3,7 +3,7 @@ import { UserPreference } from "../../../";
 import classes from "./scss/preferences-section.module.css";
 import { showErrorToast, showSuccessToast } from "../../../../utils/toast-handler/showToast";
 import { useEffect, useState } from "react";
-import type { JiraSite, PreferencesProps } from "../../../../shared/types";
+import type { JiraSite } from "../../../../shared/types";
 import { isEqual } from "lodash";
 import { jiraApis, userApis } from "../../../../state/api";
 
@@ -12,6 +12,12 @@ const PREFERENCE_KEYS = {
   JIRA_PRIMARY_PROJECT: "jiraPrimaryProject",
   WORKLOGS_MONTHLY_TARGET_HOURS: "worklogsMonthlyTargetHours",
 };
+
+interface PreferencesProps {
+  jiraLinked: boolean;
+  fetchPreferences: boolean;
+  setFetchPreferences: (fetch: boolean) => void;
+}
 
 const PreferencesSection = (props: PreferencesProps) => {
   const { jiraLinked, fetchPreferences, setFetchPreferences } = props;
