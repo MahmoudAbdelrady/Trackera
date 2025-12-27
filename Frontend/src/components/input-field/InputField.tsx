@@ -15,16 +15,18 @@ interface InputFieldProps {
 }
 
 const InputField = (props: InputFieldProps) => {
+  const { label, icon, type, name, placeholder, value, onChange, onBlur, error, disabled } = props;
+
   const fieldProps = {
-    prefix: props.icon,
-    placeholder: props.placeholder,
+    prefix: icon,
+    placeholder,
     className: classes.input_field,
-    name: props.name,
-    value: props.value,
-    onChange: props.onChange,
-    onBlur: props.onBlur,
-    disabled: props.disabled,
-    type: props.type,
+    name,
+    value,
+    onChange,
+    onBlur,
+    disabled,
+    type,
   };
 
   const handlePreventPasswordCopyPaste = (event: React.ClipboardEvent<HTMLInputElement>) => {
@@ -33,14 +35,14 @@ const InputField = (props: InputFieldProps) => {
 
   return (
     <div className={classes.input_group}>
-      {props.label && <div className={classes.input_label}>{props.label}</div>}
+      {label && <div className={classes.input_label}>{label}</div>}
 
       <Form.Item
         style={{ marginBottom: 0, width: "100%" }}
-        validateStatus={props.error ? "error" : ""}
-        help={props.error ? props.error : ""}
+        validateStatus={error ? "error" : ""}
+        help={error ? error : ""}
       >
-        {props.type === "password" ? (
+        {type === "password" ? (
           <Input.Password
             {...fieldProps}
             onCut={handlePreventPasswordCopyPaste}

@@ -1,7 +1,7 @@
 import { Button, Tabs, type TableProps, type TabsProps } from "antd";
-import { AppLayout, TrackeraTable, StatusBadge, AccessDenied } from "../../components";
+import { AppLayout, TrackeraTable, StatusBadge, AccessDenied, type StatusBadgeProps } from "../../components";
 import { ExternalLink, RefreshCw } from "lucide-react";
-import { type JiraTask, type StatusBadgeProps } from "../../shared/types";
+import { type JiraTask } from "../../shared/types";
 import { Link } from "react-router-dom";
 import trackeraTableClasses from "../../components/trackera-table/scss/trackera-table.module.css";
 import classes from "./scss/jira-tasks.module.css";
@@ -62,7 +62,7 @@ const JiraTasks = () => {
       dataIndex: "status",
       key: "status",
       render: (_, { status }) => {
-        return <StatusBadge badgeProps={{ label: status.name, type: getStatusType(status.category) }} />;
+        return <StatusBadge label={status.name} type={getStatusType(status.category)} />;
       },
     },
     {
@@ -95,7 +95,7 @@ const JiraTasks = () => {
       key: "evaluation",
       render: (_, { timeTracking }) => {
         return timeTracking.evaluation ? (
-          <StatusBadge badgeProps={jiraTaskEvaluationMetadata[timeTracking.evaluation as JiraTaskEvaluationType]} />
+          <StatusBadge {...jiraTaskEvaluationMetadata[timeTracking.evaluation as JiraTaskEvaluationType]} />
         ) : (
           "-"
         );
@@ -137,6 +137,7 @@ const JiraTasks = () => {
               pagination: { style: { marginRight: "16px" } },
               loading: isLoading,
             }}
+            rowKey={(record) => record.taskName}
           />
         ),
       },
@@ -151,6 +152,7 @@ const JiraTasks = () => {
               pagination: { style: { marginRight: "16px" } },
               loading: isLoading,
             }}
+            rowKey={(record) => record.taskName}
           />
         ),
       },

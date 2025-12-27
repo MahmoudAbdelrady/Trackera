@@ -1,6 +1,4 @@
-import type { TrackeraTableEntity } from "./global";
-
-interface JiraTask extends TrackeraTableEntity {
+interface JiraTask {
   taskName: string;
   taskUrl: string;
   project: Record<string, string>;

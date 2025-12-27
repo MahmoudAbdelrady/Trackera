@@ -4,7 +4,7 @@ import { Button, Tooltip } from "antd";
 import trackeraTableClasses from "../../trackera-table/scss/trackera-table.module.css";
 
 interface SyncActionProps {
-  record: { id: string; status: WorkLogStatusType };
+  record: { status: WorkLogStatusType };
   jiraLinked: boolean;
   onSync: (params: SyncPayload) => void;
   syncParams: SyncPayload;
@@ -12,6 +12,7 @@ interface SyncActionProps {
 
 const WorklogSyncActions = (props: SyncActionProps) => {
   const { record, jiraLinked, onSync, syncParams } = props;
+
   const isSynced = record.status === WorkLogStatus.SYNCED;
   const isSyncing = record.status === WorkLogStatus.SYNC_IN_PROGRESS;
   const isUnsyncing = record.status === WorkLogStatus.UNSYNC_IN_PROGRESS;

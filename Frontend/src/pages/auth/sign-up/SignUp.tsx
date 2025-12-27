@@ -10,14 +10,7 @@ import { showErrorToast } from "../../../utils/toast-handler/showToast";
 import { getFormikErrors } from "../../../utils";
 import { authApis } from "../../../state/api";
 import { getFormikFieldProps } from "../../../utils";
-
-export interface SignUpFormFields {
-  firstname: string;
-  lastname: string;
-  email: string;
-  password: string;
-  confirmPassword: string;
-}
+import type { SignUpFormFields } from "../../../shared/types";
 
 const SignUp = () => {
   const [showAuthResult, setShowAuthResult] = useState<boolean>(false);

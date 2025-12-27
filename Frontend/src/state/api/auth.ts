@@ -1,7 +1,5 @@
-import type { LoginFormFields } from "../../pages/auth/login/Login";
-import type { SignUpFormFields } from "../../pages/auth/sign-up/SignUp";
 import requestInstance from "../../shared/axios/request-instance";
-import type { ChangePasswordFormFields } from "../../shared/types";
+import type { ChangePasswordFormFields, LoginFormFields, SignUpFormFields } from "../../shared/types";
 
 const login = async (authData: LoginFormFields) => {
   await requestInstance.post("/auth/login", authData);

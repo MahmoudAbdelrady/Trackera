@@ -1,25 +1,14 @@
-interface ChangePasswordFormFields {
-  currentPassword?: string;
-  newPassword: string;
-  confirmNewPassword: string;
+interface LoginFormFields {
+  email: string;
+  password: string;
 }
 
-interface AuthResultFields {
-  title?: string;
-  description?: string;
-  isError?: boolean;
-}
-
-interface OAuthBtnProps {
-  label: string;
-  icon: React.ReactNode;
-  onClick: () => void;
-}
-
-interface OAuthAccount {
-  provider: Record<string, string>;
-  isLinked: boolean;
-  email?: string;
+interface SignUpFormFields {
+  firstname: string;
+  lastname: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
 }
 
 interface UserInfo {
@@ -33,4 +22,16 @@ interface UserInfo {
   jiraLinked: boolean;
 }
 
-export type { ChangePasswordFormFields, AuthResultFields, OAuthBtnProps, OAuthAccount, UserInfo };
+interface ChangePasswordFormFields {
+  currentPassword?: string;
+  newPassword: string;
+  confirmNewPassword: string;
+}
+
+interface OAuthAccount {
+  provider: Record<string, string>;
+  isLinked: boolean;
+  email?: string;
+}
+
+export type { LoginFormFields, SignUpFormFields, ChangePasswordFormFields, OAuthAccount, UserInfo };

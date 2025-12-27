@@ -11,11 +11,7 @@ import classes from "./scss/login.module.css";
 import { useAuthStore } from "../../../state/store";
 import { authApis } from "../../../state/api";
 import { getFormikFieldProps } from "../../../utils";
-
-export interface LoginFormFields {
-  email: string;
-  password: string;
-}
+import type { LoginFormFields } from "../../../shared/types";
 
 const Login = () => {
   const [isLoading, setIsLoading] = useState<boolean>(false);

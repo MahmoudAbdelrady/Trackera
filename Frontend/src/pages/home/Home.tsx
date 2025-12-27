@@ -184,6 +184,7 @@ const Home = () => {
                 },
                 pagination: createPaginationConfig(workLogsResponse, fetchWorkLogs, "worklogs"),
               }}
+              rowKey={(record) => record.id}
               actionButtons={[
                 {
                   label: "Add Worklog",

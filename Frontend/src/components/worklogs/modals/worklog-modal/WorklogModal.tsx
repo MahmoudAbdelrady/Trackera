@@ -8,10 +8,12 @@ interface WorklogModalProps {
 }
 
 const WorklogModal = (props: WorklogModalProps) => {
+  const { title, properties, children } = props;
+
   return (
-    <Modal {...props.properties} className={classes.worklog_modal}>
-      <h2 className={classes.header}>{props.title}</h2>
-      {props.children}
+    <Modal {...properties} className={classes.worklog_modal}>
+      <h2 className={classes.header}>{title}</h2>
+      {children}
     </Modal>
   );
 };

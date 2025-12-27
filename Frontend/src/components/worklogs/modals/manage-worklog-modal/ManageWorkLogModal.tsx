@@ -273,6 +273,7 @@ const ManageWorkLogModal = (props: ManageWorkLogModalProps) => {
                 dataSource: worklogFileErrors,
                 pagination: { pageSize: 5, showSizeChanger: false, style: { marginRight: "16px" } },
               }}
+              rowKey={(record) => record.row}
             />
           </CollapsibleSection>
         </div>

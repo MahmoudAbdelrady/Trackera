@@ -1,14 +1,9 @@
 import { Tooltip, type TableProps } from "antd";
-import {
-  statusMetadata,
-  WorkLogStatus,
-  type SyncPayload,
-  type WorklogEntry,
-  type WorkLogStatusType,
-} from "../../../shared/types";
+import { WorkLogStatus, type SyncPayload, type WorklogEntry, type WorkLogStatusType } from "../../../shared/types";
 import StatusBadge from "../../status-badge/StatusBadge";
 import { CircleAlert } from "lucide-react";
 import WorklogActionButtons from "../worklog-action-buttons/WorklogActionButtons";
+import { statusMetadata } from "../worklog.metadata";
 
 interface WorklogEntryColumnsParams {
   worklogId: string;
@@ -20,6 +15,7 @@ interface WorklogEntryColumnsParams {
 
 const WorkLogEntryColumns = (props: WorklogEntryColumnsParams): TableProps<WorklogEntry>["columns"] => {
   const { worklogId, worklogEntries, jiraLinked, onSync, onDelete } = props;
+
   return [
     {
       title: "From Time",
@@ -50,7 +46,7 @@ const WorkLogEntryColumns = (props: WorklogEntryColumnsParams): TableProps<Workl
           <Tooltip title={syncError && `Sync Error: ${syncError}`}>
             <span style={{ display: "inline-block" }}>
               <StatusBadge
-                badgeProps={{
+                {...{
                   ...statusMetadata[status as WorkLogStatusType],
                   icon:
                     syncError &&

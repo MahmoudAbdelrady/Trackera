@@ -11,20 +11,22 @@ interface AuthFooterProps {
 }
 
 const AuthFooter = (props: AuthFooterProps) => {
+  const { hasOAuthBtns, isOAuthBtnsDisabled, footerText, footerLink, footerLinkText } = props;
+
   return (
     <div className={classes.auth_footer_container}>
-      {props.hasOAuthBtns && (
+      {hasOAuthBtns && (
         <>
           <div className={classes.separator}>
             <span className={classes.separator_text}>or</span>
           </div>
-          <OAuthBtns disabled={props.isOAuthBtnsDisabled} />
+          <OAuthBtns disabled={isOAuthBtnsDisabled} />
         </>
       )}
       <div className={classes.auth_redirection}>
         <p>
-          {props.footerText}
-          <Link to={props.footerLink}>{props.footerLinkText}</Link>
+          {footerText}
+          <Link to={footerLink}>{footerLinkText}</Link>
         </p>
       </div>
     </div>

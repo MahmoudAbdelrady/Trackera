@@ -4,9 +4,9 @@ import { Button, DatePicker, Form, Input, InputNumber, Radio, Select, Tooltip } 
 import classes from "./scss/search-filter.module.css";
 import CollapsibleSection from "../../collapsible-section/CollapsibleSection";
 import {
-  statusMetadata,
+  filterOperatorsMetadata,
+  OPERATORS,
   WorkLogEvaluation,
-  worklogEvaluationMetadata,
   WorkLogStatus,
   type WorkLogSearchFilter,
 } from "../../../shared/types";
@@ -15,6 +15,7 @@ import { searchFilterSchema } from "../../../shared/yup-schemas";
 import { formatDate, getFormikFieldError, getFormikFieldStatus, isNullOrEmpty } from "../../../utils";
 import { useCallback, useState } from "react";
 import type dayjs from "dayjs";
+import { statusMetadata, worklogEvaluationMetadata } from "../worklog.metadata";
 
 const FIELD_NAMES = {
   LOG_NAME: "logName",
@@ -50,37 +51,17 @@ const criteriaTypeItems = [
   { label: "Evaluation", value: FIELD_NAMES.EVALUATION },
 ];
 
-const EVALUATION_FILTER_OPTIONS = [
+const evaluationFilterOptions = [
   { label: worklogEvaluationMetadata[WorkLogEvaluation.EXCELLENT].label, value: WorkLogEvaluation.EXCELLENT },
   { label: worklogEvaluationMetadata[WorkLogEvaluation.GOOD].label, value: WorkLogEvaluation.GOOD },
   { label: worklogEvaluationMetadata[WorkLogEvaluation.MODERATE].label, value: WorkLogEvaluation.MODERATE },
   { label: worklogEvaluationMetadata[WorkLogEvaluation.POOR].label, value: WorkLogEvaluation.POOR },
 ];
 
-const STATUS_FILTER_OPTIONS = [
+const statusFilterOptions = [
   { label: statusMetadata[WorkLogStatus.SYNCED].label, value: WorkLogStatus.SYNCED },
   { label: statusMetadata[WorkLogStatus.PARTIALLY].label, value: WorkLogStatus.PARTIALLY },
   { label: statusMetadata[WorkLogStatus.NOT_SYNCED].label, value: WorkLogStatus.NOT_SYNCED },
-];
-
-const OPERATORS = {
-  BETWEEN: "BETWEEN",
-  EQ: "=",
-  NE: "!=",
-  GT: ">",
-  GTE: ">=",
-  LT: "<",
-  LTE: "<=",
-} as const;
-
-const FILTER_OPERATORS_METADATA = [
-  { label: "=", value: OPERATORS.EQ },
-  { label: "!=", value: OPERATORS.NE },
-  { label: ">", value: OPERATORS.GT },
-  { label: ">=", value: OPERATORS.GTE },
-  { label: "<", value: OPERATORS.LT },
-  { label: "<=", value: OPERATORS.LTE },
-  { label: "Between", value: OPERATORS.BETWEEN },
 ];
 
 interface WorkLogsFilterProps {
@@ -202,7 +183,7 @@ const SearchFilter = (props: WorkLogsFilterProps) => {
               <div className={classes.filter_input_box}>
                 <Select
                   className={classes.filter_operator}
-                  options={STATUS_FILTER_OPTIONS}
+                  options={statusFilterOptions}
                   placeholder="Status"
                   allowClear
                   value={searchFormik.values[FIELD_NAMES.STATUS]}
@@ -241,7 +222,7 @@ const SearchFilter = (props: WorkLogsFilterProps) => {
                   >
                     <Select
                       className={classes.filter_operator}
-                      options={FILTER_OPERATORS_METADATA}
+                      options={filterOperatorsMetadata}
                       placeholder="Operator"
                       allowClear
                       value={searchFormik.values[FIELD_NAMES.TOTAL_HOURS].operator}
@@ -295,7 +276,7 @@ const SearchFilter = (props: WorkLogsFilterProps) => {
                 <div className={classes.filter_input_box}>
                   <Select
                     className={classes.filter_operator}
-                    options={EVALUATION_FILTER_OPTIONS}
+                    options={evaluationFilterOptions}
                     placeholder="Evaluation"
                     allowClear
                     value={searchFormik.values[FIELD_NAMES.EVALUATION]}

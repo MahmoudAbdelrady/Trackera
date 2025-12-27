@@ -13,27 +13,30 @@ interface AuthFormProps {
 }
 
 const AuthForm = (props: AuthFormProps) => {
+  const { title, description, children, submitButtonText, onSubmit, isSubmitBtnLoading, isSubmitBtnDisabled, footer } =
+    props;
+
   return (
     <div className={classes.auth_form_container}>
       <div className={classes.af_header}>
-        <h3>{props.title}</h3>
-        <p>{props.description}</p>
+        <h3>{title}</h3>
+        <p>{description}</p>
       </div>
-      <form className={classes.af_content} onSubmit={props.onSubmit}>
-        <div className={classes.input_groups}>{props.children}</div>
+      <form className={classes.af_content} onSubmit={onSubmit}>
+        <div className={classes.input_groups}>{children}</div>
         <div className={classes.submit_button_container}>
           <Button
             htmlType="submit"
             type="primary"
-            disabled={props.isSubmitBtnDisabled || props.isSubmitBtnLoading}
-            loading={props.isSubmitBtnLoading}
+            disabled={isSubmitBtnDisabled || isSubmitBtnLoading}
+            loading={isSubmitBtnLoading}
             className={classes.submit_button}
           >
-            {props.submitButtonText}
+            {submitButtonText}
           </Button>
         </div>
       </form>
-      {props.footer && <div className={classes.auth_footer}>{props.footer}</div>}
+      {footer && <div className={classes.auth_footer}>{footer}</div>}
     </div>
   );
 };

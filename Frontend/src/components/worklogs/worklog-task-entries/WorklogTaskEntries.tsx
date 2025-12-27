@@ -173,6 +173,7 @@ const WorklogTaskEntries = (props: WorklogTaskEntriesProps) => {
               }),
             },
           }}
+          rowKey={(record) => record.id}
           actionButtons={buildSyncButtonProps({
             loggedUserData: loggedUserData,
             selectedItems: selectedWorklogEntries,

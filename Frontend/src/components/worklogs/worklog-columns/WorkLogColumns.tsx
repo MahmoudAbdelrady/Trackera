@@ -1,14 +1,12 @@
 import type { TableProps } from "antd";
 import {
-  statusMetadata,
-  worklogEvaluationMetadata,
   WorkLogStatus,
   type SyncPayload,
   type Worklog,
   type WorkLogEvaluationType,
   type WorkLogStatusType,
 } from "../../../shared/types";
-import { StatusBadge, WorklogActionButtons } from "../..";
+import { StatusBadge, statusMetadata, WorklogActionButtons, worklogEvaluationMetadata } from "../..";
 import { CircleAlert } from "lucide-react";
 
 interface WorklogColumnsParams {
@@ -20,6 +18,7 @@ interface WorklogColumnsParams {
 
 const WorkLogColumns = (props: WorklogColumnsParams): TableProps<Worklog>["columns"] => {
   const { jiraLinked, onSync, onEdit, onDelete } = props;
+
   return [
     {
       title: "Log Name",
@@ -41,7 +40,7 @@ const WorkLogColumns = (props: WorklogColumnsParams): TableProps<Worklog>["colum
       dataIndex: "evaluation",
       key: "evaluation",
       render: (_, { evaluation }) => (
-        <StatusBadge badgeProps={worklogEvaluationMetadata[evaluation as WorkLogEvaluationType]} />
+        <StatusBadge {...worklogEvaluationMetadata[evaluation as WorkLogEvaluationType]} />
       ),
     },
     {
@@ -51,7 +50,7 @@ const WorkLogColumns = (props: WorklogColumnsParams): TableProps<Worklog>["colum
       render: (_, { status, hasError }) =>
         jiraLinked ? (
           <StatusBadge
-            badgeProps={{
+            {...{
               ...statusMetadata[status as WorkLogStatusType],
               icon:
                 hasError && status !== WorkLogStatus.SYNC_IN_PROGRESS && status !== WorkLogStatus.UNSYNC_IN_PROGRESS ? (

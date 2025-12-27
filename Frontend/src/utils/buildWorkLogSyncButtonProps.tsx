@@ -1,4 +1,5 @@
-import { WorkLogStatus, type SyncPayload, type WorklogTableActionButtonProps } from "../shared/types";
+import type { TableActionButtonProps } from "../components";
+import { WorkLogStatus, type SyncPayload } from "../shared/types";
 import type { UserInfo } from "../shared/types/auth";
 import { CalendarCog, CalendarOff, CalendarSync, CalendarX2 } from "lucide-react";
 
@@ -20,7 +21,7 @@ function buildSyncButtonProps<T extends SyncableItem>({
   extractIdentifier,
   triggerSync,
   isEntry = false,
-}: BuildSyncButtonPropsOptions<T>): WorklogTableActionButtonProps[] {
+}: BuildSyncButtonPropsOptions<T>): TableActionButtonProps[] {
   const hasSynced = selectedItems.some((e) => e.status === WorkLogStatus.SYNCED);
   const hasNotSynced = selectedItems.some((e) => e.status === WorkLogStatus.NOT_SYNCED);
   const hasInProgress = selectedItems.some(
@@ -35,7 +36,7 @@ function buildSyncButtonProps<T extends SyncableItem>({
   const createPayload = (items: T[], sync: boolean): SyncPayload =>
     isEntry ? { entryIds: toIds(items), sync } : { taskNames: toIds(items), sync };
 
-  let actions: WorklogTableActionButtonProps[] = [];
+  let actions: TableActionButtonProps[] = [];
 
   if (!loggedUserData?.jiraLinked) {
     return [{ label: "Sync to Jira (Jira not linked)", icon: <CalendarOff />, disabled: true }];

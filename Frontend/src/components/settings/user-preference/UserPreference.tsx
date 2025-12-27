@@ -7,6 +7,7 @@ interface UserPreferenceProps {
 
 const UserPreference = (props: UserPreferenceProps) => {
   const { label, children } = props;
+
   return (
     <div className={classes.preference}>
       <span className={classes.preference_label}>{label}:</span>

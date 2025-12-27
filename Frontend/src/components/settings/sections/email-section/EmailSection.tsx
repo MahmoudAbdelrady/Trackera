@@ -83,7 +83,7 @@ const EmailSection = () => {
           ) : (
             <>
               <span>{userData?.primaryEmail}</span>
-              <StatusBadge badgeProps={{ label: "Primary", type: "main" }} />
+              <StatusBadge label="Primary" type="main" />
             </>
           )}
         </div>
@@ -125,7 +125,7 @@ const EmailSection = () => {
         <div className={classes.email_item}>
           <div className={classes.info}>
             <span>{userData?.pendingEmail}</span>
-            <StatusBadge badgeProps={{ label: "Pending", type: "warning" }} />
+            <StatusBadge label="Pending" type="warning" />
           </div>
           <div className={classes.actions}>
             <Button

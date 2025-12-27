@@ -1,17 +1,17 @@
 import { Button } from "antd";
-import type { OAuthBtnProps } from "../../../shared/types";
 import { showErrorToast } from "../../../utils/toast-handler/showToast";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "../../../state/store";
 import classes from "./scss/oauth-btns.module.css";
 import { useOAuthFlow } from "../../../shared/hooks";
 
-interface OAuthBtnsProps {
-  disabled?: boolean;
+interface OAuthBtnProps {
+  label: string;
+  icon: React.ReactNode;
+  onClick: () => void;
 }
 
-const OAuthBtns = (props: OAuthBtnsProps) => {
-  const { disabled } = props;
+const OAuthBtns = ({ disabled }: { disabled?: boolean }) => {
   const authStore = useAuthStore();
   const navigate = useNavigate();
   const { linkProviderAccount } = useOAuthFlow({

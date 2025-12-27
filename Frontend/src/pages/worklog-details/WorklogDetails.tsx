@@ -269,6 +269,7 @@ const WorklogDetails = () => {
                     },
                     loading: isFetchingTasks,
                   }}
+                  rowKey={(record) => record.taskName}
                   actionButtons={buildSyncButtonProps({
                     loggedUserData: loggedUserData,
                     selectedItems: selectedWorklogTasks,

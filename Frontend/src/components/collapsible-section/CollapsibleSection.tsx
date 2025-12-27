@@ -7,6 +7,8 @@ interface CollapsibleSectionProps {
 }
 
 const CollapsibleSection = (props: CollapsibleSectionProps) => {
+  const { title, icon, children } = props;
+
   return (
     <Collapse
       expandIconPosition="end"
@@ -21,10 +23,10 @@ const CollapsibleSection = (props: CollapsibleSectionProps) => {
                 gap: "8px",
               }}
             >
-              {props.icon} {props.title}
+              {icon} {title}
             </div>
           ),
-          children: props.children,
+          children,
         },
       ]}
     />

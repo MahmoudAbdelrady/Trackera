@@ -4,14 +4,14 @@ import { showErrorToast } from "../../utils/toast-handler/showToast";
 import { workLogApis } from "../../state/api";
 import { useSSEContext } from "./useSSEContext";
 
-type JiraSyncSSEReturn = {
+interface JiraSyncSSEReturn {
   triggerSync: (payload: SyncPayload) => void;
-};
+}
 
-type JiraSyncSSEOptions = {
+interface JiraSyncSSEOptions {
   hasInProgress: boolean;
   onStatusEvent: (event: JiraSyncEventProps) => void;
-};
+}
 
 export const useJiraSyncSSE = ({ hasInProgress, onStatusEvent }: JiraSyncSSEOptions): JiraSyncSSEReturn => {
   const [pendingSyncPayload, setPendingSyncPayload] = useState<SyncPayload | null>(null);

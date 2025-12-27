@@ -26,6 +26,7 @@ const WorklogActionButtons = (props: ActionButtonsProps) => {
   const { record, jiraLinked, viewLink, syncParams, onSync, onEdit, onView, onDelete } = props;
   const syncInProgress =
     record.status === WorkLogStatus.SYNC_IN_PROGRESS || record.status === WorkLogStatus.UNSYNC_IN_PROGRESS;
+
   return (
     <div className={trackeraTableClasses.actions_container}>
       <WorklogSyncActions record={record} jiraLinked={jiraLinked} onSync={onSync} syncParams={syncParams} />

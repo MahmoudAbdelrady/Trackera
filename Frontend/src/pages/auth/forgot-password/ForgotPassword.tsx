@@ -1,4 +1,4 @@
-import { AuthFooter, AuthForm, AuthLayout, AuthResult, InputField } from "../../../components";
+import { AuthFooter, AuthForm, AuthLayout, AuthResult, InputField, type AuthResultFields } from "../../../components";
 import { Mail } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -6,7 +6,6 @@ import inputFieldClasses from "../../../components/input-field/scss/input-field.
 import { useFormik } from "formik";
 import { emailSchema } from "../../../shared/yup-schemas";
 import { showErrorToast } from "../../../utils/toast-handler/showToast";
-import type { AuthResultFields } from "../../../shared/types";
 import { authApis } from "../../../state/api";
 import { getFormikFieldProps } from "../../../utils";
 

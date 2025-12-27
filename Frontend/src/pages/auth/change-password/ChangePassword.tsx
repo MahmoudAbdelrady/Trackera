@@ -1,11 +1,18 @@
-import { AuthForm, AuthLayout, AuthResult, InputField, LoadingSpinner } from "../../../components";
+import {
+  AuthForm,
+  AuthLayout,
+  AuthResult,
+  InputField,
+  LoadingSpinner,
+  type AuthResultFields,
+} from "../../../components";
 import { Lock } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import inputFieldClasses from "../../../components/input-field/scss/input-field.module.css";
 import { useFormik } from "formik";
 import { updatePasswordSchema } from "../../../shared/yup-schemas";
-import type { AuthResultFields, ChangePasswordFormFields } from "../../../shared/types";
+import type { ChangePasswordFormFields } from "../../../shared/types";
 import { showErrorToast } from "../../../utils/toast-handler/showToast";
 import { useAuthStore } from "../../../state/store";
 import { authApis } from "../../../state/api";

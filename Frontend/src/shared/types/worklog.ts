@@ -1,5 +1,3 @@
-import type { StatusBadgeProps, TrackeraTableEntity } from "./global";
-
 const WorkLogEvaluation = {
   EXCELLENT: "EXCELLENT",
   GOOD: "GOOD",
@@ -35,7 +33,8 @@ interface SyncPayload {
   sync: boolean;
 }
 
-interface Worklog extends TrackeraTableEntity {
+interface Worklog {
+  id: string;
   name: string;
   totalTime: string;
   workDate: string;
@@ -44,7 +43,7 @@ interface Worklog extends TrackeraTableEntity {
   hasError: boolean;
 }
 
-interface WorklogTask extends TrackeraTableEntity {
+interface WorklogTask {
   taskName: string;
   taskUrl: string;
   totalHours: string;
@@ -53,7 +52,8 @@ interface WorklogTask extends TrackeraTableEntity {
   hasError: boolean;
 }
 
-interface WorklogEntry extends TrackeraTableEntity {
+interface WorklogEntry {
+  id: string;
   fromTime: string;
   toTime: string;
   duration: string;
@@ -67,41 +67,9 @@ interface WorklogSelection {
   entryIds?: string[];
 }
 
-interface WorklogError extends TrackeraTableEntity {
+interface WorklogError {
   row: number;
   error: string;
-}
-
-const worklogEvaluationMetadata: Record<WorkLogEvaluationType, StatusBadgeProps> = {
-  EXCELLENT: { label: "Excellent", type: "main" },
-  GOOD: { label: "Good", type: "success" },
-  MODERATE: { label: "Moderate", type: "warning" },
-  POOR: { label: "Poor", type: "danger" },
-};
-
-const statusMetadata: Record<WorkLogStatusType, StatusBadgeProps> = {
-  SYNCED: { label: "Synced", type: "success" },
-  PARTIALLY: { label: "Partially", type: "warning" },
-  NOT_SYNCED: { label: "Not Synced", type: "danger" },
-  SYNC_IN_PROGRESS: { label: "Sync in Progress", type: "warning" },
-  UNSYNC_IN_PROGRESS: { label: "Unsync in Progress", type: "warning" },
-};
-
-interface WorklogTableActionButtonOptions {
-  label: string;
-  onClick: () => void;
-  disabled?: boolean;
-  icon?: React.ReactNode;
-  customClasses?: string[];
-}
-
-interface WorklogTableActionButtonProps {
-  label: string;
-  icon?: React.ReactNode;
-  customClasses?: string[];
-  disabled?: boolean;
-  onClick?: () => void;
-  options?: WorklogTableActionButtonOptions[];
 }
 
 interface WorkLogSearchFilter {
@@ -128,11 +96,9 @@ export type {
   WorklogEntry,
   WorklogSelection,
   WorklogError,
-  StatusBadgeProps,
-  WorklogTableActionButtonProps,
   WorkLogSearchFilter,
   JiraSyncEventType,
   JiraSyncEventProps,
 };
 
-export { WorkLogStatus, WorkLogEvaluation, worklogEvaluationMetadata, statusMetadata, JiraSyncEvent };
+export { WorkLogStatus, WorkLogEvaluation, JiraSyncEvent };

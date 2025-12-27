@@ -1,3 +1,4 @@
+// components
 import AuthLayout from "./auth/auth-layout/AuthLayout";
 import AuthFooter from "./auth/auth-footer/AuthFooter";
 import AppLayout from "./app-layout/AppLayout";
@@ -29,6 +30,14 @@ import WorkLogColumns from "./worklogs/worklog-columns/WorkLogColumns";
 import WorkLogTaskColumns from "./worklogs/worklog-columns/WorkLogTaskColumns";
 import WorkLogEntryColumns from "./worklogs/worklog-columns/WorkLogEntryColumns";
 import WorklogTaskEntries from "./worklogs/worklog-task-entries/WorklogTaskEntries";
+
+// types
+import type { AuthResultFields } from "./auth/auth.types";
+import type { TableActionButtonProps } from "./trackera-table/trackera-table.types";
+import type { StatusBadgeProps } from "./status-badge/status-badge.types";
+
+// metadata
+import { worklogEvaluationMetadata, statusMetadata } from "./worklogs/worklog.metadata";
 
 export {
   AuthLayout,
@@ -63,3 +72,7 @@ export {
   WorkLogEntryColumns,
   WorklogTaskEntries,
 };
+
+export { worklogEvaluationMetadata, statusMetadata };
+
+export type { AuthResultFields, TableActionButtonProps, StatusBadgeProps };

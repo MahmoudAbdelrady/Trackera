@@ -1,5 +1,5 @@
 import { Button } from "antd";
-import type { AuthResultFields } from "../../../shared/types";
+import type { AuthResultFields } from "../auth.types";
 import classes from "./scss/auth-result.module.css";
 import { Check, X } from "lucide-react";
 
@@ -10,19 +10,21 @@ interface AuthResultProps extends AuthResultFields {
 }
 
 const AuthResult = (props: AuthResultProps) => {
+  const { title, description, message, buttonText, onClick, isError } = props;
+
   return (
     <div className={classes.auth_result_container}>
       <div className={classes.ar_header}>
-        <h3>{props.title}</h3>
-        <p>{props.description}</p>
+        <h3>{title}</h3>
+        <p>{description}</p>
       </div>
       <div className={classes.ar_content}>
-        <div className={`${classes.ar_icon_container} ${props.isError && classes.error}`}>
-          {props.isError ? <X className={classes.ar_icon} /> : <Check className={classes.ar_icon} />}
+        <div className={`${classes.ar_icon_container} ${isError && classes.error}`}>
+          {isError ? <X className={classes.ar_icon} /> : <Check className={classes.ar_icon} />}
         </div>
-        <p className={classes.ar_message}>{props.message}</p>
-        <Button type="primary" onClick={props.onClick} className={classes.ar_button}>
-          {props.buttonText}
+        <p className={classes.ar_message}>{message}</p>
+        <Button type="primary" onClick={onClick} className={classes.ar_button}>
+          {buttonText}
         </Button>
       </div>
     </div>

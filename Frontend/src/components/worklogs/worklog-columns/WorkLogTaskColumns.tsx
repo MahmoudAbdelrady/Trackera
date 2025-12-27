@@ -1,14 +1,9 @@
 import type { TableProps } from "antd";
-import {
-  statusMetadata,
-  WorkLogStatus,
-  type SyncPayload,
-  type WorkLogStatusType,
-  type WorklogTask,
-} from "../../../shared/types";
+import { WorkLogStatus, type SyncPayload, type WorkLogStatusType, type WorklogTask } from "../../../shared/types";
 import StatusBadge from "../../status-badge/StatusBadge";
 import { CircleAlert } from "lucide-react";
 import WorklogActionButtons from "../worklog-action-buttons/WorklogActionButtons";
+import { statusMetadata } from "../worklog.metadata";
 
 interface WorklogTaskColumnsParams {
   worklogId: string;
@@ -21,6 +16,7 @@ interface WorklogTaskColumnsParams {
 
 const WorkLogTaskColumns = (props: WorklogTaskColumnsParams): TableProps<WorklogTask>["columns"] => {
   const { worklogId, worklogTasks, jiraLinked, onSync, onView, onDelete } = props;
+
   return [
     {
       title: "Task Name",
@@ -45,7 +41,7 @@ const WorkLogTaskColumns = (props: WorklogTaskColumnsParams): TableProps<Worklog
       render: (_, { status, hasError }) =>
         jiraLinked ? (
           <StatusBadge
-            badgeProps={{
+            {...{
               ...statusMetadata[status as WorkLogStatusType],
               icon:
                 hasError && status !== WorkLogStatus.SYNC_IN_PROGRESS && status !== WorkLogStatus.UNSYNC_IN_PROGRESS ? (
