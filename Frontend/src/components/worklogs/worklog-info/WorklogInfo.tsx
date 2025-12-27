@@ -1,7 +1,13 @@
 import classes from "./scss/worklog-info.module.css";
-import { Calendar, Clock, RefreshCcw, Target } from "lucide-react";
+import { Calendar, CircleAlert, Clock, RefreshCcw, Target } from "lucide-react";
 import { Tooltip } from "antd";
-import { worklogEvaluationMetadata, statusMetadata, type Worklog, type WorkLogEvaluationType, type WorkLogStatusType } from "../../../shared/types";
+import {
+  worklogEvaluationMetadata,
+  statusMetadata,
+  type Worklog,
+  type WorkLogEvaluationType,
+  type WorkLogStatusType,
+} from "../../../shared/types";
 import { StatusBadge } from "../../";
 
 const WorklogInfo = ({ worklogInfo, jiraLinked }: { worklogInfo: Worklog; jiraLinked: boolean }) => {
@@ -34,7 +40,11 @@ const WorklogInfo = ({ worklogInfo, jiraLinked }: { worklogInfo: Worklog; jiraLi
           <Tooltip title={`Status${jiraLinked ? "" : " (Jira not linked)"}`}>
             <RefreshCcw className={classes.info_icon} />
           </Tooltip>
-          {jiraLinked ? <StatusBadge badgeProps={statusMetaItem} /> : <span className={classes.info_label}>-</span>}
+          {jiraLinked ? (
+            <StatusBadge badgeProps={{ ...statusMetaItem, icon: worklogInfo.hasError ? <CircleAlert /> : undefined }} />
+          ) : (
+            <span className={classes.info_label}>-</span>
+          )}
         </div>
       </div>
     </div>

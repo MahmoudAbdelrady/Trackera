@@ -1,5 +1,7 @@
 import type { TrackeraTableEntity, StatusBadgeProps, InputFieldProps, PaginatedResponse } from "./global";
 
+import { OPERATORS, FILTER_OPERATORS_METADATA } from "./global";
+
 import type {
   LoginFormFields,
   SignUpFormFields,
@@ -29,6 +31,7 @@ import type {
   WorkLogSummaryCard,
   WorkLogSearchFilter,
   WorkLogsFilterProps,
+  ActionButtonsProps,
   WorklogTaskEntriesProps,
   JiraSyncEventType,
   JiraSyncEventProps,
@@ -86,12 +89,15 @@ export type {
   UserEmailProps,
   PreferencesProps,
   OAuthAccount,
+  ActionButtonsProps,
   WorklogTaskEntriesProps,
   JiraSyncEventType,
   JiraSyncEventProps,
 };
 
 export {
+  OPERATORS,
+  FILTER_OPERATORS_METADATA,
   WorkLogStatus,
   WorkLogEvaluation,
   worklogEvaluationMetadata,

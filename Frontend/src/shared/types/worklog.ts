@@ -145,6 +145,17 @@ interface WorkLogsFilterProps {
   jiraLinked: boolean;
 }
 
+interface ActionButtonsProps {
+  record: Worklog | WorklogTask | WorklogEntry;
+  jiraLinked: boolean;
+  viewLink?: string;
+  syncParams: SyncPayload;
+  onSync: (params: SyncPayload) => void;
+  onEdit?: () => void;
+  onView?: () => void;
+  onDelete: () => void;
+}
+
 interface WorklogTaskEntriesProps {
   loggedUserData: UserInfo;
   worklogId: string;
@@ -182,6 +193,7 @@ export type {
   WorkLogSummaryCard,
   WorkLogSearchFilter,
   WorkLogsFilterProps,
+  ActionButtonsProps,
   WorklogTaskEntriesProps,
   JiraSyncEventType,
   JiraSyncEventProps,

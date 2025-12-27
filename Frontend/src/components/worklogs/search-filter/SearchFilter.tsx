@@ -4,6 +4,8 @@ import { Button, DatePicker, Form, Input, InputNumber, Radio, Select, Tooltip } 
 import classes from "./scss/search-filter.module.css";
 import CollapsibleSection from "../../collapsible-section/CollapsibleSection";
 import {
+  FILTER_OPERATORS_METADATA,
+  OPERATORS,
   statusMetadata,
   WorkLogEvaluation,
   worklogEvaluationMetadata,
@@ -49,26 +51,6 @@ type CriteriaType = typeof FIELD_NAMES.TOTAL_HOURS | typeof FIELD_NAMES.EVALUATI
 const criteriaTypeItems = [
   { label: "Total Hours", value: FIELD_NAMES.TOTAL_HOURS },
   { label: "Evaluation", value: FIELD_NAMES.EVALUATION },
-];
-
-const OPERATORS = {
-  BETWEEN: "BETWEEN",
-  EQ: "=",
-  NE: "!=",
-  GT: ">",
-  GTE: ">=",
-  LT: "<",
-  LTE: "<=",
-} as const;
-
-const TOTAL_HOURS_FILTER_OPERATORS = [
-  { label: "=", value: OPERATORS.EQ },
-  { label: "!=", value: OPERATORS.NE },
-  { label: ">", value: OPERATORS.GT },
-  { label: ">=", value: OPERATORS.GTE },
-  { label: "<", value: OPERATORS.LT },
-  { label: "<=", value: OPERATORS.LTE },
-  { label: "Between", value: OPERATORS.BETWEEN },
 ];
 
 const EVALUATION_FILTER_OPTIONS = [
@@ -237,7 +219,7 @@ const SearchFilter = (props: WorkLogsFilterProps) => {
                   >
                     <Select
                       className={classes.filter_operator}
-                      options={TOTAL_HOURS_FILTER_OPERATORS}
+                      options={FILTER_OPERATORS_METADATA}
                       placeholder="Operator"
                       allowClear
                       value={searchFormik.values[FIELD_NAMES.TOTAL_HOURS].operator}
