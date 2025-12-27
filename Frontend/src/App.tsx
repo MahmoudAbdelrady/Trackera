@@ -21,6 +21,7 @@ import { useEffect } from "react";
 import { authApis } from "./state/api";
 import { useAuthStore } from "./state/store";
 import type { AxiosError } from "axios";
+import { SSEContextProvider } from "./shared/contexts";
 
 const router = createBrowserRouter([
   {
@@ -125,12 +126,14 @@ const App = () => {
   }, []);
 
   return (
-    <GoogleOAuthProvider clientId={import.meta.env.VITE_TRACKERA_GOOGLE_CLIENT_ID}>
-      <QueryClientProvider client={queryClient}>
-        <Toaster />
-        <RouterProvider router={router} />
-      </QueryClientProvider>
-    </GoogleOAuthProvider>
+    <SSEContextProvider>
+      <GoogleOAuthProvider clientId={import.meta.env.VITE_TRACKERA_GOOGLE_CLIENT_ID}>
+        <QueryClientProvider client={queryClient}>
+          <Toaster />
+          <RouterProvider router={router} />
+        </QueryClientProvider>
+      </GoogleOAuthProvider>
+    </SSEContextProvider>
   );
 };
 
