@@ -7,6 +7,7 @@ import {
   type Worklog,
   type WorkLogEvaluationType,
   type WorkLogStatusType,
+  WorkLogStatus,
 } from "../../../shared/types";
 import { StatusBadge } from "../../";
 
@@ -41,7 +42,17 @@ const WorklogInfo = ({ worklogInfo, jiraLinked }: { worklogInfo: Worklog; jiraLi
             <RefreshCcw className={classes.info_icon} />
           </Tooltip>
           {jiraLinked ? (
-            <StatusBadge badgeProps={{ ...statusMetaItem, icon: worklogInfo.hasError ? <CircleAlert /> : undefined }} />
+            <StatusBadge
+              badgeProps={{
+                ...statusMetaItem,
+                icon:
+                  worklogInfo.hasError &&
+                  worklogInfo.status !== WorkLogStatus.SYNC_IN_PROGRESS &&
+                  worklogInfo.status !== WorkLogStatus.UNSYNC_IN_PROGRESS ? (
+                    <CircleAlert />
+                  ) : undefined,
+              }}
+            />
           ) : (
             <span className={classes.info_label}>-</span>
           )}

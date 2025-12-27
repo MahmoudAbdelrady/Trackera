@@ -135,7 +135,7 @@ const WorklogDetails = () => {
         setWorklogTasks((prevTasks) => {
           const updatedTasks = [...prevTasks];
           updatedTasks.forEach((task, index) => {
-            if (event.taskNames?.includes(task.taskName)) {
+            if (event.taskNames?.includes(task.taskName) && event.logId === worklogId) {
               updatedTasks[index] = { ...task, status: event.status, hasError: !!event.syncError };
             }
           });
@@ -146,14 +146,16 @@ const WorklogDetails = () => {
       if (event.type === JiraSyncEvent.ENTRY || event.type === JiraSyncEvent.ALL) {
         setWorklogEntries((prevEntries) =>
           prevEntries.map((entry) =>
-            event.entryIds?.includes(entry.id) ? { ...entry, status: event.status, syncError: event.syncError } : entry
+            event.entryIds?.includes(entry.id) && event.logId === worklogId
+              ? { ...entry, status: event.status, syncError: event.syncError }
+              : entry
           )
         );
       }
 
       if (event.type === JiraSyncEvent.WORKLOG || event.type === JiraSyncEvent.ALL) {
         setWorklogInfo((prev) => {
-          if (!prev) return prev;
+          if (!prev || event.logId !== worklogId) return prev;
           return { ...prev, status: event.status, hasError: !!event.syncError };
         });
       }

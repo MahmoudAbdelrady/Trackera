@@ -52,7 +52,12 @@ const WorkLogEntryColumns = (props: WorklogEntryColumnsParams): TableProps<Workl
               <StatusBadge
                 badgeProps={{
                   ...statusMetadata[status as WorkLogStatusType],
-                  icon: syncError ? <CircleAlert /> : undefined,
+                  icon:
+                    syncError &&
+                    status !== WorkLogStatus.SYNC_IN_PROGRESS &&
+                    status !== WorkLogStatus.UNSYNC_IN_PROGRESS ? (
+                      <CircleAlert />
+                    ) : undefined,
                 }}
               />
             </span>
