@@ -114,6 +114,7 @@ public class WorkLogService {
         WorkLogInfoDTO workLogInfoDTO = workLogMapper.toDto(workLog);
         workLogInfoDTO.setId(workLog.getUuid());
         workLogInfoDTO.setTotalTime(DurationFormatter.formatDuration(workLog.getTotalMinutes(), true));
+        workLogInfoDTO.setHasError(!workLogDetailRepository.findWorkLogUuidsWithSyncErrors(List.of(workLog.getId())).isEmpty());
         return workLogInfoDTO;
     }
 
