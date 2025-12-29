@@ -1,14 +1,14 @@
-import type { WorkLogEvaluationType, WorkLogStatusType } from "../../shared/types";
+import type { WorklogEvaluationType, WorklogStatusType } from "../../shared/types";
 import type { StatusBadgeProps } from "../";
 
-const worklogEvaluationMetadata: Record<WorkLogEvaluationType, StatusBadgeProps> = {
+const worklogEvaluationMetadata: Record<WorklogEvaluationType, StatusBadgeProps> = {
   EXCELLENT: { label: "Excellent", type: "main" },
   GOOD: { label: "Good", type: "success" },
   MODERATE: { label: "Moderate", type: "warning" },
   POOR: { label: "Poor", type: "danger" },
 };
 
-const statusMetadata: Record<WorkLogStatusType, StatusBadgeProps> = {
+const statusMetadata: Record<WorklogStatusType, StatusBadgeProps> = {
   SYNCED: { label: "Synced", type: "success" },
   PARTIALLY: { label: "Partially", type: "warning" },
   NOT_SYNCED: { label: "Not Synced", type: "danger" },

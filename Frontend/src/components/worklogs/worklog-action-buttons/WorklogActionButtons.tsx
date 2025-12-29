@@ -1,12 +1,12 @@
 import {
-  WorkLogStatus,
+  WORKLOG_STATUS,
   type SyncPayload,
   type Worklog,
   type WorklogEntry,
   type WorklogTask,
 } from "../../../shared/types";
 import trackeraTableClasses from "../../trackera-table/scss/trackera-table.module.css";
-import { WorklogSyncActions } from "../../";
+import { WorklogSyncActions } from "../..";
 import { Button, Tooltip } from "antd";
 import { Eye, SquarePen, Trash } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -25,7 +25,7 @@ interface ActionButtonsProps {
 const WorklogActionButtons = (props: ActionButtonsProps) => {
   const { record, jiraLinked, viewLink, syncParams, onSync, onEdit, onView, onDelete } = props;
   const syncInProgress =
-    record.status === WorkLogStatus.SYNC_IN_PROGRESS || record.status === WorkLogStatus.UNSYNC_IN_PROGRESS;
+    record.status === WORKLOG_STATUS.SYNC_IN_PROGRESS || record.status === WORKLOG_STATUS.UNSYNC_IN_PROGRESS;
 
   return (
     <div className={trackeraTableClasses.actions_container}>

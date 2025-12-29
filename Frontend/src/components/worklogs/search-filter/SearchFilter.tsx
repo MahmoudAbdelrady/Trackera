@@ -6,8 +6,8 @@ import CollapsibleSection from "../../collapsible-section/CollapsibleSection";
 import {
   filterOperatorsMetadata,
   OPERATORS,
-  WorkLogEvaluation,
-  WorkLogStatus,
+  WORKLOG_EVALUATION,
+  WORKLOG_STATUS,
   type WorkLogSearchFilter,
 } from "../../../shared/types";
 import { useFormik } from "formik";
@@ -52,24 +52,24 @@ const criteriaTypeItems = [
 ];
 
 const evaluationFilterOptions = [
-  { label: worklogEvaluationMetadata[WorkLogEvaluation.EXCELLENT].label, value: WorkLogEvaluation.EXCELLENT },
-  { label: worklogEvaluationMetadata[WorkLogEvaluation.GOOD].label, value: WorkLogEvaluation.GOOD },
-  { label: worklogEvaluationMetadata[WorkLogEvaluation.MODERATE].label, value: WorkLogEvaluation.MODERATE },
-  { label: worklogEvaluationMetadata[WorkLogEvaluation.POOR].label, value: WorkLogEvaluation.POOR },
+  { label: worklogEvaluationMetadata[WORKLOG_EVALUATION.EXCELLENT].label, value: WORKLOG_EVALUATION.EXCELLENT },
+  { label: worklogEvaluationMetadata[WORKLOG_EVALUATION.GOOD].label, value: WORKLOG_EVALUATION.GOOD },
+  { label: worklogEvaluationMetadata[WORKLOG_EVALUATION.MODERATE].label, value: WORKLOG_EVALUATION.MODERATE },
+  { label: worklogEvaluationMetadata[WORKLOG_EVALUATION.POOR].label, value: WORKLOG_EVALUATION.POOR },
 ];
 
 const statusFilterOptions = [
-  { label: statusMetadata[WorkLogStatus.SYNCED].label, value: WorkLogStatus.SYNCED },
-  { label: statusMetadata[WorkLogStatus.PARTIALLY].label, value: WorkLogStatus.PARTIALLY },
-  { label: statusMetadata[WorkLogStatus.NOT_SYNCED].label, value: WorkLogStatus.NOT_SYNCED },
+  { label: statusMetadata[WORKLOG_STATUS.SYNCED].label, value: WORKLOG_STATUS.SYNCED },
+  { label: statusMetadata[WORKLOG_STATUS.PARTIALLY].label, value: WORKLOG_STATUS.PARTIALLY },
+  { label: statusMetadata[WORKLOG_STATUS.NOT_SYNCED].label, value: WORKLOG_STATUS.NOT_SYNCED },
 ];
 
-interface WorkLogsFilterProps {
+interface WorklogsFilterProps {
   setFilters: (filters: Record<string, any>) => void;
   jiraLinked: boolean;
 }
 
-const SearchFilter = (props: WorkLogsFilterProps) => {
+const SearchFilter = (props: WorklogsFilterProps) => {
   const { jiraLinked, setFilters } = props;
   const [criteriaType, setCriteriaType] = useState<CriteriaType>(FIELD_NAMES.TOTAL_HOURS);
 

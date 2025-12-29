@@ -1,11 +1,11 @@
-const WorkLogEvaluation = {
+const WORKLOG_EVALUATION = {
   EXCELLENT: "EXCELLENT",
   GOOD: "GOOD",
   MODERATE: "MODERATE",
   POOR: "POOR",
 } as const;
 
-const WorkLogStatus = {
+const WORKLOG_STATUS = {
   SYNCED: "SYNCED",
   PARTIALLY: "PARTIALLY",
   NOT_SYNCED: "NOT_SYNCED",
@@ -13,21 +13,21 @@ const WorkLogStatus = {
   UNSYNC_IN_PROGRESS: "UNSYNC_IN_PROGRESS",
 } as const;
 
-const JiraSyncEvent = {
+const JIRA_SYNC_EVENT = {
   ALL: "ALL",
   WORKLOG: "WORKLOG",
   TASK: "TASK",
   ENTRY: "ENTRY",
 } as const;
 
-type WorkLogStatusType = (typeof WorkLogStatus)[keyof typeof WorkLogStatus];
+type WorklogStatusType = (typeof WORKLOG_STATUS)[keyof typeof WORKLOG_STATUS];
 
-type WorkLogEvaluationType = (typeof WorkLogEvaluation)[keyof typeof WorkLogEvaluation];
+type WorklogEvaluationType = (typeof WORKLOG_EVALUATION)[keyof typeof WORKLOG_EVALUATION];
 
-type JiraSyncEventType = (typeof JiraSyncEvent)[keyof typeof JiraSyncEvent];
+type JiraSyncEventType = (typeof JIRA_SYNC_EVENT)[keyof typeof JIRA_SYNC_EVENT];
 
 interface SyncPayload {
-  workLogId?: string;
+  worklogId?: string;
   taskNames?: string[];
   entryIds?: string[];
   sync: boolean;
@@ -38,8 +38,8 @@ interface Worklog {
   name: string;
   totalTime: string;
   workDate: string;
-  evaluation: WorkLogEvaluationType;
-  status: WorkLogStatusType;
+  evaluation: WorklogEvaluationType;
+  status: WorklogStatusType;
   hasError: boolean;
 }
 
@@ -48,7 +48,7 @@ interface WorklogTask {
   taskUrl: string;
   totalHours: string;
   totalMinutes: number;
-  status: WorkLogStatusType;
+  status: WorklogStatusType;
   hasError: boolean;
 }
 
@@ -58,7 +58,7 @@ interface WorklogEntry {
   toTime: string;
   duration: string;
   description: string;
-  status: WorkLogStatusType;
+  status: WorklogStatusType;
   syncError?: string;
 }
 
@@ -83,14 +83,14 @@ type JiraSyncEventProps = {
   logId: string;
   taskNames?: string[];
   entryIds?: string[];
-  status: WorkLogStatusType;
+  status: WorklogStatusType;
   syncError?: string;
 };
 
 export type {
   SyncPayload,
-  WorkLogEvaluationType,
-  WorkLogStatusType,
+  WorklogEvaluationType,
+  WorklogStatusType,
   Worklog,
   WorklogTask,
   WorklogEntry,
@@ -101,4 +101,4 @@ export type {
   JiraSyncEventProps,
 };
 
-export { WorkLogStatus, WorkLogEvaluation, JiraSyncEvent };
+export { WORKLOG_STATUS, WORKLOG_EVALUATION, JIRA_SYNC_EVENT };

@@ -2,12 +2,14 @@ import type { PaginatedResponse } from "./global";
 
 import { OPERATORS, filterOperatorsMetadata } from "./global";
 
-import type { LoginFormFields, SignUpFormFields, ChangePasswordFormFields, OAuthAccount } from "./auth";
+import type { LoginFormFields, SignUpFormFields, ChangePasswordFormFields, OAuthAccount, OAuthProvider } from "./auth";
+
+import { OAUTH_PROVIDERS } from "./auth";
 
 import type {
   SyncPayload,
-  WorkLogEvaluationType,
-  WorkLogStatusType,
+  WorklogEvaluationType,
+  WorklogStatusType,
   Worklog,
   WorklogEntry,
   WorklogTask,
@@ -18,15 +20,15 @@ import type {
   JiraSyncEventProps,
 } from "./worklog";
 
-import { WorkLogStatus, WorkLogEvaluation, JiraSyncEvent } from "./worklog";
+import { WORKLOG_STATUS, WORKLOG_EVALUATION, JIRA_SYNC_EVENT } from "./worklog";
 
 import type { JiraTask, JiraSite } from "./jira";
 
 export type {
   SyncPayload,
   PaginatedResponse,
-  WorkLogEvaluationType,
-  WorkLogStatusType,
+  WorklogEvaluationType,
+  WorklogStatusType,
   Worklog,
   WorklogEntry,
   WorklogTask,
@@ -41,6 +43,7 @@ export type {
   OAuthAccount,
   JiraSyncEventType,
   JiraSyncEventProps,
+  OAuthProvider,
 };
 
-export { WorkLogStatus, WorkLogEvaluation, JiraSyncEvent, OPERATORS, filterOperatorsMetadata };
+export { WORKLOG_STATUS, WORKLOG_EVALUATION, JIRA_SYNC_EVENT, OPERATORS, filterOperatorsMetadata, OAUTH_PROVIDERS };

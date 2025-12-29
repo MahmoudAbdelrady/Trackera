@@ -3,7 +3,7 @@ import {
   WorklogInfo,
   WorklogModal,
   TrackeraTable,
-  WorkLogTaskColumns,
+  WorklogTaskColumns,
   WorklogTaskEntries,
 } from "../../components";
 import classes from "./scss/worklog-details.module.css";
@@ -12,19 +12,19 @@ import {
   type Worklog,
   type WorklogEntry,
   type WorklogSelection,
-  type WorkLogStatusType,
+  type WorklogStatusType,
   type WorklogTask,
-  JiraSyncEvent,
-  WorkLogStatus,
+  JIRA_SYNC_EVENT,
+  WORKLOG_STATUS,
 } from "../../shared/types";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import worklogModalClasses from "../../components/worklogs/modals/worklog-modal/scss/worklog-modal.module.css";
 import { showErrorToast, showSuccessToast } from "../../utils/toast-handler/showToast";
 import { userQueries } from "../../state/queries";
-import buildSyncButtonProps from "../../utils/buildWorkLogSyncButtonProps";
+import buildSyncButtonProps from "../../utils/buildWorklogSyncButtonProps";
 import { useJiraSyncSSE } from "../../shared/hooks";
-import { workLogApis } from "../../state/api";
+import { worklogApis } from "../../state/api";
 
 const WorklogDetails = () => {
   const { worklogId } = useParams();
@@ -56,7 +56,10 @@ const WorklogDetails = () => {
 
   // sse subscription
   const hasInProgress = useMemo(() => {
-    const inProgressStatuses: WorkLogStatusType[] = [WorkLogStatus.SYNC_IN_PROGRESS, WorkLogStatus.UNSYNC_IN_PROGRESS];
+    const inProgressStatuses: WorklogStatusType[] = [
+      WORKLOG_STATUS.SYNC_IN_PROGRESS,
+      WORKLOG_STATUS.UNSYNC_IN_PROGRESS,
+    ];
     return (
       worklogTasks.some((task) => inProgressStatuses.includes(task.status)) ||
       worklogEntries.some((entry) => inProgressStatuses.includes(entry.status)) ||
@@ -69,7 +72,7 @@ const WorklogDetails = () => {
 
     setIsFetchingLogInfo(true);
     try {
-      const result = await workLogApis.getWorkLogInfo(worklogId!);
+      const result = await worklogApis.getWorklogInfo(worklogId!);
       setWorklogInfo(result);
     } catch (error: any) {
       if (error.response?.status === 404) {
@@ -86,7 +89,7 @@ const WorklogDetails = () => {
 
     setIsFetchingTasks(true);
     try {
-      const result = await workLogApis.getWorkLogTasks(worklogId!);
+      const result = await worklogApis.getWorklogTasks(worklogId!);
       setWorklogTasks(result.map((task: WorklogTask) => ({ ...task, id: task.taskName })));
     } catch (error: any) {
       showErrorToast(error);
@@ -123,7 +126,7 @@ const WorklogDetails = () => {
   };
 
   const handleWorkLogDeletion = async (selection: WorklogSelection) => {
-    const result = await workLogApis.deleteWorkLog(worklogId!, selection);
+    const result = await worklogApis.deleteWorklog(worklogId!, selection);
     showSuccessToast(result.message);
     return result;
   };
@@ -131,7 +134,7 @@ const WorklogDetails = () => {
   const { triggerSync } = useJiraSyncSSE({
     hasInProgress,
     onStatusEvent: (event) => {
-      if (event.type === JiraSyncEvent.TASK || event.type === JiraSyncEvent.ALL) {
+      if (event.type === JIRA_SYNC_EVENT.TASK || event.type === JIRA_SYNC_EVENT.ALL) {
         setWorklogTasks((prevTasks) => {
           const updatedTasks = [...prevTasks];
           updatedTasks.forEach((task, index) => {
@@ -143,7 +146,7 @@ const WorklogDetails = () => {
         });
       }
 
-      if (event.type === JiraSyncEvent.ENTRY || event.type === JiraSyncEvent.ALL) {
+      if (event.type === JIRA_SYNC_EVENT.ENTRY || event.type === JIRA_SYNC_EVENT.ALL) {
         setWorklogEntries((prevEntries) =>
           prevEntries.map((entry) =>
             event.entryIds?.includes(entry.id) && event.logId === worklogId
@@ -153,7 +156,7 @@ const WorklogDetails = () => {
         );
       }
 
-      if (event.type === JiraSyncEvent.WORKLOG || event.type === JiraSyncEvent.ALL) {
+      if (event.type === JIRA_SYNC_EVENT.WORKLOG || event.type === JIRA_SYNC_EVENT.ALL) {
         setWorklogInfo((prev) => {
           if (!prev || event.logId !== worklogId) return prev;
           return { ...prev, status: event.status, hasError: !!event.syncError };
@@ -164,7 +167,7 @@ const WorklogDetails = () => {
 
   const worklogTaskColumns = useMemo(
     () =>
-      WorkLogTaskColumns({
+      WorklogTaskColumns({
         worklogId: worklogId!,
         worklogTasks: worklogTasks,
         jiraLinked: loggedUserData?.jiraLinked || false,
@@ -226,7 +229,7 @@ const WorklogDetails = () => {
           <p className={worklogModalClasses.delete_message}>
             Are you sure you want to delete this task log? This action cannot be undone.
           </p>
-          {(selectedTask?.status === WorkLogStatus.SYNCED || selectedTask?.status === WorkLogStatus.PARTIALLY) && (
+          {(selectedTask?.status === WORKLOG_STATUS.SYNCED || selectedTask?.status === WORKLOG_STATUS.PARTIALLY) && (
             <Alert
               message="This task has synced data with Jira and will be unsynced upon deletion."
               type="warning"
@@ -263,8 +266,8 @@ const WorklogDetails = () => {
                       getCheckboxProps: (record) => ({
                         disabled:
                           !loggedUserData?.jiraLinked ||
-                          record.status === WorkLogStatus.SYNC_IN_PROGRESS ||
-                          record.status === WorkLogStatus.UNSYNC_IN_PROGRESS,
+                          record.status === WORKLOG_STATUS.SYNC_IN_PROGRESS ||
+                          record.status === WORKLOG_STATUS.UNSYNC_IN_PROGRESS,
                       }),
                     },
                     loading: isFetchingTasks,
@@ -275,7 +278,7 @@ const WorklogDetails = () => {
                     selectedItems: selectedWorklogTasks,
                     extractIdentifier: (task: WorklogTask) => task.taskName,
                     isEntry: false,
-                    triggerSync: ({ taskNames, sync }) => triggerSync({ workLogId: worklogId, taskNames, sync }),
+                    triggerSync: ({ taskNames, sync }) => triggerSync({ worklogId: worklogId, taskNames, sync }),
                   })}
                 />
               )}

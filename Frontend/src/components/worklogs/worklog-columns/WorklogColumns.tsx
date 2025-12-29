@@ -1,10 +1,10 @@
 import type { TableProps } from "antd";
 import {
-  WorkLogStatus,
+  WORKLOG_STATUS,
   type SyncPayload,
   type Worklog,
-  type WorkLogEvaluationType,
-  type WorkLogStatusType,
+  type WorklogEvaluationType,
+  type WorklogStatusType,
 } from "../../../shared/types";
 import { StatusBadge, statusMetadata, WorklogActionButtons, worklogEvaluationMetadata } from "../..";
 import { CircleAlert } from "lucide-react";
@@ -16,7 +16,7 @@ interface WorklogColumnsParams {
   onDelete: (record: Worklog) => void;
 }
 
-const WorkLogColumns = (props: WorklogColumnsParams): TableProps<Worklog>["columns"] => {
+const WorklogColumns = (props: WorklogColumnsParams): TableProps<Worklog>["columns"] => {
   const { jiraLinked, onSync, onEdit, onDelete } = props;
 
   return [
@@ -40,7 +40,7 @@ const WorkLogColumns = (props: WorklogColumnsParams): TableProps<Worklog>["colum
       dataIndex: "evaluation",
       key: "evaluation",
       render: (_, { evaluation }) => (
-        <StatusBadge {...worklogEvaluationMetadata[evaluation as WorkLogEvaluationType]} />
+        <StatusBadge {...worklogEvaluationMetadata[evaluation as WorklogEvaluationType]} />
       ),
     },
     {
@@ -51,9 +51,11 @@ const WorkLogColumns = (props: WorklogColumnsParams): TableProps<Worklog>["colum
         jiraLinked ? (
           <StatusBadge
             {...{
-              ...statusMetadata[status as WorkLogStatusType],
+              ...statusMetadata[status as WorklogStatusType],
               icon:
-                hasError && status !== WorkLogStatus.SYNC_IN_PROGRESS && status !== WorkLogStatus.UNSYNC_IN_PROGRESS ? (
+                hasError &&
+                status !== WORKLOG_STATUS.SYNC_IN_PROGRESS &&
+                status !== WORKLOG_STATUS.UNSYNC_IN_PROGRESS ? (
                   <CircleAlert />
                 ) : undefined,
             }}
@@ -73,11 +75,11 @@ const WorkLogColumns = (props: WorklogColumnsParams): TableProps<Worklog>["colum
           onEdit={() => onEdit(record)}
           onDelete={() => onDelete(record)}
           viewLink={`/worklog-details/${record.id}`}
-          syncParams={{ workLogId: record.id, sync: record.status !== WorkLogStatus.SYNCED }}
+          syncParams={{ worklogId: record.id, sync: record.status !== WORKLOG_STATUS.SYNCED }}
         />
       ),
     },
   ];
 };
 
-export default WorkLogColumns;
+export default WorklogColumns;

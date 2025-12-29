@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { WorkLogStatus, type SyncPayload, type WorklogEntry, type WorklogTask } from "../../../shared/types";
+import { WORKLOG_STATUS, type SyncPayload, type WorklogEntry, type WorklogTask } from "../../../shared/types";
 import TrackeraTable from "../../trackera-table/TrackeraTable";
-import WorklogModal from "../modals/worklog-modal/WorklogModal";
-import { WorkLogEntryColumns } from "../../";
-import buildSyncButtonProps from "../../../utils/buildWorkLogSyncButtonProps";
-import { workLogApis } from "../../../state/api";
+import WorkLogModal from "../modals/worklog-modal/WorklogModal";
+import { WorklogEntryColumns } from "../../";
+import buildSyncButtonProps from "../../../utils/buildWorklogSyncButtonProps";
+import { worklogApis } from "../../../state/api";
 import { showErrorToast } from "../../../utils/toast-handler/showToast";
 import { useNavigate } from "react-router-dom";
 import { Alert } from "antd";
@@ -43,7 +43,7 @@ const WorklogTaskEntries = (props: WorklogTaskEntriesProps) => {
 
   const worklogEntryColumns = useMemo(
     () =>
-      WorkLogEntryColumns({
+      WorklogEntryColumns({
         worklogId: worklogId!,
         worklogEntries: worklogEntries,
         jiraLinked: loggedUserData?.jiraLinked,
@@ -59,7 +59,7 @@ const WorklogTaskEntries = (props: WorklogTaskEntriesProps) => {
   const fetchEntries = useCallback(async () => {
     setIsFetchingEntries(true);
     try {
-      const result = await workLogApis.getWorkLogTaskEntries(worklogId!, selectedTask!.taskName);
+      const result = await worklogApis.getWorklogTaskEntries(worklogId!, selectedTask!.taskName);
       setWorklogEntries(result);
     } catch (error: any) {
       showErrorToast(error);
@@ -90,7 +90,7 @@ const WorklogTaskEntries = (props: WorklogTaskEntriesProps) => {
     setIsDeletingEntry(true);
 
     try {
-      const result = await workLogApis.deleteWorkLog(worklogId, { entryIds: [selectedEntry?.id.toString() ?? ""] });
+      const result = await worklogApis.deleteWorklog(worklogId, { entryIds: [selectedEntry?.id.toString() ?? ""] });
       if (result.isLast) {
         navigate("/");
       } else {
@@ -112,7 +112,7 @@ const WorklogTaskEntries = (props: WorklogTaskEntriesProps) => {
   return (
     <>
       {deleteEntryVisible && (
-        <WorklogModal
+        <WorkLogModal
           title={`Delete ${selectedTask?.taskName} Entry`}
           properties={{
             open: true,
@@ -130,7 +130,7 @@ const WorklogTaskEntries = (props: WorklogTaskEntriesProps) => {
           <p className={worklogModalClasses.delete_message}>
             Are you sure you want to delete this entry? This action cannot be undone.
           </p>
-          {(selectedTask?.status === WorkLogStatus.SYNCED || selectedTask?.status === WorkLogStatus.PARTIALLY) && (
+          {(selectedTask?.status === WORKLOG_STATUS.SYNCED || selectedTask?.status === WORKLOG_STATUS.PARTIALLY) && (
             <Alert
               message="This entry is synced with Jira and will be unsynced upon deletion."
               type="warning"
@@ -138,10 +138,10 @@ const WorklogTaskEntries = (props: WorklogTaskEntriesProps) => {
               className={worklogModalClasses.alert_message}
             />
           )}
-        </WorklogModal>
+        </WorkLogModal>
       )}
 
-      <WorklogModal
+      <WorkLogModal
         title={`${selectedTask?.taskName} Task Entries`}
         properties={{
           open: true,
@@ -168,8 +168,8 @@ const WorklogTaskEntries = (props: WorklogTaskEntriesProps) => {
               getCheckboxProps: (record) => ({
                 disabled:
                   !loggedUserData?.jiraLinked ||
-                  record.status === WorkLogStatus.SYNC_IN_PROGRESS ||
-                  record.status === WorkLogStatus.UNSYNC_IN_PROGRESS,
+                  record.status === WORKLOG_STATUS.SYNC_IN_PROGRESS ||
+                  record.status === WORKLOG_STATUS.UNSYNC_IN_PROGRESS,
               }),
             },
           }}
@@ -179,10 +179,10 @@ const WorklogTaskEntries = (props: WorklogTaskEntriesProps) => {
             selectedItems: selectedWorklogEntries,
             extractIdentifier: (entry: WorklogEntry) => entry.id,
             isEntry: true,
-            triggerSync: ({ entryIds, sync }) => triggerSync({ workLogId: worklogId, entryIds, sync }),
+            triggerSync: ({ entryIds, sync }) => triggerSync({ worklogId: worklogId, entryIds, sync }),
           })}
         />
-      </WorklogModal>
+      </WorkLogModal>
     </>
   );
 };

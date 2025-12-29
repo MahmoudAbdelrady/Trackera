@@ -2,14 +2,14 @@ import type React from "react";
 import classes from "./scss/worklog-status-card.module.css";
 import { CircleCheckBig, Clock, Info } from "lucide-react";
 
-export interface WorkLogSummaryCard {
+export interface WorklogSummaryCard {
   label: string;
   subLabel: string;
   code: string;
   value: string;
 }
 
-const WorklogStatusCard = (props: WorkLogSummaryCard) => {
+const WorklogStatusCard = (props: WorklogSummaryCard) => {
   const { label, subLabel, code, value } = props;
 
   const getCardIcon = (code: string): React.ReactNode => {

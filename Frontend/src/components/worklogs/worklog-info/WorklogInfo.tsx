@@ -1,8 +1,13 @@
 import classes from "./scss/worklog-info.module.css";
 import { Calendar, CircleAlert, Clock, RefreshCcw, Target } from "lucide-react";
 import { Tooltip } from "antd";
-import { type Worklog, type WorkLogEvaluationType, type WorkLogStatusType, WorkLogStatus } from "../../../shared/types";
-import { StatusBadge, statusMetadata, worklogEvaluationMetadata } from "../../";
+import {
+  type Worklog,
+  type WorklogEvaluationType,
+  type WorklogStatusType,
+  WORKLOG_STATUS,
+} from "../../../shared/types";
+import { StatusBadge, statusMetadata, worklogEvaluationMetadata } from "../..";
 
 interface WorklogInfoProps {
   worklogInfo: Worklog;
@@ -11,8 +16,8 @@ interface WorklogInfoProps {
 
 const WorklogInfo = (props: WorklogInfoProps) => {
   const { worklogInfo, jiraLinked } = props;
-  const evaluationMetaItem = worklogEvaluationMetadata[worklogInfo?.evaluation as WorkLogEvaluationType];
-  const statusMetaItem = statusMetadata[worklogInfo?.status as WorkLogStatusType];
+  const evaluationMetaItem = worklogEvaluationMetadata[worklogInfo?.evaluation as WorklogEvaluationType];
+  const statusMetaItem = statusMetadata[worklogInfo?.status as WorklogStatusType];
 
   return (
     <div className={classes.worklog_info}>
@@ -46,8 +51,8 @@ const WorklogInfo = (props: WorklogInfoProps) => {
                 ...statusMetaItem,
                 icon:
                   worklogInfo.hasError &&
-                  worklogInfo.status !== WorkLogStatus.SYNC_IN_PROGRESS &&
-                  worklogInfo.status !== WorkLogStatus.UNSYNC_IN_PROGRESS ? (
+                  worklogInfo.status !== WORKLOG_STATUS.SYNC_IN_PROGRESS &&
+                  worklogInfo.status !== WORKLOG_STATUS.UNSYNC_IN_PROGRESS ? (
                     <CircleAlert />
                   ) : undefined,
               }}

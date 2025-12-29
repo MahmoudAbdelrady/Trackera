@@ -4,7 +4,7 @@ import getFormikFieldProps from "./formik/getFormikFieldProps";
 import getContrastColor from "./getContrastColor";
 import createPaginationConfig from "./createPaginationConfig";
 import formatDate from "./formatDate";
-import buildWorkLogSyncButtonProps from "./buildWorkLogSyncButtonProps";
+import buildWorklogSyncButtonProps from "./buildWorklogSyncButtonProps";
 import { isNullOrEmpty } from "./helpers";
 
 export {
@@ -15,6 +15,6 @@ export {
   getContrastColor,
   createPaginationConfig,
   formatDate,
-  buildWorkLogSyncButtonProps,
+  buildWorklogSyncButtonProps,
   isNullOrEmpty,
 };

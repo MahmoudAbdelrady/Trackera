@@ -1,8 +1,8 @@
 import { Tooltip, type TableProps } from "antd";
-import { WorkLogStatus, type SyncPayload, type WorklogEntry, type WorkLogStatusType } from "../../../shared/types";
+import { WORKLOG_STATUS, type SyncPayload, type WorklogEntry, type WorklogStatusType } from "../../../shared/types";
 import StatusBadge from "../../status-badge/StatusBadge";
 import { CircleAlert } from "lucide-react";
-import WorklogActionButtons from "../worklog-action-buttons/WorklogActionButtons";
+import WorkLogActionButtons from "../worklog-action-buttons/WorklogActionButtons";
 import { statusMetadata } from "../worklog.metadata";
 
 interface WorklogEntryColumnsParams {
@@ -13,7 +13,7 @@ interface WorklogEntryColumnsParams {
   onDelete: (task: WorklogEntry) => void;
 }
 
-const WorkLogEntryColumns = (props: WorklogEntryColumnsParams): TableProps<WorklogEntry>["columns"] => {
+const WorklogEntryColumns = (props: WorklogEntryColumnsParams): TableProps<WorklogEntry>["columns"] => {
   const { worklogId, worklogEntries, jiraLinked, onSync, onDelete } = props;
 
   return [
@@ -47,11 +47,11 @@ const WorkLogEntryColumns = (props: WorklogEntryColumnsParams): TableProps<Workl
             <span style={{ display: "inline-block" }}>
               <StatusBadge
                 {...{
-                  ...statusMetadata[status as WorkLogStatusType],
+                  ...statusMetadata[status as WorklogStatusType],
                   icon:
                     syncError &&
-                    status !== WorkLogStatus.SYNC_IN_PROGRESS &&
-                    status !== WorkLogStatus.UNSYNC_IN_PROGRESS ? (
+                    status !== WORKLOG_STATUS.SYNC_IN_PROGRESS &&
+                    status !== WORKLOG_STATUS.UNSYNC_IN_PROGRESS ? (
                       <CircleAlert />
                     ) : undefined,
                 }}
@@ -64,7 +64,7 @@ const WorkLogEntryColumns = (props: WorklogEntryColumnsParams): TableProps<Workl
       },
       ...(jiraLinked && {
         filters: Array.from(new Set(worklogEntries.map((task) => task.status))).map((status) => ({
-          text: statusMetadata[status as WorkLogStatusType]?.label ?? status,
+          text: statusMetadata[status as WorklogStatusType]?.label ?? status,
           value: status,
         })),
         onFilter: (value, record) => record.status === value,
@@ -74,15 +74,15 @@ const WorkLogEntryColumns = (props: WorklogEntryColumnsParams): TableProps<Workl
       title: "Actions",
       key: "actions",
       render: (_, record) => (
-        <WorklogActionButtons
+        <WorkLogActionButtons
           record={record}
           jiraLinked={jiraLinked}
           onSync={onSync}
           onDelete={() => onDelete(record)}
           syncParams={{
-            workLogId: worklogId,
+            worklogId: worklogId,
             entryIds: [record.id],
-            sync: record.status !== WorkLogStatus.SYNCED,
+            sync: record.status !== WORKLOG_STATUS.SYNCED,
           }}
         />
       ),
@@ -90,4 +90,4 @@ const WorkLogEntryColumns = (props: WorklogEntryColumnsParams): TableProps<Workl
   ];
 };
 
-export default WorkLogEntryColumns;
+export default WorklogEntryColumns;

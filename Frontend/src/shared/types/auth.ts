@@ -34,4 +34,13 @@ interface OAuthAccount {
   email?: string;
 }
 
-export type { LoginFormFields, SignUpFormFields, ChangePasswordFormFields, OAuthAccount, UserInfo };
+const OAUTH_PROVIDERS = {
+  GOOGLE: "google",
+  JIRA: "jira",
+} as const;
+
+type OAuthProvider = (typeof OAUTH_PROVIDERS)[keyof typeof OAUTH_PROVIDERS];
+
+export type { LoginFormFields, SignUpFormFields, ChangePasswordFormFields, OAuthAccount, UserInfo, OAuthProvider };
+
+export { OAUTH_PROVIDERS };

@@ -1,5 +1,5 @@
 import type { TableActionButtonProps } from "../components";
-import { WorkLogStatus, type SyncPayload } from "../shared/types";
+import { WORKLOG_STATUS, type SyncPayload } from "../shared/types";
 import type { UserInfo } from "../shared/types/auth";
 import { CalendarCog, CalendarOff, CalendarSync, CalendarX2 } from "lucide-react";
 
@@ -22,15 +22,14 @@ function buildSyncButtonProps<T extends SyncableItem>({
   triggerSync,
   isEntry = false,
 }: BuildSyncButtonPropsOptions<T>): TableActionButtonProps[] {
-  const hasSynced = selectedItems.some((e) => e.status === WorkLogStatus.SYNCED);
-  const hasNotSynced = selectedItems.some((e) => e.status === WorkLogStatus.NOT_SYNCED);
+  const hasSynced = selectedItems.some((e) => e.status === WORKLOG_STATUS.SYNCED);
+  const hasNotSynced = selectedItems.some((e) => e.status === WORKLOG_STATUS.NOT_SYNCED);
   const hasInProgress = selectedItems.some(
-    (e) => e.status === WorkLogStatus.SYNC_IN_PROGRESS || e.status === WorkLogStatus.UNSYNC_IN_PROGRESS
+    (e) => e.status === WORKLOG_STATUS.SYNC_IN_PROGRESS || e.status === WORKLOG_STATUS.UNSYNC_IN_PROGRESS
   );
 
-  const syncedItems = selectedItems.filter((e) => e.status === WorkLogStatus.SYNCED);
-  const notSyncedItems = selectedItems.filter((e) => e.status === WorkLogStatus.NOT_SYNCED);
-
+  const syncedItems = selectedItems.filter((e) => e.status === WORKLOG_STATUS.SYNCED);
+  const notSyncedItems = selectedItems.filter((e) => e.status === WORKLOG_STATUS.NOT_SYNCED);
   const toIds = (arr: T[]) => arr.map(extractIdentifier);
 
   const createPayload = (items: T[], sync: boolean): SyncPayload =>

@@ -1,9 +1,10 @@
 import { Button } from "antd";
 import classes from "./scss/linked-account.module.css";
+import { OAUTH_PROVIDERS } from "../../../shared/types";
 
 const providerIconMap: Record<string, React.ReactNode> = {
-  jira: <img src="/Assets/jira_icon.svg" alt="Jira" />,
-  google: <img src="/Assets/google_logo.webp" alt="Google" />,
+  [OAUTH_PROVIDERS.JIRA]: <img src="/Assets/jira_icon.svg" alt="Jira" />,
+  [OAUTH_PROVIDERS.GOOGLE]: <img src="/Assets/google_logo.webp" alt="Google" />,
 };
 
 interface LinkedAccountProps {

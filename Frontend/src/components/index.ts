@@ -12,7 +12,7 @@ import LoadingSpinner from "./loading-spinner/LoadingSpinner";
 import AuthForm from "./auth/auth-form/AuthForm";
 import AuthResult from "./auth/auth-result/AuthResult";
 import OAuthBtns from "./auth/oauth-btns/OAuthBtns";
-import ManageWorkLogModal from "./worklogs/modals/manage-worklog-modal/ManageWorkLogModal";
+import ManageWorklogModal from "./worklogs/modals/manage-worklog-modal/ManageWorklogModal";
 import CollapsibleSection from "./collapsible-section/CollapsibleSection";
 import WorklogInfo from "./worklogs/worklog-info/WorklogInfo";
 import StatusBadge from "./status-badge/StatusBadge";
@@ -26,9 +26,9 @@ import ServerError from "./server-error/ServerError";
 import AccessDenied from "./access-denied/AccessDenied";
 import WorklogSyncActions from "./worklogs/worklog-sync-actions/WorklogSyncActions";
 import WorklogActionButtons from "./worklogs/worklog-action-buttons/WorklogActionButtons";
-import WorkLogColumns from "./worklogs/worklog-columns/WorkLogColumns";
-import WorkLogTaskColumns from "./worklogs/worklog-columns/WorkLogTaskColumns";
-import WorkLogEntryColumns from "./worklogs/worklog-columns/WorkLogEntryColumns";
+import WorklogColumns from "./worklogs/worklog-columns/WorklogColumns";
+import WorklogTaskColumns from "./worklogs/worklog-columns/WorklogTaskColumns";
+import WorklogEntryColumns from "./worklogs/worklog-columns/WorklogEntryColumns";
 import WorklogTaskEntries from "./worklogs/worklog-task-entries/WorklogTaskEntries";
 
 // types
@@ -53,7 +53,7 @@ export {
   AuthForm,
   AuthResult,
   OAuthBtns,
-  ManageWorkLogModal,
+  ManageWorklogModal,
   CollapsibleSection,
   WorklogInfo,
   StatusBadge,
@@ -67,9 +67,9 @@ export {
   AccessDenied,
   WorklogSyncActions,
   WorklogActionButtons,
-  WorkLogColumns,
-  WorkLogTaskColumns,
-  WorkLogEntryColumns,
+  WorklogColumns,
+  WorklogTaskColumns,
+  WorklogEntryColumns,
   WorklogTaskEntries,
 };
 
