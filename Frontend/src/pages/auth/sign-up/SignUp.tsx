@@ -4,7 +4,7 @@ import inputFieldClasses from "../../../components/input-field/scss/input-field.
 import { Lock, Mail, User } from "lucide-react";
 import { useFormik } from "formik";
 import { signUpSchema } from "../../../shared/yup-schemas";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { showErrorToast } from "../../../utils/toast-handler/showToast";
 import { getFormikErrors } from "../../../utils";
@@ -25,35 +25,30 @@ const SignUp = () => {
     confirmPassword: "",
   });
 
-  const formikConfig = useMemo(
-    () => ({
-      initialValues: getInitialValues(),
-      validationSchema: signUpSchema,
-      onSubmit: async (values: SignUpFormFields) => {
-        setIsLoading(true);
-        try {
-          await authApis.signUp(values);
-          setShowAuthResult(true);
-        } catch (error: any) {
-          if (error.response?.data?.message === "Validation Error" && error.response?.data?.data) {
-            signUpFormik.setErrors(getFormikErrors(error.response.data.data));
-          } else {
-            showErrorToast(error);
-          }
-
-          signUpFormik.setValues({
-            ...signUpFormik.values,
-            password: "",
-            confirmPassword: "",
-          });
+  const signUpFormik = useFormik({
+    initialValues: getInitialValues(),
+    validationSchema: signUpSchema,
+    onSubmit: async (values: SignUpFormFields) => {
+      setIsLoading(true);
+      try {
+        await authApis.signUp(values);
+        setShowAuthResult(true);
+      } catch (error: any) {
+        if (error.response?.data?.message === "Validation Error" && error.response?.data?.data) {
+          signUpFormik.setErrors(getFormikErrors(error.response.data.data));
+        } else {
+          showErrorToast(error);
         }
-        setIsLoading(false);
-      },
-    }),
-    []
-  );
 
-  const signUpFormik = useFormik(formikConfig);
+        signUpFormik.setValues({
+          ...signUpFormik.values,
+          password: "",
+          confirmPassword: "",
+        });
+      }
+      setIsLoading(false);
+    },
+  });
 
   return (
     <AuthLayout>

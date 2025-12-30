@@ -3,7 +3,7 @@ import {
   WorklogInfo,
   WorklogModal,
   TrackeraTable,
-  WorklogTaskColumns,
+  createWorklogTaskColumns,
   WorklogTaskEntries,
 } from "../../components";
 import classes from "./scss/worklog-details.module.css";
@@ -167,7 +167,7 @@ const WorklogDetails = () => {
 
   const worklogTaskColumns = useMemo(
     () =>
-      WorklogTaskColumns({
+      createWorklogTaskColumns({
         worklogId: worklogId!,
         worklogTasks: worklogTasks,
         jiraLinked: loggedUserData?.jiraLinked || false,

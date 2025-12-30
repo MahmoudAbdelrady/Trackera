@@ -1,6 +1,6 @@
 import { AuthLayout, AuthResult, LoadingSpinner, type AuthResultFields } from "../../../components";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useAuthStore } from "../../../state/store";
 import { authApis } from "../../../state/api";
 
@@ -19,7 +19,7 @@ const SecurityVerification = () => {
 
   const [verificationResult, setVerificationResult] = useState<AuthResultFields>({});
 
-  const consumeToken = useCallback(async (token: string) => {
+  const consumeToken = async (token: string) => {
     if (!token) {
       setVerificationResult({
         title: "Url is expired or invalid",
@@ -40,7 +40,7 @@ const SecurityVerification = () => {
         isError: true,
       });
     }
-  }, []);
+  };
 
   useEffect(() => {
     if (!token) {

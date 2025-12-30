@@ -3,7 +3,7 @@ import { Lock, Mail } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useFormik } from "formik";
 import { loginSchema } from "../../../shared/yup-schemas";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { getFormikErrors } from "../../../utils";
 import { showErrorToast } from "../../../utils/toast-handler/showToast";
 import inputFieldClasses from "../../../components/input-field/scss/input-field.module.css";
@@ -23,32 +23,27 @@ const Login = () => {
     password: "",
   });
 
-  const formikConfig = useMemo(
-    () => ({
-      initialValues: getInitialValues(),
-      validationSchema: loginSchema,
-      onSubmit: async (values: LoginFormFields) => {
-        setIsLoading(true);
-        try {
-          await authApis.login(values);
-          authStore.setAuthenticated(true);
-          navigate("/");
-        } catch (error: any) {
-          if (error.response?.data?.message === "Validation Error" && error.response?.data?.data) {
-            loginFormik.setErrors(getFormikErrors(error.response.data.data));
-          } else {
-            showErrorToast(error);
-          }
-
-          loginFormik.setFieldValue("password", "");
+  const loginFormik = useFormik({
+    initialValues: getInitialValues(),
+    validationSchema: loginSchema,
+    onSubmit: async (values: LoginFormFields) => {
+      setIsLoading(true);
+      try {
+        await authApis.login(values);
+        authStore.setAuthenticated(true);
+        navigate("/");
+      } catch (error: any) {
+        if (error.response?.data?.message === "Validation Error" && error.response?.data?.data) {
+          loginFormik.setErrors(getFormikErrors(error.response.data.data));
+        } else {
+          showErrorToast(error);
         }
-        setIsLoading(false);
-      },
-    }),
-    []
-  );
 
-  const loginFormik = useFormik(formikConfig);
+        loginFormik.setFieldValue("password", "");
+      }
+      setIsLoading(false);
+    },
+  });
 
   return (
     <AuthLayout>

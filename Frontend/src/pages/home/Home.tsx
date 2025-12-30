@@ -6,7 +6,7 @@ import {
   WorklogModal,
   WorklogStatusCard,
   TrackeraTable,
-  WorklogColumns,
+  createWorklogColumns,
 } from "../../components";
 import classes from "./scss/home.module.css";
 import { Alert } from "antd";
@@ -100,7 +100,7 @@ const Home = () => {
 
   const tableColumns = useMemo(
     () =>
-      WorklogColumns({
+      createWorklogColumns({
         jiraLinked: loggedUserData?.jiraLinked || false,
         onSync: triggerSync,
         onEdit: (record) => {

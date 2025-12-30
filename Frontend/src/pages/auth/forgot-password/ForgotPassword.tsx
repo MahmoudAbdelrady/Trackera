@@ -1,6 +1,6 @@
 import { AuthFooter, AuthForm, AuthLayout, AuthResult, InputField, type AuthResultFields } from "../../../components";
 import { Mail } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import inputFieldClasses from "../../../components/input-field/scss/input-field.module.css";
 import { useFormik } from "formik";
@@ -23,29 +23,24 @@ const ForgotPassword = () => {
     email: "",
   });
 
-  const formikConfig = useMemo(
-    () => ({
-      initialValues: getInitialValues(),
-      validationSchema: emailSchema,
-      onSubmit: async (values: ForgotPasswordFormFields) => {
-        setIsLoading(true);
-        try {
-          const result = await authApis.requestResetPassword(values.email);
-          setPasswordResetResult({
-            description: result,
-          });
-          setShowAuthResult(true);
-        } catch (error) {
-          showErrorToast(error);
-          forgotPasswordFormik.resetForm();
-        }
-        setIsLoading(false);
-      },
-    }),
-    []
-  );
-
-  const forgotPasswordFormik = useFormik(formikConfig);
+  const forgotPasswordFormik = useFormik({
+    initialValues: getInitialValues(),
+    validationSchema: emailSchema,
+    onSubmit: async (values: ForgotPasswordFormFields) => {
+      setIsLoading(true);
+      try {
+        const result = await authApis.requestResetPassword(values.email);
+        setPasswordResetResult({
+          description: result,
+        });
+        setShowAuthResult(true);
+      } catch (error) {
+        showErrorToast(error);
+        forgotPasswordFormik.resetForm();
+      }
+      setIsLoading(false);
+    },
+  });
 
   return (
     <AuthLayout>

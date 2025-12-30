@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { userQueries } from "../../../../state/queries";
 import classes from "./scss/change-password.module.css";
 import { useFormik } from "formik";
@@ -15,7 +15,7 @@ import { getFormikFieldProps } from "../../../../utils";
 const ChangePasswordSection = () => {
   const { data: userData, refetch: refetchUser } = userQueries.useMeQuery();
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
-  const hasPassword: boolean = useMemo(() => !!userData?.passwordSet, [userData?.passwordSet]);
+  const hasPassword: boolean = !!userData?.passwordSet;
 
   const getInitialValues = (): ChangePasswordFormFields => ({
     ...(hasPassword ? { currentPassword: "" } : {}),

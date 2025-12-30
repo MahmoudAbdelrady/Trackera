@@ -16,7 +16,7 @@ interface WorklogColumnsParams {
   onDelete: (record: Worklog) => void;
 }
 
-const WorklogColumns = (props: WorklogColumnsParams): TableProps<Worklog>["columns"] => {
+const createWorklogColumns = (props: WorklogColumnsParams): TableProps<Worklog>["columns"] => {
   const { jiraLinked, onSync, onEdit, onDelete } = props;
 
   return [
@@ -82,4 +82,4 @@ const WorklogColumns = (props: WorklogColumnsParams): TableProps<Worklog>["colum
   ];
 };
 
-export default WorklogColumns;
+export default createWorklogColumns;

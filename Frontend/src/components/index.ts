@@ -26,9 +26,9 @@ import ServerError from "./server-error/ServerError";
 import AccessDenied from "./access-denied/AccessDenied";
 import WorklogSyncActions from "./worklogs/worklog-sync-actions/WorklogSyncActions";
 import WorklogActionButtons from "./worklogs/worklog-action-buttons/WorklogActionButtons";
-import WorklogColumns from "./worklogs/worklog-columns/WorklogColumns";
-import WorklogTaskColumns from "./worklogs/worklog-columns/WorklogTaskColumns";
-import WorklogEntryColumns from "./worklogs/worklog-columns/WorklogEntryColumns";
+import createWorklogColumns from "./worklogs/worklog-columns/createWorklogColumns";
+import createWorklogTaskColumns from "./worklogs/worklog-columns/createWorklogTaskColumns";
+import createWorklogEntryColumns from "./worklogs/worklog-columns/createWorklogEntryColumns";
 import WorklogTaskEntries from "./worklogs/worklog-task-entries/WorklogTaskEntries";
 
 // types
@@ -67,9 +67,9 @@ export {
   AccessDenied,
   WorklogSyncActions,
   WorklogActionButtons,
-  WorklogColumns,
-  WorklogTaskColumns,
-  WorklogEntryColumns,
+  createWorklogColumns,
+  createWorklogTaskColumns,
+  createWorklogEntryColumns,
   WorklogTaskEntries,
 };
 

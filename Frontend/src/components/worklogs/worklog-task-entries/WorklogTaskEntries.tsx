@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { WORKLOG_STATUS, type SyncPayload, type WorklogEntry, type WorklogTask } from "../../../shared/types";
 import TrackeraTable from "../../trackera-table/TrackeraTable";
 import WorkLogModal from "../modals/worklog-modal/WorklogModal";
-import { WorklogEntryColumns } from "../../";
+import { createWorklogEntryColumns } from "../../";
 import buildSyncButtonProps from "../../../utils/buildWorklogSyncButtonProps";
 import { worklogApis } from "../../../state/api";
 import { showErrorToast } from "../../../utils/toast-handler/showToast";
@@ -43,7 +43,7 @@ const WorklogTaskEntries = (props: WorklogTaskEntriesProps) => {
 
   const worklogEntryColumns = useMemo(
     () =>
-      WorklogEntryColumns({
+      createWorklogEntryColumns({
         worklogId: worklogId!,
         worklogEntries: worklogEntries,
         jiraLinked: loggedUserData?.jiraLinked,
@@ -53,7 +53,7 @@ const WorklogTaskEntries = (props: WorklogTaskEntriesProps) => {
           setSelectedEntry(record);
         },
       }),
-    [loggedUserData?.jiraLinked, triggerSync]
+    [worklogId, worklogEntries, loggedUserData?.jiraLinked, triggerSync]
   );
 
   const fetchEntries = useCallback(async () => {

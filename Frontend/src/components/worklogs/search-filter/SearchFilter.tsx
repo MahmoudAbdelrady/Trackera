@@ -110,21 +110,27 @@ const SearchFilter = (props: WorklogsFilterProps) => {
     return filters;
   }, []);
 
-  const handleCriteriaTypeChange = useCallback((value: CriteriaType) => {
-    setCriteriaType(value);
-    if (value === FIELD_NAMES.TOTAL_HOURS) {
-      searchFormik.setFieldValue(FIELD_NAMES.EVALUATION, fieldConfig[FIELD_NAMES.EVALUATION]);
-    } else {
-      searchFormik.setFieldValue(FIELD_NAMES.TOTAL_HOURS, fieldConfig[FIELD_NAMES.TOTAL_HOURS]);
-    }
-  }, []);
+  const handleCriteriaTypeChange = useCallback(
+    (value: CriteriaType) => {
+      setCriteriaType(value);
+      if (value === FIELD_NAMES.TOTAL_HOURS) {
+        searchFormik.setFieldValue(FIELD_NAMES.EVALUATION, fieldConfig[FIELD_NAMES.EVALUATION]);
+      } else {
+        searchFormik.setFieldValue(FIELD_NAMES.TOTAL_HOURS, fieldConfig[FIELD_NAMES.TOTAL_HOURS]);
+      }
+    },
+    [searchFormik]
+  );
 
-  const handleOperatorChange = useCallback((value: string) => {
-    searchFormik.setFieldValue(`${FIELD_NAMES.TOTAL_HOURS}.operator`, value);
-    if (value !== OPERATORS.BETWEEN) {
-      searchFormik.setFieldValue(`${FIELD_NAMES.TOTAL_HOURS}.secondValue`, null);
-    }
-  }, []);
+  const handleOperatorChange = useCallback(
+    (value: string) => {
+      searchFormik.setFieldValue(`${FIELD_NAMES.TOTAL_HOURS}.operator`, value);
+      if (value !== OPERATORS.BETWEEN) {
+        searchFormik.setFieldValue(`${FIELD_NAMES.TOTAL_HOURS}.secondValue`, null);
+      }
+    },
+    [searchFormik]
+  );
 
   return (
     <div className={classes.search_filters_container}>

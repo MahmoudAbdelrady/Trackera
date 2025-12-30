@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import type { JiraSyncEventProps, SyncPayload } from "../types";
 import { showErrorToast } from "../../utils/toast-handler/showToast";
-import { workLogApis } from "../../state/api";
+import { worklogApis } from "../../state/api";
 import { useSSEContext } from "./useSSEContext";
 
 interface JiraSyncSSEReturn {
@@ -76,7 +76,7 @@ export const useJiraSyncSSE = ({ hasInProgress, onStatusEvent }: JiraSyncSSEOpti
 
   const fireSync = async (payload: SyncPayload) => {
     try {
-      await workLogApis.syncWorkLog(payload);
+      await worklogApis.syncWorklog(payload);
     } catch (error) {
       showErrorToast(error);
     }

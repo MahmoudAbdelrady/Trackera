@@ -16,6 +16,7 @@ interface OAuthBtnProps {
 const OAuthBtns = ({ disabled }: { disabled?: boolean }) => {
   const authStore = useAuthStore();
   const navigate = useNavigate();
+
   const { linkProviderAccount } = useOAuthFlow({
     onSuccess: () => {
       authStore.setAuthenticated(true);

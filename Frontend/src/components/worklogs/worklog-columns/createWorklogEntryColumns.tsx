@@ -13,7 +13,7 @@ interface WorklogEntryColumnsParams {
   onDelete: (task: WorklogEntry) => void;
 }
 
-const WorklogEntryColumns = (props: WorklogEntryColumnsParams): TableProps<WorklogEntry>["columns"] => {
+const createWorklogEntryColumns = (props: WorklogEntryColumnsParams): TableProps<WorklogEntry>["columns"] => {
   const { worklogId, worklogEntries, jiraLinked, onSync, onDelete } = props;
 
   return [
@@ -90,4 +90,4 @@ const WorklogEntryColumns = (props: WorklogEntryColumnsParams): TableProps<Workl
   ];
 };
 
-export default WorklogEntryColumns;
+export default createWorklogEntryColumns;

@@ -7,7 +7,7 @@ import {
   type AuthResultFields,
 } from "../../../components";
 import { Lock } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import inputFieldClasses from "../../../components/input-field/scss/input-field.module.css";
 import { useFormik } from "formik";
@@ -61,33 +61,25 @@ const ChangePassword = () => {
     setIsLoading(false);
   };
 
-  const validateToken = useCallback(
-    async (token: string) => {
-      try {
-        await authApis.validateToken(token);
-      } catch (error: any) {
-        setPasswordChangeResult({
-          description: error.response?.data?.message,
-          isError: true,
-        });
-        setShowAuthResult(true);
-      }
+  const validateToken = useCallback(async (token: string) => {
+    try {
+      await authApis.validateToken(token);
+    } catch (error: any) {
+      setPasswordChangeResult({
+        description: error.response?.data?.message,
+        isError: true,
+      });
+      setShowAuthResult(true);
+    }
+  }, []);
+
+  const changePasswordFormik = useFormik({
+    initialValues: getInitialValues(),
+    validationSchema: updatePasswordSchema(),
+    onSubmit: async (values: ChangePasswordFormFields) => {
+      await changeAccountPassword(values);
     },
-    [token]
-  );
-
-  const formikConfig = useMemo(
-    () => ({
-      initialValues: getInitialValues(),
-      validationSchema: updatePasswordSchema(),
-      onSubmit: async (values: ChangePasswordFormFields) => {
-        await changeAccountPassword(values);
-      },
-    }),
-    [changeAccountPassword]
-  );
-
-  const changePasswordFormik = useFormik(formikConfig);
+  });
 
   useEffect(() => {
     if (!token) {
