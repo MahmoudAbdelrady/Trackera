@@ -1,4 +1,4 @@
-import { AuthFooter, AuthForm, AuthLayout, AuthResult, InputField, type AuthResultFields } from "../../../components";
+import { AuthFooter, AuthForm, AuthResult, InputField, type AuthResultFields } from "../../../components";
 import { Mail } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -8,6 +8,7 @@ import { emailSchema } from "../../../shared/yup-schemas";
 import { showErrorToast } from "../../../utils/toast-handler/showToast";
 import { authApis } from "../../../state/api";
 import { getFormikFieldProps } from "../../../utils";
+import { AuthLayout } from "../../../layouts";
 
 interface ForgotPasswordFormFields {
   email: string;

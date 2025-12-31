@@ -1,5 +1,4 @@
 import {
-  AppLayout,
   WorklogInfo,
   WorklogModal,
   TrackeraTable,
@@ -25,6 +24,7 @@ import { userQueries } from "../../state/queries";
 import buildSyncButtonProps from "../../utils/buildWorklogSyncButtonProps";
 import { useJiraSyncSSE } from "../../shared/hooks";
 import { worklogApis } from "../../state/api";
+import { AppLayout } from "../../layouts";
 
 const WorklogDetails = () => {
   const { worklogId } = useParams();

@@ -1,4 +1,4 @@
-import { AuthFooter, AuthForm, AuthLayout, InputField } from "../../../components";
+import { AuthFooter, AuthForm, InputField } from "../../../components";
 import { Lock, Mail } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useFormik } from "formik";
@@ -12,6 +12,7 @@ import { useAuthStore } from "../../../state/store";
 import { authApis } from "../../../state/api";
 import { getFormikFieldProps } from "../../../utils";
 import type { LoginFormFields } from "../../../shared/types";
+import { AuthLayout } from "../../../layouts";
 
 const Login = () => {
   const [isLoading, setIsLoading] = useState<boolean>(false);

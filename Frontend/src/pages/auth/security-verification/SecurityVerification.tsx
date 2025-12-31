@@ -1,8 +1,9 @@
-import { AuthLayout, AuthResult, LoadingSpinner, type AuthResultFields } from "../../../components";
+import { AuthResult, LoadingSpinner, type AuthResultFields } from "../../../components";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { useAuthStore } from "../../../state/store";
 import { authApis } from "../../../state/api";
+import { AuthLayout } from "../../../layouts";
 
 const verificationTypeMessage: Record<string, string> = {
   "Account Activation": "You can now log in to your account.",

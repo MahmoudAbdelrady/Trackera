@@ -1,4 +1,4 @@
-import { AuthFooter, AuthForm, AuthLayout, AuthResult, InputField } from "../../../components";
+import { AuthFooter, AuthForm, AuthResult, InputField } from "../../../components";
 import authClasses from "../scss/auth.module.css";
 import inputFieldClasses from "../../../components/input-field/scss/input-field.module.css";
 import { Lock, Mail, User } from "lucide-react";
@@ -11,6 +11,7 @@ import { getFormikErrors } from "../../../utils";
 import { authApis } from "../../../state/api";
 import { getFormikFieldProps } from "../../../utils";
 import type { SignUpFormFields } from "../../../shared/types";
+import { AuthLayout } from "../../../layouts";
 
 const SignUp = () => {
   const [showAuthResult, setShowAuthResult] = useState<boolean>(false);

@@ -1,11 +1,4 @@
-import {
-  AuthForm,
-  AuthLayout,
-  AuthResult,
-  InputField,
-  LoadingSpinner,
-  type AuthResultFields,
-} from "../../../components";
+import { AuthForm, AuthResult, InputField, LoadingSpinner, type AuthResultFields } from "../../../components";
 import { Lock } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -17,6 +10,7 @@ import { showErrorToast } from "../../../utils/toast-handler/showToast";
 import { useAuthStore } from "../../../state/store";
 import { authApis } from "../../../state/api";
 import { getFormikFieldProps } from "../../../utils";
+import { AuthLayout } from "../../../layouts";
 
 const ChangePassword = () => {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);

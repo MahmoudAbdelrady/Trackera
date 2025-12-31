@@ -1,5 +1,5 @@
 import { Button, Tabs, type TableProps, type TabsProps } from "antd";
-import { AppLayout, TrackeraTable, StatusBadge, AccessDenied, type StatusBadgeProps } from "../../components";
+import { TrackeraTable, StatusBadge, AccessDenied, type StatusBadgeProps } from "../../components";
 import { ExternalLink, RefreshCw } from "lucide-react";
 import { type JiraTask } from "../../shared/types";
 import { Link } from "react-router-dom";
@@ -9,6 +9,7 @@ import { showErrorToast } from "../../utils/toast-handler/showToast";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { userQueries } from "../../state/queries";
 import { jiraApis } from "../../state/api";
+import { AppLayout } from "../../layouts";
 
 type JiraTaskEvaluationType = "ON_TIME" | "OVERESTIMATED";
 

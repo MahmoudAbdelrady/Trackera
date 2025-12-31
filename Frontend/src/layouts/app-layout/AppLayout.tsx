@@ -1,7 +1,7 @@
 import { ChevronDown, LogOut } from "lucide-react";
 import classes from "./scss/app-layout.module.css";
 import { Avatar, Dropdown, type MenuProps } from "antd";
-import { Sidebar } from "..";
+import { Sidebar } from "../../components";
 import { useState } from "react";
 import { useAuthStore } from "../../state/store";
 import { showErrorToast, showSuccessToast } from "../../utils/toast-handler/showToast";

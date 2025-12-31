@@ -1,5 +1,5 @@
 import { Link, Lock, Mail, Sliders } from "lucide-react";
-import { AppLayout, ChangePasswordSection, EmailSection, LinkedAccount, PreferencesSection } from "../../components";
+import { ChangePasswordSection, EmailSection, LinkedAccount, PreferencesSection } from "../../components";
 import { SettingsSection } from "../../components";
 import { showErrorToast, showSuccessToast } from "../../utils/toast-handler/showToast";
 import { useEffect, useState } from "react";
@@ -9,6 +9,7 @@ import classes from "./scss/settings.module.css";
 import { authApis, userApis } from "../../state/api";
 import type { OAuthAccount } from "../../shared/types";
 import { Spin } from "antd";
+import { AppLayout } from "../../layouts";
 
 const Settings = () => {
   const { data: userData, refetch: refetchUser } = userQueries.useMeQuery();

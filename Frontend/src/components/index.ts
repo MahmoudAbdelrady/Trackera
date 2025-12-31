@@ -1,7 +1,5 @@
 // components
-import AuthLayout from "./auth/auth-layout/AuthLayout";
 import AuthFooter from "./auth/auth-footer/AuthFooter";
-import AppLayout from "./app-layout/AppLayout";
 import Sidebar from "./sidebar/Sidebar";
 import WorklogStatusCard from "./worklogs/worklog-status-card/WorklogStatusCard";
 import SearchFilter from "./worklogs/search-filter/SearchFilter";
@@ -40,9 +38,7 @@ import type { StatusBadgeProps } from "./status-badge/status-badge.types";
 import { worklogEvaluationMetadata, statusMetadata } from "./worklogs/worklog.metadata";
 
 export {
-  AuthLayout,
   AuthFooter,
-  AppLayout,
   Sidebar,
   WorklogStatusCard,
   SearchFilter,

@@ -1,7 +1,6 @@
 import { ClipboardPlus } from "lucide-react";
 import {
   ManageWorklogModal,
-  AppLayout,
   SearchFilter,
   WorklogModal,
   WorklogStatusCard,
@@ -19,6 +18,7 @@ import { userQueries } from "../../state/queries";
 import { useJiraSyncSSE } from "../../shared/hooks";
 import { worklogApis } from "../../state/api";
 import type { WorklogSummaryCard } from "../../components/worklogs/worklog-status-card/WorklogStatusCard";
+import { AppLayout } from "../../layouts";
 
 const Home = () => {
   const { data: loggedUserData } = userQueries.useMeQuery();
