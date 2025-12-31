@@ -25,7 +25,7 @@ const SignUp = () => {
     confirmPassword: "",
   });
 
-  const signUpFormik = useFormik({
+  const signUpFormik = useFormik<SignUpFormFields>({
     initialValues: getInitialValues(),
     validationSchema: signUpSchema,
     onSubmit: async (values: SignUpFormFields) => {

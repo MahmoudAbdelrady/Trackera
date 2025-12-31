@@ -73,7 +73,7 @@ const SearchFilter = (props: WorklogsFilterProps) => {
   const { jiraLinked, setFilters } = props;
   const [criteriaType, setCriteriaType] = useState<CriteriaType>(FIELD_NAMES.TOTAL_HOURS);
 
-  const searchFormik = useFormik({
+  const searchFormik = useFormik<SearchFilterValues>({
     initialValues: fieldConfig,
     validationSchema: searchFilterSchema,
     onSubmit: (values) => {

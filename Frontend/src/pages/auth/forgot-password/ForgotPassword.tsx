@@ -19,12 +19,10 @@ const ForgotPassword = () => {
   const [passwordResetResult, setPasswordResetResult] = useState<AuthResultFields>({});
   const navigate = useNavigate();
 
-  const getInitialValues = (): ForgotPasswordFormFields => ({
-    email: "",
-  });
-
-  const forgotPasswordFormik = useFormik({
-    initialValues: getInitialValues(),
+  const forgotPasswordFormik = useFormik<ForgotPasswordFormFields>({
+    initialValues: {
+      email: "",
+    },
     validationSchema: emailSchema,
     onSubmit: async (values: ForgotPasswordFormFields) => {
       setIsLoading(true);

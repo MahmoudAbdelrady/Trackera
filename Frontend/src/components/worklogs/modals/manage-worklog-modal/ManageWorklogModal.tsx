@@ -20,6 +20,15 @@ interface ManageWorklogModalProps {
   jiraLinked: boolean;
 }
 
+interface ManageWorklogFormValues {
+  mode: "add" | "edit";
+  logName: string;
+  logDate: dayjs.Dayjs;
+  logFile: File | null;
+  reEvaluate: boolean;
+  syncToJira: boolean;
+}
+
 const ManageWorklogModal = (props: ManageWorklogModalProps) => {
   const { jiraLinked, selectedWorklog, setIsOpen, setSelectedWorklog, refreshWorklogData } = props;
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -35,7 +44,7 @@ const ManageWorklogModal = (props: ManageWorklogModalProps) => {
     }
   };
 
-  const manageWorklogFormik = useFormik({
+  const manageWorklogFormik = useFormik<ManageWorklogFormValues>({
     initialValues: {
       mode: isEditMode ? "edit" : "add",
       logName: isEditMode ? selectedWorklog!.name : "",
@@ -88,7 +97,7 @@ const ManageWorklogModal = (props: ManageWorklogModalProps) => {
     setSelectedWorklog?.(undefined);
   };
 
-  const getFormData = (values: typeof manageWorklogFormik.values, isEdit: boolean): FormData => {
+  const getFormData = (values: ManageWorklogFormValues, isEdit: boolean): FormData => {
     const formData = new FormData();
     let worklogValues: { logName: string; logDate: string; syncToJira?: boolean } = {
       logName: values.logName,

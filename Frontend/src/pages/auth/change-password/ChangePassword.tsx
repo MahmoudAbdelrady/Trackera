@@ -28,11 +28,6 @@ const ChangePassword = () => {
   const [searchParams] = useSearchParams();
   const token = searchParams.get("token");
 
-  const getInitialValues = (): ChangePasswordFormFields => ({
-    newPassword: "",
-    confirmNewPassword: "",
-  });
-
   const changeAccountPassword = async (values: ChangePasswordFormFields) => {
     if (!token) {
       showErrorToast({ message: "Invalid or missing token" });
@@ -73,8 +68,11 @@ const ChangePassword = () => {
     }
   }, []);
 
-  const changePasswordFormik = useFormik({
-    initialValues: getInitialValues(),
+  const changePasswordFormik = useFormik<ChangePasswordFormFields>({
+    initialValues: {
+      newPassword: "",
+      confirmNewPassword: "",
+    },
     validationSchema: updatePasswordSchema(),
     onSubmit: async (values: ChangePasswordFormFields) => {
       await changeAccountPassword(values);

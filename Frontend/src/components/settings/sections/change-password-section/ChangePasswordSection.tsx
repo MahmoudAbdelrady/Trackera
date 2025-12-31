@@ -17,16 +17,14 @@ const ChangePasswordSection = () => {
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
   const hasPassword: boolean = !!userData?.passwordSet;
 
-  const getInitialValues = (): ChangePasswordFormFields => ({
-    ...(hasPassword ? { currentPassword: "" } : {}),
-    newPassword: "",
-    confirmNewPassword: "",
-  });
-
-  const changePasswordFormik = useFormik({
-    initialValues: getInitialValues(),
+  const changePasswordFormik = useFormik<ChangePasswordFormFields>({
+    initialValues: {
+      ...(hasPassword ? { currentPassword: "" } : {}),
+      newPassword: "",
+      confirmNewPassword: "",
+    },
     validationSchema: updatePasswordSchema(hasPassword),
-    onSubmit: async (values) => {
+    onSubmit: async (values: ChangePasswordFormFields) => {
       setIsUpdatingPassword(true);
       try {
         const result = await userApis.changePassword(values);

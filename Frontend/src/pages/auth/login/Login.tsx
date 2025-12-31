@@ -23,7 +23,7 @@ const Login = () => {
     password: "",
   });
 
-  const loginFormik = useFormik({
+  const loginFormik = useFormik<LoginFormFields>({
     initialValues: getInitialValues(),
     validationSchema: loginSchema,
     onSubmit: async (values: LoginFormFields) => {
