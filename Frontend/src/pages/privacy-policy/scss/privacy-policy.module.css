@@ -1,0 +1,97 @@
+.privacy_policy {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 120px 120px;
+}
+@media (max-width: 920px) {
+  .privacy_policy {
+    padding: 80px 20px;
+  }
+}
+.privacy_policy .content {
+  margin-right: 50px;
+}
+.privacy_policy .content .header h1 {
+  margin-bottom: 30px;
+}
+.privacy_policy .content .header p {
+  background-color: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  color: #5c5c5c;
+  border: 1px solid #e5e7eb;
+  max-width: 900px;
+  line-height: 1.8;
+}
+.privacy_policy .content .header span {
+  display: block;
+  margin-top: 30px;
+  color: #5c5c5c;
+}
+.privacy_policy .content .policy_items {
+  margin-top: 50px;
+}
+.privacy_policy .content .policy_items .policy_item:not(:last-child) {
+  margin-bottom: 40px;
+}
+.privacy_policy .content .policy_items .policy_item .policy_title {
+  margin-bottom: 20px;
+  font-size: 22px;
+}
+.privacy_policy .content .policy_items .policy_item .inner_policy:not(:last-child) {
+  margin-bottom: 30px;
+}
+.privacy_policy .content .policy_items .policy_item .inner_policy p {
+  margin: 10px 0;
+  color: #5c5c5c;
+}
+.privacy_policy .content .policy_items .policy_item .inner_policy ul {
+  list-style: disc;
+  margin-left: 30px;
+}
+.privacy_policy .content .policy_items .policy_item .inner_policy ul li {
+  margin: 8px 0;
+  color: #5c5c5c;
+}
+.privacy_policy .content .policy_items .policy_item .inner_policy span {
+  display: block;
+  margin: 15px 0;
+  color: #5c5c5c;
+}
+.privacy_policy .anchor_container {
+  position: sticky;
+  top: 120px;
+}
+@media (max-width: 920px) {
+  .privacy_policy .anchor_container {
+    display: none;
+  }
+}
+.privacy_policy .anchor_container .header {
+  margin-bottom: 20px;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: #5c5c5c;
+}
+
+.policy_anchor_item {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 10px;
+}
+.policy_anchor_item .item_num {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  background-color: #e5e7eb;
+  width: 25px;
+  height: 25px;
+  border-radius: 6px;
+}
+
+.anchor_item:not(:last-child) {
+  margin-bottom: 10px;
+}/*# sourceMappingURL=privacy-policy.module.css.map */
