@@ -1,48 +1,46 @@
-interface AuthLayoutProps {
-  children: React.ReactNode;
+interface LoginFormFields {
+  email: string;
+  password: string;
 }
 
-interface AuthFormProps {
-  title: string;
-  description: string;
-  children: React.ReactNode;
-  submitButtonText: string;
-  onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
-  isSubmitBtnLoading?: boolean;
-  isSubmitBtnDisabled?: boolean;
-  footer?: React.ReactNode;
+interface SignUpFormFields {
+  firstname: string;
+  lastname: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
 }
 
-interface AuthResultFields {
-  title?: string;
-  description?: string;
-  isError?: boolean;
+interface UserInfo {
+  firstname: string;
+  lastname: string;
+  primaryEmail: string;
+  pendingEmail: string | null;
+  profilePicture: string | null;
+  avatarColor: string;
+  passwordSet: boolean;
+  jiraLinked: boolean;
 }
 
-interface AuthResultProps extends AuthResultFields {
-  message: string;
-  buttonText: string;
-  onClick: () => void;
-}
-
-interface AuthFooterProps {
-  hasOAuthBtns?: boolean;
-  isOAuthBtnsDisabled?: boolean;
-  footerText: string;
-  footerLink: string;
-  footerLinkText: string;
-}
-
-interface OAuthBtnProps {
-  label: string;
-  icon: React.ReactNode;
-  onClick: () => void;
-}
-
-interface UpdatePasswordFormFields {
+interface ChangePasswordFormFields {
   currentPassword?: string;
   newPassword: string;
   confirmNewPassword: string;
 }
 
-export type { AuthLayoutProps, AuthFormProps, AuthResultFields, AuthResultProps, AuthFooterProps, OAuthBtnProps, UpdatePasswordFormFields };
+interface OAuthAccount {
+  provider: Record<string, string>;
+  isLinked: boolean;
+  email?: string;
+}
+
+const OAUTH_PROVIDERS = {
+  GOOGLE: "google",
+  JIRA: "jira",
+} as const;
+
+type OAuthProvider = (typeof OAUTH_PROVIDERS)[keyof typeof OAUTH_PROVIDERS];
+
+export type { LoginFormFields, SignUpFormFields, ChangePasswordFormFields, OAuthAccount, UserInfo, OAuthProvider };
+
+export { OAUTH_PROVIDERS };

@@ -1,14 +1,16 @@
-import { AuthForm, AuthLayout, AuthResult, InputField, LoadingSpinner } from "../../../components";
+import { AuthForm, AuthResult, InputField, LoadingSpinner, type AuthResultFields } from "../../../components";
 import { Lock } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import inputFieldClasses from "../../../components/input-field/scss/input-field.module.css";
 import { useFormik } from "formik";
 import { updatePasswordSchema } from "../../../shared/yup-schemas";
-import requestInstance from "../../../shared/axios/request-instance";
-import type { AuthResultFields, UpdatePasswordFormFields } from "../../../shared/types";
+import type { ChangePasswordFormFields } from "../../../shared/types";
 import { showErrorToast } from "../../../utils/toast-handler/showToast";
 import { useAuthStore } from "../../../state/store";
+import { authApis } from "../../../state/api";
+import { getFormikFieldProps } from "../../../utils";
+import { AuthLayout } from "../../../layouts";
 
 const ChangePassword = () => {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -20,37 +22,54 @@ const ChangePassword = () => {
   const [searchParams] = useSearchParams();
   const token = searchParams.get("token");
 
-  const changePasswordFormik = useFormik({
-    initialValues: (Object.keys(updatePasswordSchema().fields) as (keyof UpdatePasswordFormFields)[]).reduce((acc, key) => {
-      acc[key] = "";
-      return acc;
-    }, {} as UpdatePasswordFormFields),
-    validationSchema: updatePasswordSchema(),
-    onSubmit: async (values) => {
-      setIsLoading(true);
-      try {
-        const { currentPassword, ...newPasswordInfo } = values;
-        const response = await requestInstance.post(`/auth/password?token=${token}`, {
-          ...newPasswordInfo,
-        });
+  const changeAccountPassword = async (values: ChangePasswordFormFields) => {
+    if (!token) {
+      showErrorToast({ message: "Invalid or missing token" });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const result = await authApis.changePassword(token, values);
+      setPasswordChangeResult({
+        description: result,
+      });
+      setShowAuthResult(true);
+    } catch (error: any) {
+      if (error.response?.status === 403 && error.response?.data?.message) {
         setPasswordChangeResult({
-          description: response.data,
+          description: error.response?.data?.message,
+          isError: true,
         });
         setShowAuthResult(true);
-      } catch (error: any) {
-        console.log("Error:", error);
-        if (error.response?.status === 403) {
-          setPasswordChangeResult({
-            description: error.response?.data?.message,
-            isError: true,
-          });
-          setShowAuthResult(true);
-        } else {
-          showErrorToast(error);
-          changePasswordFormik.resetForm();
-        }
+      } else {
+        showErrorToast(error);
+        changePasswordFormik.resetForm();
       }
-      setIsLoading(false);
+    }
+    setIsLoading(false);
+  };
+
+  const validateToken = useCallback(async (token: string) => {
+    try {
+      await authApis.validateToken(token);
+    } catch (error: any) {
+      setPasswordChangeResult({
+        description: error.response?.data?.message,
+        isError: true,
+      });
+      setShowAuthResult(true);
+    }
+  }, []);
+
+  const changePasswordFormik = useFormik<ChangePasswordFormFields>({
+    initialValues: {
+      newPassword: "",
+      confirmNewPassword: "",
+    },
+    validationSchema: updatePasswordSchema(),
+    onSubmit: async (values: ChangePasswordFormFields) => {
+      await changeAccountPassword(values);
     },
   });
 
@@ -62,22 +81,10 @@ const ChangePassword = () => {
       });
       setShowAuthResult(true);
     } else {
-      const validateToken = async () => {
-        try {
-          await requestInstance.post(`/auth/token/validate?token=${token}`);
-        } catch (error: any) {
-          setPasswordChangeResult({
-            description: error.response?.data?.message,
-            isError: true,
-          });
-          setShowAuthResult(true);
-        }
-      };
-
-      validateToken();
+      validateToken(token);
     }
     setIsVerifying(false);
-  }, [token]);
+  }, [token, validateToken]);
 
   return isVerifying ? (
     <LoadingSpinner />
@@ -86,8 +93,14 @@ const ChangePassword = () => {
       {showAuthResult ? (
         <AuthResult
           title="Password Change"
-          description={passwordChangeResult.isError ? "Error occurred while changing password" : passwordChangeResult.description!}
-          message={passwordChangeResult.isError ? passwordChangeResult.description! : "You can now sign in with your new password"}
+          description={
+            passwordChangeResult.isError ? "Error occurred while changing password" : passwordChangeResult.description!
+          }
+          message={
+            passwordChangeResult.isError
+              ? passwordChangeResult.description!
+              : "You can now sign in with your new password"
+          }
           buttonText={`Back to ${isAuthenticated ? "Home" : "Sign In"}`}
           isError={passwordChangeResult.isError}
           onClick={() => navigate(`${isAuthenticated ? "/" : "/login"}`)}
@@ -105,25 +118,15 @@ const ChangePassword = () => {
             label="New Password"
             icon={<Lock className={inputFieldClasses.input_icon} />}
             placeholder="Enter your new password"
-            name="newPassword"
-            value={changePasswordFormik.values.newPassword}
-            onChange={changePasswordFormik.handleChange}
-            onBlur={changePasswordFormik.handleBlur}
             type="password"
-            disabled={isLoading}
-            error={changePasswordFormik.touched.newPassword && changePasswordFormik.errors.newPassword ? changePasswordFormik.errors.newPassword : undefined}
+            {...getFormikFieldProps(changePasswordFormik, "newPassword", isLoading)}
           />
           <InputField
             label="Confirm New Password"
             icon={<Lock className={inputFieldClasses.input_icon} />}
             placeholder="Confirm your new password"
-            name="confirmNewPassword"
-            value={changePasswordFormik.values.confirmNewPassword}
-            onChange={changePasswordFormik.handleChange}
-            onBlur={changePasswordFormik.handleBlur}
             type="password"
-            disabled={isLoading}
-            error={changePasswordFormik.touched.confirmNewPassword && changePasswordFormik.errors.confirmNewPassword ? changePasswordFormik.errors.confirmNewPassword : undefined}
+            {...getFormikFieldProps(changePasswordFormik, "confirmNewPassword", isLoading)}
           />
         </AuthForm>
       )}

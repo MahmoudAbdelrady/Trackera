@@ -1,71 +1,82 @@
-import { useState, useEffect } from "react";
-import { useSSE } from "./";
-import requestInstance from "../axios/request-instance";
-import type { SyncPayload } from "../types";
+import { useState, useEffect, useRef } from "react";
+import type { JiraSyncEventProps, SyncPayload } from "../types";
 import { showErrorToast } from "../../utils/toast-handler/showToast";
+import { worklogApis } from "../../state/api";
+import { useSSEContext } from "./useSSEContext";
 
-type JiraSyncSSEReturn = {
+interface JiraSyncSSEReturn {
   triggerSync: (payload: SyncPayload) => void;
-};
+}
 
-type JiraSyncSSEOptions = {
+interface JiraSyncSSEOptions {
   hasInProgress: boolean;
-  onStatusEvent: (event: any) => void;
-};
+  onStatusEvent: (event: JiraSyncEventProps) => void;
+}
 
 export const useJiraSyncSSE = ({ hasInProgress, onStatusEvent }: JiraSyncSSEOptions): JiraSyncSSEReturn => {
   const [pendingSyncPayload, setPendingSyncPayload] = useState<SyncPayload | null>(null);
-  const [forceSubscribe, setForceSubscribe] = useState(false);
-  const [sseReady, setSseReady] = useState(false);
   const [sseAck, setSseAck] = useState(false);
+  const [wantsSSE, setWantsSSE] = useState(false);
 
-  const sseEnabled = forceSubscribe || hasInProgress;
+  const { isConnected, subscribe, forceConnect, allowDisconnect } = useSSEContext();
+  const unsubscribeRef = useRef<null | (() => void)>(null);
 
-  // --- Subscribe to SSE ---
-  useSSE({
-    eventName: "worklog-sync-status",
-    enabled: sseEnabled,
-    onOpen: () => setSseReady(true),
-    onStatusEvent: (event) => {
+  const shouldSubscribe = wantsSSE || hasInProgress;
+
+  // ---- Listen to SSE events ----
+  useEffect(() => {
+    if (!shouldSubscribe) return;
+
+    const unsubscribe = subscribe("worklog-sync-status", (event) => {
       setSseAck(true);
-      onStatusEvent(event); // pass the event up
-    },
-  });
+      onStatusEvent(event);
+    });
+
+    unsubscribeRef.current = unsubscribe;
+
+    return () => {
+      unsubscribe();
+      unsubscribeRef.current = null;
+    };
+  }, [shouldSubscribe, onStatusEvent]);
+
+  useEffect(() => {
+    if (hasInProgress) {
+      forceConnect();
+    }
+  }, [hasInProgress]);
 
   // --- Fire sync after SSE connection is ready ---
   useEffect(() => {
-    if (!pendingSyncPayload) return;
+    if (!pendingSyncPayload || !isConnected) return;
 
-    if (sseReady || !sseEnabled) {
-      fireSync(pendingSyncPayload);
-      setPendingSyncPayload(null);
-    }
-  }, [sseReady, pendingSyncPayload, sseEnabled]);
+    fireSync(pendingSyncPayload);
+    setPendingSyncPayload(null);
+  }, [isConnected, pendingSyncPayload]);
 
   // --- Auto-close connection when no in-progress worklogs and no pending sync ---
   useEffect(() => {
+    if (!shouldSubscribe) return;
+
     if (sseAck && !hasInProgress && !pendingSyncPayload) {
-      setForceSubscribe(false);
+      unsubscribeRef.current?.();
+      unsubscribeRef.current = null;
+      setWantsSSE(false);
+      allowDisconnect();
     }
-  }, [sseAck, hasInProgress, pendingSyncPayload]);
+  }, [sseAck, hasInProgress, pendingSyncPayload, shouldSubscribe]);
 
   // --- Public API ---
   const triggerSync = (payload: SyncPayload) => {
     setPendingSyncPayload(payload);
     setSseAck(false);
-
-    // Only force subscription if there are no in-progress logs
-    if (!hasInProgress) {
-      setForceSubscribe(true);
-      setSseReady(false);
-    }
+    setWantsSSE(true);
+    forceConnect();
   };
 
   const fireSync = async (payload: SyncPayload) => {
-    const { workLogId, taskNames, entryIds, sync } = payload;
-
     try {
-      await requestInstance.post(`/worklog/${workLogId}/sync${sync ? "" : "?sync=false"}`, { taskNames, entryIds });
+      await worklogApis.syncWorklog(payload);
     } catch (error) {
       showErrorToast(error);
     }

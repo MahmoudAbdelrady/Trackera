@@ -1,6 +1,10 @@
 import type { PaginatedResponse } from "../shared/types";
 
-const createPaginationConfig = <T>(response: PaginatedResponse<T> | null, onPageChange: (page: number, pageSize: number) => void, itemName: string = "items") => ({
+const createPaginationConfig = <T>(
+  response: PaginatedResponse<T> | null,
+  onPageChange: (page: number, pageSize: number) => void,
+  itemName: string = "items"
+) => ({
   current: (response?.page?.number || 0) + 1,
   pageSize: response?.page?.size || 10,
   total: response?.page?.totalElements || 0,

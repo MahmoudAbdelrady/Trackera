@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { userApis } from "../api";
-import type { UserInfo } from "../api/user";
+import type { UserInfo } from "../../shared/types/auth";
 import { useAuthStore } from "../store";
 
 const useMeQuery = () => {

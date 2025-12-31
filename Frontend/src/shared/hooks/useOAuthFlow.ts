@@ -1,5 +1,5 @@
 import { useEffect, useCallback } from "react";
-import requestInstance from "../axios/request-instance";
+import { authApis } from "../../state/api";
 
 type OAuthCallbacks = {
   onSuccess: (data: any) => void;
@@ -9,8 +9,8 @@ type OAuthCallbacks = {
 export function useOAuthFlow({ onSuccess, onError }: OAuthCallbacks) {
   const fetchOAuthFlowLink = useCallback(async (provider: string, forceLink: boolean) => {
     try {
-      const response = await requestInstance.get(`/auth/oauth/${provider}${forceLink ? "?forceLink=true" : ""}`);
-      return response.data.url;
+      const result = await authApis.getOAuthFlowLink(provider, forceLink);
+      return result.url;
     } catch (error: any) {
       throw error;
     }

@@ -1,29 +1,84 @@
 import dayjs from "dayjs";
 import { useFormik } from "formik";
-import { manageWorkLog } from "../../../../shared/yup-schemas";
+import { manageWorklog } from "../../../../shared/yup-schemas";
 import worklogModalClasses from "../worklog-modal/scss/worklog-modal.module.css";
 import { Alert, DatePicker, Form, Input, Switch, Tooltip, type TableProps, type UploadFile } from "antd";
 import { Inbox, Info } from "lucide-react";
 import Dragger from "antd/es/upload/Dragger";
 import { CollapsibleSection, WorklogModal, TrackeraTable } from "../../..";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { showErrorToast, showSuccessToast } from "../../../../utils/toast-handler/showToast";
-import requestInstance from "../../../../shared/axios/request-instance";
-import type { ManageWorkLogModalProps, WorklogError } from "../../../../shared/types";
+import { WORKLOG_STATUS, type Worklog, type WorklogError } from "../../../../shared/types";
 import { formatDate, getFormikFieldError, getFormikFieldStatus } from "../../../../utils";
+import { worklogApis } from "../../../../state/api";
 
-const ManageWorkLogModal = (props: ManageWorkLogModalProps) => {
+interface ManageWorklogModalProps {
+  setIsOpen: (isOpen: boolean) => void;
+  refreshWorklogData: () => void;
+  selectedWorklog?: Worklog;
+  setSelectedWorklog?: (worklog: Worklog | undefined) => void;
+  jiraLinked: boolean;
+}
+
+interface ManageWorklogFormValues {
+  mode: "add" | "edit";
+  logName: string;
+  logDate: dayjs.Dayjs;
+  logFile: File | null;
+  reEvaluate: boolean;
+  syncToJira: boolean;
+}
+
+const ManageWorklogModal = (props: ManageWorklogModalProps) => {
+  const { jiraLinked, selectedWorklog, setIsOpen, setSelectedWorklog, refreshWorklogData } = props;
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [fileList, setFileList] = useState<UploadFile[]>([]);
   const [worklogFileErrors, setWorklogFileErrors] = useState<WorklogError[]>([]);
+  const isEditMode = selectedWorklog !== undefined;
 
-  const isEditMode = (): boolean => {
-    return props.selectedWorkLog !== undefined;
+  const getLogDate = (): dayjs.Dayjs => {
+    if (isEditMode) {
+      return dayjs(selectedWorklog!.workDate);
+    } else {
+      return dayjs().hour() < 12 ? dayjs().subtract(1, "day") : dayjs();
+    }
   };
 
+  const manageWorklogFormik = useFormik<ManageWorklogFormValues>({
+    initialValues: {
+      mode: isEditMode ? "edit" : "add",
+      logName: isEditMode ? selectedWorklog!.name : "",
+      logDate: getLogDate(),
+      logFile: null,
+      reEvaluate: false,
+      syncToJira: false,
+    },
+    validationSchema: manageWorklog,
+    enableReinitialize: true,
+    onSubmit: async (values) => {
+      setIsLoading(true);
+      try {
+        const formData = getFormData(values, isEditMode);
+        const result = await worklogApis.updateWorklog(isEditMode ? selectedWorklog!.id : null, formData);
+        showSuccessToast(result);
+        handleModalClose();
+        refreshWorklogData();
+      } catch (error: any) {
+        if (error.response?.data.isError) {
+          showErrorToast(error.response?.data.message);
+          setWorklogFileErrors(error.response?.data.errors);
+        } else {
+          showErrorToast(error);
+          setWorklogFileErrors([]);
+        }
+      }
+      setIsLoading(false);
+    },
+  });
+
   const handleFileUpload = (file: File | null) => {
-    manageWorkLogFormik.setFieldValue("logFile", file);
-    manageWorkLogFormik.setFieldTouched("logFile", true, false);
+    manageWorklogFormik.setFieldValue("logFile", file);
+    manageWorklogFormik.setFieldTouched("logFile", true, false);
   };
 
   const handleFileDrop = (event: React.DragEvent<HTMLDivElement>) => {
@@ -35,14 +90,14 @@ const ManageWorkLogModal = (props: ManageWorkLogModalProps) => {
   };
 
   const handleModalClose = () => {
-    manageWorkLogFormik.resetForm();
+    manageWorklogFormik.resetForm();
     setFileList([]);
     setWorklogFileErrors([]);
-    props.setIsOpen(false);
-    props.setSelectedWorkLog?.(undefined);
+    setIsOpen(false);
+    setSelectedWorklog?.(undefined);
   };
 
-  const getFormData = (values: typeof manageWorkLogFormik.values, isEdit: boolean): FormData => {
+  const getFormData = (values: ManageWorklogFormValues, isEdit: boolean): FormData => {
     const formData = new FormData();
     let worklogValues: { logName: string; logDate: string; syncToJira?: boolean } = {
       logName: values.logName,
@@ -61,47 +116,6 @@ const ManageWorkLogModal = (props: ManageWorkLogModalProps) => {
     return formData;
   };
 
-  const manageWorkLogFormik = useFormik({
-    initialValues: useMemo(
-      () => ({
-        mode: isEditMode() ? "edit" : "add",
-        logName: isEditMode() ? props.selectedWorkLog!.name : "",
-        logDate: isEditMode() ? dayjs(props.selectedWorkLog!.workDate) : dayjs().hour() < 12 ? dayjs().subtract(1, "day") : dayjs(),
-        logFile: null,
-        reEvaluate: false,
-        syncToJira: false,
-      }),
-      [props.selectedWorkLog]
-    ),
-    validationSchema: manageWorkLog,
-    enableReinitialize: true,
-    onSubmit: async (values) => {
-      setIsLoading(true);
-      try {
-        const formData = getFormData(values, isEditMode());
-        let response;
-        if (isEditMode()) {
-          response = await requestInstance.put(`/worklog/${props.selectedWorkLog!.id}`, formData);
-        } else {
-          response = await requestInstance.post("/worklog", formData);
-        }
-        showSuccessToast(response.data);
-        handleModalClose();
-        props.setFetchWorkLog(true);
-        props.setFetchSummary(true);
-      } catch (error: any) {
-        if (error.response?.data.isError) {
-          showErrorToast(error.response?.data.message);
-          setWorklogFileErrors(error.response?.data.errors);
-        } else {
-          showErrorToast(error);
-          setWorklogFileErrors([]);
-        }
-      }
-      setIsLoading(false);
-    },
-  });
-
   const worklogFileErrorsColumns: TableProps<WorklogError>["columns"] = [
     {
       title: "Row Number",
@@ -117,18 +131,21 @@ const ManageWorkLogModal = (props: ManageWorkLogModalProps) => {
 
   return (
     <WorklogModal
-      title={!isEditMode() ? "Add Worklog" : "Edit Worklog"}
+      title={!isEditMode ? "Add Worklog" : "Edit Worklog"}
       properties={{
         open: true,
         centered: true,
         closable: !isLoading,
         keyboard: !isLoading,
         maskClosable: !isLoading,
-        okText: !isEditMode() ? "Add" : "Update",
-        okButtonProps: { loading: isLoading, disabled: !manageWorkLogFormik.isValid || !manageWorkLogFormik.dirty || isLoading },
+        okText: !isEditMode ? "Add" : "Update",
+        okButtonProps: {
+          loading: isLoading,
+          disabled: !manageWorklogFormik.isValid || !manageWorklogFormik.dirty || isLoading,
+        },
         cancelButtonProps: { disabled: isLoading },
         onOk: () => {
-          manageWorkLogFormik.submitForm();
+          manageWorklogFormik.submitForm();
         },
         onCancel: handleModalClose,
         width: worklogFileErrors.length > 0 ? 900 : 520,
@@ -136,19 +153,23 @@ const ManageWorkLogModal = (props: ManageWorkLogModalProps) => {
     >
       <form className={worklogModalClasses.worklog_form}>
         <div className={worklogModalClasses.form_group}>
-          <Form.Item className={worklogModalClasses.form_item} validateStatus={getFormikFieldStatus(manageWorkLogFormik, "logName")} help={getFormikFieldError(manageWorkLogFormik, "logName")}>
+          <Form.Item
+            className={worklogModalClasses.form_item}
+            validateStatus={getFormikFieldStatus(manageWorklogFormik, "logName")}
+            help={getFormikFieldError(manageWorklogFormik, "logName")}
+          >
             <span className={worklogModalClasses.label}>Log Name:</span>
             <Input
               placeholder="Enter log name"
               name="logName"
-              value={manageWorkLogFormik.values.logName}
-              onChange={manageWorkLogFormik.handleChange}
-              onBlur={manageWorkLogFormik.handleBlur}
+              value={manageWorklogFormik.values.logName}
+              onChange={manageWorklogFormik.handleChange}
+              onBlur={manageWorklogFormik.handleBlur}
               style={{ width: "80%" }}
               disabled={isLoading}
             />
           </Form.Item>
-          {!isEditMode() && (
+          {!isEditMode && (
             <Tooltip title="If not provided, the log name will be auto-generated based on the upload date and weekday.">
               <Info size={22} cursor={"pointer"} />
             </Tooltip>
@@ -157,34 +178,49 @@ const ManageWorkLogModal = (props: ManageWorkLogModalProps) => {
         <div className={worklogModalClasses.form_group}>
           <Form.Item
             className={worklogModalClasses.form_item}
-            validateStatus={getFormikFieldStatus(manageWorkLogFormik, "logDate")}
-            help={getFormikFieldError(manageWorkLogFormik, "logDate") as string}
+            validateStatus={getFormikFieldStatus(manageWorklogFormik, "logDate")}
+            help={getFormikFieldError(manageWorklogFormik, "logDate") as string}
           >
             <span className={worklogModalClasses.label}>Log date:</span>
             <DatePicker
               name="logDate"
-              value={manageWorkLogFormik.values.logDate}
+              value={manageWorklogFormik.values.logDate}
               placeholder="Select log date"
-              onChange={(date) => manageWorkLogFormik.setFieldValue("logDate", date)}
-              onBlur={() => manageWorkLogFormik.setFieldTouched("logDate", true)}
+              onChange={(date) => manageWorklogFormik.setFieldValue("logDate", date)}
+              onBlur={() => manageWorklogFormik.setFieldTouched("logDate", true)}
               disabled={isLoading}
             />
-            {isEditMode() &&
-              manageWorkLogFormik.values.logDate !== null &&
-              formatDate(manageWorkLogFormik.values.logDate) !== props.selectedWorkLog?.workDate &&
-              props.selectedWorkLog?.status !== "NOT_SYNCED" && <Alert message="Changing the log date will be applied to the synced worklogs" type="warning" showIcon style={{ marginTop: "10px" }} />}
+            {isEditMode &&
+              manageWorklogFormik.values.logDate !== null &&
+              formatDate(manageWorklogFormik.values.logDate) !== selectedWorklog?.workDate &&
+              selectedWorklog?.status !== WORKLOG_STATUS.NOT_SYNCED && (
+                <Alert
+                  message="Changing the log date will be applied to the synced worklogs"
+                  type="warning"
+                  showIcon
+                  style={{ marginTop: "10px" }}
+                />
+              )}
           </Form.Item>
         </div>
-        {isEditMode() && (
+        {isEditMode && (
           <div className={worklogModalClasses.form_group}>
             <span className={worklogModalClasses.label}>Re-evaluate worklog file:</span>
-            <Switch disabled={isLoading} value={manageWorkLogFormik.values.reEvaluate} onChange={(value) => manageWorkLogFormik.setFieldValue("reEvaluate", value)} />
+            <Switch
+              disabled={isLoading}
+              value={manageWorklogFormik.values.reEvaluate}
+              onChange={(value) => manageWorklogFormik.setFieldValue("reEvaluate", value)}
+            />
           </div>
         )}
-        {(!isEditMode() || manageWorkLogFormik.values.reEvaluate) && (
+        {(!isEditMode || manageWorklogFormik.values.reEvaluate) && (
           <>
             <div className={`${worklogModalClasses.form_group} ${worklogModalClasses.upload_group}`}>
-              <Form.Item className={worklogModalClasses.form_item} validateStatus={getFormikFieldStatus(manageWorkLogFormik, "logFile")} help={getFormikFieldError(manageWorkLogFormik, "logFile")}>
+              <Form.Item
+                className={worklogModalClasses.form_item}
+                validateStatus={getFormikFieldStatus(manageWorklogFormik, "logFile")}
+                help={getFormikFieldError(manageWorklogFormik, "logFile")}
+              >
                 <span className={worklogModalClasses.label}>Upload log file:</span>
                 <Dragger
                   className={worklogModalClasses.upload_box}
@@ -202,7 +238,7 @@ const ManageWorkLogModal = (props: ManageWorkLogModalProps) => {
                   onRemove={() => {
                     handleFileUpload(null);
                     setFileList([]);
-                    manageWorkLogFormik.setFieldTouched("logFile", true, false);
+                    manageWorklogFormik.setFieldTouched("logFile", true, false);
                     return true; // allow removal
                   }}
                   disabled={isLoading}
@@ -210,15 +246,23 @@ const ManageWorkLogModal = (props: ManageWorkLogModalProps) => {
                   <div className={worklogModalClasses.upload_icon_box}>
                     <Inbox className={worklogModalClasses.upload_icon} />
                   </div>
-                  <span className={worklogModalClasses.upload_title}>Click or drag worklog file to this area to upload</span>
-                  <p className={worklogModalClasses.upload_subtitle}>Supported formats: .xlsx and .csv. Max file size: 5MB.</p>
+                  <span className={worklogModalClasses.upload_title}>
+                    Click or drag worklog file to this area to upload
+                  </span>
+                  <p className={worklogModalClasses.upload_subtitle}>
+                    Supported formats: .xlsx and .csv. Max file size: 5MB.
+                  </p>
                 </Dragger>
               </Form.Item>
             </div>
             <div className={worklogModalClasses.form_group}>
               <span className={worklogModalClasses.label}>Sync to Jira after upload:</span>
-              <Switch disabled={!props.jiraLinked || isLoading} value={manageWorkLogFormik.values.syncToJira} onChange={(value) => manageWorkLogFormik.setFieldValue("syncToJira", value)} />
-              {!props.jiraLinked && (
+              <Switch
+                disabled={!jiraLinked || isLoading}
+                value={manageWorklogFormik.values.syncToJira}
+                onChange={(value) => manageWorklogFormik.setFieldValue("syncToJira", value)}
+              />
+              {!jiraLinked && (
                 <Tooltip title="Link your Jira account in settings to enable this option.">
                   <Info size={16} color="#dc2626" style={{ marginLeft: "8px" }} />
                 </Tooltip>
@@ -236,6 +280,7 @@ const ManageWorkLogModal = (props: ManageWorkLogModalProps) => {
                 dataSource: worklogFileErrors,
                 pagination: { pageSize: 5, showSizeChanger: false, style: { marginRight: "16px" } },
               }}
+              rowKey={(record) => record.row}
             />
           </CollapsibleSection>
         </div>
@@ -244,4 +289,4 @@ const ManageWorkLogModal = (props: ManageWorkLogModalProps) => {
   );
 };
 
-export default ManageWorkLogModal;
+export default ManageWorklogModal;

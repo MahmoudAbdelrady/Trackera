@@ -2,19 +2,25 @@ import { Alert, Button, InputNumber, Select, Spin } from "antd";
 import { UserPreference } from "../../../";
 import classes from "./scss/preferences-section.module.css";
 import { showErrorToast, showSuccessToast } from "../../../../utils/toast-handler/showToast";
-import requestInstance from "../../../../shared/axios/request-instance";
 import { useEffect, useState } from "react";
-import type { JiraSite, PreferencesProps } from "../../../../shared/types";
+import type { JiraSite } from "../../../../shared/types";
 import { isEqual } from "lodash";
+import { jiraApis, userApis } from "../../../../state/api";
+
+// preferences keys
+const PreferenceKeys = {
+  JIRA_PRIMARY_PROJECT: "jiraPrimaryProject",
+  WORKLOGS_MONTHLY_TARGET_HOURS: "worklogsMonthlyTargetHours",
+} as const;
+
+interface PreferencesProps {
+  jiraLinked: boolean;
+  fetchPreferences: boolean;
+  setFetchPreferences: (fetch: boolean) => void;
+}
 
 const PreferencesSection = (props: PreferencesProps) => {
   const { jiraLinked, fetchPreferences, setFetchPreferences } = props;
-
-  // preferences keys
-  const PREFERENCE_KEYS = {
-    JIRA_PRIMARY_PROJECT: "jiraPrimaryProject",
-    WORKLOGS_MONTHLY_TARGET_HOURS: "worklogsMonthlyTargetHours",
-  };
 
   // user preferences
   const [isLoadingPreferences, setIsLoadingPreferences] = useState<boolean>(false);
@@ -29,12 +35,12 @@ const PreferencesSection = (props: PreferencesProps) => {
     const fetchUserPreferences = async () => {
       setIsLoadingPreferences(true);
       try {
-        const response = await requestInstance.get("/user/preferences");
-        const preferences: Record<string, any> = response.data;
+        const preferences: Record<string, any> = await userApis.getPreferences();
 
         setInitialPreferences(preferences);
         setUpdatedPreferences(preferences);
-        setJiraSites([preferences[PREFERENCE_KEYS.JIRA_PRIMARY_PROJECT] || []]);
+        const primarySite = preferences[PreferenceKeys.JIRA_PRIMARY_PROJECT];
+        setJiraSites(primarySite ? [primarySite] : []);
       } catch (error) {
         showErrorToast(error);
       }
@@ -45,13 +51,18 @@ const PreferencesSection = (props: PreferencesProps) => {
       fetchUserPreferences();
       setFetchPreferences(false);
     }
-  }, [fetchPreferences]);
+  }, [fetchPreferences, setFetchPreferences]);
 
   const fetchJiraSites = async () => {
     setIsFetchingSites(true);
     try {
-      const response = await requestInstance.get("/jira/sites");
-      setJiraSites(response.data);
+      const result = await jiraApis.getJiraSites();
+      const selectedSite = updatedPreferences[PreferenceKeys.JIRA_PRIMARY_PROJECT];
+      if (selectedSite && !result.find((s: JiraSite) => s.id === selectedSite.id)) {
+        setJiraSites([selectedSite, ...result]);
+      } else {
+        setJiraSites(result);
+      }
     } catch (error: any) {
       showErrorToast(error);
     }
@@ -66,7 +77,7 @@ const PreferencesSection = (props: PreferencesProps) => {
   };
 
   const transformPreferenceValue = (key: string, value: any): any => {
-    if (key === PREFERENCE_KEYS.JIRA_PRIMARY_PROJECT) {
+    if (key === PreferenceKeys.JIRA_PRIMARY_PROJECT) {
       return (value as JiraSite).id;
     }
     return value;
@@ -80,9 +91,9 @@ const PreferencesSection = (props: PreferencesProps) => {
           .filter(([key, value]) => !isEqual(initialPreferences[key], value))
           .map(([key, value]) => [key, transformPreferenceValue(key, value)])
       );
-      const response = await requestInstance.post("/user/preferences", preferencesToUpdate);
+      const result = await userApis.updatePreferences(preferencesToUpdate);
       setInitialPreferences(updatedPreferences);
-      showSuccessToast(response.data);
+      showSuccessToast(result);
     } catch (error: any) {
       showErrorToast(error);
     }
@@ -99,7 +110,7 @@ const PreferencesSection = (props: PreferencesProps) => {
             {jiraLinked ? (
               <Select
                 options={jiraSites.map((site) => ({ label: site.name, value: site.id }))}
-                value={updatedPreferences[PREFERENCE_KEYS.JIRA_PRIMARY_PROJECT]?.id}
+                value={updatedPreferences[PreferenceKeys.JIRA_PRIMARY_PROJECT]?.id}
                 className={classes.preference_select}
                 loading={isFetchingSites}
                 notFoundContent={isFetchingSites ? <Spin size="small" /> : "No Data"}
@@ -110,7 +121,7 @@ const PreferencesSection = (props: PreferencesProps) => {
                 }}
                 onChange={(value) =>
                   handlePreferenceChange(
-                    PREFERENCE_KEYS.JIRA_PRIMARY_PROJECT,
+                    PreferenceKeys.JIRA_PRIMARY_PROJECT,
                     jiraSites.find((site) => site.id === value)
                   )
                 }
@@ -121,12 +132,18 @@ const PreferencesSection = (props: PreferencesProps) => {
           </UserPreference>
           <UserPreference label="Worklog Monthly Target Hours">
             <InputNumber
-              value={updatedPreferences[PREFERENCE_KEYS.WORKLOGS_MONTHLY_TARGET_HOURS]}
-              onChange={(value) => handlePreferenceChange(PREFERENCE_KEYS.WORKLOGS_MONTHLY_TARGET_HOURS, value)}
+              value={updatedPreferences[PreferenceKeys.WORKLOGS_MONTHLY_TARGET_HOURS]}
+              onChange={(value) => handlePreferenceChange(PreferenceKeys.WORKLOGS_MONTHLY_TARGET_HOURS, value)}
               className={classes.preference_input}
             />
           </UserPreference>
-          <Button type="primary" onClick={updateUserPreferences} loading={isLoadingPreferences} disabled={isEqual(initialPreferences, updatedPreferences)} className={classes.update_button}>
+          <Button
+            type="primary"
+            onClick={updateUserPreferences}
+            loading={isLoadingPreferences}
+            disabled={isEqual(initialPreferences, updatedPreferences)}
+            className={classes.update_button}
+          >
             Update Preferences
           </Button>
         </>

@@ -1,16 +1,25 @@
-import { Button, Dropdown, Table, type MenuProps } from "antd";
-import type { TrackeraTableEntity, WorklogTableActionButtonProps, WorklogTableProps } from "../../shared/types";
+import { Button, Dropdown, Table, type MenuProps, type TableProps } from "antd";
 import classes from "./scss/trackera-table.module.css";
+import type { TableActionButtonProps } from "./trackera-table.types";
+import type React from "react";
 
-const TrackeraTable = <T extends TrackeraTableEntity>(props: WorklogTableProps<T>) => {
-  const { actionButtons: tableActionBtns, properties: tableProperties } = props;
+interface TrackeraTableProps<T> {
+  properties: TableProps<T>;
+  rowKey: (record: T) => React.Key;
+  actionButtons?: TableActionButtonProps[];
+}
 
-  const getTableActionButtons = (button: WorklogTableActionButtonProps): MenuProps["items"] => {
+const TrackeraTable = <T,>(props: TrackeraTableProps<T>) => {
+  const { actionButtons: tableActionBtns, rowKey: tableRowKey, properties: tableProperties } = props;
+
+  const getTableActionButtons = (button: TableActionButtonProps): MenuProps["items"] => {
     return (
       button.options?.map((option) => ({
         key: option.label,
         label: (
-          <div className={`${classes.sync_item} ${option.customClasses?.map((className) => classes[className]).join(" ")}`}>
+          <div
+            className={`${classes.sync_item} ${option.customClasses?.map((className) => classes[className]).join(" ")}`}
+          >
             {option.icon}
             <span className={classes.sync_item_label}>{option.label}</span>
           </div>
@@ -27,7 +36,11 @@ const TrackeraTable = <T extends TrackeraTableEntity>(props: WorklogTableProps<T
         <div className={classes.table_actions}>
           {tableActionBtns.map((button, index) => {
             return button.options && button.options.length > 0 ? (
-              <Dropdown trigger={["click"]} menu={{ items: getTableActionButtons(button) }} className={classes.log_button_dropdown}>
+              <Dropdown
+                trigger={["click"]}
+                menu={{ items: getTableActionButtons(button) }}
+                className={classes.log_button_dropdown}
+              >
                 <div className={classes.btn_info}>
                   {button.icon}
                   {button.label}
@@ -38,7 +51,9 @@ const TrackeraTable = <T extends TrackeraTableEntity>(props: WorklogTableProps<T
                 key={index}
                 icon={button.icon}
                 disabled={button.disabled}
-                className={`${classes.log_button} ${button.customClasses?.map((className) => classes[className]).join(" ")}`}
+                className={`${classes.log_button} ${button.customClasses
+                  ?.map((className) => classes[className])
+                  .join(" ")}`}
                 onClick={button.onClick}
               >
                 {button.label}
@@ -48,19 +63,7 @@ const TrackeraTable = <T extends TrackeraTableEntity>(props: WorklogTableProps<T
         </div>
       )}
       <div className={classes.table_details}>
-        <Table
-          {...tableProperties}
-          scroll={{ x: 768 }}
-          rowKey={(record) => {
-            if ("row" in record && record.row != null) {
-              return record.row.toString();
-            } else if ("id" in record && record.id != null) {
-              return record.id.toString();
-            }
-            return Math.random().toString();
-          }}
-          className={classes.worklogs_table}
-        />
+        <Table {...tableProperties} scroll={{ x: 768 }} rowKey={tableRowKey} className={classes.worklogs_table} />
       </div>
     </div>
   );

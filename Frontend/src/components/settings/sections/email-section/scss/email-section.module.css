@@ -4,6 +4,7 @@
   align-items: center;
 }
 .user_emails .email_item:not(:first-child) {
+  margin-top: 20px;
   padding-top: 20px;
   border-top: 1px solid #e5e7eb;
 }

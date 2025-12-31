@@ -1,13 +1,4 @@
-import type { StatusBadgeProps, TrackeraTableEntity } from "./global";
-
-type JiraTaskEvaluationType = "ON_TIME" | "OVERESTIMATED";
-
-const jiraTaskEvaluationMetadata: Record<JiraTaskEvaluationType, StatusBadgeProps> = {
-  ON_TIME: { label: "On Time", type: "success" },
-  OVERESTIMATED: { label: "Overestimated", type: "warning" },
-};
-
-interface JiraTask extends TrackeraTableEntity {
+interface JiraTask {
   taskName: string;
   taskUrl: string;
   project: Record<string, string>;
@@ -22,6 +13,4 @@ interface JiraSite {
   avatarUrl: string;
 }
 
-export type { JiraTask, JiraTaskEvaluationType, JiraSite };
-
-export { jiraTaskEvaluationMetadata };
+export type { JiraTask, JiraSite };

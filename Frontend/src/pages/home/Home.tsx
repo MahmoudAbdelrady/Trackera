@@ -1,261 +1,196 @@
-import { Eye, SquarePen, Trash, ClipboardPlus, CalendarSync, CalendarX2, CalendarOff, CircleAlert } from "lucide-react";
-import { ManageWorkLogModal, AppLayout, SearchFilter, WorklogModal, WorklogStatusCard, TrackeraTable, StatusBadge } from "../../components";
-import classes from "./scss/home.module.css";
-import { Alert, Button, Tooltip, type TableProps } from "antd";
-import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { ClipboardPlus } from "lucide-react";
 import {
-  worklogEvaluationMetadata,
-  statusMetadata,
-  type WorkLogSummaryCard,
-  type PaginatedResponse,
-  type Worklog,
-  type WorkLogEvaluationType,
-  type WorkLogStatusType,
-  type WorklogSelection,
-} from "../../shared/types";
+  ManageWorklogModal,
+  SearchFilter,
+  WorklogModal,
+  WorklogStatusCard,
+  TrackeraTable,
+  createWorklogColumns,
+} from "../../components";
+import classes from "./scss/home.module.css";
+import { Alert } from "antd";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { type PaginatedResponse, type Worklog, WORKLOG_STATUS, JIRA_SYNC_EVENT } from "../../shared/types";
 import { createPaginationConfig } from "../../utils";
-import trackeraTableClasses from "../../components/trackera-table/scss/trackera-table.module.css";
 import worklogModalClasses from "../../components/worklogs/modals/worklog-modal/scss/worklog-modal.module.css";
-import requestInstance from "../../shared/axios/request-instance";
 import { showErrorToast, showSuccessToast } from "../../utils/toast-handler/showToast";
 import { userQueries } from "../../state/queries";
 import { useJiraSyncSSE } from "../../shared/hooks";
+import { worklogApis } from "../../state/api";
+import type { WorklogSummaryCard } from "../../components/worklogs/worklog-status-card/WorklogStatusCard";
+import { AppLayout } from "../../layouts";
 
 const Home = () => {
   const { data: loggedUserData } = userQueries.useMeQuery();
-  const [manageWorkLogVisible, setManageWorkLogVisible] = useState<boolean>(false);
-  const [deleteWorkLogVisible, setDeleteWorkLogVisible] = useState<boolean>(false);
-  const [isFetchingWorkLogs, setIsFetchingWorkLogs] = useState<boolean>(true);
-  const [isDeletingWorkLog, setIsDeletingWorkLog] = useState<boolean>(false);
-  const [fetchWorkLog, setFetchWorkLog] = useState<boolean>(true);
-  const [fetchSummary, setFetchSummary] = useState<boolean>(true);
-  const [workLogsResponse, setWorkLogsResponse] = useState<PaginatedResponse<Worklog> | null>(null);
-  const [workLogSummary, setWorkLogSummary] = useState<WorkLogSummaryCard[]>([]);
-  const [selectedWorkLog, setSelectedWorkLog] = useState<Worklog | undefined>(undefined);
+  const [manageWorklogVisible, setManageWorklogVisible] = useState<boolean>(false);
+  const [deleteWorklogVisible, setDeleteWorklogVisible] = useState<boolean>(false);
+  const [isFetchingWorklogs, setIsFetchingWorklogs] = useState<boolean>(true);
+  const [isDeletingWorklog, setIsDeletingWorklog] = useState<boolean>(false);
+  const [worklogsResponse, setWorklogsResponse] = useState<PaginatedResponse<Worklog> | null>(null);
+  const [worklogSummary, setWorklogSummary] = useState<WorklogSummaryCard[]>([]);
+  const [selectedWorklog, setSelectedWorklog] = useState<Worklog | undefined>(undefined);
   const [searchFilters, setSearchFilters] = useState<Record<string, any>>({});
+  const hasInProgress = useMemo(
+    () =>
+      worklogsResponse?.content.some(
+        (worklog) =>
+          worklog.status === WORKLOG_STATUS.SYNC_IN_PROGRESS || worklog.status === WORKLOG_STATUS.UNSYNC_IN_PROGRESS
+      ) ?? false,
+    [worklogsResponse?.content]
+  );
 
   useEffect(() => {
-    if (fetchWorkLog) {
-      fetchWorkLogs();
-      setFetchWorkLog(false);
-    }
-  }, [fetchWorkLog]);
+    fetchWorklogs();
+  }, [searchFilters]);
 
   useEffect(() => {
-    if (fetchSummary) {
-      fetchWorkLogSummary();
-      setFetchSummary(false);
-    }
-  }, [fetchSummary]);
+    fetchWorklogSummary();
+  }, []);
 
   const { triggerSync } = useJiraSyncSSE({
-    hasInProgress: workLogsResponse?.content.some((worklog) => ["SYNC_IN_PROGRESS", "UNSYNC_IN_PROGRESS"].includes(worklog.status)) ?? false,
+    hasInProgress,
     onStatusEvent: (event) => {
-      setWorkLogsResponse((prev) => {
+      setWorklogsResponse((prev) => {
         if (!prev) return prev;
         const updatedContent = prev.content.map((worklog) =>
-          worklog.id === event.logId && ["WORKLOG", "ALL"].includes(event.type) ? { ...worklog, status: event.status, hasError: !!event.syncError } : worklog
+          worklog.id === event.logId && (event.type === JIRA_SYNC_EVENT.WORKLOG || event.type === JIRA_SYNC_EVENT.ALL)
+            ? { ...worklog, status: event.status, hasError: !!event.syncError }
+            : worklog
         );
         return { ...prev, content: updatedContent };
       });
     },
   });
 
-  const fetchWorkLogs = async (pageNum: number = 0, pageSize: number = 10) => {
-    setIsFetchingWorkLogs(true);
-    try {
-      const response = await requestInstance.post(`/worklog/search?page=${pageNum}&size=${pageSize}`, searchFilters);
-      setWorkLogsResponse(response.data);
-    } catch (error) {
-      showErrorToast(error);
-    }
-    setIsFetchingWorkLogs(false);
-  };
+  const fetchWorklogs = useCallback(
+    async (pageNum: number = 0, pageSize: number = 10) => {
+      setIsFetchingWorklogs(true);
+      try {
+        setWorklogsResponse(await worklogApis.getWorklogs(pageNum, pageSize, searchFilters));
+      } catch (error) {
+        showErrorToast(error);
+      }
+      setIsFetchingWorklogs(false);
+    },
+    [searchFilters]
+  );
 
-  const fetchWorkLogSummary = async () => {
+  const fetchWorklogSummary = useCallback(async () => {
     try {
-      const response = await requestInstance.get("/worklog/summary");
-      setWorkLogSummary(response.data);
+      setWorklogSummary(await worklogApis.getWorklogSummary());
     } catch (error: any) {
       showErrorToast(error);
     }
-  };
+  }, []);
 
-  const deleteWorkLog = async (workLogId: string | number) => {
-    setIsDeletingWorkLog(true);
+  const deleteWorklog = async (worklogId: string) => {
+    setIsDeletingWorklog(true);
     try {
-      await handleWorkLogDeletion(workLogId, null);
-      setFetchWorkLog(true);
-      setFetchSummary(true);
-      setDeleteWorkLogVisible(false);
-      setSelectedWorkLog(undefined);
+      const result = await worklogApis.deleteWorklog(worklogId);
+      showSuccessToast(result.message);
+      fetchWorklogs();
+      fetchWorklogSummary();
+      setDeleteWorklogVisible(false);
+      setSelectedWorklog(undefined);
     } catch (error: any) {
       showErrorToast(error);
     }
-    setIsDeletingWorkLog(false);
+    setIsDeletingWorklog(false);
   };
 
-  const handleWorkLogDeletion = async (worklogId: string | number, selection: WorklogSelection | null) => {
-    const response = await requestInstance.delete(`/worklog/${worklogId}`, { data: { ...selection } });
-    showSuccessToast(response.data.message);
-    return response.data;
-  };
-
-  const tableColumns: TableProps<Worklog>["columns"] = [
-    {
-      title: "Log Name",
-      dataIndex: "name",
-      key: "name",
-    },
-    {
-      title: "Total Time",
-      dataIndex: "totalTime",
-      key: "totalTime",
-    },
-    {
-      title: "Date",
-      dataIndex: "workDate",
-      key: "workDate",
-    },
-    {
-      title: "Evaluation",
-      dataIndex: "evaluation",
-      key: "evaluation",
-      render: (_, { evaluation }) => {
-        return <StatusBadge badgeProps={worklogEvaluationMetadata[evaluation as WorkLogEvaluationType]} />;
-      },
-    },
-    {
-      title: "Status",
-      dataIndex: "status",
-      key: "status",
-      render: (_, { status, hasError }) => {
-        return loggedUserData?.jiraLinked ? <StatusBadge badgeProps={{ ...statusMetadata[status as WorkLogStatusType], icon: hasError ? <CircleAlert /> : undefined }} /> : "-";
-      },
-    },
-    {
-      title: "Actions",
-      key: "actions",
-      render: (_, record) => (
-        <div className={trackeraTableClasses.actions_container}>
-          {record.status === "SYNCED" || record.status === "UNSYNC_IN_PROGRESS" ? (
-            <Tooltip title={`${loggedUserData?.jiraLinked || record.status === "UNSYNC_IN_PROGRESS" ? "Unsync from Jira" : "Link your Jira account in settings to enable this option."}`}>
-              <Button
-                type="text"
-                icon={!loggedUserData?.jiraLinked ? <CalendarOff /> : <CalendarX2 />}
-                onClick={() => triggerSync({ workLogId: record.id, sync: false })}
-                className={`${trackeraTableClasses.log_action_btn} ${trackeraTableClasses.unsync} ${
-                  (!loggedUserData?.jiraLinked || record.status === "UNSYNC_IN_PROGRESS") && trackeraTableClasses.disabled
-                }`}
-                disabled={!loggedUserData?.jiraLinked || record.status === "UNSYNC_IN_PROGRESS"}
-              />
-            </Tooltip>
-          ) : (
-            <Tooltip title={`${loggedUserData?.jiraLinked || record.status === "SYNC_IN_PROGRESS" ? "Sync to Jira" : "Link your Jira account in settings to enable this option."}`}>
-              <Button
-                type="text"
-                icon={!loggedUserData?.jiraLinked ? <CalendarOff /> : <CalendarSync />}
-                onClick={() => triggerSync({ workLogId: record.id, sync: true })}
-                className={`${trackeraTableClasses.log_action_btn} ${trackeraTableClasses.sync} ${
-                  (!loggedUserData?.jiraLinked || record.status === "SYNC_IN_PROGRESS") && trackeraTableClasses.disabled
-                }`}
-                disabled={!loggedUserData?.jiraLinked || record.status === "SYNC_IN_PROGRESS"}
-              />
-            </Tooltip>
-          )}
-          <Tooltip title="Edit">
-            <SquarePen
-              onClick={() => {
-                setSelectedWorkLog(record);
-                setManageWorkLogVisible(true);
-              }}
-              className={`${trackeraTableClasses.log_action_btn} ${trackeraTableClasses.edit}`}
-            />
-          </Tooltip>
-          <Tooltip title="View">
-            <Link to={`/worklog-details/${record.id}`} className={`${trackeraTableClasses.log_action_btn} ${trackeraTableClasses.view}`}>
-              <Eye />
-            </Link>
-          </Tooltip>
-          <Tooltip title="Delete">
-            <Button
-              type="text"
-              icon={<Trash />}
-              onClick={() => {
-                setSelectedWorkLog(record);
-                setDeleteWorkLogVisible(true);
-              }}
-              className={`${trackeraTableClasses.log_action_btn} ${trackeraTableClasses.delete} ${
-                (record.status === "SYNC_IN_PROGRESS" || record.status === "UNSYNC_IN_PROGRESS") && trackeraTableClasses.disabled
-              }`}
-              disabled={record.status === "SYNC_IN_PROGRESS" || record.status === "UNSYNC_IN_PROGRESS"}
-            />
-          </Tooltip>
-        </div>
-      ),
-    },
-  ];
+  const tableColumns = useMemo(
+    () =>
+      createWorklogColumns({
+        jiraLinked: loggedUserData?.jiraLinked || false,
+        onSync: triggerSync,
+        onEdit: (record) => {
+          setSelectedWorklog(record);
+          setManageWorklogVisible(true);
+        },
+        onDelete: (record) => {
+          setSelectedWorklog(record);
+          setDeleteWorklogVisible(true);
+        },
+      }),
+    [loggedUserData?.jiraLinked, triggerSync]
+  );
 
   return (
     <>
-      {manageWorkLogVisible && (
-        <ManageWorkLogModal
-          setIsOpen={setManageWorkLogVisible}
-          setFetchWorkLog={setFetchWorkLog}
-          setFetchSummary={setFetchSummary}
-          selectedWorkLog={selectedWorkLog}
-          setSelectedWorkLog={setSelectedWorkLog}
+      {manageWorklogVisible && (
+        <ManageWorklogModal
+          setIsOpen={setManageWorklogVisible}
+          refreshWorklogData={() => {
+            fetchWorklogs();
+            fetchWorklogSummary();
+          }}
+          selectedWorklog={selectedWorklog}
+          setSelectedWorklog={setSelectedWorklog}
           jiraLinked={loggedUserData?.jiraLinked || false}
         />
       )}
       <WorklogModal
         title="Delete Worklog"
         properties={{
-          open: deleteWorkLogVisible,
+          open: deleteWorklogVisible,
           centered: true,
           okText: "Delete",
-          closable: !isDeletingWorkLog,
-          keyboard: !isDeletingWorkLog,
-          maskClosable: !isDeletingWorkLog,
-          okButtonProps: { danger: true, loading: isDeletingWorkLog, disabled: isDeletingWorkLog },
-          cancelButtonProps: { disabled: isDeletingWorkLog },
-          onOk: () => deleteWorkLog(selectedWorkLog?.id!),
+          closable: !isDeletingWorklog,
+          keyboard: !isDeletingWorklog,
+          maskClosable: !isDeletingWorklog,
+          okButtonProps: { danger: true, loading: isDeletingWorklog, disabled: isDeletingWorklog },
+          cancelButtonProps: { disabled: isDeletingWorklog },
+          onOk: () => deleteWorklog(selectedWorklog?.id!),
           onCancel: () => {
-            setDeleteWorkLogVisible(false);
-            setSelectedWorkLog(undefined);
+            setDeleteWorklogVisible(false);
+            setSelectedWorklog(undefined);
           },
         }}
       >
-        <p className={worklogModalClasses.delete_message}>Are you sure you want to delete this worklog? This action cannot be undone.</p>
-        {(selectedWorkLog?.status === "SYNCED" || selectedWorkLog?.status === "PARTIALLY") && (
-          <Alert message="This worklog has synced data with Jira and will be unsynced upon deletion." type="warning" showIcon className={worklogModalClasses.alert_message} />
+        <p className={worklogModalClasses.delete_message}>
+          Are you sure you want to delete this worklog? This action cannot be undone.
+        </p>
+        {(selectedWorklog?.status === WORKLOG_STATUS.SYNCED ||
+          selectedWorklog?.status === WORKLOG_STATUS.PARTIALLY) && (
+          <Alert
+            message="This worklog has synced data with Jira and will be unsynced upon deletion."
+            type="warning"
+            showIcon
+            className={worklogModalClasses.alert_message}
+          />
         )}
       </WorklogModal>
       <AppLayout>
         <div className={classes.worklog_status_cards_container}>
-          {workLogSummary.map((card, index) => (
-            <WorklogStatusCard key={index} label={card.label} subLabel={card.subLabel} code={card.code} value={card.value} />
+          {worklogSummary.map((card) => (
+            <WorklogStatusCard
+              key={card.code}
+              label={card.label}
+              subLabel={card.subLabel}
+              code={card.code}
+              value={card.value}
+            />
           ))}
         </div>
         <div className={classes.worklogs_content}>
-          <SearchFilter filters={searchFilters} setFilters={setSearchFilters} setFetchWorkLog={setFetchWorkLog} jiraLinked={loggedUserData?.jiraLinked || false} />
+          <SearchFilter setFilters={setSearchFilters} jiraLinked={loggedUserData?.jiraLinked || false} />
           <div className={classes.worklogs_container}>
             <TrackeraTable<Worklog>
               properties={{
                 columns: tableColumns,
-                dataSource: workLogsResponse?.content || [],
-                loading: isFetchingWorkLogs,
+                dataSource: worklogsResponse?.content || [],
+                loading: isFetchingWorklogs,
                 locale: {
-                  emptyText: isFetchingWorkLogs ? "Loading..." : "No worklogs found",
+                  emptyText: isFetchingWorklogs ? "Loading..." : "No worklogs found",
                 },
-                pagination: createPaginationConfig(workLogsResponse, fetchWorkLogs, "worklogs"),
+                pagination: createPaginationConfig(worklogsResponse, fetchWorklogs, "worklogs"),
               }}
+              rowKey={(record) => record.id}
               actionButtons={[
                 {
                   label: "Add Worklog",
                   icon: <ClipboardPlus />,
-                  onClick: () => setManageWorkLogVisible(true),
+                  onClick: () => setManageWorklogVisible(true),
                 },
               ]}
             />

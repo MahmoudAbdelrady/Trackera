@@ -1,41 +1,64 @@
-import type { ModalProps, TableProps } from "antd";
-import type { StatusBadgeProps, TrackeraTableEntity } from "./global";
+const WORKLOG_EVALUATION = {
+  EXCELLENT: "EXCELLENT",
+  GOOD: "GOOD",
+  MODERATE: "MODERATE",
+  POOR: "POOR",
+} as const;
 
-type WorkLogEvaluationType = "EXCELLENT" | "GOOD" | "MODERATE" | "POOR";
+const WORKLOG_STATUS = {
+  SYNCED: "SYNCED",
+  PARTIALLY: "PARTIALLY",
+  NOT_SYNCED: "NOT_SYNCED",
+  SYNC_IN_PROGRESS: "SYNC_IN_PROGRESS",
+  UNSYNC_IN_PROGRESS: "UNSYNC_IN_PROGRESS",
+} as const;
 
-type WorkLogStatusType = "SYNCED" | "PARTIALLY" | "NOT_SYNCED" | "SYNC_IN_PROGRESS" | "UNSYNC_IN_PROGRESS";
+const JIRA_SYNC_EVENT = {
+  ALL: "ALL",
+  WORKLOG: "WORKLOG",
+  TASK: "TASK",
+  ENTRY: "ENTRY",
+} as const;
 
-type SyncPayload = {
-  workLogId?: string;
+type WorklogStatusType = (typeof WORKLOG_STATUS)[keyof typeof WORKLOG_STATUS];
+
+type WorklogEvaluationType = (typeof WORKLOG_EVALUATION)[keyof typeof WORKLOG_EVALUATION];
+
+type JiraSyncEventType = (typeof JIRA_SYNC_EVENT)[keyof typeof JIRA_SYNC_EVENT];
+
+interface SyncPayload {
+  worklogId?: string;
   taskNames?: string[];
   entryIds?: string[];
   sync: boolean;
-};
+}
 
-interface Worklog extends TrackeraTableEntity {
+interface Worklog {
+  id: string;
   name: string;
   totalTime: string;
   workDate: string;
-  evaluation: WorkLogEvaluationType;
-  status: WorkLogStatusType;
+  evaluation: WorklogEvaluationType;
+  status: WorklogStatusType;
   hasError: boolean;
 }
 
-interface WorklogTask extends TrackeraTableEntity {
+interface WorklogTask {
   taskName: string;
   taskUrl: string;
   totalHours: string;
   totalMinutes: number;
-  status: WorkLogStatusType;
+  status: WorklogStatusType;
   hasError: boolean;
 }
 
-interface WorklogEntry extends TrackeraTableEntity {
+interface WorklogEntry {
+  id: string;
   fromTime: string;
   toTime: string;
   duration: string;
   description: string;
-  status: WorkLogStatusType;
+  status: WorklogStatusType;
   syncError?: string;
 }
 
@@ -44,68 +67,9 @@ interface WorklogSelection {
   entryIds?: string[];
 }
 
-interface WorklogError extends TrackeraTableEntity {
+interface WorklogError {
   row: number;
   error: string;
-}
-
-const worklogEvaluationMetadata: Record<WorkLogEvaluationType, StatusBadgeProps> = {
-  EXCELLENT: { label: "Excellent", type: "main" },
-  GOOD: { label: "Good", type: "success" },
-  MODERATE: { label: "Moderate", type: "warning" },
-  POOR: { label: "Poor", type: "danger" },
-};
-
-const statusMetadata: Record<WorkLogStatusType, StatusBadgeProps> = {
-  SYNCED: { label: "Synced", type: "success" },
-  PARTIALLY: { label: "Partially", type: "warning" },
-  NOT_SYNCED: { label: "Not Synced", type: "danger" },
-  SYNC_IN_PROGRESS: { label: "Sync in Progress", type: "warning" },
-  UNSYNC_IN_PROGRESS: { label: "Unsync in Progress", type: "warning" },
-};
-
-interface WorklogTableActionButtonOptions {
-  label: string;
-  onClick: () => void;
-  disabled?: boolean;
-  icon?: React.ReactNode;
-  customClasses?: string[];
-}
-
-interface WorklogTableActionButtonProps {
-  label: string;
-  icon?: React.ReactNode;
-  customClasses?: string[];
-  disabled?: boolean;
-  onClick?: () => void;
-  options?: WorklogTableActionButtonOptions[];
-}
-
-interface WorklogTableProps<T = TrackeraTableEntity> {
-  properties: TableProps<T>;
-  actionButtons?: WorklogTableActionButtonProps[];
-}
-
-interface WorklogModalProps {
-  title: string;
-  properties: ModalProps;
-  children: React.ReactNode;
-}
-
-interface ManageWorkLogModalProps {
-  setIsOpen: (isOpen: boolean) => void;
-  setFetchWorkLog: (fetch: boolean) => void;
-  setFetchSummary: (fetch: boolean) => void;
-  selectedWorkLog?: Worklog;
-  setSelectedWorkLog?: (worklog: Worklog | undefined) => void;
-  jiraLinked: boolean;
-}
-
-interface WorkLogSummaryCard {
-  label: string;
-  subLabel: string;
-  code: string;
-  value: string;
 }
 
 interface WorkLogSearchFilter {
@@ -114,30 +78,27 @@ interface WorkLogSearchFilter {
   secondValue?: any | undefined | null;
 }
 
-interface WorkLogsFilterProps {
-  filters: Record<string, any>;
-  setFilters: (filters: Record<string, any>) => void;
-  setFetchWorkLog: (fetch: boolean) => void;
-  jiraLinked: boolean;
-}
+type JiraSyncEventProps = {
+  type: JiraSyncEventType;
+  logId: string;
+  taskNames?: string[];
+  entryIds?: string[];
+  status: WorklogStatusType;
+  syncError?: string;
+};
 
 export type {
   SyncPayload,
-  WorkLogEvaluationType,
-  WorkLogStatusType,
+  WorklogEvaluationType,
+  WorklogStatusType,
   Worklog,
   WorklogTask,
   WorklogEntry,
   WorklogSelection,
   WorklogError,
-  StatusBadgeProps,
-  WorklogTableActionButtonProps,
-  WorklogTableProps,
-  WorklogModalProps,
-  ManageWorkLogModalProps,
-  WorkLogSummaryCard,
   WorkLogSearchFilter,
-  WorkLogsFilterProps,
+  JiraSyncEventType,
+  JiraSyncEventProps,
 };
 
-export { worklogEvaluationMetadata, statusMetadata };
+export { WORKLOG_STATUS, WORKLOG_EVALUATION, JIRA_SYNC_EVENT };

@@ -1,12 +1,23 @@
 import classes from "./scss/worklog-info.module.css";
-import { Calendar, Clock, RefreshCcw, Target } from "lucide-react";
+import { Calendar, CircleAlert, Clock, RefreshCcw, Target } from "lucide-react";
 import { Tooltip } from "antd";
-import { worklogEvaluationMetadata, statusMetadata, type Worklog, type WorkLogEvaluationType, type WorkLogStatusType } from "../../../shared/types";
-import { StatusBadge } from "../../";
+import {
+  type Worklog,
+  type WorklogEvaluationType,
+  type WorklogStatusType,
+  WORKLOG_STATUS,
+} from "../../../shared/types";
+import { StatusBadge, statusMetadata, worklogEvaluationMetadata } from "../..";
 
-const WorklogInfo = ({ worklogInfo, jiraLinked }: { worklogInfo: Worklog; jiraLinked: boolean }) => {
-  const evaluationMetaItem = worklogEvaluationMetadata[worklogInfo?.evaluation as WorkLogEvaluationType];
-  const statusMetaItem = statusMetadata[worklogInfo?.status as WorkLogStatusType];
+interface WorklogInfoProps {
+  worklogInfo: Worklog;
+  jiraLinked: boolean;
+}
+
+const WorklogInfo = (props: WorklogInfoProps) => {
+  const { worklogInfo, jiraLinked } = props;
+  const evaluationMetaItem = worklogEvaluationMetadata[worklogInfo?.evaluation as WorklogEvaluationType];
+  const statusMetaItem = statusMetadata[worklogInfo?.status as WorklogStatusType];
 
   return (
     <div className={classes.worklog_info}>
@@ -28,13 +39,27 @@ const WorklogInfo = ({ worklogInfo, jiraLinked }: { worklogInfo: Worklog; jiraLi
           <Tooltip title="Evaluation">
             <Target className={classes.info_icon} />
           </Tooltip>
-          <StatusBadge badgeProps={evaluationMetaItem} />
+          <StatusBadge {...evaluationMetaItem} />
         </div>
         <div className={classes.info_box}>
           <Tooltip title={`Status${jiraLinked ? "" : " (Jira not linked)"}`}>
             <RefreshCcw className={classes.info_icon} />
           </Tooltip>
-          {jiraLinked ? <StatusBadge badgeProps={statusMetaItem} /> : <span className={classes.info_label}>-</span>}
+          {jiraLinked ? (
+            <StatusBadge
+              {...{
+                ...statusMetaItem,
+                icon:
+                  worklogInfo.hasError &&
+                  worklogInfo.status !== WORKLOG_STATUS.SYNC_IN_PROGRESS &&
+                  worklogInfo.status !== WORKLOG_STATUS.UNSYNC_IN_PROGRESS ? (
+                    <CircleAlert />
+                  ) : undefined,
+              }}
+            />
+          ) : (
+            <span className={classes.info_label}>-</span>
+          )}
         </div>
       </div>
     </div>

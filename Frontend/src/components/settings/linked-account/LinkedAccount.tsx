@@ -1,30 +1,40 @@
 import { Button } from "antd";
-import type { LinkedAccountProps } from "../../../shared/types";
 import classes from "./scss/linked-account.module.css";
+import { OAUTH_PROVIDERS } from "../../../shared/types";
 
 const providerIconMap: Record<string, React.ReactNode> = {
-  jira: <img src="/Assets/jira_icon.svg" alt="Jira" />,
-  google: <img src="/Assets/google_logo.webp" alt="Google" />,
+  [OAUTH_PROVIDERS.JIRA]: <img src="/Assets/jira_icon.svg" alt="Jira" />,
+  [OAUTH_PROVIDERS.GOOGLE]: <img src="/Assets/google_logo.webp" alt="Google" />,
 };
 
+interface LinkedAccountProps {
+  platform: Record<string, string>;
+  accountIdentifier?: string;
+  isLinked: boolean;
+  onLink: () => void;
+  onUnlink: () => void;
+}
+
 const LinkedAccount = (props: LinkedAccountProps) => {
+  const { platform, accountIdentifier, isLinked, onLink, onUnlink } = props;
+
   return (
     <div className={classes.linked_account}>
       <div className={classes.account_info}>
         <div className={classes.platform}>
-          <div className={classes.icon}>{providerIconMap[props.platform.code]}</div>
-          <div className={classes.platform_name}>{props.platform.name}</div>
+          <div className={classes.icon}>{providerIconMap[platform.code]}</div>
+          <div className={classes.platform_name}>{platform.name}</div>
         </div>
-        <div className={classes.account_identifier}>{props.accountIdentifier}</div>
+        <div className={classes.account_identifier}>{accountIdentifier}</div>
       </div>
       <div className={classes.actions}>
         <Button
-          color={`${props.isLinked ? "danger" : "primary"}`}
-          variant={`${props.isLinked ? "outlined" : "solid"}`}
+          color={`${isLinked ? "danger" : "primary"}`}
+          variant={`${isLinked ? "outlined" : "solid"}`}
           className={classes.link_button}
-          onClick={props.isLinked ? props.onUnlink : props.onLink}
+          onClick={isLinked ? onUnlink : onLink}
         >
-          {`${props.isLinked ? "Unlink" : "Link"} Account`}
+          {`${isLinked ? "Unlink" : "Link"} Account`}
         </Button>
       </div>
     </div>

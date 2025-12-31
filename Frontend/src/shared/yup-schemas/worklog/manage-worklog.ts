@@ -9,7 +9,7 @@ const ALLOWED_FILE_TYPES = [
   "application/vnd.google-apps.spreadsheet",
 ];
 
-const manageWorkLog = object({
+const manageWorklog = object({
   mode: string().oneOf(["add", "edit"]).required(),
   logName: string().trim(),
   logDate: mixed<dayjs.Dayjs>().required("Log date is required"),
@@ -30,4 +30,4 @@ const manageWorkLog = object({
   syncToJira: boolean().default(false),
 });
 
-export default manageWorkLog;
+export default manageWorklog;

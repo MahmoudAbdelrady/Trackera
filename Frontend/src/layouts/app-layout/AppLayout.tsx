@@ -1,14 +1,14 @@
 import { ChevronDown, LogOut } from "lucide-react";
 import classes from "./scss/app-layout.module.css";
 import { Avatar, Dropdown, type MenuProps } from "antd";
-import { Sidebar } from "..";
+import { Sidebar } from "../../components";
 import { useState } from "react";
 import { useAuthStore } from "../../state/store";
 import { showErrorToast, showSuccessToast } from "../../utils/toast-handler/showToast";
-import requestInstance from "../../shared/axios/request-instance";
 import { useNavigate } from "react-router-dom";
 import { userQueries } from "../../state/queries";
 import { getContrastColor } from "../../utils";
+import { authApis } from "../../state/api";
 
 const AppLayout = ({ children }: { children: React.ReactNode }) => {
   const { data: userData } = userQueries.useMeQuery();
@@ -19,9 +19,9 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
   const handleLogout = async () => {
     setIsLoading(true);
     try {
-      const response = await requestInstance.post("/auth/logout");
+      const result = await authApis.logout();
       authStore.setAuthenticated(false);
-      showSuccessToast(response.data);
+      showSuccessToast(result);
       navigate("/login");
     } catch (error: any) {
       showErrorToast(error);

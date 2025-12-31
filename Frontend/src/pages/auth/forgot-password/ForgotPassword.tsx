@@ -1,4 +1,4 @@
-import { AuthFooter, AuthForm, AuthLayout, AuthResult, InputField } from "../../../components";
+import { AuthFooter, AuthForm, AuthResult, InputField, type AuthResultFields } from "../../../components";
 import { Mail } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -6,8 +6,9 @@ import inputFieldClasses from "../../../components/input-field/scss/input-field.
 import { useFormik } from "formik";
 import { emailSchema } from "../../../shared/yup-schemas";
 import { showErrorToast } from "../../../utils/toast-handler/showToast";
-import requestInstance from "../../../shared/axios/request-instance";
-import type { AuthResultFields } from "../../../shared/types";
+import { authApis } from "../../../state/api";
+import { getFormikFieldProps } from "../../../utils";
+import { AuthLayout } from "../../../layouts";
 
 interface ForgotPasswordFormFields {
   email: string;
@@ -19,18 +20,17 @@ const ForgotPassword = () => {
   const [passwordResetResult, setPasswordResetResult] = useState<AuthResultFields>({});
   const navigate = useNavigate();
 
-  const forgotPasswordFormik = useFormik({
-    initialValues: (Object.keys(emailSchema.fields) as (keyof ForgotPasswordFormFields)[]).reduce((acc, key) => {
-      acc[key] = "";
-      return acc;
-    }, {} as ForgotPasswordFormFields),
+  const forgotPasswordFormik = useFormik<ForgotPasswordFormFields>({
+    initialValues: {
+      email: "",
+    },
     validationSchema: emailSchema,
-    onSubmit: async (values) => {
+    onSubmit: async (values: ForgotPasswordFormFields) => {
       setIsLoading(true);
       try {
-        const response = await requestInstance.post("/auth/password/request-reset", values);
+        const result = await authApis.requestResetPassword(values.email);
         setPasswordResetResult({
-          description: response.data,
+          description: result,
         });
         setShowAuthResult(true);
       } catch (error) {
@@ -44,7 +44,12 @@ const ForgotPassword = () => {
   return (
     <AuthLayout>
       {showAuthResult ? (
-        <AuthResult title="Password Reset" message={passwordResetResult.description!} buttonText="Back to Sign In" onClick={() => navigate("/login")} />
+        <AuthResult
+          title="Password Reset"
+          message={passwordResetResult.description!}
+          buttonText="Back to Sign In"
+          onClick={() => navigate("/login")}
+        />
       ) : (
         <AuthForm
           title="Reset your password"
@@ -59,13 +64,8 @@ const ForgotPassword = () => {
             label="Email"
             icon={<Mail className={inputFieldClasses.input_icon} />}
             placeholder="Enter your email"
-            name="email"
-            value={forgotPasswordFormik.values.email}
-            onChange={forgotPasswordFormik.handleChange}
-            onBlur={forgotPasswordFormik.handleBlur}
             type="email"
-            disabled={isLoading}
-            error={forgotPasswordFormik.touched.email && forgotPasswordFormik.errors.email ? forgotPasswordFormik.errors.email : undefined}
+            {...getFormikFieldProps(forgotPasswordFormik, "email", isLoading)}
           />
         </AuthForm>
       )}
