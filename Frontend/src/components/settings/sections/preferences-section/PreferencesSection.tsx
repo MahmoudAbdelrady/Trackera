@@ -127,7 +127,7 @@ const PreferencesSection = (props: PreferencesProps) => {
                 }
               />
             ) : (
-              <Alert message="Link your Jira account to enable this option." type="info" showIcon />
+              <Alert title="Link your Jira account to enable this option." type="info" showIcon />
             )}
           </UserPreference>
           <UserPreference label="Worklog Monthly Target Hours">

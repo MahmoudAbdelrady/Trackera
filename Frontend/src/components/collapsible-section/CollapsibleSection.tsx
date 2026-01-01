@@ -11,7 +11,7 @@ const CollapsibleSection = (props: CollapsibleSectionProps) => {
 
   return (
     <Collapse
-      expandIconPosition="end"
+      expandIconPlacement="end"
       items={[
         {
           key: "1",

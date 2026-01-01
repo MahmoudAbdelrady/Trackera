@@ -153,7 +153,7 @@ const Home = () => {
         {(selectedWorklog?.status === WORKLOG_STATUS.SYNCED ||
           selectedWorklog?.status === WORKLOG_STATUS.PARTIALLY) && (
           <Alert
-            message="This worklog has synced data with Jira and will be unsynced upon deletion."
+            title="This worklog has synced data with Jira and will be unsynced upon deletion."
             type="warning"
             showIcon
             className={worklogModalClasses.alert_message}

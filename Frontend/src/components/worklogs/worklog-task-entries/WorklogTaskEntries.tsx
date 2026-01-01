@@ -132,7 +132,7 @@ const WorklogTaskEntries = (props: WorklogTaskEntriesProps) => {
           </p>
           {(selectedTask?.status === WORKLOG_STATUS.SYNCED || selectedTask?.status === WORKLOG_STATUS.PARTIALLY) && (
             <Alert
-              message="This entry is synced with Jira and will be unsynced upon deletion."
+              title="This entry is synced with Jira and will be unsynced upon deletion."
               type="warning"
               showIcon
               className={worklogModalClasses.alert_message}

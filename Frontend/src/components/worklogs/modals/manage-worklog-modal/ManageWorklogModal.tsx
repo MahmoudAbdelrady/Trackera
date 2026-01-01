@@ -6,7 +6,7 @@ import { Alert, DatePicker, Form, Input, Switch, Tooltip, type TableProps, type 
 import { Inbox, Info } from "lucide-react";
 import Dragger from "antd/es/upload/Dragger";
 import { CollapsibleSection, WorklogModal, TrackeraTable } from "../../..";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { showErrorToast, showSuccessToast } from "../../../../utils/toast-handler/showToast";
 import { WORKLOG_STATUS, type Worklog, type WorklogError } from "../../../../shared/types";
 import { formatDate, getFormikFieldError, getFormikFieldStatus } from "../../../../utils";
@@ -36,19 +36,19 @@ const ManageWorklogModal = (props: ManageWorklogModalProps) => {
   const [worklogFileErrors, setWorklogFileErrors] = useState<WorklogError[]>([]);
   const isEditMode = selectedWorklog !== undefined;
 
-  const getLogDate = (): dayjs.Dayjs => {
+  const getInitLogDate = useMemo((): dayjs.Dayjs => {
     if (isEditMode) {
       return dayjs(selectedWorklog!.workDate);
     } else {
       return dayjs().hour() < 12 ? dayjs().subtract(1, "day") : dayjs();
     }
-  };
+  }, [isEditMode, selectedWorklog?.workDate]);
 
   const manageWorklogFormik = useFormik<ManageWorklogFormValues>({
     initialValues: {
       mode: isEditMode ? "edit" : "add",
       logName: isEditMode ? selectedWorklog!.name : "",
-      logDate: getLogDate(),
+      logDate: getInitLogDate,
       logFile: null,
       reEvaluate: false,
       syncToJira: false,
@@ -153,11 +153,7 @@ const ManageWorklogModal = (props: ManageWorklogModalProps) => {
     >
       <form className={worklogModalClasses.worklog_form}>
         <div className={worklogModalClasses.form_group}>
-          <Form.Item
-            className={worklogModalClasses.form_item}
-            validateStatus={getFormikFieldStatus(manageWorklogFormik, "logName")}
-            help={getFormikFieldError(manageWorklogFormik, "logName")}
-          >
+          <Form.Item className={worklogModalClasses.form_item} validateStatus={getFormikFieldStatus(manageWorklogFormik, "logName")} help={getFormikFieldError(manageWorklogFormik, "logName")}>
             <span className={worklogModalClasses.label}>Log Name:</span>
             <Input
               placeholder="Enter log name"
@@ -194,33 +190,20 @@ const ManageWorklogModal = (props: ManageWorklogModalProps) => {
               manageWorklogFormik.values.logDate !== null &&
               formatDate(manageWorklogFormik.values.logDate) !== selectedWorklog?.workDate &&
               selectedWorklog?.status !== WORKLOG_STATUS.NOT_SYNCED && (
-                <Alert
-                  message="Changing the log date will be applied to the synced worklogs"
-                  type="warning"
-                  showIcon
-                  style={{ marginTop: "10px" }}
-                />
+                <Alert title="Changing the log date will be applied to the synced worklogs" type="warning" showIcon style={{ marginTop: "10px" }} />
               )}
           </Form.Item>
         </div>
         {isEditMode && (
           <div className={worklogModalClasses.form_group}>
             <span className={worklogModalClasses.label}>Re-evaluate worklog file:</span>
-            <Switch
-              disabled={isLoading}
-              value={manageWorklogFormik.values.reEvaluate}
-              onChange={(value) => manageWorklogFormik.setFieldValue("reEvaluate", value)}
-            />
+            <Switch disabled={isLoading} value={manageWorklogFormik.values.reEvaluate} onChange={(value) => manageWorklogFormik.setFieldValue("reEvaluate", value)} />
           </div>
         )}
         {(!isEditMode || manageWorklogFormik.values.reEvaluate) && (
           <>
             <div className={`${worklogModalClasses.form_group} ${worklogModalClasses.upload_group}`}>
-              <Form.Item
-                className={worklogModalClasses.form_item}
-                validateStatus={getFormikFieldStatus(manageWorklogFormik, "logFile")}
-                help={getFormikFieldError(manageWorklogFormik, "logFile")}
-              >
+              <Form.Item className={worklogModalClasses.form_item} validateStatus={getFormikFieldStatus(manageWorklogFormik, "logFile")} help={getFormikFieldError(manageWorklogFormik, "logFile")}>
                 <span className={worklogModalClasses.label}>Upload log file:</span>
                 <Dragger
                   className={worklogModalClasses.upload_box}
@@ -246,22 +229,14 @@ const ManageWorklogModal = (props: ManageWorklogModalProps) => {
                   <div className={worklogModalClasses.upload_icon_box}>
                     <Inbox className={worklogModalClasses.upload_icon} />
                   </div>
-                  <span className={worklogModalClasses.upload_title}>
-                    Click or drag worklog file to this area to upload
-                  </span>
-                  <p className={worklogModalClasses.upload_subtitle}>
-                    Supported formats: .xlsx and .csv. Max file size: 5MB.
-                  </p>
+                  <span className={worklogModalClasses.upload_title}>Click or drag worklog file to this area to upload</span>
+                  <p className={worklogModalClasses.upload_subtitle}>Supported formats: .xlsx and .csv. Max file size: 5MB.</p>
                 </Dragger>
               </Form.Item>
             </div>
             <div className={worklogModalClasses.form_group}>
               <span className={worklogModalClasses.label}>Sync to Jira after upload:</span>
-              <Switch
-                disabled={!jiraLinked || isLoading}
-                value={manageWorklogFormik.values.syncToJira}
-                onChange={(value) => manageWorklogFormik.setFieldValue("syncToJira", value)}
-              />
+              <Switch disabled={!jiraLinked || isLoading} value={manageWorklogFormik.values.syncToJira} onChange={(value) => manageWorklogFormik.setFieldValue("syncToJira", value)} />
               {!jiraLinked && (
                 <Tooltip title="Link your Jira account in settings to enable this option.">
                   <Info size={16} color="#dc2626" style={{ marginLeft: "8px" }} />

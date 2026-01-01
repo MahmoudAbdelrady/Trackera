@@ -231,7 +231,7 @@ const WorklogDetails = () => {
           </p>
           {(selectedTask?.status === WORKLOG_STATUS.SYNCED || selectedTask?.status === WORKLOG_STATUS.PARTIALLY) && (
             <Alert
-              message="This task has synced data with Jira and will be unsynced upon deletion."
+              title="This task has synced data with Jira and will be unsynced upon deletion."
               type="warning"
               showIcon
               className={worklogModalClasses.alert_message}
