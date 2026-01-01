@@ -13,6 +13,7 @@ import {
   ChangePassword,
   OAuthCallback,
   PrivacyPolicy,
+  NotFound,
 } from "./pages";
 import { Toaster } from "react-hot-toast";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -104,6 +105,10 @@ const router = createBrowserRouter([
   {
     path: "/privacy-policy",
     element: <PrivacyPolicy />,
+  },
+  {
+    path: "*",
+    element: <NotFound />,
   },
 ]);
 

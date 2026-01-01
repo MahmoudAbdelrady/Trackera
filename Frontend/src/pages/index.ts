@@ -10,6 +10,7 @@ import Settings from "./settings/Settings";
 import Test from "./test/Test";
 import OAuthCallback from "./oauth-callback/OAuthCallback";
 import PrivacyPolicy from "./privacy-policy/PrivacyPolicy";
+import NotFound from "./not-found/NotFound";
 
 export {
   Login,
@@ -24,4 +25,5 @@ export {
   Test,
   OAuthCallback,
   PrivacyPolicy,
+  NotFound,
 };
