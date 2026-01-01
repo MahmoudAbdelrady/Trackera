@@ -9,6 +9,9 @@
   }
   .content {
     margin-right: 50px;
+    @media (max-width: 920px) {
+      margin-right: 0;
+    }
     .header {
       h1 {
         margin-bottom: 30px;

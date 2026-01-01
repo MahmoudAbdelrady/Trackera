@@ -12,6 +12,11 @@
 .privacy_policy .content {
   margin-right: 50px;
 }
+@media (max-width: 920px) {
+  .privacy_policy .content {
+    margin-right: 0;
+  }
+}
 .privacy_policy .content .header h1 {
   margin-bottom: 30px;
 }

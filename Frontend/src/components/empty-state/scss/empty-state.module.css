@@ -27,8 +27,6 @@
 @media (max-width: 768px) {
   .empty_state_container .content {
     margin: 0 15px;
-    width: auto;
-    height: auto;
     padding: 20px;
   }
 }
