@@ -105,5 +105,6 @@
   display: flex;
   justify-content: flex-start;
   align-items: center;
+  padding: 8px;
   gap: 5px;
 }/*# sourceMappingURL=app-layout.module.css.map */

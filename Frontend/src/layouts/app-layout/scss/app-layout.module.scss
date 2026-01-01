@@ -88,5 +88,6 @@
 
 .profile_item {
   @include start;
+  padding: 8px;
   gap: 5px;
 }

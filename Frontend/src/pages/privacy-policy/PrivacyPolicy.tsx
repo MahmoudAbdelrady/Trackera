@@ -194,7 +194,13 @@ const PrivacyPolicy = () => {
       <div className={classes.anchor_container}>
         <div className={classes.header}>On This Page</div>
         <div className={classes.anchor_box}>
-          <Anchor affix={false} items={anchorItems} targetOffset={900} classNames={{ item: classes.anchor_item }} />
+          <Anchor
+            affix={false}
+            replace
+            items={anchorItems}
+            targetOffset={900}
+            classNames={{ item: classes.anchor_item }}
+          />
         </div>
       </div>
     </div>
