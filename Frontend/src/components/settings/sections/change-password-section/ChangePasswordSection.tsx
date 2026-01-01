@@ -4,7 +4,6 @@ import classes from "./scss/change-password.module.css";
 import { useFormik } from "formik";
 import { updatePasswordSchema } from "../../../../shared/yup-schemas";
 import { showErrorToast, showSuccessToast } from "../../../../utils/toast-handler/showToast";
-import inputFieldClasses from "../../../input-field/scss/input-field.module.css";
 import InputField from "../../../input-field/InputField";
 import { Lock } from "lucide-react";
 import { Button } from "antd";
@@ -46,7 +45,7 @@ const ChangePasswordSection = () => {
       {hasPassword && (
         <InputField
           label="Current Password"
-          icon={<Lock className={inputFieldClasses.input_icon} />}
+          icon={<Lock />}
           placeholder="Enter your current password"
           type="password"
           {...getFormikFieldProps(changePasswordFormik, "currentPassword", isUpdatingPassword)}
@@ -54,14 +53,14 @@ const ChangePasswordSection = () => {
       )}
       <InputField
         label="New Password"
-        icon={<Lock className={inputFieldClasses.input_icon} />}
+        icon={<Lock />}
         placeholder="Enter your new password"
         type="password"
         {...getFormikFieldProps(changePasswordFormik, "newPassword", isUpdatingPassword)}
       />
       <InputField
         label="Confirm New Password"
-        icon={<Lock className={inputFieldClasses.input_icon} />}
+        icon={<Lock />}
         placeholder="Confirm your new password"
         type="password"
         {...getFormikFieldProps(changePasswordFormik, "confirmNewPassword", isUpdatingPassword)}

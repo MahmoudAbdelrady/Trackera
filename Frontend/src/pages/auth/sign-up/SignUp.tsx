@@ -1,6 +1,5 @@
 import { AuthFooter, AuthForm, AuthResult, InputField } from "../../../components";
 import authClasses from "../scss/auth.module.css";
-import inputFieldClasses from "../../../components/input-field/scss/input-field.module.css";
 import { Lock, Mail, User } from "lucide-react";
 import { useFormik } from "formik";
 import { signUpSchema } from "../../../shared/yup-schemas";
@@ -91,14 +90,14 @@ const SignUp = () => {
           <div className={authClasses.composite_input_group}>
             <InputField
               label="First Name"
-              icon={<User className={inputFieldClasses.input_icon} />}
+              icon={<User />}
               placeholder="Enter your first name"
               type="text"
               {...getFormikFieldProps(signUpFormik, "firstname", isLoading)}
             />
             <InputField
               label="Last Name"
-              icon={<User className={inputFieldClasses.input_icon} />}
+              icon={<User />}
               placeholder="Enter your last name"
               type="text"
               {...getFormikFieldProps(signUpFormik, "lastname", isLoading)}
@@ -106,21 +105,21 @@ const SignUp = () => {
           </div>
           <InputField
             label="Email"
-            icon={<Mail className={inputFieldClasses.input_icon} />}
+            icon={<Mail />}
             placeholder="Enter your email"
             type="email"
             {...getFormikFieldProps(signUpFormik, "email", isLoading)}
           />
           <InputField
             label="Password"
-            icon={<Lock className={inputFieldClasses.input_icon} />}
+            icon={<Lock />}
             placeholder="Enter your password"
             type="password"
             {...getFormikFieldProps(signUpFormik, "password", isLoading)}
           />
           <InputField
             label="Confirm Password"
-            icon={<Lock className={inputFieldClasses.input_icon} />}
+            icon={<Lock />}
             placeholder="Confirm your password"
             type="password"
             {...getFormikFieldProps(signUpFormik, "confirmPassword", isLoading)}

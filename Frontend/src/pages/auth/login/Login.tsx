@@ -6,7 +6,6 @@ import { loginSchema } from "../../../shared/yup-schemas";
 import { useState } from "react";
 import { getFormikErrors } from "../../../utils";
 import { showErrorToast } from "../../../utils/toast-handler/showToast";
-import inputFieldClasses from "../../../components/input-field/scss/input-field.module.css";
 import classes from "./scss/login.module.css";
 import authClasses from "../scss/auth.module.css";
 import { useAuthStore } from "../../../state/store";
@@ -77,14 +76,14 @@ const Login = () => {
       >
         <InputField
           label="Email"
-          icon={<Mail className={inputFieldClasses.input_icon} />}
+          icon={<Mail />}
           placeholder="Enter your email"
           type="email"
           {...getFormikFieldProps(loginFormik, "email", isLoading)}
         />
         <InputField
           label="Password"
-          icon={<Lock className={inputFieldClasses.input_icon} />}
+          icon={<Lock />}
           placeholder="Enter your password"
           type="password"
           {...getFormikFieldProps(loginFormik, "password", isLoading)}

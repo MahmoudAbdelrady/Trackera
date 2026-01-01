@@ -18,7 +18,7 @@ const InputField = (props: InputFieldProps) => {
   const { label, icon, type, name, placeholder, value, onChange, onBlur, error, disabled } = props;
 
   const fieldProps = {
-    prefix: icon,
+    prefix: <div className={classes.input_icon}>{icon}</div>,
     placeholder,
     className: classes.input_field,
     name,

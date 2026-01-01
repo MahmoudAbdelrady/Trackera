@@ -2,7 +2,6 @@ import { AuthFooter, AuthForm, AuthResult, InputField, type AuthResultFields } f
 import { Mail } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import inputFieldClasses from "../../../components/input-field/scss/input-field.module.css";
 import { useFormik } from "formik";
 import { emailSchema } from "../../../shared/yup-schemas";
 import { showErrorToast } from "../../../utils/toast-handler/showToast";
@@ -62,7 +61,7 @@ const ForgotPassword = () => {
         >
           <InputField
             label="Email"
-            icon={<Mail className={inputFieldClasses.input_icon} />}
+            icon={<Mail />}
             placeholder="Enter your email"
             type="email"
             {...getFormikFieldProps(forgotPasswordFormik, "email", isLoading)}
