@@ -1,14 +1,13 @@
-import classes from "./scss/server-error.module.css";
+import EmptyState from "../empty-state/EmptyState";
 
 const ServerError = () => {
   return (
-    <div className={classes.server_error_container}>
-      <div className={classes.content}>
-        <img src="/Assets/error_icon.svg" alt="Server Error" className={classes.error_img} />
-        <h2 className={classes.title}>Service Unavailable</h2>
-        <div className={classes.message}>Oops! Something went wrong on our end. Please try again later.</div>
-      </div>
-    </div>
+    <EmptyState
+      imgSrc="/Assets/error_icon.svg"
+      alt="Server Error"
+      title="Service Unavailable"
+      message="Oops! Something went wrong on our end. Please try again later."
+    />
   );
 };
 
