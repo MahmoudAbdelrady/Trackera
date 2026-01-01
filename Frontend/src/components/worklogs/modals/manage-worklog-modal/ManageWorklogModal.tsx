@@ -153,7 +153,11 @@ const ManageWorklogModal = (props: ManageWorklogModalProps) => {
     >
       <form className={worklogModalClasses.worklog_form}>
         <div className={worklogModalClasses.form_group}>
-          <Form.Item className={worklogModalClasses.form_item} validateStatus={getFormikFieldStatus(manageWorklogFormik, "logName")} help={getFormikFieldError(manageWorklogFormik, "logName")}>
+          <Form.Item
+            className={worklogModalClasses.form_item}
+            validateStatus={getFormikFieldStatus(manageWorklogFormik, "logName")}
+            help={getFormikFieldError(manageWorklogFormik, "logName")}
+          >
             <span className={worklogModalClasses.label}>Log Name:</span>
             <Input
               placeholder="Enter log name"
@@ -187,23 +191,37 @@ const ManageWorklogModal = (props: ManageWorklogModalProps) => {
               disabled={isLoading}
             />
             {isEditMode &&
+              !manageWorklogFormik.values.reEvaluate &&
               manageWorklogFormik.values.logDate !== null &&
               formatDate(manageWorklogFormik.values.logDate) !== selectedWorklog?.workDate &&
               selectedWorklog?.status !== WORKLOG_STATUS.NOT_SYNCED && (
-                <Alert title="Changing the log date will be applied to the synced worklogs" type="warning" showIcon style={{ marginTop: "10px" }} />
+                <Alert
+                  title="Changing the log date will be applied to the synced worklogs"
+                  type="warning"
+                  showIcon
+                  style={{ marginTop: "10px" }}
+                />
               )}
           </Form.Item>
         </div>
         {isEditMode && (
           <div className={worklogModalClasses.form_group}>
             <span className={worklogModalClasses.label}>Re-evaluate worklog file:</span>
-            <Switch disabled={isLoading} value={manageWorklogFormik.values.reEvaluate} onChange={(value) => manageWorklogFormik.setFieldValue("reEvaluate", value)} />
+            <Switch
+              disabled={isLoading}
+              value={manageWorklogFormik.values.reEvaluate}
+              onChange={(value) => manageWorklogFormik.setFieldValue("reEvaluate", value)}
+            />
           </div>
         )}
         {(!isEditMode || manageWorklogFormik.values.reEvaluate) && (
           <>
             <div className={`${worklogModalClasses.form_group} ${worklogModalClasses.upload_group}`}>
-              <Form.Item className={worklogModalClasses.form_item} validateStatus={getFormikFieldStatus(manageWorklogFormik, "logFile")} help={getFormikFieldError(manageWorklogFormik, "logFile")}>
+              <Form.Item
+                className={worklogModalClasses.form_item}
+                validateStatus={getFormikFieldStatus(manageWorklogFormik, "logFile")}
+                help={getFormikFieldError(manageWorklogFormik, "logFile")}
+              >
                 <span className={worklogModalClasses.label}>Upload log file:</span>
                 <Dragger
                   className={worklogModalClasses.upload_box}
@@ -229,14 +247,22 @@ const ManageWorklogModal = (props: ManageWorklogModalProps) => {
                   <div className={worklogModalClasses.upload_icon_box}>
                     <Inbox className={worklogModalClasses.upload_icon} />
                   </div>
-                  <span className={worklogModalClasses.upload_title}>Click or drag worklog file to this area to upload</span>
-                  <p className={worklogModalClasses.upload_subtitle}>Supported formats: .xlsx and .csv. Max file size: 5MB.</p>
+                  <span className={worklogModalClasses.upload_title}>
+                    Click or drag worklog file to this area to upload
+                  </span>
+                  <p className={worklogModalClasses.upload_subtitle}>
+                    Supported formats: .xlsx and .csv. Max file size: 5MB.
+                  </p>
                 </Dragger>
               </Form.Item>
             </div>
             <div className={worklogModalClasses.form_group}>
               <span className={worklogModalClasses.label}>Sync to Jira after upload:</span>
-              <Switch disabled={!jiraLinked || isLoading} value={manageWorklogFormik.values.syncToJira} onChange={(value) => manageWorklogFormik.setFieldValue("syncToJira", value)} />
+              <Switch
+                disabled={!jiraLinked || isLoading}
+                value={manageWorklogFormik.values.syncToJira}
+                onChange={(value) => manageWorklogFormik.setFieldValue("syncToJira", value)}
+              />
               {!jiraLinked && (
                 <Tooltip title="Link your Jira account in settings to enable this option.">
                   <Info size={16} color="#dc2626" style={{ marginLeft: "8px" }} />
