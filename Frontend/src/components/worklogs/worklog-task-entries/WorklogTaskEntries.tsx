@@ -2,13 +2,11 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { WORKLOG_STATUS, type SyncPayload, type WorklogEntry, type WorklogTask } from "../../../shared/types";
 import TrackeraTable from "../../trackera-table/TrackeraTable";
 import WorkLogModal from "../modals/worklog-modal/WorklogModal";
-import { createWorklogEntryColumns } from "../../";
+import { createWorklogEntryColumns, DeleteWarning } from "../../";
 import buildSyncButtonProps from "../../../utils/buildWorklogSyncButtonProps";
 import { worklogApis } from "../../../state/api";
 import { showErrorToast } from "../../../utils/toast-handler/showToast";
 import { useNavigate } from "react-router-dom";
-import { Alert } from "antd";
-import worklogModalClasses from "../modals/worklog-modal/scss/worklog-modal.module.css";
 import type { UserInfo } from "../../../shared/types/auth";
 
 interface WorklogTaskEntriesProps {
@@ -127,17 +125,13 @@ const WorklogTaskEntries = (props: WorklogTaskEntriesProps) => {
             onCancel: clearDeleteEntryModalFields,
           }}
         >
-          <p className={worklogModalClasses.delete_message}>
-            Are you sure you want to delete this entry? This action cannot be undone.
-          </p>
-          {(selectedTask?.status === WORKLOG_STATUS.SYNCED || selectedTask?.status === WORKLOG_STATUS.PARTIALLY) && (
-            <Alert
-              title="This entry is synced with Jira and will be unsynced upon deletion."
-              type="warning"
-              showIcon
-              className={worklogModalClasses.alert_message}
-            />
-          )}
+          <DeleteWarning
+            message="Are you sure you want to delete this entry? This action cannot be undone."
+            showAlert={
+              selectedTask?.status === WORKLOG_STATUS.SYNCED || selectedTask?.status === WORKLOG_STATUS.PARTIALLY
+            }
+            alertMessage="This entry is synced with Jira and will be unsynced upon deletion."
+          />
         </WorkLogModal>
       )}
 

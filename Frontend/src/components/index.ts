@@ -30,6 +30,7 @@ import createWorklogEntryColumns from "./worklogs/worklog-columns/createWorklogE
 import WorklogTaskEntries from "./worklogs/worklog-task-entries/WorklogTaskEntries";
 import PolicyItem from "./privacy-policy/policy-item/PolicyItem";
 import EmptyState from "./empty-state/EmptyState";
+import DeleteWarning from "./worklogs/delete-warning/DeleteWarning";
 
 // types
 import type { AuthResultFields } from "./auth/auth.types";
@@ -71,6 +72,7 @@ export {
   WorklogTaskEntries,
   PolicyItem,
   EmptyState,
+  DeleteWarning,
 };
 
 export { worklogEvaluationMetadata, statusMetadata };

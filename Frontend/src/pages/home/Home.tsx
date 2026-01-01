@@ -6,13 +6,12 @@ import {
   WorklogStatusCard,
   TrackeraTable,
   createWorklogColumns,
+  DeleteWarning,
 } from "../../components";
 import classes from "./scss/home.module.css";
-import { Alert } from "antd";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { type PaginatedResponse, type Worklog, WORKLOG_STATUS, JIRA_SYNC_EVENT } from "../../shared/types";
 import { createPaginationConfig } from "../../utils";
-import worklogModalClasses from "../../components/worklogs/modals/worklog-modal/scss/worklog-modal.module.css";
 import { showErrorToast, showSuccessToast } from "../../utils/toast-handler/showToast";
 import { userQueries } from "../../state/queries";
 import { useJiraSyncSSE } from "../../shared/hooks";
@@ -147,18 +146,13 @@ const Home = () => {
           },
         }}
       >
-        <p className={worklogModalClasses.delete_message}>
-          Are you sure you want to delete this worklog? This action cannot be undone.
-        </p>
-        {(selectedWorklog?.status === WORKLOG_STATUS.SYNCED ||
-          selectedWorklog?.status === WORKLOG_STATUS.PARTIALLY) && (
-          <Alert
-            title="This worklog has synced data with Jira and will be unsynced upon deletion."
-            type="warning"
-            showIcon
-            className={worklogModalClasses.alert_message}
-          />
-        )}
+        <DeleteWarning
+          message="Are you sure you want to delete this worklog? This action cannot be undone."
+          showAlert={
+            selectedWorklog?.status === WORKLOG_STATUS.SYNCED || selectedWorklog?.status === WORKLOG_STATUS.PARTIALLY
+          }
+          alertMessage="This worklog has synced data with Jira and will be unsynced upon deletion."
+        />
       </WorklogModal>
       <AppLayout>
         <div className={classes.worklog_status_cards_container}>
