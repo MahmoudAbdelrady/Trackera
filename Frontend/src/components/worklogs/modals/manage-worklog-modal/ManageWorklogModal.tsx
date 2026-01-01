@@ -1,9 +1,8 @@
 import dayjs from "dayjs";
 import { useFormik } from "formik";
 import { manageWorklog } from "../../../../shared/yup-schemas";
-import worklogModalClasses from "../worklog-modal/scss/worklog-modal.module.css";
-import { Alert, DatePicker, Form, Input, Switch, Tooltip, type TableProps, type UploadFile } from "antd";
-import { Inbox, Info } from "lucide-react";
+import { Alert, Button, DatePicker, Form, Input, Switch, Tooltip, type TableProps, type UploadFile } from "antd";
+import { FileDown, Inbox, Info } from "lucide-react";
 import Dragger from "antd/es/upload/Dragger";
 import { CollapsibleSection, WorklogModal, TrackeraTable } from "../../..";
 import { useMemo, useState } from "react";
@@ -11,6 +10,7 @@ import { showErrorToast, showSuccessToast } from "../../../../utils/toast-handle
 import { WORKLOG_STATUS, type Worklog, type WorklogError } from "../../../../shared/types";
 import { formatDate, getFormikFieldError, getFormikFieldStatus } from "../../../../utils";
 import { worklogApis } from "../../../../state/api";
+import classes from "./scss/manage-worklog-modal.module.css";
 
 interface ManageWorklogModalProps {
   setIsOpen: (isOpen: boolean) => void;
@@ -151,14 +151,14 @@ const ManageWorklogModal = (props: ManageWorklogModalProps) => {
         width: worklogFileErrors.length > 0 ? 900 : 520,
       }}
     >
-      <form className={worklogModalClasses.worklog_form}>
-        <div className={worklogModalClasses.form_group}>
+      <form className={classes.worklog_form}>
+        <div className={classes.form_group}>
           <Form.Item
-            className={worklogModalClasses.form_item}
+            className={classes.form_item}
             validateStatus={getFormikFieldStatus(manageWorklogFormik, "logName")}
             help={getFormikFieldError(manageWorklogFormik, "logName")}
           >
-            <span className={worklogModalClasses.label}>Log Name:</span>
+            <span className={classes.label}>Log Name:</span>
             <Input
               placeholder="Enter log name"
               name="logName"
@@ -175,13 +175,13 @@ const ManageWorklogModal = (props: ManageWorklogModalProps) => {
             </Tooltip>
           )}
         </div>
-        <div className={worklogModalClasses.form_group}>
+        <div className={classes.form_group}>
           <Form.Item
-            className={worklogModalClasses.form_item}
+            className={classes.form_item}
             validateStatus={getFormikFieldStatus(manageWorklogFormik, "logDate")}
             help={getFormikFieldError(manageWorklogFormik, "logDate") as string}
           >
-            <span className={worklogModalClasses.label}>Log date:</span>
+            <span className={classes.label}>Log date:</span>
             <DatePicker
               name="logDate"
               value={manageWorklogFormik.values.logDate}
@@ -205,8 +205,8 @@ const ManageWorklogModal = (props: ManageWorklogModalProps) => {
           </Form.Item>
         </div>
         {isEditMode && (
-          <div className={worklogModalClasses.form_group}>
-            <span className={worklogModalClasses.label}>Re-evaluate worklog file:</span>
+          <div className={classes.form_group}>
+            <span className={classes.label}>Re-evaluate worklog file:</span>
             <Switch
               disabled={isLoading}
               value={manageWorklogFormik.values.reEvaluate}
@@ -216,15 +216,15 @@ const ManageWorklogModal = (props: ManageWorklogModalProps) => {
         )}
         {(!isEditMode || manageWorklogFormik.values.reEvaluate) && (
           <>
-            <div className={`${worklogModalClasses.form_group} ${worklogModalClasses.upload_group}`}>
+            <div className={`${classes.form_group} ${classes.upload_group}`}>
               <Form.Item
-                className={worklogModalClasses.form_item}
+                className={classes.form_item}
                 validateStatus={getFormikFieldStatus(manageWorklogFormik, "logFile")}
                 help={getFormikFieldError(manageWorklogFormik, "logFile")}
               >
-                <span className={worklogModalClasses.label}>Upload log file:</span>
+                <span className={classes.label}>Upload log file:</span>
                 <Dragger
-                  className={worklogModalClasses.upload_box}
+                  className={classes.upload_box}
                   showUploadList={true}
                   multiple={false}
                   maxCount={1}
@@ -244,20 +244,21 @@ const ManageWorklogModal = (props: ManageWorklogModalProps) => {
                   }}
                   disabled={isLoading}
                 >
-                  <div className={worklogModalClasses.upload_icon_box}>
-                    <Inbox className={worklogModalClasses.upload_icon} />
+                  <div className={classes.upload_icon_box}>
+                    <Inbox className={classes.upload_icon} />
                   </div>
-                  <span className={worklogModalClasses.upload_title}>
-                    Click or drag worklog file to this area to upload
-                  </span>
-                  <p className={worklogModalClasses.upload_subtitle}>
-                    Supported formats: .xlsx and .csv. Max file size: 5MB.
-                  </p>
+                  <span className={classes.upload_title}>Click or drag worklog file to this area to upload</span>
+                  <p className={classes.upload_subtitle}>Supported formats: .xlsx and .csv. Max file size: 5MB.</p>
                 </Dragger>
+                <div className={classes.download_example_button_box}>
+                  <Button icon={<FileDown size={21} />} type="link" download href="/Files/worklog-example.xlsx">
+                    Download example file
+                  </Button>
+                </div>
               </Form.Item>
             </div>
-            <div className={worklogModalClasses.form_group}>
-              <span className={worklogModalClasses.label}>Sync to Jira after upload:</span>
+            <div className={classes.form_group}>
+              <span className={classes.label}>Sync to Jira after upload:</span>
               <Switch
                 disabled={!jiraLinked || isLoading}
                 value={manageWorklogFormik.values.syncToJira}
@@ -273,7 +274,7 @@ const ManageWorklogModal = (props: ManageWorklogModalProps) => {
         )}
       </form>
       {worklogFileErrors.length > 0 && (
-        <div className={worklogModalClasses.file_errors_container}>
+        <div className={classes.file_errors_container}>
           <CollapsibleSection title="Uploaded File Errors" icon={<Info color="#dc2626" />}>
             <TrackeraTable<WorklogError>
               properties={{
