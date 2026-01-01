@@ -2,6 +2,9 @@ import { Anchor } from "antd";
 import classes from "./scss/privacy-policy.module.css";
 import type { AnchorLinkItemProps } from "antd/es/anchor/Anchor";
 import type React from "react";
+import { PolicyItem } from "../../components";
+import { Mail } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const PrivacyPolicy = () => {
   const getPolicyAnchorItem = (key: string, title: string): React.ReactNode => {
@@ -41,23 +44,18 @@ const PrivacyPolicy = () => {
     },
     {
       key: "6",
-      href: "#your-rights",
-      title: getPolicyAnchorItem("6", "Your Rights"),
+      href: "#third-party-services",
+      title: getPolicyAnchorItem("6", "Third-Party Services"),
     },
     {
       key: "7",
-      href: "#third-party-services",
-      title: getPolicyAnchorItem("7", "Third-Party Services"),
+      href: "#changes-to-this-policy",
+      title: getPolicyAnchorItem("7", "Changes to This Policy"),
     },
     {
       key: "8",
-      href: "#changes-to-this-policy",
-      title: getPolicyAnchorItem("8", "Changes to This Policy"),
-    },
-    {
-      key: "9",
       href: "#contact-information",
-      title: getPolicyAnchorItem("9", "Contact Information"),
+      title: getPolicyAnchorItem("8", "Contact Information"),
     },
   ];
 
@@ -68,16 +66,14 @@ const PrivacyPolicy = () => {
           <h1>Privacy Policy</h1>
           <p>
             Trackera respects your privacy and is committed to protecting the personal information you share with us.
-            This Privacy Policy explains what data we collect, how we use it, and your rights regarding your
-            information.
+            This Privacy Policy explains what data we collect, how we use it, and how we protect your information.
           </p>
           <span>
             By using Trackera, you agree to the collection and use of information in accordance with this policy.
           </span>
         </div>
         <div className={classes.policy_items}>
-          <section id="information-we-collect" className={classes.policy_item}>
-            <h3 className={classes.policy_title}>1. Information We Collect</h3>
+          <PolicyItem id="information-we-collect" index={1} title="Information We Collect">
             <div className={classes.inner_policy}>
               <h4>1.1 Personal Information</h4>
               <p>When you sign in or use Trackera, we may collect the following information:</p>
@@ -113,9 +109,9 @@ const PrivacyPolicy = () => {
               </ul>
               <span>This data is user-provided and used solely to provide Trackera's core functionality.</span>
             </div>
-          </section>
-          <section id="how-we-use-your-information" className={classes.policy_item}>
-            <h3 className={classes.policy_title}>2. How We Use Your Information</h3>
+          </PolicyItem>
+
+          <PolicyItem id="how-we-use-your-information" index={2} title="How We Use Your Information">
             <div className={classes.inner_policy}>
               <p>We use the collected information to:</p>
               <ul>
@@ -127,9 +123,9 @@ const PrivacyPolicy = () => {
               </ul>
               <span>We do not sell, rent, or trade your personal data.</span>
             </div>
-          </section>
-          <section id="oauth-authentication" className={classes.policy_item}>
-            <h3 className={classes.policy_title}>3. OAuth & Authentication</h3>
+          </PolicyItem>
+
+          <PolicyItem id="oauth-authentication" index={3} title="OAuth & Authentication">
             <div className={classes.inner_policy}>
               <p>Trackera uses OAuth providers (such as Google) for authentication.</p>
               <ul>
@@ -138,9 +134,9 @@ const PrivacyPolicy = () => {
                 <li>You may revoke access at any time via your OAuth provider's account settings</li>
               </ul>
             </div>
-          </section>
-          <section id="data-storage-security" className={classes.policy_item}>
-            <h3 className={classes.policy_title}>4. Data Storage & Security</h3>
+          </PolicyItem>
+
+          <PolicyItem id="data-storage-security" index={4} title="Data Storage & Security">
             <div className={classes.inner_policy}>
               <p>We take reasonable measures to protect your data, including:</p>
               <ul>
@@ -152,41 +148,27 @@ const PrivacyPolicy = () => {
                 While no system is 100% secure, we strive to follow industry best practices to protect your data.
               </span>
             </div>
-          </section>
-          <section id="data-retention" className={classes.policy_item}>
-            <h3 className={classes.policy_title}>5. Data Retention</h3>
+          </PolicyItem>
+
+          <PolicyItem id="data-retention" index={5} title="Data Retention">
             <div className={classes.inner_policy}>
               <ul>
                 <li>Your data is retained as long as your account is active</li>
                 <li>You may request deletion of your account and associated data</li>
-                <li>Some technical logs may be retained temporarily for security or legal purposes</li>
               </ul>
             </div>
-          </section>
-          <section id="your-rights" className={classes.policy_item}>
-            <h3 className={classes.policy_title}>6. Your Rights</h3>
-            <div className={classes.inner_policy}>
-              <p>Depending on your location, you may have the right to:</p>
-              <ul>
-                <li>Access your personal data</li>
-                <li>Correct inaccurate data</li>
-                <li>Request deletion of your data</li>
-                <li>Withdraw consent for data processing</li>
-              </ul>
-              <span>You can exercise these rights by contacting us.</span>
-            </div>
-          </section>
-          <section id="third-party-services" className={classes.policy_item}>
-            <h3 className={classes.policy_title}>7. Third-Party Services</h3>
+          </PolicyItem>
+
+          <PolicyItem id="third-party-services" index={6} title="Third-Party Services">
             <div className={classes.inner_policy}>
               <p>
                 Trackera may link to or integrate with third-party services. We are not responsible for their privacy
                 practices, and we encourage you to review their privacy policies.
               </p>
             </div>
-          </section>
-          <section id="changes-to-this-policy" className={classes.policy_item}>
-            <h3 className={classes.policy_title}>8. Changes to This Policy</h3>
+          </PolicyItem>
+
+          <PolicyItem id="changes-to-this-policy" index={7} title="Changes to This Policy">
             <div className={classes.inner_policy}>
               <p>We may update this Privacy Policy from time to time.</p>
               <ul>
@@ -194,22 +176,25 @@ const PrivacyPolicy = () => {
                 <li>Continued use of Trackera after updates means you accept the revised policy</li>
               </ul>
             </div>
-          </section>
-          <section id="contact-information" className={classes.policy_item}>
-            <h3 className={classes.policy_title}>9. Contact Information</h3>
+          </PolicyItem>
+
+          <PolicyItem id="contact-information" index={8} title="Contact Information">
             <div className={classes.inner_policy}>
               <p>If you have any questions or concerns about this Privacy Policy, you can contact us at:</p>
-              <ul>
-                <li>Email: trackera@gmail.com</li>
-              </ul>
+              <div className={classes.info_box}>
+                <Mail />{" "}
+                <Link to="mailto:trackera@gmail.com" className={classes.link}>
+                  trackera@gmail.com
+                </Link>
+              </div>
             </div>
-          </section>
+          </PolicyItem>
         </div>
       </div>
       <div className={classes.anchor_container}>
         <div className={classes.header}>On This Page</div>
         <div className={classes.anchor_box}>
-          <Anchor affix={false} items={anchorItems} classNames={{ item: classes.anchor_item }} />
+          <Anchor affix={false} items={anchorItems} targetOffset={900} classNames={{ item: classes.anchor_item }} />
         </div>
       </div>
     </div>

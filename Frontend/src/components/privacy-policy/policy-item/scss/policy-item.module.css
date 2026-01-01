@@ -1,0 +1,27 @@
+.policy_item:not(:last-child) {
+  margin-bottom: 40px;
+}
+.policy_item .policy_title {
+  margin-bottom: 20px;
+  font-size: 22px;
+}
+.policy_item .inner_policy:not(:last-child) {
+  margin-bottom: 30px;
+}
+.policy_item .inner_policy p {
+  margin: 10px 0;
+  color: #5c5c5c;
+}
+.policy_item .inner_policy ul {
+  list-style: disc;
+  margin-left: 30px;
+}
+.policy_item .inner_policy ul li {
+  margin: 8px 0;
+  color: #5c5c5c;
+}
+.policy_item .inner_policy span {
+  display: block;
+  margin: 15px 0;
+  color: #5c5c5c;
+}/*# sourceMappingURL=policy-item.module.css.map */

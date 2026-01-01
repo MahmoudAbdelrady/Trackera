@@ -32,32 +32,47 @@
 .privacy_policy .content .policy_items {
   margin-top: 50px;
 }
-.privacy_policy .content .policy_items .policy_item:not(:last-child) {
-  margin-bottom: 40px;
-}
-.privacy_policy .content .policy_items .policy_item .policy_title {
-  margin-bottom: 20px;
-  font-size: 22px;
-}
-.privacy_policy .content .policy_items .policy_item .inner_policy:not(:last-child) {
+.privacy_policy .content .policy_items .inner_policy:not(:last-child) {
   margin-bottom: 30px;
 }
-.privacy_policy .content .policy_items .policy_item .inner_policy p {
+.privacy_policy .content .policy_items .inner_policy p {
   margin: 10px 0;
   color: #5c5c5c;
 }
-.privacy_policy .content .policy_items .policy_item .inner_policy ul {
+.privacy_policy .content .policy_items .inner_policy ul {
   list-style: disc;
   margin-left: 30px;
 }
-.privacy_policy .content .policy_items .policy_item .inner_policy ul li {
+.privacy_policy .content .policy_items .inner_policy ul li {
   margin: 8px 0;
   color: #5c5c5c;
 }
-.privacy_policy .content .policy_items .policy_item .inner_policy span {
+.privacy_policy .content .policy_items .inner_policy ul li::marker {
+  color: #2563eb;
+}
+.privacy_policy .content .policy_items .inner_policy span {
   display: block;
   margin: 15px 0;
   color: #5c5c5c;
+}
+.privacy_policy .content .policy_items .inner_policy .info_box {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 8px;
+  background-color: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  color: #5c5c5c;
+  border: 1px solid #e5e7eb;
+  max-width: 900px;
+  line-height: 1.8;
+}
+.privacy_policy .content .policy_items .inner_policy .info_box .link {
+  color: #2563eb;
+}
+.privacy_policy .content .policy_items .inner_policy .info_box .link:hover {
+  text-decoration: underline;
 }
 .privacy_policy .anchor_container {
   position: sticky;

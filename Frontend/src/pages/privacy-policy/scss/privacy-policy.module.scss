@@ -30,34 +30,45 @@
     }
     .policy_items {
       margin-top: 50px;
-      .policy_item {
+      .inner_policy {
         &:not(:last-child) {
-          margin-bottom: 40px;
+          margin-bottom: 30px;
         }
-        .policy_title {
-          margin-bottom: 20px;
-          font-size: 22px;
+        p {
+          margin: 10px 0;
+          color: $subtitleColor;
         }
-        .inner_policy {
-          &:not(:last-child) {
-            margin-bottom: 30px;
-          }
-          p {
-            margin: 10px 0;
+        ul {
+          list-style: disc;
+          margin-left: 30px;
+          li {
+            margin: 8px 0;
             color: $subtitleColor;
-          }
-          ul {
-            list-style: disc;
-            margin-left: 30px;
-            li {
-              margin: 8px 0;
-              color: $subtitleColor;
+            &::marker {
+              color: $mainColor;
             }
           }
-          span {
-            display: block;
-            margin: 15px 0;
-            color: $subtitleColor;
+        }
+        span {
+          display: block;
+          margin: 15px 0;
+          color: $subtitleColor;
+        }
+        .info_box {
+          @include start;
+          gap: 8px;
+          background-color: #fff;
+          border-radius: 12px;
+          padding: 20px;
+          color: $subtitleColor;
+          border: 1px solid $borderColor;
+          max-width: 900px;
+          line-height: 1.8;
+          .link {
+            color: $mainColor;
+            &:hover {
+              text-decoration: underline;
+            }
           }
         }
       }
