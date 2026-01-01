@@ -1,0 +1,38 @@
+.actions_container {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 15px;
+}
+.actions_container .log_action_btn {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: #000;
+  cursor: pointer;
+}
+.actions_container .log_action_btn:hover, .actions_container .log_action_btn:active, .actions_container .log_action_btn:focus {
+  background: transparent !important;
+}
+.actions_container .log_action_btn.sync {
+  color: #2563eb;
+}
+.actions_container .log_action_btn.sync:not(.disabled):hover, .actions_container .log_action_btn.sync:not(.disabled):active, .actions_container .log_action_btn.sync:not(.disabled):focus {
+  color: #2563eb !important;
+}
+.actions_container .log_action_btn.unsync {
+  color: #d97706;
+}
+.actions_container .log_action_btn.unsync:not(.disabled):hover, .actions_container .log_action_btn.unsync:not(.disabled):active, .actions_container .log_action_btn.unsync:not(.disabled):focus {
+  color: #d97706 !important;
+}
+.actions_container .log_action_btn.delete {
+  color: #dc2626;
+}
+.actions_container .log_action_btn.delete:not(.disabled):hover, .actions_container .log_action_btn.delete:not(.disabled):active, .actions_container .log_action_btn.delete:not(.disabled):focus {
+  color: #dc2626 !important;
+}
+.actions_container .log_action_btn.disabled {
+  color: #e5e7eb;
+  cursor: not-allowed;
+}/*# sourceMappingURL=worklog-action-buttons.module.css.map */

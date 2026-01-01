@@ -62,48 +62,6 @@
   border: 1px solid #e5e7eb;
   border-radius: 6px;
 }
-.worklog_table_container .table_details .task_link {
-  position: relative;
-  color: #2563eb;
-}
-.worklog_table_container .table_details .task_link:hover {
-  text-decoration: underline;
-}
-.worklog_table_container .table_details .task_link .link_icon {
-  margin-left: 5px;
-  width: 15px;
-  height: 15px;
-  color: #2563eb;
-}
-.worklog_table_container .table_details .actions_container {
-  display: flex;
-  justify-content: flex-start;
-  align-items: center;
-  gap: 15px;
-}
-.worklog_table_container .table_details .actions_container .log_action_btn {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  color: #000;
-  cursor: pointer;
-}
-.worklog_table_container .table_details .actions_container .log_action_btn.sync {
-  color: #2563eb;
-}
-.worklog_table_container .table_details .actions_container .log_action_btn.unsync {
-  color: #d97706;
-}
-.worklog_table_container .table_details .actions_container .log_action_btn.delete {
-  color: #dc2626;
-}
-.worklog_table_container .table_details .actions_container .log_action_btn.disabled {
-  color: #e5e7eb;
-  cursor: not-allowed;
-}
-.worklog_table_container .table_details .actions_container .log_action_btn:hover, .worklog_table_container .table_details .actions_container .log_action_btn:active, .worklog_table_container .table_details .actions_container .log_action_btn:focus {
-  background: transparent;
-}
 
 .sync_item {
   display: flex;

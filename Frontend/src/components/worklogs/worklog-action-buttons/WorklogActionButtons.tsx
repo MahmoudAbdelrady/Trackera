@@ -5,11 +5,10 @@ import {
   type WorklogEntry,
   type WorklogTask,
 } from "../../../shared/types";
-import trackeraTableClasses from "../../trackera-table/scss/trackera-table.module.css";
-import { WorklogSyncActions } from "../..";
 import { Button, Tooltip } from "antd";
-import { Eye, SquarePen, Trash } from "lucide-react";
+import { CalendarOff, CalendarSync, CalendarX2, Eye, SquarePen, Trash } from "lucide-react";
 import { Link } from "react-router-dom";
+import classes from "./scss/worklog-action-buttons.module.css";
 
 interface ActionButtonsProps {
   record: Worklog | WorklogTask | WorklogEntry;
@@ -24,30 +23,53 @@ interface ActionButtonsProps {
 
 const WorklogActionButtons = (props: ActionButtonsProps) => {
   const { record, jiraLinked, viewLink, syncParams, onSync, onEdit, onView, onDelete } = props;
-  const syncInProgress =
-    record.status === WORKLOG_STATUS.SYNC_IN_PROGRESS || record.status === WORKLOG_STATUS.UNSYNC_IN_PROGRESS;
+
+  const isSynced = record.status === WORKLOG_STATUS.SYNCED;
+  const isSyncing = record.status === WORKLOG_STATUS.SYNC_IN_PROGRESS;
+  const isUnsyncing = record.status === WORKLOG_STATUS.UNSYNC_IN_PROGRESS;
+  const isDisabled = !jiraLinked || isSyncing || isUnsyncing;
+  const syncInProgress = isSyncing || isUnsyncing;
+
+  const getTooltipTitle = () => {
+    if (!jiraLinked) {
+      return "Link your Jira account in settings to enable this option.";
+    }
+    return isSynced || isUnsyncing ? "Unsync from Jira" : "Sync to Jira";
+  };
+
+  const getIcon = () => {
+    if (!jiraLinked) return <CalendarOff />;
+    return isSynced || isUnsyncing ? <CalendarX2 /> : <CalendarSync />;
+  };
 
   return (
-    <div className={trackeraTableClasses.actions_container}>
-      <WorklogSyncActions record={record} jiraLinked={jiraLinked} onSync={onSync} syncParams={syncParams} />
+    <div className={classes.actions_container}>
+      <Tooltip title={getTooltipTitle()}>
+        <Button
+          type="text"
+          icon={getIcon()}
+          onClick={() => onSync(syncParams)}
+          className={`${classes.log_action_btn} ${isSynced ? classes.unsync : classes.sync} ${
+            isDisabled && classes.disabled
+          }`}
+          disabled={isDisabled}
+        />
+      </Tooltip>
 
       {onEdit && (
         <Tooltip title="Edit">
-          <SquarePen
-            onClick={onEdit}
-            className={`${trackeraTableClasses.log_action_btn} ${trackeraTableClasses.edit}`}
-          />
+          <SquarePen onClick={onEdit} className={`${classes.log_action_btn} ${classes.edit}`} />
         </Tooltip>
       )}
 
       {(onView || viewLink) && (
         <Tooltip title="View">
           {viewLink ? (
-            <Link to={viewLink} className={`${trackeraTableClasses.log_action_btn} ${trackeraTableClasses.view}`}>
+            <Link to={viewLink} className={`${classes.log_action_btn} ${classes.view}`}>
               <Eye />
             </Link>
           ) : (
-            <Eye onClick={onView} className={`${trackeraTableClasses.log_action_btn} ${trackeraTableClasses.view}`} />
+            <Eye onClick={onView} className={`${classes.log_action_btn} ${classes.view}`} />
           )}
         </Tooltip>
       )}
@@ -57,9 +79,7 @@ const WorklogActionButtons = (props: ActionButtonsProps) => {
           type="text"
           icon={<Trash />}
           onClick={onDelete}
-          className={`${trackeraTableClasses.log_action_btn} ${trackeraTableClasses.delete} ${
-            syncInProgress && trackeraTableClasses.disabled
-          }`}
+          className={`${classes.log_action_btn} ${classes.delete} ${syncInProgress && classes.disabled}`}
           disabled={syncInProgress}
         />
       </Tooltip>

@@ -1,0 +1,51 @@
+@use "../../../../shared/styles/colors" as *;
+@use "../../../../shared/styles/mixins" as *;
+
+.actions_container {
+  @include start;
+  gap: 15px;
+  .log_action_btn {
+    @include center;
+    color: #000;
+    cursor: pointer;
+    &:hover,
+    &:active,
+    &:focus {
+      background: transparent !important;
+    }
+    &.sync {
+      color: $mainColor;
+      &:not(.disabled) {
+        &:hover,
+        &:active,
+        &:focus {
+          color: $mainColor !important;
+        }
+      }
+    }
+    &.unsync {
+      color: $orangeColor;
+      &:not(.disabled) {
+        &:hover,
+        &:active,
+        &:focus {
+          color: $orangeColor !important;
+        }
+      }
+    }
+    &.delete {
+      color: $redColor;
+      &:not(.disabled) {
+        &:hover,
+        &:active,
+        &:focus {
+          color: $redColor !important;
+        }
+      }
+    }
+    &.disabled {
+      color: $borderColor;
+      cursor: not-allowed;
+    }
+  }
+}

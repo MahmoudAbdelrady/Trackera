@@ -61,46 +61,6 @@
       border: 1px solid $borderColor;
       border-radius: 6px;
     }
-    .task_link {
-      position: relative;
-      color: $mainColor;
-      &:hover {
-        text-decoration: underline;
-      }
-      .link_icon {
-        margin-left: 5px;
-        width: 15px;
-        height: 15px;
-        color: $mainColor;
-      }
-    }
-    .actions_container {
-      @include start;
-      gap: 15px;
-      .log_action_btn {
-        @include center;
-        color: #000;
-        cursor: pointer;
-        &.sync {
-          color: $mainColor;
-        }
-        &.unsync {
-          color: $orangeColor;
-        }
-        &.delete {
-          color: $redColor;
-        }
-        &.disabled {
-          color: $borderColor;
-          cursor: not-allowed;
-        }
-        &:hover,
-        &:active,
-        &:focus {
-          background: transparent;
-        }
-      }
-    }
   }
 }
 

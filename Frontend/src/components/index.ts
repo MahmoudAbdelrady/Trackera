@@ -22,7 +22,6 @@ import PreferencesSection from "./settings/sections/preferences-section/Preferen
 import UserPreference from "./settings/user-preference/UserPreference";
 import ServerError from "./server-error/ServerError";
 import AccessDenied from "./access-denied/AccessDenied";
-import WorklogSyncActions from "./worklogs/worklog-sync-actions/WorklogSyncActions";
 import WorklogActionButtons from "./worklogs/worklog-action-buttons/WorklogActionButtons";
 import createWorklogColumns from "./worklogs/worklog-columns/createWorklogColumns";
 import createWorklogTaskColumns from "./worklogs/worklog-columns/createWorklogTaskColumns";
@@ -64,7 +63,6 @@ export {
   UserPreference,
   ServerError,
   AccessDenied,
-  WorklogSyncActions,
   WorklogActionButtons,
   createWorklogColumns,
   createWorklogTaskColumns,
