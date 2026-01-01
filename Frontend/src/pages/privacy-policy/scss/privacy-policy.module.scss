@@ -1,0 +1,112 @@
+@use "../../../shared/styles/colors" as *;
+@use "../../../shared/styles/mixins" as *;
+
+.privacy_policy {
+  @include start-rev;
+  padding: 120px 120px;
+  @media (max-width: 920px) {
+    padding: 80px 20px;
+  }
+  .content {
+    margin-right: 50px;
+    @media (max-width: 920px) {
+      margin-right: 0;
+    }
+    .header {
+      h1 {
+        margin-bottom: 30px;
+      }
+      p {
+        background-color: #fff;
+        border-radius: 12px;
+        padding: 20px;
+        color: $subtitleColor;
+        border: 1px solid $borderColor;
+        max-width: 900px;
+        line-height: 1.8;
+      }
+      span {
+        display: block;
+        margin-top: 30px;
+        color: $subtitleColor;
+      }
+    }
+    .policy_items {
+      margin-top: 50px;
+      .inner_policy {
+        &:not(:last-child) {
+          margin-bottom: 30px;
+        }
+        p {
+          margin: 10px 0;
+          color: $subtitleColor;
+        }
+        ul {
+          list-style: disc;
+          margin-left: 30px;
+          li {
+            margin: 8px 0;
+            color: $subtitleColor;
+            &::marker {
+              color: $mainColor;
+            }
+          }
+        }
+        span {
+          display: block;
+          margin: 15px 0;
+          color: $subtitleColor;
+        }
+        .info_box {
+          @include start;
+          gap: 8px;
+          background-color: #fff;
+          border-radius: 12px;
+          padding: 20px;
+          color: $subtitleColor;
+          border: 1px solid $borderColor;
+          max-width: 900px;
+          line-height: 1.8;
+          .link {
+            color: $mainColor;
+            &:hover {
+              text-decoration: underline;
+            }
+          }
+        }
+      }
+    }
+  }
+  .anchor_container {
+    position: sticky;
+    top: 120px;
+    @media (max-width: 920px) {
+      display: none;
+    }
+    .header {
+      margin-bottom: 20px;
+      text-transform: uppercase;
+      font-weight: 600;
+      color: $subtitleColor;
+    }
+  }
+}
+
+.policy_anchor_item {
+  @include start;
+  gap: 10px;
+  .item_num {
+    @include center;
+    text-align: center;
+    background-color: $borderColor;
+    width: 25px;
+    height: 25px;
+    border-radius: 6px;
+  }
+}
+
+.anchor_item {
+  &:not(:last-child) {
+    margin-bottom: 10px;
+  }
+}

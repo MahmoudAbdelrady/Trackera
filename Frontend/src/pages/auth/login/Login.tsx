@@ -8,6 +8,7 @@ import { getFormikErrors } from "../../../utils";
 import { showErrorToast } from "../../../utils/toast-handler/showToast";
 import inputFieldClasses from "../../../components/input-field/scss/input-field.module.css";
 import classes from "./scss/login.module.css";
+import authClasses from "../scss/auth.module.css";
 import { useAuthStore } from "../../../state/store";
 import { authApis } from "../../../state/api";
 import { getFormikFieldProps } from "../../../utils";
@@ -62,6 +63,15 @@ const Login = () => {
             footerText="Don't have an account?"
             footerLink="/sign-up"
             footerLinkText="Sign up"
+            footerAdditionalInfo={
+              <p className={authClasses.privacy_policy_text}>
+                By signing up or signing in, you agree to our{" "}
+                <Link to="/privacy-policy" className={authClasses.privacy_policy_link}>
+                  Privacy Policy
+                </Link>
+                .
+              </p>
+            }
           />
         }
       >

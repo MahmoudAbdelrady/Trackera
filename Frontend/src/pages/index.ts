@@ -9,5 +9,21 @@ import JiraTasks from "./jira-tasks/JiraTasks";
 import Settings from "./settings/Settings";
 import Test from "./test/Test";
 import OAuthCallback from "./oauth-callback/OAuthCallback";
+import PrivacyPolicy from "./privacy-policy/PrivacyPolicy";
+import NotFound from "./not-found/NotFound";
 
-export { Login, SignUp, ForgotPassword, ChangePassword, SecurityVerification, Home, WorklogDetails, JiraTasks, Settings, Test, OAuthCallback };
+export {
+  Login,
+  SignUp,
+  ForgotPassword,
+  ChangePassword,
+  SecurityVerification,
+  Home,
+  WorklogDetails,
+  JiraTasks,
+  Settings,
+  Test,
+  OAuthCallback,
+  PrivacyPolicy,
+  NotFound,
+};

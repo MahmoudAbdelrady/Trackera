@@ -5,7 +5,7 @@ import { Lock, Mail, User } from "lucide-react";
 import { useFormik } from "formik";
 import { signUpSchema } from "../../../shared/yup-schemas";
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { showErrorToast } from "../../../utils/toast-handler/showToast";
 import { getFormikErrors } from "../../../utils";
 import { authApis } from "../../../state/api";
@@ -76,6 +76,15 @@ const SignUp = () => {
               footerText="Already have an account?"
               footerLink="/login"
               footerLinkText="Sign in"
+              footerAdditionalInfo={
+                <p className={authClasses.privacy_policy_text}>
+                  By signing up or signing in, you agree to our{" "}
+                  <Link to="/privacy-policy" className={authClasses.privacy_policy_link}>
+                    Privacy Policy
+                  </Link>
+                  .
+                </p>
+              }
             />
           }
         >

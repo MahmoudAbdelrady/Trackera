@@ -1,11 +1,11 @@
-import { ChevronDown, LogOut } from "lucide-react";
+import { ChevronDown, LogOut, Shield } from "lucide-react";
 import classes from "./scss/app-layout.module.css";
 import { Avatar, Dropdown, type MenuProps } from "antd";
 import { Sidebar } from "../../components";
 import { useState } from "react";
 import { useAuthStore } from "../../state/store";
 import { showErrorToast, showSuccessToast } from "../../utils/toast-handler/showToast";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { userQueries } from "../../state/queries";
 import { getContrastColor } from "../../utils";
 import { authApis } from "../../state/api";
@@ -30,6 +30,16 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
   };
 
   const userProfileItems: MenuProps["items"] = [
+    {
+      label: (
+        <Link to="/privacy-policy" className={`${classes.profile_item} ${isLoading && classes.disabled}`}>
+          <Shield />
+          <span className={classes.profile_item_label}>Privacy Policy</span>
+        </Link>
+      ),
+      key: "privacy_policy",
+      onClick: () => {},
+    },
     {
       label: (
         <div className={`${classes.profile_item} ${isLoading && classes.disabled}`}>

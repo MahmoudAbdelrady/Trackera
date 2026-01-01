@@ -1,10 +1,15 @@
 @use "../../../shared/styles/colors" as *;
 @use "../../../shared/styles/mixins" as *;
 
-.server_error_container {
+.empty_state_container {
   @include center;
   width: 100vw;
   height: 100vh;
+  &.fit_parent {
+    width: 100%;
+    height: 100%;
+  }
+
   .content {
     @include center;
     flex-direction: column;
@@ -13,34 +18,35 @@
     background-color: #fff;
     border-radius: 12px;
     box-shadow: $mainBoxShadow;
+
+    &.fit_parent {
+      width: 100%;
+      height: 100%;
+    }
+
     @media (max-width: 768px) {
       margin: 0 15px;
+      padding: 20px;
     }
-    .error_img {
+
+    .img {
       width: 90px;
       height: 90px;
     }
+
     .title {
       margin-top: 15px;
     }
+
     .message {
       margin-top: 10px;
       text-align: center;
       color: $subtitleColor;
     }
-    .error_code {
-      margin-top: 10px;
-      font-size: 16px;
-      padding: 4px 10px;
-    }
-    .action_btns {
-      @include center;
-      gap: 15px;
-      margin-top: 60px;
-      .btn {
-        padding: 18px 30px;
-        font-size: 16px;
-      }
+
+    .extra {
+      margin-top: 20px;
+      width: 100%;
     }
   }
 }

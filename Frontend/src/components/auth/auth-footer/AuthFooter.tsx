@@ -8,11 +8,11 @@ interface AuthFooterProps {
   footerText: string;
   footerLink: string;
   footerLinkText: string;
+  footerAdditionalInfo?: React.ReactNode;
 }
 
 const AuthFooter = (props: AuthFooterProps) => {
-  const { hasOAuthBtns, isOAuthBtnsDisabled, footerText, footerLink, footerLinkText } = props;
-
+  const { hasOAuthBtns, isOAuthBtnsDisabled, footerText, footerLink, footerLinkText, footerAdditionalInfo } = props;
   return (
     <div className={classes.auth_footer_container}>
       {hasOAuthBtns && (
@@ -29,6 +29,7 @@ const AuthFooter = (props: AuthFooterProps) => {
           <Link to={footerLink}>{footerLinkText}</Link>
         </p>
       </div>
+      {footerAdditionalInfo && <div className={classes.footer_additional_info}>{footerAdditionalInfo}</div>}
     </div>
   );
 };
