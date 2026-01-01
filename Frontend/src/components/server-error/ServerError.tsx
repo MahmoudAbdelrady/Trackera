@@ -1,4 +1,4 @@
-import EmptyState from "../empty-state/EmptyState";
+import { EmptyState } from "../";
 
 const ServerError = () => {
   return (
