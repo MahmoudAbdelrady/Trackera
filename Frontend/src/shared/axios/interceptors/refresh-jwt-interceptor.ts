@@ -19,7 +19,6 @@ const refreshJwtInterceptor = async (error: any) => {
       return requestInstance(originalRequest);
     } catch (refreshError: any) {
       useAuthStore.getState().setAuthenticated(false);
-      // showErrorToast("Session expired, please login again.");
       throw refreshError;
     }
   }
