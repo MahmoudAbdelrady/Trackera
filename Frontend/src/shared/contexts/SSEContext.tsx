@@ -31,12 +31,6 @@ export const SSEContextProvider = ({ children }: { children: ReactNode }) => {
       setIsConnected(true);
     });
 
-    es.addEventListener("worklog-sync-status", (event: MessageEvent) => {
-      const data = JSON.parse(event.data);
-      const handlers = listenersRef.current.get("worklog-sync-status");
-      handlers?.forEach((handler) => handler(data));
-    });
-
     es.addEventListener("auth-error", async () => {
       try {
         await authApis.refreshToken();
@@ -62,22 +56,41 @@ export const SSEContextProvider = ({ children }: { children: ReactNode }) => {
     setIsConnected(false);
   };
 
+  const attachEventListener = (eventName: string) => {
+    if (!eventSourceRef.current) return;
+
+    eventSourceRef.current.addEventListener(eventName, (event: MessageEvent) => {
+      const data = JSON.parse(event.data);
+      const handlers = listenersRef.current.get(eventName);
+      handlers?.forEach((handler) => handler(data));
+    });
+  };
+
   const subscribe = (eventName: string, handler: (data: any) => void) => {
     // Add handler to listeners
     if (!listenersRef.current.has(eventName)) {
       listenersRef.current.set(eventName, new Set());
     }
-    listenersRef.current.get(eventName)!.add(handler);
+    const handlers = listenersRef.current.get(eventName)!;
+    handlers.add(handler);
 
     // Connect if needed
     if (!eventSourceRef.current) {
       connect();
     }
 
+    // Attach event listener if first handler for this event
+    if (handlers.size === 1) {
+      attachEventListener(eventName);
+    }
+
     // Return unsubscribe function
     return () => {
-      const handlers = listenersRef.current.get(eventName);
-      handlers?.delete(handler);
+      handlers.delete(handler);
+
+      if (handlers.size === 0) {
+        listenersRef.current.delete(eventName);
+      }
 
       // Disconnect if no more listeners and not forced
       if (!hasActiveListeners() && !forceConnectionRef.current) {

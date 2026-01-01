@@ -4,9 +4,10 @@ import {
   TrackeraTable,
   createWorklogTaskColumns,
   WorklogTaskEntries,
+  DeleteWarning,
 } from "../../components";
 import classes from "./scss/worklog-details.module.css";
-import { Alert, Empty, Skeleton } from "antd";
+import { Empty, Skeleton } from "antd";
 import {
   type Worklog,
   type WorklogEntry,
@@ -18,7 +19,6 @@ import {
 } from "../../shared/types";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import worklogModalClasses from "../../components/worklogs/modals/worklog-modal/scss/worklog-modal.module.css";
 import { showErrorToast, showSuccessToast } from "../../utils/toast-handler/showToast";
 import { userQueries } from "../../state/queries";
 import buildSyncButtonProps from "../../utils/buildWorklogSyncButtonProps";
@@ -226,17 +226,13 @@ const WorklogDetails = () => {
             onCancel: clearDeleteTaskModalFields,
           }}
         >
-          <p className={worklogModalClasses.delete_message}>
-            Are you sure you want to delete this task log? This action cannot be undone.
-          </p>
-          {(selectedTask?.status === WORKLOG_STATUS.SYNCED || selectedTask?.status === WORKLOG_STATUS.PARTIALLY) && (
-            <Alert
-              message="This task has synced data with Jira and will be unsynced upon deletion."
-              type="warning"
-              showIcon
-              className={worklogModalClasses.alert_message}
-            />
-          )}
+          <DeleteWarning
+            message="Are you sure you want to delete this task log? This action cannot be undone."
+            showAlert={
+              selectedTask?.status === WORKLOG_STATUS.SYNCED || selectedTask?.status === WORKLOG_STATUS.PARTIALLY
+            }
+            alertMessage="This task has synced data with Jira and will be unsynced upon deletion."
+          />
         </WorklogModal>
       )}
 

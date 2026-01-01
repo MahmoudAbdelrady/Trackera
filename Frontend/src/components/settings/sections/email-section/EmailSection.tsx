@@ -4,7 +4,6 @@ import { emailSchema } from "../../../../shared/yup-schemas";
 import { Button } from "antd";
 import InputField from "../../../input-field/InputField";
 import { Mail } from "lucide-react";
-import inputFieldClasses from "../../../input-field/scss/input-field.module.css";
 import classes from "./scss/email-section.module.css";
 import { showErrorToast, showSuccessToast } from "../../../../utils/toast-handler/showToast";
 import { userQueries } from "../../../../state/queries";
@@ -66,7 +65,7 @@ const EmailSection = () => {
         <div className={classes.info}>
           {showChangeEmail ? (
             <InputField
-              icon={<Mail className={inputFieldClasses.input_icon} />}
+              icon={<Mail />}
               placeholder="Enter your email"
               name="email"
               value={changeEmailFormik.values.email}

@@ -13,6 +13,7 @@
     font-size: 14px;
   }
 }
+
 .jira_tasks_container {
   padding: 10px 20px 15px;
   border: 1px solid $borderColor;
@@ -27,5 +28,19 @@
     width: 28px;
     height: 28px;
     border-radius: 6px;
+  }
+}
+
+.task_link {
+  position: relative;
+  color: $mainColor;
+  &:hover {
+    text-decoration: underline;
+  }
+  .link_icon {
+    margin-left: 5px;
+    width: 15px;
+    height: 15px;
+    color: $mainColor;
   }
 }

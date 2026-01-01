@@ -32,4 +32,18 @@
   width: 28px;
   height: 28px;
   border-radius: 6px;
+}
+
+.task_link {
+  position: relative;
+  color: #2563eb;
+}
+.task_link:hover {
+  text-decoration: underline;
+}
+.task_link .link_icon {
+  margin-left: 5px;
+  width: 15px;
+  height: 15px;
+  color: #2563eb;
 }/*# sourceMappingURL=jira-tasks.module.css.map */

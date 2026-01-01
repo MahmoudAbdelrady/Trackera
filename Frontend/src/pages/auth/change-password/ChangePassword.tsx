@@ -2,7 +2,6 @@ import { AuthForm, AuthResult, InputField, LoadingSpinner, type AuthResultFields
 import { Lock } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import inputFieldClasses from "../../../components/input-field/scss/input-field.module.css";
 import { useFormik } from "formik";
 import { updatePasswordSchema } from "../../../shared/yup-schemas";
 import type { ChangePasswordFormFields } from "../../../shared/types";
@@ -116,14 +115,14 @@ const ChangePassword = () => {
         >
           <InputField
             label="New Password"
-            icon={<Lock className={inputFieldClasses.input_icon} />}
+            icon={<Lock />}
             placeholder="Enter your new password"
             type="password"
             {...getFormikFieldProps(changePasswordFormik, "newPassword", isLoading)}
           />
           <InputField
             label="Confirm New Password"
-            icon={<Lock className={inputFieldClasses.input_icon} />}
+            icon={<Lock />}
             placeholder="Confirm your new password"
             type="password"
             {...getFormikFieldProps(changePasswordFormik, "confirmNewPassword", isLoading)}

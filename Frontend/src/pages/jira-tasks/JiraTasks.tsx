@@ -3,7 +3,6 @@ import { TrackeraTable, StatusBadge, AccessDenied, type StatusBadgeProps } from 
 import { ExternalLink, RefreshCw } from "lucide-react";
 import { type JiraTask } from "../../shared/types";
 import { Link } from "react-router-dom";
-import trackeraTableClasses from "../../components/trackera-table/scss/trackera-table.module.css";
 import classes from "./scss/jira-tasks.module.css";
 import { showErrorToast } from "../../utils/toast-handler/showToast";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -32,9 +31,9 @@ const JiraTasks = () => {
       key: "taskName",
       render: (_, record) => {
         return (
-          <Link to={record.taskUrl} className={trackeraTableClasses.task_link} target="_blank">
+          <Link to={record.taskUrl} className={classes.task_link} target="_blank">
             {record.taskName}
-            <ExternalLink className={trackeraTableClasses.link_icon} />
+            <ExternalLink className={classes.link_icon} />
           </Link>
         );
       },

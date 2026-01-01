@@ -22,7 +22,6 @@ import PreferencesSection from "./settings/sections/preferences-section/Preferen
 import UserPreference from "./settings/user-preference/UserPreference";
 import ServerError from "./server-error/ServerError";
 import AccessDenied from "./access-denied/AccessDenied";
-import WorklogSyncActions from "./worklogs/worklog-sync-actions/WorklogSyncActions";
 import WorklogActionButtons from "./worklogs/worklog-action-buttons/WorklogActionButtons";
 import createWorklogColumns from "./worklogs/worklog-columns/createWorklogColumns";
 import createWorklogTaskColumns from "./worklogs/worklog-columns/createWorklogTaskColumns";
@@ -30,6 +29,7 @@ import createWorklogEntryColumns from "./worklogs/worklog-columns/createWorklogE
 import WorklogTaskEntries from "./worklogs/worklog-task-entries/WorklogTaskEntries";
 import PolicyItem from "./privacy-policy/policy-item/PolicyItem";
 import EmptyState from "./empty-state/EmptyState";
+import DeleteWarning from "./worklogs/delete-warning/DeleteWarning";
 
 // types
 import type { AuthResultFields } from "./auth/auth.types";
@@ -63,7 +63,6 @@ export {
   UserPreference,
   ServerError,
   AccessDenied,
-  WorklogSyncActions,
   WorklogActionButtons,
   createWorklogColumns,
   createWorklogTaskColumns,
@@ -71,6 +70,7 @@ export {
   WorklogTaskEntries,
   PolicyItem,
   EmptyState,
+  DeleteWarning,
 };
 
 export { worklogEvaluationMetadata, statusMetadata };
