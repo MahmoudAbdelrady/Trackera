@@ -9,11 +9,13 @@ import com.mdevs.trackera.shared.exceptions.types.UnauthorizedException;
 import com.mdevs.trackera.utils.CryptoUtil;
 import com.mdevs.trackera.shared.TrackeraEmailTarget;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Service
@@ -76,6 +78,16 @@ public class SecurityTokenService {
     //<editor-fold desc="Deletion">
     public void deleteNonExpired(User user, SecurityToken.Type type) {
         securityTokenRepository.deleteByUserAndTypeAndCreatedAtGreaterThanEqual(user, type, LocalDateTime.now().minusMinutes(MAX_SECURITY_TOKEN_MINUTES));
+    }
+
+    @Transactional
+    public long deleteExpiredTokensBatch(long maxId, int pageSize) {
+        List<SecurityToken> securityTokens = securityTokenRepository.findSecurityRequestTokenWithCreationDateLessThanEqual(LocalDateTime.now().minusMinutes(SecurityTokenService.MAX_SECURITY_TOKEN_MINUTES), maxId, PageRequest.of(0, pageSize));
+        if (!securityTokens.isEmpty()) {
+            securityTokenRepository.deleteAllInBatch(securityTokens);
+            return securityTokens.getLast().getId();
+        }
+        return -1;
     }
     //</editor-fold>
 

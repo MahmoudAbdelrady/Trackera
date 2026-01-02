@@ -1,7 +1,8 @@
 package com.mdevs.trackera.filter;
 
 import com.mdevs.trackera.config.security.ApiConfig;
-import com.mdevs.trackera.dto.auth.AuthFilterUserDTO;
+import com.mdevs.trackera.entity.User;
+import com.mdevs.trackera.service.UserService;
 import com.mdevs.trackera.shared.annotations.PublicAPI;
 import com.mdevs.trackera.utils.JwtUtil;
 import io.jsonwebtoken.Claims;
@@ -25,9 +26,12 @@ public class JwtFilter extends OncePerRequestFilter {
 
     private final ApiConfig apiConfig;
 
-    public JwtFilter(JwtUtil jwtUtil, ApiConfig apiConfig) {
+    private final UserService userService;
+
+    public JwtFilter(JwtUtil jwtUtil, ApiConfig apiConfig, UserService userService) {
         this.jwtUtil = jwtUtil;
         this.apiConfig = apiConfig;
+        this.userService = userService;
     }
 
     @Override
@@ -46,8 +50,8 @@ public class JwtFilter extends OncePerRequestFilter {
             return;
         }
 
-        AuthFilterUserDTO authFilterUserDTO = new AuthFilterUserDTO(claims.get("id", String.class));
-        Authentication authentication = new UsernamePasswordAuthenticationToken(authFilterUserDTO, null, List.of());
+        User user = userService.findByUuidOrThrow(claims.get("id", String.class));
+        Authentication authentication = new UsernamePasswordAuthenticationToken(user, null, List.of());
         SecurityContextHolder.getContext().setAuthentication(authentication);
         filterChain.doFilter(request, response);
     }

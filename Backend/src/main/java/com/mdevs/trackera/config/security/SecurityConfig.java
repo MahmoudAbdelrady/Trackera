@@ -34,7 +34,7 @@ public class SecurityConfig {
         try {
             httpSecurity
                     .csrf(AbstractHttpConfigurer::disable)
-                    .cors(config -> config.configurationSource(req -> {
+                    .cors(config -> config.configurationSource(_ -> {
                         CorsConfiguration corsConfiguration = new CorsConfiguration();
                         corsConfiguration.setAllowedOrigins(List.of(AppConfig.getFrontendUrl()));
                         corsConfiguration.setAllowedMethods(List.of("*"));
@@ -58,7 +58,7 @@ public class SecurityConfig {
     }
 
     @Bean
-    public AuthenticationManager authenticationManager() {
-        return new ProviderManager(authenticationProvider());
+    public AuthenticationManager authenticationManager(AuthenticationProvider authenticationProvider) {
+        return new ProviderManager(authenticationProvider);
     }
 }

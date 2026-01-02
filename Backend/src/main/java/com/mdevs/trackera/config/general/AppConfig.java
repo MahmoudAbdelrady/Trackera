@@ -1,8 +1,6 @@
 package com.mdevs.trackera.config.general;
 
-import com.mdevs.trackera.dto.auth.AuthFilterUserDTO;
 import com.mdevs.trackera.entity.User;
-import com.mdevs.trackera.repository.UserRepository;
 import lombok.Getter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationContext;
@@ -62,7 +60,7 @@ public class AppConfig {
 
     public static User getCurrentUser() {
         Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        return (principal instanceof AuthFilterUserDTO) ? applicationContext.getBean(UserRepository.class).findByUuid(((AuthFilterUserDTO) principal).getId()) : null;
+        return (principal instanceof User) ? (User) principal : null;
     }
 
     public static User getAuthenticatedCurrentUser() {
@@ -70,10 +68,14 @@ public class AppConfig {
     }
 
     public static LocalDate getMinQueryableDate() {
-        return LocalDate.now().minusYears(2).withDayOfYear(1);
+        return LocalDate.now().minusYears(1).withDayOfYear(1);
     }
 
     public static boolean isProductionEnv() {
         return applicationContext.getEnvironment().getProperty("trackera.environment", "dev").equalsIgnoreCase("prod");
+    }
+
+    public static int getMaxJobFailures() {
+        return Integer.parseInt(Objects.requireNonNull(applicationContext.getEnvironment().getProperty("trackera.job.max-failures")));
     }
 }

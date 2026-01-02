@@ -24,10 +24,4 @@ public class LoggingUtil {
             throw throwable;
         }
     }
-
-    private static Object[] append(Object[] original, Object extra) {
-        Object[] newArr = Arrays.copyOf(original, original.length + 1);
-        newArr[original.length] = extra;
-        return newArr;
-    }
 }
