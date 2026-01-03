@@ -14,6 +14,7 @@ import io.jsonwebtoken.Claims;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -26,6 +27,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class AuthService {
     private final UserRepository userRepository;
@@ -99,15 +101,19 @@ public class AuthService {
 
     @Transactional
     public void logout(HttpServletRequest request, HttpServletResponse response) {
-        String accessToken = jwtUtil.getToken(request, true);
-        Claims accessTokenClaims = jwtUtil.getTokenPayload(accessToken, true);
-        String refreshToken = jwtUtil.getToken(request, false);
+        try {
+            String accessToken = jwtUtil.getToken(request, true);
+            Claims accessTokenClaims = jwtUtil.getTokenPayload(accessToken, true);
+            String refreshToken = jwtUtil.getToken(request, false);
 
-        User loggedUser = AppConfig.getAuthenticatedCurrentUser();
-        userInvalidTokenService.create(loggedUser, accessToken, accessTokenClaims.getExpiration(), true);
-        if (!StringUtils.isEmpty(refreshToken)) {
-            Claims refreshTokenClaims = jwtUtil.getTokenPayload(refreshToken, true);
-            userInvalidTokenService.create(loggedUser, refreshToken, refreshTokenClaims.getExpiration(), false);
+            User loggedUser = AppConfig.getAuthenticatedCurrentUser();
+            userInvalidTokenService.create(loggedUser, accessToken, accessTokenClaims.getExpiration(), true);
+            if (!StringUtils.isEmpty(refreshToken)) {
+                Claims refreshTokenClaims = jwtUtil.getTokenPayload(refreshToken, true);
+                userInvalidTokenService.create(loggedUser, refreshToken, refreshTokenClaims.getExpiration(), false);
+            }
+        } catch (Exception e) {
+            log.warn("Error invalidating tokens during logout: {}", e.getMessage(), e);
         }
 
         response.addCookie(cookieHelper.create(CookieHelper.ACCESS_TOKEN_COOKIE_NAME, null, true, CookieHelper.COOKIE_GENERAL_PATH, 0));
