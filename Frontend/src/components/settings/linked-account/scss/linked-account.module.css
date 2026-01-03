@@ -56,6 +56,10 @@
     width: 100%;
   }
 }
+.linked_account .actions .revoked_icon {
+  margin-right: 5px;
+  color: #d97706;
+}
 @media (max-width: 768px) {
   .linked_account .actions .link_button {
     width: 100%;

@@ -78,7 +78,8 @@ const Settings = () => {
                 providerInfo={account.provider}
                 accountIdentifier={account.email}
                 linked={account.linked}
-                onLink={() => linkProviderAccount(account.provider.code)}
+                isRevoked={account.isRevoked}
+                onLink={() => linkProviderAccount(account.provider.code, account.isRevoked || false)}
                 onUnlink={() => unlinkProviderAccount(account.provider.code)}
               />
             ))
