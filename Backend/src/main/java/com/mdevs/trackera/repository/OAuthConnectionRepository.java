@@ -3,7 +3,7 @@ package com.mdevs.trackera.repository;
 import com.mdevs.trackera.entity.User;
 import com.mdevs.trackera.entity.UserEmail;
 import com.mdevs.trackera.entity.OAuthConnection;
-import com.mdevs.trackera.oauth.OAuthProvider;
+import com.mdevs.trackera.shared.enums.OAuthProvider;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;

@@ -8,6 +8,7 @@ import com.mdevs.trackera.entity.User;
 import com.mdevs.trackera.entity.OAuthConnection;
 import com.mdevs.trackera.service.UserPreferenceService;
 import com.mdevs.trackera.shared.CacheService;
+import com.mdevs.trackera.shared.enums.OAuthProvider;
 import com.mdevs.trackera.utils.OAuthUtil;
 import com.mdevs.trackera.utils.CryptoUtil;
 import lombok.extern.slf4j.Slf4j;

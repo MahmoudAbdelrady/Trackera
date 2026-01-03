@@ -1,4 +1,4 @@
-package com.mdevs.trackera.oauth;
+package com.mdevs.trackera.shared.enums;
 
 import lombok.Getter;
 

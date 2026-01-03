@@ -13,7 +13,7 @@ import com.mdevs.trackera.shared.CacheService;
 import com.mdevs.trackera.shared.enums.UserPreferenceOption;
 import com.mdevs.trackera.shared.enums.JiraTaskEvaluation;
 import com.mdevs.trackera.shared.exceptions.types.BusinessException;
-import com.mdevs.trackera.oauth.OAuthProvider;
+import com.mdevs.trackera.shared.enums.OAuthProvider;
 import com.mdevs.trackera.shared.DurationFormatter;
 import com.mdevs.trackera.shared.exceptions.types.JiraException;
 import com.mdevs.trackera.shared.exceptions.types.NotFoundException;

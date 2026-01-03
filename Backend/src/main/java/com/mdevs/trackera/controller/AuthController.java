@@ -1,6 +1,7 @@
 package com.mdevs.trackera.controller;
 
 import com.mdevs.trackera.dto.auth.*;
+import com.mdevs.trackera.dto.user.PasswordDTO;
 import com.mdevs.trackera.service.AuthService;
 import com.mdevs.trackera.service.SecurityTokenService;
 import com.mdevs.trackera.shared.annotations.PublicAPI;

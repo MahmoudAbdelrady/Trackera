@@ -8,7 +8,7 @@ import com.mdevs.trackera.entity.User;
 import com.mdevs.trackera.entity.WorkLog;
 import com.mdevs.trackera.entity.WorkLogDetail;
 import com.mdevs.trackera.job.handlers.WorkLogSyncJobHandler;
-import com.mdevs.trackera.oauth.OAuthProvider;
+import com.mdevs.trackera.shared.enums.OAuthProvider;
 import com.mdevs.trackera.repository.WorkLogDetailRepository;
 import com.mdevs.trackera.repository.WorkLogRepository;
 import com.mdevs.trackera.shared.FileHandler;

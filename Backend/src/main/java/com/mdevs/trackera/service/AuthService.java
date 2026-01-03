@@ -2,11 +2,12 @@ package com.mdevs.trackera.service;
 
 import com.mdevs.trackera.config.general.AppConfig;
 import com.mdevs.trackera.dto.auth.*;
+import com.mdevs.trackera.dto.user.PasswordDTO;
 import com.mdevs.trackera.entity.*;
 import com.mdevs.trackera.shared.EmailTemplates;
 import com.mdevs.trackera.shared.SecurityTokenBuilder;
 import com.mdevs.trackera.shared.exceptions.types.UnauthorizedException;
-import com.mdevs.trackera.oauth.OAuthProvider;
+import com.mdevs.trackera.shared.enums.OAuthProvider;
 import com.mdevs.trackera.oauth.OAuthProviderFactory;
 import com.mdevs.trackera.utils.*;
 import io.jsonwebtoken.Claims;
@@ -209,7 +210,7 @@ public class AuthService {
     @Transactional
     public void requestResetPassword(String email) {
         User user = userService.findByPrimaryEmail(email);
-        if (user != null && user.canResetPassword()) {
+        if (user != null && user.isPasswordSet()) {
             userService.sendPasswordFlowEmail(user, true);
         }
     }

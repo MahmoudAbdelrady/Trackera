@@ -7,7 +7,7 @@ import com.mdevs.trackera.entity.UserEmail;
 import com.mdevs.trackera.entity.OAuthConnection;
 import com.mdevs.trackera.repository.OAuthConnectionRepository;
 import com.mdevs.trackera.shared.exceptions.types.BusinessException;
-import com.mdevs.trackera.oauth.OAuthProvider;
+import com.mdevs.trackera.shared.enums.OAuthProvider;
 import com.mdevs.trackera.oauth.OAuthProviderFactory;
 import com.mdevs.trackera.utils.CryptoUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -140,6 +140,11 @@ public class OAuthConnectionService {
         if (connection != null && !connection.isRevoked()) {
             throw new BusinessException("The current account is already linked with " + provider.getDisplayName());
         }
+    }
+
+    public boolean isConnected(User user, OAuthProvider provider) {
+        OAuthConnection connection = oAuthConnectionRepository.findByUserAndProvider(user, provider);
+        return connection != null && !connection.isRevoked();
     }
     //</editor-fold>
 }

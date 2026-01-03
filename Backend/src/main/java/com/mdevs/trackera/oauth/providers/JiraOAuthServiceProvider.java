@@ -6,7 +6,7 @@ import com.mdevs.trackera.dto.auth.OAuthRequestDTO;
 import com.mdevs.trackera.dto.jira.JiraProjectDTO;
 import com.mdevs.trackera.entity.User;
 import com.mdevs.trackera.service.JiraService;
-import com.mdevs.trackera.oauth.OAuthProvider;
+import com.mdevs.trackera.shared.enums.OAuthProvider;
 import com.mdevs.trackera.oauth.OAuthServiceProvider;
 import com.mdevs.trackera.shared.enums.UserPreferenceOption;
 import com.mdevs.trackera.utils.AppUtils;

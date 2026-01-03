@@ -1,6 +1,6 @@
 package com.mdevs.trackera.controller;
 
-import com.mdevs.trackera.dto.auth.PasswordDTO;
+import com.mdevs.trackera.dto.user.PasswordDTO;
 import com.mdevs.trackera.service.UserPreferenceService;
 import com.mdevs.trackera.service.UserService;
 import jakarta.validation.Valid;

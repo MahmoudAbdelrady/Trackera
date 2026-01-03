@@ -5,7 +5,7 @@ import com.mdevs.trackera.entity.UserEmail;
 import com.mdevs.trackera.repository.UserEmailRepository;
 import com.mdevs.trackera.repository.OAuthConnectionRepository;
 import com.mdevs.trackera.shared.exceptions.types.BusinessException;
-import com.mdevs.trackera.oauth.OAuthProvider;
+import com.mdevs.trackera.shared.enums.OAuthProvider;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;

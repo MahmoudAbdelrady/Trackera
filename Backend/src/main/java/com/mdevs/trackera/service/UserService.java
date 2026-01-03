@@ -1,9 +1,11 @@
 package com.mdevs.trackera.service;
 
 import com.mdevs.trackera.config.general.AppConfig;
+import com.mdevs.trackera.dto.auth.OAuthProviderDTO;
+import com.mdevs.trackera.dto.auth.OAuthProviderInfoDTO;
 import com.mdevs.trackera.dto.user.LoggedUserDTO;
 import com.mdevs.trackera.dto.auth.OAuthUserInfoDTO;
-import com.mdevs.trackera.dto.auth.PasswordDTO;
+import com.mdevs.trackera.dto.user.PasswordDTO;
 import com.mdevs.trackera.dto.auth.SignUpDTO;
 import com.mdevs.trackera.entity.SecurityToken;
 import com.mdevs.trackera.entity.User;
@@ -15,7 +17,7 @@ import com.mdevs.trackera.shared.EmailTemplates;
 import com.mdevs.trackera.shared.SecurityTokenBuilder;
 import com.mdevs.trackera.shared.enums.UserPreferenceOption;
 import com.mdevs.trackera.shared.exceptions.types.BusinessException;
-import com.mdevs.trackera.oauth.OAuthProvider;
+import com.mdevs.trackera.shared.enums.OAuthProvider;
 import com.mdevs.trackera.shared.TrackeraEmailTarget;
 import com.mdevs.trackera.shared.exceptions.types.NotFoundException;
 import com.mdevs.trackera.shared.mappers.UserMapper;
@@ -53,12 +55,12 @@ public class UserService implements UserDetailsService {
 
     private final UserMapper userMapper;
 
+    //<editor-fold desc="User Find Methods">
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
         return Optional.ofNullable(userRepository.findByPrimaryEmail(email)).orElseThrow(() -> new UsernameNotFoundException("Account not found."));
     }
 
-    //<editor-fold desc="User Find Methods">
     public User findByIdOrThrow(Long id) {
         return userRepository.findById(id).orElseThrow(() -> new NotFoundException("User not found"));
     }
@@ -74,24 +76,25 @@ public class UserService implements UserDetailsService {
 
     //<editor-fold desc="User Info Retrieval">
     public LoggedUserDTO getMeInfo() {
-        return userMapper.toLoggedUserDTO(AppConfig.getAuthenticatedCurrentUser());
+        User loggedUser = AppConfig.getAuthenticatedCurrentUser();
+        LoggedUserDTO loggedUserDTO = userMapper.toLoggedUserDTO(loggedUser);
+        loggedUserDTO.setJiraLinked(oAuthConnectionService.isConnected(loggedUser, OAuthProvider.JIRA));
+        return loggedUserDTO;
     }
 
-    public List<Map<String, Object>> getUserOAuthProviders() {
+    public List<OAuthProviderInfoDTO> getUserOAuthProviders() {
         User loggedUser = AppConfig.getAuthenticatedCurrentUser();
         Map<OAuthProvider, OAuthConnection> linkedProviders = oAuthConnectionService.getConnectionsAsMap(loggedUser);
 
         return Arrays.stream(OAuthProvider.values()).map(provider -> {
             OAuthConnection userProvider = linkedProviders.get(provider);
             boolean isLinked = userProvider != null;
-            Map<String, Object> providerInfo = new HashMap<>();
-            providerInfo.put("provider", Map.of("name", provider.getDisplayName(), "code", provider.getCode()));
-            providerInfo.put("isLinked", isLinked);
+            OAuthProviderInfoDTO providerInfoDTO = new OAuthProviderInfoDTO(OAuthProviderDTO.from(provider), isLinked);
             if (isLinked) {
-                providerInfo.put("email", userProvider.getAccountEmail().getEmail());
-                providerInfo.put("isRevoked", userProvider.isRevoked());
+                providerInfoDTO.setEmail(userProvider.getAccountEmail().getEmail());
+                providerInfoDTO.setIsRevoked(userProvider.isRevoked());
             }
-            return providerInfo;
+            return providerInfoDTO;
         }).toList();
     }
     //</editor-fold>

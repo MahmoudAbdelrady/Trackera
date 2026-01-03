@@ -5,9 +5,7 @@ import lombok.Getter;
 import lombok.Setter;
 import org.apache.commons.lang3.StringUtils;
 import org.hibernate.annotations.ColumnDefault;
-import org.hibernate.annotations.Formula;
 import org.hibernate.envers.Audited;
-import org.hibernate.envers.NotAudited;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
@@ -43,14 +41,6 @@ public class User extends BaseEntity implements UserDetails {
     @ColumnDefault("false")
     private boolean isVerified = false;
 
-    @Formula("EXISTS (SELECT 1 FROM OAUTHCONNECTIONS oac WHERE oac.USER_ID = ID)")
-    @NotAudited
-    private boolean isOAuth;
-
-    @Formula("EXISTS (SELECT 1 FROM OAUTHCONNECTIONS oac WHERE oac.USER_ID = ID AND oac.PROVIDER = 'JIRA' AND oac.IS_REVOKED = 0)")
-    @NotAudited
-    private boolean isJiraLinked;
-
     public User() {
         this.avatarColor = String.format("#%06x", (int) (Math.random() * 0xffffff));
     }
@@ -63,10 +53,6 @@ public class User extends BaseEntity implements UserDetails {
     @Override
     public String getUsername() {
         return null;
-    }
-
-    public boolean canResetPassword() {
-        return !isOAuth || isPasswordSet();
     }
 
     public boolean isPasswordSet() {

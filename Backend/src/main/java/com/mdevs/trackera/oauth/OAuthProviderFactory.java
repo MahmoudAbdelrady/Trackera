@@ -2,6 +2,7 @@ package com.mdevs.trackera.oauth;
 
 import com.mdevs.trackera.oauth.providers.GoogleOAuthServiceProvider;
 import com.mdevs.trackera.oauth.providers.JiraOAuthServiceProvider;
+import com.mdevs.trackera.shared.enums.OAuthProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
