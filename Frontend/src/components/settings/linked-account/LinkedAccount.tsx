@@ -1,6 +1,6 @@
 import { Button } from "antd";
 import classes from "./scss/linked-account.module.css";
-import { OAUTH_PROVIDERS } from "../../../shared/types";
+import { OAUTH_PROVIDERS, type OAuthProviderInfo } from "../../../shared/types";
 
 const providerIconMap: Record<string, React.ReactNode> = {
   [OAUTH_PROVIDERS.JIRA]: <img src="/Assets/jira_icon.svg" alt="Jira" />,
@@ -8,33 +8,34 @@ const providerIconMap: Record<string, React.ReactNode> = {
 };
 
 interface LinkedAccountProps {
-  platform: Record<string, string>;
+  providerInfo: OAuthProviderInfo;
   accountIdentifier?: string;
-  isLinked: boolean;
+  linked: boolean;
+  isRevoked?: boolean;
   onLink: () => void;
   onUnlink: () => void;
 }
 
 const LinkedAccount = (props: LinkedAccountProps) => {
-  const { platform, accountIdentifier, isLinked, onLink, onUnlink } = props;
+  const { providerInfo, accountIdentifier, linked, onLink, onUnlink } = props;
 
   return (
     <div className={classes.linked_account}>
       <div className={classes.account_info}>
         <div className={classes.platform}>
-          <div className={classes.icon}>{providerIconMap[platform.code]}</div>
-          <div className={classes.platform_name}>{platform.name}</div>
+          <div className={classes.icon}>{providerIconMap[providerInfo.code]}</div>
+          <div className={classes.platform_name}>{providerInfo.displayName}</div>
         </div>
         <div className={classes.account_identifier}>{accountIdentifier}</div>
       </div>
       <div className={classes.actions}>
         <Button
-          color={`${isLinked ? "danger" : "primary"}`}
-          variant={`${isLinked ? "outlined" : "solid"}`}
+          color={`${linked ? "danger" : "primary"}`}
+          variant={`${linked ? "outlined" : "solid"}`}
           className={classes.link_button}
-          onClick={isLinked ? onUnlink : onLink}
+          onClick={linked ? onUnlink : onLink}
         >
-          {`${isLinked ? "Unlink" : "Link"} Account`}
+          {`${linked ? "Unlink" : "Link"} Account`}
         </Button>
       </div>
     </div>
