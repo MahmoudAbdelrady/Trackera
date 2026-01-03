@@ -102,11 +102,11 @@ public class AuthService {
         String accessToken = jwtUtil.getToken(request, true);
         Claims accessTokenClaims = jwtUtil.getTokenPayload(accessToken, true);
         String refreshToken = jwtUtil.getToken(request, false);
-        Claims refreshTokenClaims = jwtUtil.getTokenPayload(accessToken, true);
 
         User loggedUser = AppConfig.getAuthenticatedCurrentUser();
         userInvalidTokenService.create(loggedUser, accessToken, accessTokenClaims.getExpiration(), true);
         if (!StringUtils.isEmpty(refreshToken)) {
+            Claims refreshTokenClaims = jwtUtil.getTokenPayload(refreshToken, true);
             userInvalidTokenService.create(loggedUser, refreshToken, refreshTokenClaims.getExpiration(), false);
         }
 
