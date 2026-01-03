@@ -128,12 +128,12 @@ public class AuthService {
         Claims refreshTokenClaims = jwtUtil.validateAndGetTokenPayload(refreshToken, false);
         String userUuid = refreshTokenClaims.get("id", String.class);
         String newAccessToken = jwtUtil.generateToken(userUuid, true);
-        User tokenUser = userService.findByUuidOrThrow(userUuid);
 
         response.addCookie(cookieHelper.create(CookieHelper.ACCESS_TOKEN_COOKIE_NAME, newAccessToken, true, CookieHelper.COOKIE_GENERAL_PATH, CookieHelper.getTokenCookieMaxAge(true)));
 
         LocalDateTime refreshTokenExpiry = AppUtils.convertDateToLocalDateTime(refreshTokenClaims.getExpiration());
         if (refreshTokenExpiry.isBefore(LocalDateTime.now().plusDays(CookieHelper.REFRESH_TOKEN_ROTATION_THRESHOLD_DAYS))) {
+            User tokenUser = userService.findByUuidOrThrow(userUuid);
             String newRefreshToken = jwtUtil.generateToken(userUuid, false);
             response.addCookie(cookieHelper.create(CookieHelper.REFRESH_TOKEN_COOKIE_NAME, newRefreshToken, true, CookieHelper.COOKIE_AUTH_PATH, CookieHelper.getTokenCookieMaxAge(false)));
             userInvalidTokenService.create(tokenUser, refreshToken, refreshTokenClaims.getExpiration(), false);
