@@ -11,7 +11,6 @@ import com.mdevs.trackera.entity.SecurityToken;
 import com.mdevs.trackera.entity.User;
 import com.mdevs.trackera.entity.UserEmail;
 import com.mdevs.trackera.entity.OAuthConnection;
-import com.mdevs.trackera.repository.UserEmailRepository;
 import com.mdevs.trackera.repository.UserRepository;
 import com.mdevs.trackera.shared.EmailTemplates;
 import com.mdevs.trackera.shared.SecurityTokenBuilder;
@@ -38,8 +37,6 @@ import java.util.*;
 @RequiredArgsConstructor
 public class UserService implements UserDetailsService {
     private final UserRepository userRepository;
-
-    private final UserEmailRepository userEmailRepository;
 
     private final UserEmailService userEmailService;
 
@@ -117,9 +114,8 @@ public class UserService implements UserDetailsService {
     //<editor-fold desc="Registration & Authentication">
     @Transactional
     public User create(SignUpDTO signUpDTO) {
-        if (userEmailRepository.existsByEmail(signUpDTO.getEmail())) {
-            throw new BusinessException("Email already in use");
-        }
+        userEmailService.ensureEmailAvailable(signUpDTO.getEmail());
+
         if (!signUpDTO.getPassword().equals(signUpDTO.getConfirmPassword())) {
             throw new BusinessException("Passwords do not match");
         }
@@ -139,7 +135,7 @@ public class UserService implements UserDetailsService {
 
     @Transactional
     public Map<String, Object> createOrGetOAuthUser(OAuthUserInfoDTO oAuthUserInfo, OAuthProvider oAuthProvider) {
-        User authenticatedUser = Optional.ofNullable(userEmailRepository.findByEmail(oAuthUserInfo.getEmail())).map(UserEmail::getUser).orElse(null);
+        User authenticatedUser = Optional.ofNullable(userEmailService.findByEmail(oAuthUserInfo.getEmail())).map(UserEmail::getUser).orElse(null);
         boolean isNewUser = authenticatedUser == null;
 
         if (!isNewUser) {
@@ -242,7 +238,7 @@ public class UserService implements UserDetailsService {
         User loggedUser = AppConfig.getAuthenticatedCurrentUser();
         userEmailService.ensureValidEmailFormat(email);
 
-        UserEmail existingUserEmail = userEmailRepository.findByEmail(email);
+        UserEmail existingUserEmail = userEmailService.findByEmail(email);
         if (existingUserEmail != null) {
             userEmailService.ensureEmailAvailableForUser(loggedUser, existingUserEmail);
         }

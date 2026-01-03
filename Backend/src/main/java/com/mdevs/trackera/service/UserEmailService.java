@@ -25,6 +25,10 @@ public class UserEmailService {
         return userEmailRepository.save(userEmail);
     }
 
+    public UserEmail findByEmail(String email) {
+        return userEmailRepository.findByEmail(email);
+    }
+
     public UserEmail getOrCreate(User user, String email) {
         UserEmail userEmail = userEmailRepository.findByUserAndEmail(user, email);
         if (userEmail == null) {
@@ -64,6 +68,12 @@ public class UserEmailService {
         boolean isPrimaryOrPending = loggedUser.getPrimaryEmail().getId().equals(existingUserEmail.getId()) || (loggedUser.getPendingEmail() != null && loggedUser.getPendingEmail().getId().equals(existingUserEmail.getId()));
         if (isPrimaryOrPending) {
             throw new BusinessException("Email is already associated with your account");
+        }
+    }
+
+    public void ensureEmailAvailable(String email) {
+        if (userEmailRepository.existsByEmail(email)) {
+            throw new BusinessException("Email already in use");
         }
     }
     //</editor-fold>

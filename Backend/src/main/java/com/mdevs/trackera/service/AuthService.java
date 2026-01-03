@@ -112,8 +112,7 @@ public class AuthService {
             log.warn("Error invalidating tokens during logout: {}", e.getMessage(), e);
         }
 
-        response.addCookie(cookieHelper.create(CookieHelper.ACCESS_TOKEN_COOKIE_NAME, null, true, CookieHelper.COOKIE_GENERAL_PATH, 0));
-        response.addCookie(cookieHelper.create(CookieHelper.REFRESH_TOKEN_COOKIE_NAME, null, true, CookieHelper.COOKIE_AUTH_PATH, 0));
+        addAuthCookiesToResponse(response, null, null, true);
     }
 
     public void getSession(String refreshToken) {
@@ -135,7 +134,7 @@ public class AuthService {
             userInvalidTokenService.create(tokenUser, refreshToken, refreshTokenClaims.getExpiration(), false);
         }
 
-        addAuthCookiesToResponse(response, newAccessToken, newRefreshToken);
+        addAuthCookiesToResponse(response, newAccessToken, newRefreshToken, false);
     }
     //</editor-fold>
 
@@ -253,16 +252,16 @@ public class AuthService {
     private void generateLoginInfo(User user, HttpServletResponse response) {
         String accessToken = jwtUtil.generateToken(user.getUuid(), true);
         String refreshToken = jwtUtil.generateToken(user.getUuid(), false);
-        addAuthCookiesToResponse(response, accessToken, refreshToken);
+        addAuthCookiesToResponse(response, accessToken, refreshToken, false);
     }
 
-    private void addAuthCookiesToResponse(HttpServletResponse response, String accessToken, String refreshToken) {
+    private void addAuthCookiesToResponse(HttpServletResponse response, String accessToken, String refreshToken, boolean clear) {
         response.addCookie(cookieHelper.create(
                 CookieHelper.ACCESS_TOKEN_COOKIE_NAME,
                 accessToken,
                 true,
                 CookieHelper.COOKIE_GENERAL_PATH,
-                CookieHelper.getTokenCookieMaxAge(true)
+                clear ? 0 : CookieHelper.getTokenCookieMaxAge(true)
         ));
 
         if (!StringUtils.isEmpty(refreshToken)) {
@@ -271,7 +270,7 @@ public class AuthService {
                     refreshToken,
                     true,
                     CookieHelper.COOKIE_AUTH_PATH,
-                    CookieHelper.getTokenCookieMaxAge(false)
+                    clear ? 0 : CookieHelper.getTokenCookieMaxAge(false)
             ));
         }
     }
