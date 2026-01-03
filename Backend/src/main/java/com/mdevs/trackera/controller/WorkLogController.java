@@ -5,6 +5,7 @@ import com.mdevs.trackera.dto.worklog.ManageWorkLogDTO;
 import com.mdevs.trackera.dto.worklog.WorkLogSearchFilterDTO;
 import com.mdevs.trackera.service.WorkLogService;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -14,13 +15,10 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.Map;
 
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("/worklog")
 public class WorkLogController {
     private final WorkLogService workLogService;
-
-    public WorkLogController(WorkLogService workLogService) {
-        this.workLogService = workLogService;
-    }
 
     @PostMapping("/search")
     public ResponseEntity<?> SearchAllWorkLogs(@RequestBody(required = false)WorkLogSearchFilterDTO searchFilterDTO, Pageable pageable) {

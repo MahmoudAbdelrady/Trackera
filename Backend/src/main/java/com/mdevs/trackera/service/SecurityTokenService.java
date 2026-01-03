@@ -8,6 +8,7 @@ import com.mdevs.trackera.shared.SecurityTokenBuilder;
 import com.mdevs.trackera.shared.exceptions.types.UnauthorizedException;
 import com.mdevs.trackera.utils.CryptoUtil;
 import com.mdevs.trackera.shared.TrackeraEmailTarget;
+import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -19,17 +20,13 @@ import java.util.List;
 import java.util.Map;
 
 @Service
+@RequiredArgsConstructor
 public class SecurityTokenService {
     private final SecurityTokenRepository securityTokenRepository;
 
     private final CryptoUtil cryptoUtil;
 
     public static final long MAX_SECURITY_TOKEN_MINUTES = 15;
-
-    public SecurityTokenService(SecurityTokenRepository securityTokenRepository, CryptoUtil cryptoUtil) {
-        this.securityTokenRepository = securityTokenRepository;
-        this.cryptoUtil = cryptoUtil;
-    }
 
     //<editor-fold desc="Retrieval">
     public SecurityToken validateAndGet(String token) {

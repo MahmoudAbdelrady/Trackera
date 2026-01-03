@@ -26,6 +26,7 @@ import com.mdevs.trackera.utils.AppUtils;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.TypedQuery;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.domain.Page;
@@ -47,6 +48,7 @@ import java.util.stream.Collectors;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class WorkLogService {
     private final WorkLogRepository workLogRepository;
 
@@ -68,17 +70,6 @@ public class WorkLogService {
     private static final Pattern DURATION_PATTERN = Pattern.compile("(?:(\\d+)h)?\\s*(?:(\\d+)m)?");
 
     public static final String WORKLOG_SYNC_STATUS_EVENT_NAME = "worklog-sync-status";
-
-    public WorkLogService(WorkLogRepository workLogRepository, WorkLogDetailRepository workLogDetailRepository, UserPreferenceService userPreferenceService,
-                          OAuthConnectionService oAuthConnectionService, BackgroundJobService backgroundJobService, NotificationService notificationService, WorkLogMapper workLogMapper) {
-        this.workLogRepository = workLogRepository;
-        this.workLogDetailRepository = workLogDetailRepository;
-        this.userPreferenceService = userPreferenceService;
-        this.oAuthConnectionService = oAuthConnectionService;
-        this.backgroundJobService = backgroundJobService;
-        this.notificationService = notificationService;
-        this.workLogMapper = workLogMapper;
-    }
 
     //<editor-fold desc="Search & Retrieval">
     public Page<WorkLogInfoDTO> searchAllWorkLogs(WorkLogSearchFilterDTO searchFilterDTO, Pageable pageable) {

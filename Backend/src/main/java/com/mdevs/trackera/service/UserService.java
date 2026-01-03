@@ -21,6 +21,7 @@ import com.mdevs.trackera.shared.exceptions.types.NotFoundException;
 import com.mdevs.trackera.shared.mappers.UserMapper;
 import com.mdevs.trackera.utils.AppUtils;
 import com.mdevs.trackera.utils.EmailTemplateUtil;
+import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -32,6 +33,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.*;
 
 @Service
+@RequiredArgsConstructor
 public class UserService implements UserDetailsService {
     private final UserRepository userRepository;
 
@@ -50,19 +52,6 @@ public class UserService implements UserDetailsService {
     private final PasswordEncoder passwordEncoder;
 
     private final UserMapper userMapper;
-
-    public UserService(UserRepository userRepository, UserEmailRepository userEmailRepository, UserEmailService userEmailService, OAuthConnectionService oAuthConnectionService,
-                       UserPreferenceService userPreferenceService, JiraService jiraService, SecurityTokenService securityTokenService, PasswordEncoder passwordEncoder, UserMapper userMapper) {
-        this.userRepository = userRepository;
-        this.userEmailRepository = userEmailRepository;
-        this.userEmailService = userEmailService;
-        this.oAuthConnectionService = oAuthConnectionService;
-        this.userPreferenceService = userPreferenceService;
-        this.jiraService = jiraService;
-        this.securityTokenService = securityTokenService;
-        this.passwordEncoder = passwordEncoder;
-        this.userMapper = userMapper;
-    }
 
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {

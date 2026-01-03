@@ -7,6 +7,7 @@ import com.mdevs.trackera.repository.BackgroundJobRepository;
 import com.mdevs.trackera.shared.enums.BackgroundJobStatus;
 import com.mdevs.trackera.shared.exceptions.types.NotFoundException;
 import com.rabbitmq.client.Channel;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -23,18 +24,13 @@ import java.util.stream.Collectors;
 
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class BackgroundJobConsumer {
     private final BackgroundJobRepository jobRepository;
 
     private final BackgroundJobProcessor jobProcessor;
 
     private final RabbitTemplate rabbitTemplate;
-
-    public BackgroundJobConsumer(BackgroundJobRepository jobRepository, BackgroundJobProcessor jobProcessor, RabbitTemplate rabbitTemplate) {
-        this.jobRepository = jobRepository;
-        this.jobProcessor = jobProcessor;
-        this.rabbitTemplate = rabbitTemplate;
-    }
 
     @RabbitListener(queues = RabbitConfig.JOB_QUEUE)
     public void processJob(BackgroundJobMessageDTO message, Channel channel,

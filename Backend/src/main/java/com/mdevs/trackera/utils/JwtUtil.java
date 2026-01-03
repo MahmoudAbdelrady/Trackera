@@ -5,6 +5,7 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -16,6 +17,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.Date;
 
 @Component
+@RequiredArgsConstructor
 public class JwtUtil {
     private final UserInvalidTokenService userInvalidTokenService;
 
@@ -24,10 +26,6 @@ public class JwtUtil {
 
     @Value("${trackera.tokens.refresh}")
     private String refreshTokenSecretKey;
-
-    public JwtUtil(UserInvalidTokenService userInvalidTokenService) {
-        this.userInvalidTokenService = userInvalidTokenService;
-    }
 
     public String getToken(HttpServletRequest request, boolean isAccessToken) {
         String token = CookieHelper.extractCookieValue(request, isAccessToken ? CookieHelper.ACCESS_TOKEN_COOKIE_NAME : CookieHelper.REFRESH_TOKEN_COOKIE_NAME);

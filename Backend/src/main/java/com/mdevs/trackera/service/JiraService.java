@@ -19,6 +19,7 @@ import com.mdevs.trackera.shared.exceptions.types.JiraException;
 import com.mdevs.trackera.shared.exceptions.types.NotFoundException;
 import com.mdevs.trackera.utils.AppUtils;
 import com.mdevs.trackera.utils.HttpUtil;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.*;
@@ -36,6 +37,7 @@ import java.util.*;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class JiraService {
     private final OAuthConnectionService oAuthConnectionService;
 
@@ -56,12 +58,6 @@ public class JiraService {
     private static final Duration USER_JIRA_TASKS_CACHE_TTL = Duration.ofHours(JIRA_TASKS_FETCH_HOURS_DURATION);
 
     private static final DateTimeFormatter JIRA_DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
-
-    public JiraService(OAuthConnectionService oAuthConnectionService, UserPreferenceService userPreferenceService, CacheService cacheService) {
-        this.oAuthConnectionService = oAuthConnectionService;
-        this.userPreferenceService = userPreferenceService;
-        this.cacheService = cacheService;
-    }
 
     //<editor-fold desc="Retrieval">
     public Map<String, Object> getUserTasks(boolean forceUpdate) {

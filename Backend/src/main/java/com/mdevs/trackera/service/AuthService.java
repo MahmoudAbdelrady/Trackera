@@ -13,6 +13,7 @@ import com.mdevs.trackera.utils.*;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -25,6 +26,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 
 @Service
+@RequiredArgsConstructor
 public class AuthService {
     private final UserRepository userRepository;
 
@@ -47,22 +49,6 @@ public class AuthService {
     private final JwtUtil jwtUtil;
 
     private final CookieHelper cookieHelper;
-
-    public AuthService(UserRepository userRepository, UserService userService, UserEmailService userEmailService, AuthenticationManager authenticationManager, SecurityTokenService securityTokenService,
-                       OAuthConnectionService oAuthConnectionService, UserInvalidTokenService userInvalidTokenService, OAuthProviderFactory oAuthProviderFactory, SecurityTokenRepository securityTokenRepository,
-                       JwtUtil jwtUtil, CookieHelper cookieHelper) {
-        this.userRepository = userRepository;
-        this.userService = userService;
-        this.userEmailService = userEmailService;
-        this.authenticationManager = authenticationManager;
-        this.securityTokenService = securityTokenService;
-        this.oAuthConnectionService = oAuthConnectionService;
-        this.userInvalidTokenService = userInvalidTokenService;
-        this.oAuthProviderFactory = oAuthProviderFactory;
-        this.securityTokenRepository = securityTokenRepository;
-        this.jwtUtil = jwtUtil;
-        this.cookieHelper = cookieHelper;
-    }
 
     //<editor-fold desc="Registration & Authentication">
     @Transactional

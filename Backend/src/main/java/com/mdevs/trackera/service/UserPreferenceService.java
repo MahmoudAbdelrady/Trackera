@@ -7,6 +7,7 @@ import com.mdevs.trackera.repository.UserPreferenceRepository;
 import com.mdevs.trackera.shared.enums.UserPreferenceOption;
 import com.mdevs.trackera.shared.exceptions.types.BusinessException;
 import com.mdevs.trackera.utils.AppUtils;
+import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,12 +16,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Service
+@RequiredArgsConstructor
 public class UserPreferenceService {
     private final UserPreferenceRepository userPreferenceRepository;
-
-    public UserPreferenceService(UserPreferenceRepository userPreferenceRepository) {
-        this.userPreferenceRepository = userPreferenceRepository;
-    }
 
     //<editor-fold desc="Retrieval">
     public Map<String, Object> getAll() {

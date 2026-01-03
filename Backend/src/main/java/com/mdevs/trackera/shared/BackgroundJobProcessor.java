@@ -4,6 +4,7 @@ import com.mdevs.trackera.entity.BackgroundJob;
 import com.mdevs.trackera.job.handlers.BackgroundJobHandler;
 import com.mdevs.trackera.shared.exceptions.types.NotFoundException;
 import jakarta.annotation.PostConstruct;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.aop.support.AopUtils;
 import org.springframework.stereotype.Component;
@@ -13,14 +14,11 @@ import java.util.Map;
 
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class BackgroundJobProcessor {
     private final Map<String, BackgroundJobHandler> handlers;
 
     private final Map<String, BackgroundJobHandler> handlerRegistry = new HashMap<>();
-
-    public BackgroundJobProcessor(Map<String, BackgroundJobHandler> handlers) {
-        this.handlers = handlers;
-    }
 
     @PostConstruct
     public void init() {

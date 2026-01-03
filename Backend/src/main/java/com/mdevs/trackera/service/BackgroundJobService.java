@@ -6,6 +6,7 @@ import com.mdevs.trackera.entity.BackgroundJob;
 import com.mdevs.trackera.job.handlers.BackgroundJobHandler;
 import com.mdevs.trackera.repository.BackgroundJobRepository;
 import com.mdevs.trackera.shared.enums.BackgroundJobStatus;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.context.ApplicationEventPublisher;
@@ -16,18 +17,13 @@ import org.springframework.transaction.event.TransactionalEventListener;
 
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class BackgroundJobService {
     private final BackgroundJobRepository jobRepository;
 
     private final ApplicationEventPublisher applicationEventPublisher;
 
     private final RabbitTemplate rabbitTemplate;
-
-    public BackgroundJobService(BackgroundJobRepository jobRepository, ApplicationEventPublisher applicationEventPublisher, RabbitTemplate rabbitTemplate) {
-        this.jobRepository = jobRepository;
-        this.applicationEventPublisher = applicationEventPublisher;
-        this.rabbitTemplate = rabbitTemplate;
-    }
 
     @Transactional
     public void enqueueJob(Class<? extends BackgroundJobHandler> jobName, String payload) {

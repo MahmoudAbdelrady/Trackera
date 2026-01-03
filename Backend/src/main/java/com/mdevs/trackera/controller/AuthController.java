@@ -9,6 +9,7 @@ import com.mdevs.trackera.utils.ExceptionResponseMaker;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
@@ -17,16 +18,12 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Map;
 
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("/auth")
 public class AuthController {
     private final AuthService authService;
 
     private final SecurityTokenService securityTokenService;
-
-    public AuthController(AuthService authService, SecurityTokenService securityTokenService) {
-        this.authService = authService;
-        this.securityTokenService = securityTokenService;
-    }
 
     @PublicAPI
     @PostMapping("/signup")

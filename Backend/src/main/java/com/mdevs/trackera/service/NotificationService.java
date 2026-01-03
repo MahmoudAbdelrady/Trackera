@@ -4,6 +4,7 @@ import com.mdevs.trackera.dto.notification.NotificationDTO;
 import com.mdevs.trackera.shared.SseRegistry;
 import com.mdevs.trackera.utils.JwtUtil;
 import io.jsonwebtoken.Claims;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -16,18 +17,13 @@ import java.util.Map;
 
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class NotificationService {
     private final SseRegistry sseRegistry;
 
     private final JwtUtil jwtUtil;
 
     private final ApplicationEventPublisher applicationEventPublisher;
-
-    public NotificationService(SseRegistry sseRegistry, JwtUtil jwtUtil, ApplicationEventPublisher applicationEventPublisher) {
-        this.sseRegistry = sseRegistry;
-        this.jwtUtil = jwtUtil;
-        this.applicationEventPublisher = applicationEventPublisher;
-    }
 
     public SseEmitter createSubscription(String accessToken) {
         SseEmitter sseEmitter = new SseEmitter(0L);

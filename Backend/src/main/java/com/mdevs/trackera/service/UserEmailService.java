@@ -6,22 +6,18 @@ import com.mdevs.trackera.repository.UserEmailRepository;
 import com.mdevs.trackera.repository.OAuthConnectionRepository;
 import com.mdevs.trackera.shared.exceptions.types.BusinessException;
 import com.mdevs.trackera.oauth.OAuthProvider;
+import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 
 @Service
+@RequiredArgsConstructor
 public class UserEmailService {
     private final UserEmailRepository userEmailRepository;
 
     private final OAuthConnectionRepository OAuthConnectionRepository;
 
     public static final String EMAIL_REGEX = "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9-]+(?:\\.[a-zA-Z0-9-]+)*\\.[a-zA-Z]{2,}$";
-
-
-    public UserEmailService(UserEmailRepository userEmailRepository, OAuthConnectionRepository OAuthConnectionRepository) {
-        this.userEmailRepository = userEmailRepository;
-        this.OAuthConnectionRepository = OAuthConnectionRepository;
-    }
 
     //<editor-fold desc="Creation">
     public UserEmail create(User user, String email) {
