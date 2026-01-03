@@ -3,7 +3,6 @@ package com.mdevs.trackera.service;
 import com.mdevs.trackera.config.general.AppConfig;
 import com.mdevs.trackera.dto.auth.*;
 import com.mdevs.trackera.entity.*;
-import com.mdevs.trackera.repository.*;
 import com.mdevs.trackera.shared.EmailTemplates;
 import com.mdevs.trackera.shared.SecurityTokenBuilder;
 import com.mdevs.trackera.shared.exceptions.types.UnauthorizedException;
@@ -30,8 +29,6 @@ import java.util.*;
 @Slf4j
 @RequiredArgsConstructor
 public class AuthService {
-    private final UserRepository userRepository;
-
     private final UserService userService;
 
     private final UserEmailService userEmailService;
@@ -45,8 +42,6 @@ public class AuthService {
     private final UserInvalidTokenService userInvalidTokenService;
 
     private final OAuthProviderFactory oAuthProviderFactory;
-
-    private final SecurityTokenRepository securityTokenRepository;
 
     private final JwtUtil jwtUtil;
 
@@ -128,16 +123,18 @@ public class AuthService {
         Claims refreshTokenClaims = jwtUtil.validateAndGetTokenPayload(refreshToken, false);
         String userUuid = refreshTokenClaims.get("id", String.class);
         String newAccessToken = jwtUtil.generateToken(userUuid, true);
+        String newRefreshToken = null;
 
-        response.addCookie(cookieHelper.create(CookieHelper.ACCESS_TOKEN_COOKIE_NAME, newAccessToken, true, CookieHelper.COOKIE_GENERAL_PATH, CookieHelper.getTokenCookieMaxAge(true)));
-
+        // Rotate refresh token if it's close to expiration (within threshold days)
         LocalDateTime refreshTokenExpiry = AppUtils.convertDateToLocalDateTime(refreshTokenClaims.getExpiration());
         if (refreshTokenExpiry.isBefore(LocalDateTime.now().plusDays(CookieHelper.REFRESH_TOKEN_ROTATION_THRESHOLD_DAYS))) {
             User tokenUser = userService.findByUuidOrThrow(userUuid);
-            String newRefreshToken = jwtUtil.generateToken(userUuid, false);
-            response.addCookie(cookieHelper.create(CookieHelper.REFRESH_TOKEN_COOKIE_NAME, newRefreshToken, true, CookieHelper.COOKIE_AUTH_PATH, CookieHelper.getTokenCookieMaxAge(false)));
+            newRefreshToken = jwtUtil.generateToken(userUuid, false);
+            // Invalidate old refresh token to prevent reuse
             userInvalidTokenService.create(tokenUser, refreshToken, refreshTokenClaims.getExpiration(), false);
         }
+
+        addAuthCookiesToResponse(response, newAccessToken, newRefreshToken);
     }
     //</editor-fold>
 
@@ -188,7 +185,7 @@ public class AuthService {
     //<editor-fold desc="Security Token Management">
     @Transactional
     public AuthResultDTO consumeToken(String token) {
-        SecurityToken securityToken = securityTokenService.validateAndGet(token);
+        SecurityToken securityToken = securityTokenService.validateAndConsume(token);
         User user = securityToken.getUser();
 
         String message;
@@ -203,7 +200,6 @@ public class AuthService {
             }
             default -> throw new UnauthorizedException("Url is expired or invalid");
         }
-        securityTokenRepository.delete(securityToken);
 
         return new AuthResultDTO(securityToken.getType().getLabel(), message);
     }
@@ -212,7 +208,7 @@ public class AuthService {
     //<editor-fold desc="Password Management">
     @Transactional
     public void requestResetPassword(String email) {
-        User user = userRepository.findByPrimaryEmail(email);
+        User user = userService.findByPrimaryEmail(email);
         if (user != null && user.canResetPassword()) {
             userService.sendPasswordFlowEmail(user, true);
         }
@@ -220,19 +216,18 @@ public class AuthService {
 
     @Transactional
     public void resetUserPassword(String token, PasswordDTO passwordDTO) {
-        SecurityToken securityToken = securityTokenService.validateAndGet(token);
+        SecurityToken securityToken = securityTokenService.validateAndConsume(token);
         if (!securityToken.getType().equals(SecurityToken.Type.PASSWORD_RESET)) {
             throw new UnauthorizedException("Url is expired or invalid");
         }
         User user = securityToken.getUser();
         userService.validateAndUpdateUserPassword(user, passwordDTO, true);
-        securityTokenRepository.delete(securityToken);
     }
     //</editor-fold>
 
     //<editor-fold desc="Internal Methods & Validations">
     private void handleOAuthLinkingFlow(OAuthProvider provider, OAuthUserInfoDTO oAuthUserInfo) {
-        User user = userRepository.findOne(oAuthUserInfo.getUserId());
+        User user = userService.findByIdOrThrow(oAuthUserInfo.getUserId());
         userEmailService.ensureOAuthEmailAvailable(oAuthUserInfo.getEmail(), user, provider);
         processOAuthData(user, provider, oAuthUserInfo);
         userService.handleOAuthEmailMatching(user, oAuthUserInfo);
@@ -257,8 +252,27 @@ public class AuthService {
     private void generateLoginInfo(User user, HttpServletResponse response) {
         String accessToken = jwtUtil.generateToken(user.getUuid(), true);
         String refreshToken = jwtUtil.generateToken(user.getUuid(), false);
-        response.addCookie(cookieHelper.create(CookieHelper.ACCESS_TOKEN_COOKIE_NAME, accessToken, true, CookieHelper.COOKIE_GENERAL_PATH, CookieHelper.getTokenCookieMaxAge(true)));
-        response.addCookie(cookieHelper.create(CookieHelper.REFRESH_TOKEN_COOKIE_NAME, refreshToken, true, CookieHelper.COOKIE_AUTH_PATH, CookieHelper.getTokenCookieMaxAge(false)));
+        addAuthCookiesToResponse(response, accessToken, refreshToken);
+    }
+
+    private void addAuthCookiesToResponse(HttpServletResponse response, String accessToken, String refreshToken) {
+        response.addCookie(cookieHelper.create(
+                CookieHelper.ACCESS_TOKEN_COOKIE_NAME,
+                accessToken,
+                true,
+                CookieHelper.COOKIE_GENERAL_PATH,
+                CookieHelper.getTokenCookieMaxAge(true)
+        ));
+
+        if (!StringUtils.isEmpty(refreshToken)) {
+            response.addCookie(cookieHelper.create(
+                    CookieHelper.REFRESH_TOKEN_COOKIE_NAME,
+                    refreshToken,
+                    true,
+                    CookieHelper.COOKIE_AUTH_PATH,
+                    CookieHelper.getTokenCookieMaxAge(false)
+            ));
+        }
     }
     //</editor-fold>
 }

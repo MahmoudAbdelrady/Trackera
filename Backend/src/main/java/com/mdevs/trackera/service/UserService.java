@@ -58,9 +58,19 @@ public class UserService implements UserDetailsService {
         return Optional.ofNullable(userRepository.findByPrimaryEmail(email)).orElseThrow(() -> new UsernameNotFoundException("Account not found."));
     }
 
+    //<editor-fold desc="User Find Methods">
+    public User findByIdOrThrow(Long id) {
+        return userRepository.findById(id).orElseThrow(() -> new NotFoundException("User not found"));
+    }
+
     public User findByUuidOrThrow(String uuid) {
         return Optional.ofNullable(userRepository.findByUuid(uuid)).orElseThrow(() -> new NotFoundException("User not found"));
     }
+
+    public User findByPrimaryEmail(String email) {
+        return userRepository.findByPrimaryEmail(email);
+    }
+    //</editor-fold>
 
     //<editor-fold desc="User Info Retrieval">
     public LoggedUserDTO getMeInfo() {

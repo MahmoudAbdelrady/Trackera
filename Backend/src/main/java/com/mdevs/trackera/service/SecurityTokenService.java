@@ -28,18 +28,25 @@ public class SecurityTokenService {
 
     public static final long MAX_SECURITY_TOKEN_MINUTES = 15;
 
-    //<editor-fold desc="Retrieval">
+    //<editor-fold desc="Retrieval and Consumption">
     public SecurityToken validateAndGet(String token) {
         Map<String, String> tokenPayload = cryptoUtil.parseSecurityToken(token);
         if (tokenPayload == null || tokenPayload.isEmpty()) {
             throw new UnauthorizedException("Url is expired or invalid");
         }
         Long tokenId = Long.parseLong(tokenPayload.get("tokenId"));
-        SecurityToken securityRequestToken = securityTokenRepository.findOne(tokenId);
-        if (securityRequestToken == null || securityRequestToken.getCreatedAt().isBefore(LocalDateTime.now().minusMinutes(MAX_SECURITY_TOKEN_MINUTES))) {
+        SecurityToken securityToken = securityTokenRepository.findOne(tokenId);
+        if (securityToken == null || securityToken.getCreatedAt().isBefore(LocalDateTime.now().minusMinutes(MAX_SECURITY_TOKEN_MINUTES))) {
             throw new UnauthorizedException("Url is expired or invalid");
         }
-        return securityRequestToken;
+        return securityToken;
+    }
+
+    @Transactional
+    public SecurityToken validateAndConsume(String token) {
+        SecurityToken securityToken = validateAndGet(token);
+        securityTokenRepository.delete(securityToken);
+        return securityToken;
     }
     //</editor-fold>
 
