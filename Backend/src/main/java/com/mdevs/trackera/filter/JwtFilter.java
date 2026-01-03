@@ -36,7 +36,7 @@ public class JwtFilter extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-        String jwt = jwtUtil.getToken(request);
+        String jwt = jwtUtil.getToken(request, true);
         if (jwt == null) {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             return;

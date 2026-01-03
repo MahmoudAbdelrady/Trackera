@@ -78,4 +78,8 @@ public class AppConfig {
     public static int getMaxJobFailures() {
         return Integer.parseInt(Objects.requireNonNull(applicationContext.getEnvironment().getProperty("trackera.job.max-failures")));
     }
+
+    public static int getBatchJobPageSize() {
+        return Integer.parseInt(Objects.requireNonNull(applicationContext.getEnvironment().getProperty("trackera.job.batch-page-size")));
+    }
 }

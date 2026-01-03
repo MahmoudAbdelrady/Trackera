@@ -1,16 +1,12 @@
 package com.mdevs.trackera.utils;
 
-import com.mdevs.trackera.config.general.AppConfig;
-import com.mdevs.trackera.entity.UserInvalidToken;
-import com.mdevs.trackera.repository.UserInvalidTokenRepository;
+import com.mdevs.trackera.service.UserInvalidTokenService;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import jakarta.servlet.http.HttpServletRequest;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
@@ -18,13 +14,10 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
-import java.util.List;
 
 @Component
 public class JwtUtil {
-    private final UserInvalidTokenRepository userInvalidTokenRepository;
-
-    private final CryptoUtil cryptoUtil;
+    private final UserInvalidTokenService userInvalidTokenService;
 
     @Value("${trackera.tokens.access}")
     private String accessTokenSecretKey;
@@ -32,13 +25,12 @@ public class JwtUtil {
     @Value("${trackera.tokens.refresh}")
     private String refreshTokenSecretKey;
 
-    public JwtUtil(UserInvalidTokenRepository userInvalidTokenRepository, CryptoUtil cryptoUtil) {
-        this.userInvalidTokenRepository = userInvalidTokenRepository;
-        this.cryptoUtil = cryptoUtil;
+    public JwtUtil(UserInvalidTokenService userInvalidTokenService) {
+        this.userInvalidTokenService = userInvalidTokenService;
     }
 
-    public String getToken(HttpServletRequest request) {
-        String token = CookieHelper.extractCookieValue(request, CookieHelper.ACCESS_TOKEN_COOKIE_NAME);
+    public String getToken(HttpServletRequest request, boolean isAccessToken) {
+        String token = CookieHelper.extractCookieValue(request, isAccessToken ? CookieHelper.ACCESS_TOKEN_COOKIE_NAME : CookieHelper.REFRESH_TOKEN_COOKIE_NAME);
         return !StringUtils.isEmpty(token) ? token : null;
     }
 
@@ -59,7 +51,7 @@ public class JwtUtil {
     public Claims validateAndGetTokenPayload(String token, boolean isAccessToken) {
         Claims claims = getTokenPayload(token, isAccessToken);
         String uuid = claims.get("id", String.class);
-        if (isTokenInvalid(uuid, token, isAccessToken)) {
+        if (userInvalidTokenService.isTokenInvalid(uuid, token, isAccessToken)) {
             throw new SecurityException("Session expired.");
         }
         return claims;
@@ -73,21 +65,5 @@ public class JwtUtil {
         } catch (Exception e) {
             throw new SecurityException("Invalid or expired token");
         }
-    }
-
-    public boolean isTokenInvalid(String uuid, String token, boolean isAccessToken) {
-        long maxId = 0;
-        PageRequest pageRequest = PageRequest.of(0, 100);
-        List<UserInvalidToken> userInvalidTokens;
-        boolean isInvalid = false;
-        do {
-            userInvalidTokens = userInvalidTokenRepository.findAllByUserAndTokenTypeOrderById(uuid, isAccessToken, maxId, pageRequest);
-            if (!userInvalidTokens.isEmpty()) {
-                isInvalid = userInvalidTokens.stream().anyMatch(it -> cryptoUtil.isMatch(token, it.getToken(), false));
-                maxId = userInvalidTokens.getLast().getId();
-            }
-        } while (!userInvalidTokens.isEmpty() && !isInvalid);
-
-        return isInvalid;
     }
 }

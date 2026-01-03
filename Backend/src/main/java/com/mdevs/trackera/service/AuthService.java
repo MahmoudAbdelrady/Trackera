@@ -38,33 +38,30 @@ public class AuthService {
 
     private final OAuthConnectionService oAuthConnectionService;
 
+    private final UserInvalidTokenService userInvalidTokenService;
+
     private final OAuthProviderFactory oAuthProviderFactory;
 
     private final SecurityTokenRepository securityTokenRepository;
-
-    private final UserInvalidTokenRepository userInvalidTokenRepository;
 
     private final JwtUtil jwtUtil;
 
     private final CookieHelper cookieHelper;
 
-    private final CryptoUtil cryptoUtil;
-
     public AuthService(UserRepository userRepository, UserService userService, UserEmailService userEmailService, AuthenticationManager authenticationManager, SecurityTokenService securityTokenService,
-                       OAuthConnectionService oAuthConnectionService, OAuthProviderFactory oAuthProviderFactory, SecurityTokenRepository securityTokenRepository, UserInvalidTokenRepository userInvalidTokenRepository,
-                       JwtUtil jwtUtil, CookieHelper cookieHelper, CryptoUtil cryptoUtil) {
+                       OAuthConnectionService oAuthConnectionService, UserInvalidTokenService userInvalidTokenService, OAuthProviderFactory oAuthProviderFactory, SecurityTokenRepository securityTokenRepository,
+                       JwtUtil jwtUtil, CookieHelper cookieHelper) {
         this.userRepository = userRepository;
         this.userService = userService;
         this.userEmailService = userEmailService;
         this.authenticationManager = authenticationManager;
         this.securityTokenService = securityTokenService;
         this.oAuthConnectionService = oAuthConnectionService;
+        this.userInvalidTokenService = userInvalidTokenService;
         this.oAuthProviderFactory = oAuthProviderFactory;
         this.securityTokenRepository = securityTokenRepository;
-        this.userInvalidTokenRepository = userInvalidTokenRepository;
         this.jwtUtil = jwtUtil;
         this.cookieHelper = cookieHelper;
-        this.cryptoUtil = cryptoUtil;
     }
 
     //<editor-fold desc="Registration & Authentication">
@@ -116,12 +113,17 @@ public class AuthService {
 
     @Transactional
     public void logout(HttpServletRequest request, HttpServletResponse response) {
-        String accessToken = jwtUtil.getToken(request);
-        String refreshToken = CookieHelper.extractCookieValue(request, CookieHelper.REFRESH_TOKEN_COOKIE_NAME);
-        saveInvalidToken(accessToken, true);
+        String accessToken = jwtUtil.getToken(request, true);
+        Claims accessTokenClaims = jwtUtil.getTokenPayload(accessToken, true);
+        String refreshToken = jwtUtil.getToken(request, false);
+        Claims refreshTokenClaims = jwtUtil.getTokenPayload(accessToken, true);
+
+        User loggedUser = AppConfig.getAuthenticatedCurrentUser();
+        userInvalidTokenService.create(loggedUser, accessToken, accessTokenClaims.getExpiration(), true);
         if (!StringUtils.isEmpty(refreshToken)) {
-            saveInvalidToken(refreshToken, false);
+            userInvalidTokenService.create(loggedUser, refreshToken, refreshTokenClaims.getExpiration(), false);
         }
+
         response.addCookie(cookieHelper.create(CookieHelper.ACCESS_TOKEN_COOKIE_NAME, null, true, CookieHelper.COOKIE_GENERAL_PATH, 0));
         response.addCookie(cookieHelper.create(CookieHelper.REFRESH_TOKEN_COOKIE_NAME, null, true, CookieHelper.COOKIE_AUTH_PATH, 0));
     }
@@ -132,14 +134,17 @@ public class AuthService {
 
     public void refreshJwt(String refreshToken, HttpServletResponse response) {
         Claims refreshTokenClaims = jwtUtil.validateAndGetTokenPayload(refreshToken, false);
-        String newAccessToken = jwtUtil.generateToken(refreshTokenClaims.get("id", String.class), true);
+        String userUuid = refreshTokenClaims.get("id", String.class);
+        String newAccessToken = jwtUtil.generateToken(userUuid, true);
+        User tokenUser = userService.findByUuidOrThrow(userUuid);
+
         response.addCookie(cookieHelper.create(CookieHelper.ACCESS_TOKEN_COOKIE_NAME, newAccessToken, true, CookieHelper.COOKIE_GENERAL_PATH, CookieHelper.getTokenCookieMaxAge(true)));
 
         LocalDateTime refreshTokenExpiry = AppUtils.convertDateToLocalDateTime(refreshTokenClaims.getExpiration());
         if (refreshTokenExpiry.isBefore(LocalDateTime.now().plusDays(CookieHelper.REFRESH_TOKEN_ROTATION_THRESHOLD_DAYS))) {
-            String newRefreshToken = jwtUtil.generateToken(refreshTokenClaims.get("id", String.class), false);
+            String newRefreshToken = jwtUtil.generateToken(userUuid, false);
             response.addCookie(cookieHelper.create(CookieHelper.REFRESH_TOKEN_COOKIE_NAME, newRefreshToken, true, CookieHelper.COOKIE_AUTH_PATH, CookieHelper.getTokenCookieMaxAge(false)));
-            saveInvalidToken(refreshToken, false);
+            userInvalidTokenService.create(tokenUser, refreshToken, refreshTokenClaims.getExpiration(), false);
         }
     }
     //</editor-fold>
@@ -147,13 +152,13 @@ public class AuthService {
     //<editor-fold desc="OAuth2 Integration">
     public String oAuth(String providerCode, Boolean forceLink, HttpServletRequest request) {
         OAuthProvider provider = OAuthProvider.fromCode(providerCode);
-        String jwt = jwtUtil.getToken(request);;
+        String jwt = jwtUtil.getToken(request, true);
         if (jwt == null) {
             return oAuthProviderFactory.getProvider(provider).generateAuthFlowUrl(null);
         }
 
         Claims claims = jwtUtil.validateAndGetTokenPayload(jwt, true);
-        User user = userRepository.findByUuid(claims.get("id", String.class));
+        User user = userService.findByUuidOrThrow(claims.get("id", String.class));
         if (!forceLink) {
             oAuthConnectionService.ensureNoConnection(user, provider);
         }
@@ -262,14 +267,6 @@ public class AuthService {
         String refreshToken = jwtUtil.generateToken(user.getUuid(), false);
         response.addCookie(cookieHelper.create(CookieHelper.ACCESS_TOKEN_COOKIE_NAME, accessToken, true, CookieHelper.COOKIE_GENERAL_PATH, CookieHelper.getTokenCookieMaxAge(true)));
         response.addCookie(cookieHelper.create(CookieHelper.REFRESH_TOKEN_COOKIE_NAME, refreshToken, true, CookieHelper.COOKIE_AUTH_PATH, CookieHelper.getTokenCookieMaxAge(false)));
-    }
-
-    private void saveInvalidToken(String token, boolean isAccessToken) {
-        Claims tokenClaims = jwtUtil.getTokenPayload(token, isAccessToken);
-        User user = userRepository.findByUuid(tokenClaims.get("id", String.class));
-        LocalDateTime tokenExpiryDate = AppUtils.convertDateToLocalDateTime(tokenClaims.getExpiration());
-        UserInvalidToken invalidAccessToken = new UserInvalidToken(user, cryptoUtil.hash(token, false), tokenExpiryDate, isAccessToken);
-        userInvalidTokenRepository.save(invalidAccessToken);
     }
     //</editor-fold>
 }
