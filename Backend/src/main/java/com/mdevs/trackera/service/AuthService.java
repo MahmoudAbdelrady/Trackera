@@ -109,7 +109,7 @@ public class AuthService {
             User loggedUser = AppConfig.getAuthenticatedCurrentUser();
             userInvalidTokenService.create(loggedUser, accessToken, accessTokenClaims.getExpiration(), true);
             if (!StringUtils.isEmpty(refreshToken)) {
-                Claims refreshTokenClaims = jwtUtil.getTokenPayload(refreshToken, true);
+                Claims refreshTokenClaims = jwtUtil.getTokenPayload(refreshToken, false);
                 userInvalidTokenService.create(loggedUser, refreshToken, refreshTokenClaims.getExpiration(), false);
             }
         } catch (Exception e) {
