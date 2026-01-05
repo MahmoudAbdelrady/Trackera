@@ -10,16 +10,19 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
+import java.util.List;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class BackgroundJobService {
-    private final BackgroundJobRepository jobRepository;
+    private final BackgroundJobRepository backgroundJobRepository;
 
     private final ApplicationEventPublisher applicationEventPublisher;
 
@@ -32,7 +35,7 @@ public class BackgroundJobService {
         job.setPayload(payload);
         job.setStatus(BackgroundJobStatus.PENDING);
         job.setRetryCount(0);
-        job = jobRepository.save(job);
+        job = backgroundJobRepository.save(job);
 
         BackgroundJobMessageDTO message = new BackgroundJobMessageDTO(job.getId(), job.getName(), job.getPayload());
 
@@ -45,5 +48,16 @@ public class BackgroundJobService {
     public void onBackgroundJobCreated(BackgroundJobMessageDTO messageDTO) {
         rabbitTemplate.convertAndSend(RabbitConfig.JOB_EXCHANGE, RabbitConfig.JOB_ROUTING_KEY, messageDTO);
         log.info("Sent job to RabbitMQ: {} (name: {})", messageDTO.getJobId(), messageDTO.getJobName());
+    }
+
+    @Transactional
+    public long deleteFinishedJobs(long maxId, int pageSize) {
+        List<BackgroundJob> finishedJobs = backgroundJobRepository
+                .findByStatusInAndIdAfterOrderById(List.of(BackgroundJobStatus.COMPLETED, BackgroundJobStatus.FAILED), maxId, PageRequest.of(0, pageSize));
+        if (!finishedJobs.isEmpty()) {
+            backgroundJobRepository.deleteAllInBatch(finishedJobs);
+            return finishedJobs.getLast().getId();
+        }
+        return -1;
     }
 }

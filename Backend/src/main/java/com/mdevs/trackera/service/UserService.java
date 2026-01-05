@@ -153,7 +153,7 @@ public class UserService implements UserDetailsService {
     @Transactional
     public void handleExistingUserOAuthLogin(User authenticatedUser, OAuthUserInfoDTO oAuthUserInfo, OAuthProvider oAuthProvider) {
         OAuthConnection oAuthConnection = oAuthConnectionService.getConnectionByUserAndEmailOrThrow(authenticatedUser, oAuthUserInfo.getEmail(), oAuthProvider);
-        if (oAuthConnection.isExpired() || oAuthConnection.isRevoked()) {
+        if (oAuthConnection.isExpiringSoon() || oAuthConnection.isRevoked()) {
             oAuthConnectionService.updateAccessCredentials(oAuthConnection, oAuthUserInfo.getAccessCredentials());
         }
         handleOAuthEmailMatching(authenticatedUser, oAuthUserInfo);

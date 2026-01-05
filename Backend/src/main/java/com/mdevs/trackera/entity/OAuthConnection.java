@@ -41,7 +41,7 @@ public class OAuthConnection extends BaseEntity {
         this.provider = provider;
     }
 
-    public boolean isExpired() {
-        return LocalDateTime.now().isAfter(accessTokenExpiry);
+    public boolean isExpiringSoon() {
+        return LocalDateTime.now().plusMinutes(1).isAfter(accessTokenExpiry); // 1 minute buffer
     }
 }

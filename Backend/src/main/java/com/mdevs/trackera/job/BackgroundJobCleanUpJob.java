@@ -2,17 +2,15 @@ package com.mdevs.trackera.job;
 
 import com.mdevs.trackera.config.general.AppConfig;
 import com.mdevs.trackera.job.executor.BatchJobExecutor;
-import com.mdevs.trackera.service.UserInvalidTokenService;
+import com.mdevs.trackera.service.BackgroundJobService;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-@Slf4j
 @Component
 @RequiredArgsConstructor
-public class UserInvalidTokenCleanUpJob implements TrackeraJob {
-    private final UserInvalidTokenService userInvalidTokenService;
+public class BackgroundJobCleanUpJob implements TrackeraJob {
+    private final BackgroundJobService backgroundJobService;
 
     private final BatchJobExecutor batchJobExecutor;
 
@@ -20,9 +18,9 @@ public class UserInvalidTokenCleanUpJob implements TrackeraJob {
     @Override
     public void execute() {
         batchJobExecutor.execute(
-                UserInvalidTokenCleanUpJob.class.getSimpleName(),
+                BackgroundJobCleanUpJob.class.getSimpleName(),
                 AppConfig.getBatchJobPageSize(),
-                userInvalidTokenService::deleteExpiredTokensBatch
+                backgroundJobService::deleteFinishedJobs
         );
     }
 }

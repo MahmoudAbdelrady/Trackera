@@ -11,13 +11,14 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class SecurityTokenCleanUpJob {
+public class SecurityTokenCleanUpJob implements TrackeraJob {
     private final SecurityTokenService securityTokenService;
 
     private final BatchJobExecutor batchJobExecutor;
 
     @Scheduled(cron = "0 0 0 ? * *")
-    public void cleanUpExpiredTokens() {
+    @Override
+    public void execute() {
         batchJobExecutor.execute(
                 SecurityTokenCleanUpJob.class.getSimpleName(),
                 AppConfig.getBatchJobPageSize(),

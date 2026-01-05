@@ -12,11 +12,12 @@ import java.util.concurrent.CompletableFuture;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class SseHeartbeatSenderJob {
+public class SseHeartbeatSenderJob implements TrackeraJob {
     private final SseRegistry sseRegistry;
 
     @Scheduled(fixedRate = 15_000)
-    public void sendHeartbeats() {
+    @Override
+    public void execute() {
         if (sseRegistry.getEmitters().isEmpty()) {
             return;
         }

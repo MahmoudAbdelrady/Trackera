@@ -4,6 +4,8 @@ import com.mdevs.trackera.entity.User;
 import com.mdevs.trackera.entity.UserEmail;
 import com.mdevs.trackera.entity.OAuthConnection;
 import com.mdevs.trackera.shared.enums.OAuthProvider;
+import jakarta.persistence.LockModeType;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -23,4 +25,8 @@ public interface OAuthConnectionRepository extends BaseRepository<OAuthConnectio
 
     @Query("SELECT CASE WHEN NOT EXISTS (SELECT oac FROM OAuthConnection oac WHERE oac.user = :user AND oac.accountEmail = :userEmail) THEN true ELSE false END")
     boolean notExistsByUserAndProviderEmail(@Param("user") User user, @Param("userEmail") UserEmail userEmail);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT oac FROM OAuthConnection oac WHERE oac.id = :id")
+    OAuthConnection findOneForUpdate(Long id);
 }
