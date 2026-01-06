@@ -2,6 +2,7 @@ package com.mdevs.trackera.shared;
 
 import com.mdevs.trackera.shared.enums.WorkLogColumn;
 import com.mdevs.trackera.shared.exceptions.types.BusinessException;
+import com.mdevs.trackera.utils.DateTimeUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
@@ -104,7 +105,8 @@ public class FileHandler {
         return switch (cell.getCellType()) {
             case STRING -> cell.getStringCellValue();
             case NUMERIC ->
-                    DateUtil.isCellDateFormatted(cell) ? DurationFormatter.getSimple12hFormat().format(cell.getDateCellValue()) : String.valueOf(cell.getNumericCellValue());
+                    DateUtil.isCellDateFormatted(cell) ? DateTimeUtils.getDateTime12hFormatter().format(DateTimeUtils.convertDateToLocalDateTime((cell.getDateCellValue())))
+                            : String.valueOf(cell.getNumericCellValue());
             case BOOLEAN -> String.valueOf(cell.getBooleanCellValue());
             case FORMULA -> cell.getCellFormula();
             default -> "";

@@ -20,7 +20,7 @@ import com.mdevs.trackera.service.WorkLogService;
 import com.mdevs.trackera.shared.enums.WorkLogStatus;
 import com.mdevs.trackera.shared.enums.WorkLogSyncMessageType;
 import com.mdevs.trackera.shared.exceptions.types.JiraException;
-import com.mdevs.trackera.utils.AppUtils;
+import com.mdevs.trackera.utils.JsonUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.context.annotation.Lazy;
@@ -60,7 +60,7 @@ public class WorkLogSyncJobHandler implements BackgroundJobHandler {
 
     @Override
     public void handle(BackgroundJob job) {
-        WorkLogSyncPayloadDTO workLogSyncPayloadDTO = AppUtils.convertJsonStringToObject(job.getPayload(), WorkLogSyncPayloadDTO.class);
+        WorkLogSyncPayloadDTO workLogSyncPayloadDTO = JsonUtils.convertJsonStringToObject(job.getPayload(), WorkLogSyncPayloadDTO.class);
         User syncUser = userRepository.findOne(workLogSyncPayloadDTO.getUserId());
         boolean isLastRetry = job.getRetryCount() >= RabbitConfig.MAX_RETRIES;
 
@@ -219,7 +219,7 @@ public class WorkLogSyncJobHandler implements BackgroundJobHandler {
 
     @Transactional
     public void updateJobPayload(BackgroundJob job, WorkLogSyncPayloadDTO workLogSyncPayloadDTO) {
-        job.setPayload(AppUtils.convertObjectToJsonString(workLogSyncPayloadDTO));
+        job.setPayload(JsonUtils.convertObjectToJsonString(workLogSyncPayloadDTO));
         backgroundJobRepository.save(job);
     }
 

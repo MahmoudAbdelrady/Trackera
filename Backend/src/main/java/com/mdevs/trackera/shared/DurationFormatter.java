@@ -3,18 +3,8 @@ package com.mdevs.trackera.shared;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.text.DecimalFormat;
-import java.text.SimpleDateFormat;
-import java.time.format.DateTimeFormatter;
 
 public class DurationFormatter {
-    private static final SimpleDateFormat SIMPLE_12H_FORMAT = new SimpleDateFormat("hh:mm a");
-
-    private static final DateTimeFormatter DATE_TIME_12H_FORMATTER = DateTimeFormatter.ofPattern("hh:mm a");
-
-    private static final DateTimeFormatter COMPACTED_DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd");
-
-    private static final DateTimeFormatter SIMPLE_DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-
     private static final DecimalFormat DURATION_DECIMAL_FORMAT = new DecimalFormat("#.##");
 
     private static class DurationParts {
@@ -27,22 +17,6 @@ public class DurationFormatter {
             this.hours = hours;
             this.minutes = minutes;
         }
-    }
-
-    public static SimpleDateFormat getSimple12hFormat() {
-        return SIMPLE_12H_FORMAT;
-    }
-
-    public static DateTimeFormatter getDateTime12hFormatter() {
-        return DATE_TIME_12H_FORMATTER;
-    }
-
-    public static DateTimeFormatter getCompactedDateFormatter() {
-        return COMPACTED_DATE_FORMATTER;
-    }
-
-    public static DateTimeFormatter getSimpleDateTimeFormatter() {
-        return SIMPLE_DATE_TIME_FORMATTER;
     }
 
     public static DecimalFormat getDurationDecimalFormat() {

@@ -17,7 +17,8 @@ import com.mdevs.trackera.shared.enums.OAuthProvider;
 import com.mdevs.trackera.shared.DurationFormatter;
 import com.mdevs.trackera.shared.exceptions.types.JiraException;
 import com.mdevs.trackera.shared.exceptions.types.NotFoundException;
-import com.mdevs.trackera.utils.AppUtils;
+import com.mdevs.trackera.utils.DateTimeUtils;
+import com.mdevs.trackera.utils.JsonUtils;
 import com.mdevs.trackera.utils.HttpUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -114,7 +115,7 @@ public class JiraService {
         List<JiraTaskDTO> jiraTasks = getTasksFromJira(user);
         List<JiraTaskDTO> currentTasks = jiraTasks.stream().filter(task -> !task.isResolved()).toList();
         List<JiraTaskDTO> overestimatedTasks = jiraTasks.stream().filter(task -> task.timeTracking().evaluation() == JiraTaskEvaluation.OVERESTIMATED).toList();
-        String lastUpdated = DurationFormatter.getSimpleDateTimeFormatter().format(now);
+        String lastUpdated = DateTimeUtils.getSimpleDateTimeFormatter().format(now);
 
         Map<String, Object> allTasks = new HashMap<>();
         allTasks.put("currentTasks", Map.of("total", currentTasks.size(), "data", currentTasks));
@@ -132,7 +133,7 @@ public class JiraService {
     private boolean shouldFetchTasks(Map<String, Object> cachedData, LocalDateTime now, boolean forceUpdate) {
         if (cachedData == null || forceUpdate) return true;
 
-        LocalDateTime lastUpdated = LocalDateTime.parse(cachedData.get("lastUpdated").toString(), DurationFormatter.getSimpleDateTimeFormatter());
+        LocalDateTime lastUpdated = LocalDateTime.parse(cachedData.get("lastUpdated").toString(), DateTimeUtils.getSimpleDateTimeFormatter());
         return lastUpdated.isBefore(now.minusHours(JIRA_TASKS_FETCH_HOURS_DURATION));
     }
     //</editor-fold>
@@ -257,7 +258,7 @@ public class JiraService {
     @Retryable(retryFor = Exception.class, backoff = @Backoff(delay = 1000, multiplier = 3))
     private <T> T callJiraApi(String url, HttpMethod method, HttpEntity<?> entity, OAuthConnection oAuthConnection, Class<T> responseType) {
         try {
-            ResponseEntity<T> response = HttpUtil.getRestTemplate().exchange(url, method, entity, responseType);
+            ResponseEntity<T> response = HttpUtil.exchange(url, method, entity, responseType);
 
             if (response.getStatusCode() == HttpStatus.UNAUTHORIZED) {
                 oAuthConnection = oAuthConnectionService.getOrRefresh(oAuthConnection);
@@ -267,7 +268,7 @@ public class JiraService {
                 newHeaders.setBearerAuth(oAuthConnectionService.getAccessToken(oAuthConnection));
                 entity = new HttpEntity<>(newHeaders);
 
-                response = HttpUtil.getRestTemplate().exchange(url, method, entity, responseType);
+                response = HttpUtil.exchange(url, method, entity, responseType);
             }
 
             if (!response.getStatusCode().is2xxSuccessful()) {
@@ -287,7 +288,7 @@ public class JiraService {
 
         JsonNode root;
         try {
-            root = AppUtils.getObjectMapper().readTree(responseBody);
+            root = JsonUtils.convertJsonStringToTree(responseBody);
         } catch (Exception parseErr) {
             throw new JiraException("Jira API Error: " + responseBody, e.getStatusCode().value());
         }
