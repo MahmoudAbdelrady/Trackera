@@ -47,7 +47,7 @@ public class BackgroundJobService {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onBackgroundJobCreated(BackgroundJobMessageDTO messageDTO) {
         rabbitTemplate.convertAndSend(RabbitConfig.JOB_EXCHANGE, RabbitConfig.JOB_ROUTING_KEY, messageDTO);
-        log.info("Sent job to RabbitMQ: {} (name: {})", messageDTO.getJobId(), messageDTO.getJobName());
+        log.info("Sent job to RabbitMQ: {} (name: {})", messageDTO.jobId(), messageDTO.jobName());
     }
 
     @Transactional

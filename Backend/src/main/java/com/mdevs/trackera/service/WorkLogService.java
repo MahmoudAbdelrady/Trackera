@@ -512,10 +512,10 @@ public class WorkLogService {
 
     private List<WorkLogDetail> getWorkLogDetailsBySelection(WorkLog workLog, WorkLogSelectionDTO workLogSelectionDTO, WorkLogStatus status) {
         List<WorkLogDetail> workLogDetails;
-        if (workLogSelectionDTO != null && workLogSelectionDTO.getTaskNames() != null && !workLogSelectionDTO.getTaskNames().isEmpty()) {
-            workLogDetails = workLogDetailRepository.findByWorkLogAndTaskNameInAndStatus(workLog, workLogSelectionDTO.getTaskNames(), status);
-        } else if (workLogSelectionDTO != null && workLogSelectionDTO.getEntryIds() != null && !workLogSelectionDTO.getEntryIds().isEmpty()) {
-            workLogDetails = workLogDetailRepository.findByWorkLogAndUuidInAndStatus(workLog, workLogSelectionDTO.getEntryIds(), status);
+        if (workLogSelectionDTO != null && workLogSelectionDTO.taskNames() != null && !workLogSelectionDTO.taskNames().isEmpty()) {
+            workLogDetails = workLogDetailRepository.findByWorkLogAndTaskNameInAndStatus(workLog, workLogSelectionDTO.taskNames(), status);
+        } else if (workLogSelectionDTO != null && workLogSelectionDTO.entryIds() != null && !workLogSelectionDTO.entryIds().isEmpty()) {
+            workLogDetails = workLogDetailRepository.findByWorkLogAndUuidInAndStatus(workLog, workLogSelectionDTO.entryIds(), status);
         } else {
             workLogDetails = workLogDetailRepository.findAllByWorkLogAndStatus(workLog, status);
         }

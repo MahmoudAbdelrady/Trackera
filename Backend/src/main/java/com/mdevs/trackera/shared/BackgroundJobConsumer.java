@@ -39,15 +39,15 @@ public class BackgroundJobConsumer {
                            @Header(value = "x-retry-count", required = false) Integer retryCountHeader) {
         int retryCount = getRetryCount(xDeathHeader, retryCountHeader);
         try {
-            log.info("Processing job [{}, {}] (attempt {})", message.getJobId(), message.getJobName(), retryCount);
+            log.info("Processing job [{}, {}] (attempt {})", message.jobId(), message.jobName(), retryCount);
 
             executeJob(message, retryCount);
 
             // Acknowledge message (remove from queue)
             channel.basicAck(deliveryTag, false);
-            log.info("Job [{}, {}] completed successfully", message.getJobId(), message.getJobName());
+            log.info("Job [{}, {}] completed successfully", message.jobId(), message.jobName());
         } catch (Exception e) {
-            log.error("Job [{}, {}] failed (attempt {}): {}", message.getJobId(), message.getJobName(), retryCount, e.getMessage(), e);
+            log.error("Job [{}, {}] failed (attempt {}): {}", message.jobId(), message.jobName(), retryCount, e.getMessage(), e);
             handleJobFailure(message, channel, deliveryTag, retryCount, e);
         }
     }
@@ -65,7 +65,7 @@ public class BackgroundJobConsumer {
     }
 
     private void executeJob(BackgroundJobMessageDTO message, int retryCount) {
-        BackgroundJob job = Optional.ofNullable(jobRepository.findOne(message.getJobId())).orElseThrow(() -> new NotFoundException("Job not found: [" + message.getJobId() + ", " + message.getJobName() + "]"));
+        BackgroundJob job = Optional.ofNullable(jobRepository.findOne(message.jobId())).orElseThrow(() -> new NotFoundException("Job not found: [" + message.jobId() + ", " + message.jobName() + "]"));
 
         job.setStatus(BackgroundJobStatus.IN_PROGRESS);
         job.setRetryCount(retryCount);
@@ -81,7 +81,7 @@ public class BackgroundJobConsumer {
 
     private void handleJobFailure(BackgroundJobMessageDTO message, Channel channel, long deliveryTag, int retryCount, Exception e) {
         try {
-            BackgroundJob job = jobRepository.findOne(message.getJobId());
+            BackgroundJob job = jobRepository.findOne(message.jobId());
             if (retryCount >= RabbitConfig.MAX_RETRIES) {
                 handleMaxRetriesExceeded(job, message, e);
             } else {
@@ -98,7 +98,7 @@ public class BackgroundJobConsumer {
         int delay = RabbitConfig.RETRY_DELAYS[retryCount];
         String retryRoutingKey = RabbitConfig.retryRoutingKey(delay);
 
-        log.info("Job [{}, {}] will retry in {}ms (attempt {}/{})", message.getJobId(), message.getJobName(), delay, retryCount + 1, RabbitConfig.MAX_RETRIES);
+        log.info("Job [{}, {}] will retry in {}ms (attempt {}/{})", message.jobId(), message.jobName(), delay, retryCount + 1, RabbitConfig.MAX_RETRIES);
 
         // Update job status
         if (job != null) {
@@ -121,7 +121,7 @@ public class BackgroundJobConsumer {
     }
 
     private void handleMaxRetriesExceeded(BackgroundJob job, BackgroundJobMessageDTO message, Exception error) {
-        log.error("Job [{}, {}] exceeded max retries, sending to DLQ", message.getJobId(), message.getJobName());
+        log.error("Job [{}, {}] exceeded max retries, sending to DLQ", message.jobId(), message.jobName());
 
         // Update job status in database
         if (job != null) {

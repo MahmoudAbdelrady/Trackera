@@ -69,14 +69,14 @@ public class NotificationService {
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
     private void publishNotificationEvent(NotificationDTO notificationDTO) {
-        for (SseEmitter emitter : sseRegistry.get(notificationDTO.getUserUuid())) {
+        for (SseEmitter emitter : sseRegistry.get(notificationDTO.userUuid())) {
             try {
                 emitter.send(SseEmitter.event()
-                        .name(notificationDTO.getEventName())
-                        .data(notificationDTO.getData()));
+                        .name(notificationDTO.eventName())
+                        .data(notificationDTO.data()));
             } catch (IOException e) {
-                log.error("Error while sending SSE event to user: {}", notificationDTO.getUserUuid(), e);
-                sseRegistry.remove(notificationDTO.getUserUuid(), emitter);
+                log.error("Error while sending SSE event to user: {}", notificationDTO.userUuid(), e);
+                sseRegistry.remove(notificationDTO.userUuid(), emitter);
             }
         }
     }
