@@ -3,6 +3,7 @@ package com.mdevs.trackera.service;
 import com.mdevs.trackera.config.general.AppConfig;
 import com.mdevs.trackera.dto.auth.OAuthProviderDTO;
 import com.mdevs.trackera.dto.auth.OAuthProviderInfoDTO;
+import com.mdevs.trackera.dto.email.EmailRequest;
 import com.mdevs.trackera.dto.user.LoggedUserDTO;
 import com.mdevs.trackera.dto.auth.OAuthUserInfoDTO;
 import com.mdevs.trackera.dto.user.PasswordDTO;
@@ -12,12 +13,12 @@ import com.mdevs.trackera.entity.User;
 import com.mdevs.trackera.entity.UserEmail;
 import com.mdevs.trackera.entity.OAuthConnection;
 import com.mdevs.trackera.repository.UserRepository;
+import com.mdevs.trackera.shared.EmailService;
 import com.mdevs.trackera.shared.EmailTemplates;
 import com.mdevs.trackera.shared.SecurityTokenBuilder;
 import com.mdevs.trackera.shared.enums.UserPreferenceOption;
 import com.mdevs.trackera.shared.exceptions.types.BusinessException;
 import com.mdevs.trackera.shared.enums.OAuthProvider;
-import com.mdevs.trackera.shared.TrackeraEmailTarget;
 import com.mdevs.trackera.shared.exceptions.types.NotFoundException;
 import com.mdevs.trackera.shared.mappers.UserMapper;
 import com.mdevs.trackera.utils.JsonUtils;
@@ -47,6 +48,8 @@ public class UserService implements UserDetailsService {
     private final JiraService jiraService;
 
     private final SecurityTokenService securityTokenService;
+
+    private final EmailService emailService;
 
     private final PasswordEncoder passwordEncoder;
 
@@ -271,12 +274,13 @@ public class UserService implements UserDetailsService {
 
         userEmailService.deleteIfUnused(currentPrimary);
 
-        TrackeraEmailTarget.builder()
-                .targetEmail(currentPrimary.getEmail())
+        EmailRequest emailRequest = EmailRequest.builder()
+                .targetEmail(email)
                 .subject("Email Changed")
                 .templateName(EmailTemplates.INFO_MAIL_TEMPLATE)
                 .parameters(Map.of("content", "Your account's email has been changed to " + email + ". If you did not perform this action, please contact support immediately."))
-                .build().send();
+                .build();
+        emailService.send(emailRequest);
     }
 
     public void sendEmailVerification() {

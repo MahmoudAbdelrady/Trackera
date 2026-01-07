@@ -1,13 +1,14 @@
 package com.mdevs.trackera.service;
 
 import com.mdevs.trackera.config.general.AppConfig;
+import com.mdevs.trackera.dto.email.EmailRequest;
 import com.mdevs.trackera.entity.SecurityToken;
 import com.mdevs.trackera.entity.User;
 import com.mdevs.trackera.repository.SecurityTokenRepository;
+import com.mdevs.trackera.shared.EmailService;
 import com.mdevs.trackera.shared.SecurityTokenBuilder;
 import com.mdevs.trackera.shared.exceptions.types.UnauthorizedException;
 import com.mdevs.trackera.utils.CryptoUtil;
-import com.mdevs.trackera.shared.TrackeraEmailTarget;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.domain.PageRequest;
@@ -23,6 +24,8 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class SecurityTokenService {
     private final SecurityTokenRepository securityTokenRepository;
+
+    private final EmailService emailService;
 
     private final CryptoUtil cryptoUtil;
 
@@ -70,12 +73,14 @@ public class SecurityTokenService {
         if (builder.getExtraParameters() != null && !builder.getExtraParameters().isEmpty()) {
             templateParameters.putAll(builder.getExtraParameters());
         }
-        TrackeraEmailTarget.builder()
+
+        EmailRequest emailRequest = EmailRequest.builder()
                 .targetEmail(builder.getTargetEmail())
                 .subject(builder.getType().getLabel())
                 .templateName(builder.getTemplateName())
                 .parameters(templateParameters)
-                .build().send();
+                .build();
+        emailService.send(emailRequest);
     }
     //</editor-fold>
 

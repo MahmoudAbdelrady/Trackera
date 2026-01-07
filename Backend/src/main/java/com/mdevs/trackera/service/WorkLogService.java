@@ -337,13 +337,7 @@ public class WorkLogService {
     }
 
     private Map<String, Object> processWorkLogFile(MultipartFile worklogFile) {
-        List<Map<WorkLogColumn, String>> parsedData;
-        try {
-            parsedData = FileHandler.validateAndParse(worklogFile);
-        } catch (Exception ex) {
-            log.error("Error processing worklog file", ex);
-            throw new RuntimeException(ex.getMessage());
-        }
+        List<Map<WorkLogColumn, String>> parsedData = FileHandler.validateAndParse(worklogFile);
 
         if (parsedData.isEmpty()) {
             throw new BusinessException("The uploaded file is empty or does not contain any valid data.");

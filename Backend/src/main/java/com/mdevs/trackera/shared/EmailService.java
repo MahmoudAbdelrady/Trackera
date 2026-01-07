@@ -11,6 +11,7 @@ import org.thymeleaf.spring6.SpringTemplateEngine;
 @RequiredArgsConstructor
 public class EmailService {
     private final SpringTemplateEngine templateEngine;
+
     private final TrackeraMailSender mailSender;
 
     public void send(EmailRequest request) {

@@ -1,16 +1,12 @@
 package com.mdevs.trackera.dto.email;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.util.Map;
 
 @Getter
 @Setter
-@NoArgsConstructor
-@AllArgsConstructor
+@Builder
 public class EmailRequest {
     private String targetEmail;
 
@@ -20,5 +16,6 @@ public class EmailRequest {
 
     private Map<String, String> parameters;
 
+    @Builder.Default
     private boolean isHtml = true;
 }
