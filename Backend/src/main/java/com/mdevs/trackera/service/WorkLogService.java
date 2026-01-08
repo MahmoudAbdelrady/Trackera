@@ -417,7 +417,7 @@ public class WorkLogService {
             try {
                 result = LocalTime.parse(cell, DateTimeUtils.getDateTime12hFormatter());
             } catch (Exception e) {
-                throw new BusinessException("[" + cellName + "] Invalid time format. Expected format is hh:mm AM/PM");
+                throw new BusinessException("[" + cellName + "] Invalid time format. Expected format is h:mm AM/PM");
             }
         }
 
