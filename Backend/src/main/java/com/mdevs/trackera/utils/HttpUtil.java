@@ -10,13 +10,15 @@ public final class HttpUtil {
 
     private HttpUtil() {}
 
-    // ===== Core Exchange Method =====
+    //<editor-fold desc="Core Exchange Method">
 
     public static <T> ResponseEntity<T> exchange(String url, HttpMethod method, HttpEntity<?> entity, Class<T> responseType) {
         return restTemplate.exchange(url, method, entity, responseType);
     }
 
-    // ===== Convenience Methods =====
+    //</editor-fold>
+
+    //<editor-fold desc="Convenience Methods">
 
     public static <T> T get(String url, HttpEntity<?> entity, Class<T> responseType) {
         return restTemplate.exchange(url, HttpMethod.GET, entity, responseType).getBody();
@@ -26,7 +28,9 @@ public final class HttpUtil {
         return restTemplate.exchange(url, HttpMethod.POST, entity, responseType).getBody();
     }
 
-    // ===== Entity Builders =====
+    //</editor-fold>
+
+    //<editor-fold desc="Entity Builders">
 
     public static <T> HttpEntity<T> createBearerAuthEntity(String accessToken) {
         return new HttpEntity<>(createBearerAuthHeaders(accessToken, false));
@@ -51,4 +55,6 @@ public final class HttpUtil {
         }
         return headers;
     }
+
+    //</editor-fold>
 }
