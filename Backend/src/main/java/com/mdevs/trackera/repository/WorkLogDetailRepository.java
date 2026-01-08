@@ -3,6 +3,7 @@ package com.mdevs.trackera.repository;
 import com.mdevs.trackera.entity.WorkLog;
 import com.mdevs.trackera.entity.WorkLogDetail;
 import com.mdevs.trackera.shared.enums.WorkLogStatus;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.security.core.parameters.P;
@@ -54,5 +55,7 @@ public interface WorkLogDetailRepository extends BaseRepository<WorkLogDetail> {
             "GROUP BY wld.taskName")
     WorkLogStatus calculateWorkLogTaskStatus(@Param("workLogId") Long workLogId, @Param("taskName") String taskName);
 
-    void deleteByWorkLogIn(List<WorkLog> workLogs);
+    @Modifying
+    @Query("DELETE FROM WorkLogDetail wld WHERE wld.workLog.id IN :workLogsIds")
+    void deleteByWorkLogIn(List<Long> workLogsIds);
 }

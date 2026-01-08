@@ -11,7 +11,6 @@ import com.mdevs.trackera.shared.exceptions.types.UnauthorizedException;
 import com.mdevs.trackera.utils.CryptoUtil;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -92,10 +91,11 @@ public class SecurityTokenService {
 
     @Transactional
     public long deleteExpiredTokensBatch(long maxId, int pageSize) {
-        List<SecurityToken> securityTokens = securityTokenRepository.findSecurityRequestTokenWithCreationDateLessThanEqual(LocalDateTime.now().minusMinutes(SecurityTokenService.MAX_SECURITY_TOKEN_MINUTES), maxId, Pageable.ofSize(pageSize));
-        if (!securityTokens.isEmpty()) {
-            securityTokenRepository.deleteAllInBatch(securityTokens);
-            return securityTokens.getLast().getId();
+        List<Long> securityTokensIds = securityTokenRepository
+                .findSecurityRequestTokenWithCreationDateLessThanEqual(LocalDateTime.now().minusMinutes(SecurityTokenService.MAX_SECURITY_TOKEN_MINUTES), maxId, Pageable.ofSize(pageSize));
+        if (!securityTokensIds.isEmpty()) {
+            securityTokenRepository.deleteAllByIdInBatch(securityTokensIds);
+            return securityTokensIds.getLast();
         }
         return -1;
     }

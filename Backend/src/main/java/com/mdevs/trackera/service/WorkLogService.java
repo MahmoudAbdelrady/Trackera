@@ -271,11 +271,11 @@ public class WorkLogService {
 
     @Transactional
     public long deleteDeprecatedWorkLogsBatch(long maxId, int pageSize) {
-        List<WorkLog> deprecatedWorkLogs = workLogRepository.findByWorkDateLessThanEqualAndIdGreaterThanOrderById(AppConfig.getMinQueryableDate(), maxId, Pageable.ofSize(pageSize));
-        if (!deprecatedWorkLogs.isEmpty()) {
-            workLogDetailRepository.deleteByWorkLogIn(deprecatedWorkLogs);
-            workLogRepository.deleteAllInBatch(deprecatedWorkLogs);
-            return deprecatedWorkLogs.getLast().getId();
+        List<Long> deprecatedWorkLogsIds = workLogRepository.findByWorkDateLessThanEqualAndIdGreaterThanOrderById(AppConfig.getMinQueryableDate(), maxId, Pageable.ofSize(pageSize));
+        if (!deprecatedWorkLogsIds.isEmpty()) {
+            workLogDetailRepository.deleteByWorkLogIn(deprecatedWorkLogsIds);
+            workLogRepository.deleteAllByIdInBatch(deprecatedWorkLogsIds);
+            return deprecatedWorkLogsIds.getLast();
         }
         return -1;
     }

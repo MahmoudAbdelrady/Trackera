@@ -6,7 +6,6 @@ import com.mdevs.trackera.repository.UserInvalidTokenRepository;
 import com.mdevs.trackera.utils.DateTimeUtil;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.codec.digest.DigestUtils;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,10 +31,10 @@ public class UserInvalidTokenService {
 
     @Transactional
     public long deleteExpiredTokensBatch(long maxId, int pageSize) {
-        List<UserInvalidToken> invalidTokens = userInvalidTokenRepository.findExpiredAfterIdOrderById(LocalDateTime.now(), maxId, Pageable.ofSize(pageSize));
-        if (!invalidTokens.isEmpty()) {
-            userInvalidTokenRepository.deleteAllInBatch(invalidTokens);
-            return invalidTokens.getLast().getId();
+        List<Long> invalidTokensIds = userInvalidTokenRepository.findExpiredAfterIdOrderById(LocalDateTime.now(), maxId, Pageable.ofSize(pageSize));
+        if (!invalidTokensIds.isEmpty()) {
+            userInvalidTokenRepository.deleteAllByIdInBatch(invalidTokensIds);
+            return invalidTokensIds.getLast();
         }
         return -1;
     }

@@ -16,6 +16,6 @@ public interface SecurityTokenRepository extends BaseRepository<SecurityToken> {
 
     void deleteByUserAndTypeAndCreatedAtGreaterThanEqual(User user, SecurityToken.Type type, LocalDateTime timeOut);
 
-    @Query("SELECT s FROM SecurityToken s WHERE s.createdAt <= :timeOut AND s.id > :maxId ORDER BY s.id")
-    List<SecurityToken> findSecurityRequestTokenWithCreationDateLessThanEqual(@Param("timeOut") LocalDateTime timeOut, @Param("maxId") Long maxId, Pageable pageable);
+    @Query("SELECT s.id FROM SecurityToken s WHERE s.createdAt <= :timeOut AND s.id > :maxId ORDER BY s.id")
+    List<Long> findSecurityRequestTokenWithCreationDateLessThanEqual(@Param("timeOut") LocalDateTime timeOut, @Param("maxId") Long maxId, Pageable pageable);
 }

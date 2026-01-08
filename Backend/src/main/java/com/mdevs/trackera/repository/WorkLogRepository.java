@@ -29,5 +29,6 @@ public interface WorkLogRepository extends BaseRepository<WorkLog> {
             "FROM WorkLog w JOIN WorkLogDetail wld on wld.workLog = w WHERE w = :worklog")
     WorkLogStatus calculateWorkLogStatus(@Param("worklog") WorkLog worklog);
 
-    List<WorkLog> findByWorkDateLessThanEqualAndIdGreaterThanOrderById(LocalDate minDate, Long maxId, Pageable pageable);
+    @Query("SELECT w.id FROM WorkLog w WHERE w.workDate <= :minDate AND w.id > :maxId ORDER BY w.id")
+    List<Long> findByWorkDateLessThanEqualAndIdGreaterThanOrderById(@Param("minDate") LocalDate minDate, @Param("maxId") Long maxId, Pageable pageable);
 }
