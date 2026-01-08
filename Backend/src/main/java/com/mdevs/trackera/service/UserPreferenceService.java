@@ -6,7 +6,7 @@ import com.mdevs.trackera.entity.UserPreference;
 import com.mdevs.trackera.repository.UserPreferenceRepository;
 import com.mdevs.trackera.shared.enums.UserPreferenceOption;
 import com.mdevs.trackera.shared.exceptions.types.BusinessException;
-import com.mdevs.trackera.utils.JsonUtils;
+import com.mdevs.trackera.utils.JsonUtil;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
@@ -25,7 +25,7 @@ public class UserPreferenceService {
         Map<String, Object> preferencesMap = new HashMap<>();
         userPreferenceRepository.findAllByUser(AppConfig.getAuthenticatedCurrentUser()).forEach(pref -> {
             UserPreferenceOption option = pref.getOption();
-            preferencesMap.put(option.getCode(), JsonUtils.convertValue(pref.getValue(), option.getValueType()));
+            preferencesMap.put(option.getCode(), JsonUtil.convertValue(pref.getValue(), option.getValueType()));
         });
         return preferencesMap;
     }
@@ -38,7 +38,7 @@ public class UserPreferenceService {
 
         String value = preference.getValue();
 
-        return JsonUtils.convertValue(value, option.getValueType());
+        return JsonUtil.convertValue(value, option.getValueType());
     }
     //</editor-fold>
 

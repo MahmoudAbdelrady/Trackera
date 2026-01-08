@@ -126,7 +126,7 @@ public class AuthService {
         String newRefreshToken = null;
 
         // Rotate refresh token if it's close to expiration (within threshold days)
-        LocalDateTime refreshTokenExpiry = DateTimeUtils.convertDateToLocalDateTime(refreshTokenClaims.getExpiration());
+        LocalDateTime refreshTokenExpiry = DateTimeUtil.convertDateToLocalDateTime(refreshTokenClaims.getExpiration());
         if (refreshTokenExpiry.isBefore(LocalDateTime.now().plusDays(CookieHelper.REFRESH_TOKEN_ROTATION_THRESHOLD_DAYS))) {
             User tokenUser = userService.findByUuidOrThrow(userUuid);
             newRefreshToken = jwtUtil.generateToken(userUuid, false);

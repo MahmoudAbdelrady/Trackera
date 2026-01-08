@@ -3,8 +3,7 @@ package com.mdevs.trackera.service;
 import com.mdevs.trackera.entity.User;
 import com.mdevs.trackera.entity.UserInvalidToken;
 import com.mdevs.trackera.repository.UserInvalidTokenRepository;
-import com.mdevs.trackera.utils.DateTimeUtils;
-import com.mdevs.trackera.utils.JsonUtils;
+import com.mdevs.trackera.utils.DateTimeUtil;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.springframework.data.domain.PageRequest;
@@ -21,7 +20,7 @@ public class UserInvalidTokenService {
     private final UserInvalidTokenRepository userInvalidTokenRepository;
 
     public void create(User user, String token, Date expirationDate, boolean isAccessToken) {
-        LocalDateTime tokenExpiryDate = DateTimeUtils.convertDateToLocalDateTime(expirationDate);
+        LocalDateTime tokenExpiryDate = DateTimeUtil.convertDateToLocalDateTime(expirationDate);
         UserInvalidToken invalidAccessToken = new UserInvalidToken(user, DigestUtils.sha256Hex(token), tokenExpiryDate, isAccessToken);
         userInvalidTokenRepository.save(invalidAccessToken);
     }

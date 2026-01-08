@@ -22,8 +22,8 @@ import com.mdevs.trackera.shared.exceptions.types.NotFoundException;
 import com.mdevs.trackera.shared.exceptions.types.UnauthorizedException;
 import com.mdevs.trackera.shared.DurationFormatter;
 import com.mdevs.trackera.shared.mappers.WorkLogMapper;
-import com.mdevs.trackera.utils.DateTimeUtils;
-import com.mdevs.trackera.utils.JsonUtils;
+import com.mdevs.trackera.utils.DateTimeUtil;
+import com.mdevs.trackera.utils.JsonUtil;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.TypedQuery;
@@ -133,8 +133,8 @@ public class WorkLogService {
         return workLogDetails.stream().map(workLogDetail -> {
             WorkLogEntryDTO workLogEntryDTO = new WorkLogEntryDTO();
             workLogEntryDTO.setId(workLogDetail.getUuid());
-            workLogEntryDTO.setFromTime(DateTimeUtils.getDateTime12hFormatter().format(workLogDetail.getStartTime()));
-            workLogEntryDTO.setToTime(DateTimeUtils.getDateTime12hFormatter().format(workLogDetail.getEndTime()));
+            workLogEntryDTO.setFromTime(DateTimeUtil.getDateTime12hFormatter().format(workLogDetail.getStartTime()));
+            workLogEntryDTO.setToTime(DateTimeUtil.getDateTime12hFormatter().format(workLogDetail.getEndTime()));
             workLogEntryDTO.setDuration(DurationFormatter.formatDuration(workLogDetail.getDuration(), false));
             workLogEntryDTO.setDescription(workLogDetail.getDescription());
             workLogEntryDTO.setStatus(workLogDetail.getStatus());
@@ -180,7 +180,7 @@ public class WorkLogService {
             WorkLogSyncPayloadDTO workLogSyncPayloadDTO = new WorkLogSyncPayloadDTO(workLog.getUser().getId(), workLog.getId());
             List<WorkLogDetailSyncRequestDTO> detailsToSync = workLogDetails.stream().map(detail -> new WorkLogDetailSyncRequestDTO(workLog.getUuid(), detail.getId(), detail.getTaskName(), null)).toList();
             workLogSyncPayloadDTO.setDetailsToSync(detailsToSync);
-            backgroundJobService.enqueueJob(WorkLogSyncJobHandler.class, JsonUtils.convertObjectToJsonString(workLogSyncPayloadDTO));
+            backgroundJobService.enqueueJob(WorkLogSyncJobHandler.class, JsonUtil.convertObjectToJsonString(workLogSyncPayloadDTO));
 
             WorkLogSyncMessageDTO syncMessageDTO = new WorkLogSyncMessageDTO(WorkLogSyncMessageType.WORKLOG, workLog.getUuid(), null, null, workLog.getStatus(), null);
             notificationService.sendNotification(new NotificationDTO(AppConfig.getAuthenticatedCurrentUser().getUuid(), WORKLOG_SYNC_STATUS_EVENT_NAME, syncMessageDTO));
@@ -222,7 +222,7 @@ public class WorkLogService {
 
         if (workLogSyncPayloadDTO.hasWork()) {
             oAuthConnectionService.validateAndGetConnection(workLog.getUser(), OAuthProvider.JIRA);
-            backgroundJobService.enqueueJob(WorkLogSyncJobHandler.class, JsonUtils.convertObjectToJsonString(workLogSyncPayloadDTO));
+            backgroundJobService.enqueueJob(WorkLogSyncJobHandler.class, JsonUtil.convertObjectToJsonString(workLogSyncPayloadDTO));
         }
 
         return Map.of("message", "Worklog updated successfully");
@@ -244,7 +244,7 @@ public class WorkLogService {
         if (!detailsToUnsync.isEmpty()) {
             oAuthConnectionService.validateAndGetConnection(workLog.getUser(), OAuthProvider.JIRA);
             workLogSyncPayloadDTO.setDetailsToUnsync(detailsToUnsync);
-            backgroundJobService.enqueueJob(WorkLogSyncJobHandler.class, JsonUtils.convertObjectToJsonString(workLogSyncPayloadDTO));
+            backgroundJobService.enqueueJob(WorkLogSyncJobHandler.class, JsonUtil.convertObjectToJsonString(workLogSyncPayloadDTO));
         }
         workLogDetailRepository.deleteAll(detailsToDelete);
 
@@ -415,7 +415,7 @@ public class WorkLogService {
 
         if (expectedType == LocalTime.class) {
             try {
-                result = LocalTime.parse(cell, DateTimeUtils.getDateTime12hFormatter());
+                result = LocalTime.parse(cell, DateTimeUtil.getDateTime12hFormatter());
             } catch (Exception e) {
                 throw new BusinessException("[" + cellName + "] Invalid time format. Expected format is h:mm AM/PM");
             }
@@ -457,7 +457,7 @@ public class WorkLogService {
             } else {
                 DayOfWeek dayOfWeek = manageWorkLogDTO.getLogDate().getDayOfWeek();
                 String dayName = dayOfWeek.name().substring(0, 1).toUpperCase() + dayOfWeek.name().substring(1).toLowerCase();
-                String formattedDate = DateTimeUtils.getCompactedDateFormatter().format(manageWorkLogDTO.getLogDate());
+                String formattedDate = DateTimeUtil.getCompactedDateFormatter().format(manageWorkLogDTO.getLogDate());
                 workLog.setName("Worklog - " + dayName + formattedDate);
             }
 
@@ -533,7 +533,7 @@ public class WorkLogService {
         } else {
             workLogSyncPayloadDTO.setDetailsToUnsync(detailSyncRequests);
         }
-        backgroundJobService.enqueueJob(WorkLogSyncJobHandler.class, JsonUtils.convertObjectToJsonString(workLogSyncPayloadDTO));
+        backgroundJobService.enqueueJob(WorkLogSyncJobHandler.class, JsonUtil.convertObjectToJsonString(workLogSyncPayloadDTO));
     }
 
     private void markDetailsForSync(List<WorkLogDetail> workLogDetails, boolean sync) {

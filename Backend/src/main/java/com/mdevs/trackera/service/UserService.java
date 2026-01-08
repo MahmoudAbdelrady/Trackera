@@ -21,7 +21,7 @@ import com.mdevs.trackera.shared.exceptions.types.BusinessException;
 import com.mdevs.trackera.shared.enums.OAuthProvider;
 import com.mdevs.trackera.shared.exceptions.types.NotFoundException;
 import com.mdevs.trackera.shared.mappers.UserMapper;
-import com.mdevs.trackera.utils.JsonUtils;
+import com.mdevs.trackera.utils.JsonUtil;
 import com.mdevs.trackera.utils.EmailTemplateUtil;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
@@ -106,7 +106,7 @@ public class UserService implements UserDetailsService {
             userPreferenceService.validatePreference(preference);
             if (preference.getKey().equals(UserPreferenceOption.JIRA_PRIMARY_PROJECT.getCode())) {
                 oAuthConnectionService.validateAndGetConnection(currentUser, OAuthProvider.JIRA);
-                preference.setValue(JsonUtils.convertObjectToJsonString(jiraService.findSiteById(currentUser, preference.getValue().toString())));
+                preference.setValue(JsonUtil.convertObjectToJsonString(jiraService.findSiteById(currentUser, preference.getValue().toString())));
             }
         }
         userPreferenceService.updateAll(currentUser, updatedPreferences);

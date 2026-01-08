@@ -6,7 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
-public final class JsonUtils {
+public final class JsonUtil {
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
     static {
@@ -15,7 +15,7 @@ public final class JsonUtils {
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
     }
 
-    private JsonUtils() {
+    private JsonUtil() {
     }
 
     public static String convertObjectToJsonString(Object data) {
@@ -66,7 +66,7 @@ public final class JsonUtils {
             } else if (targetType == String.class) {
                 return targetType.cast(s);
             } else {
-                return JsonUtils.convertJsonStringToObject(value.toString(), targetType);
+                return JsonUtil.convertJsonStringToObject(value.toString(), targetType);
             }
         }
 

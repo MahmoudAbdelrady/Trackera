@@ -9,7 +9,7 @@ import com.mdevs.trackera.service.JiraService;
 import com.mdevs.trackera.shared.enums.OAuthProvider;
 import com.mdevs.trackera.oauth.OAuthServiceProvider;
 import com.mdevs.trackera.shared.enums.UserPreferenceOption;
-import com.mdevs.trackera.utils.JsonUtils;
+import com.mdevs.trackera.utils.JsonUtil;
 import com.mdevs.trackera.utils.HttpUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -74,7 +74,7 @@ public class JiraOAuthServiceProvider extends OAuthServiceProvider {
 
     @Override
     public void handlePostLinkingActions(User user, OAuthUserInfoDTO userInfo) {
-        String primaryProjectPreference = JsonUtils.convertObjectToJsonString(userInfo.getAdditionalInfo().get(UserPreferenceOption.JIRA_PRIMARY_PROJECT.getCode()));
+        String primaryProjectPreference = JsonUtil.convertObjectToJsonString(userInfo.getAdditionalInfo().get(UserPreferenceOption.JIRA_PRIMARY_PROJECT.getCode()));
         userPreferenceService.createOrUpdate(user, UserPreferenceOption.JIRA_PRIMARY_PROJECT, primaryProjectPreference);
     }
 
