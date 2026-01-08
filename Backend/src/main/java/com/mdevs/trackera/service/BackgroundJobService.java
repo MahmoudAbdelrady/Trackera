@@ -11,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.event.TransactionPhase;
@@ -53,7 +54,7 @@ public class BackgroundJobService {
     @Transactional
     public long deleteFinishedJobs(long maxId, int pageSize) {
         List<BackgroundJob> finishedJobs = backgroundJobRepository
-                .findByStatusInAndIdAfterOrderById(List.of(BackgroundJobStatus.COMPLETED, BackgroundJobStatus.FAILED), maxId, PageRequest.of(0, pageSize));
+                .findByStatusInAndIdAfterOrderById(List.of(BackgroundJobStatus.COMPLETED, BackgroundJobStatus.FAILED), maxId, Pageable.ofSize(pageSize));
         if (!finishedJobs.isEmpty()) {
             backgroundJobRepository.deleteAllInBatch(finishedJobs);
             return finishedJobs.getLast().getId();

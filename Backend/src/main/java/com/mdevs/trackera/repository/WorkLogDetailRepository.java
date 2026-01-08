@@ -53,4 +53,6 @@ public interface WorkLogDetailRepository extends BaseRepository<WorkLogDetail> {
             "FROM WorkLogDetail wld WHERE wld.workLog.id = :workLogId AND wld.taskName = :taskName " +
             "GROUP BY wld.taskName")
     WorkLogStatus calculateWorkLogTaskStatus(@Param("workLogId") Long workLogId, @Param("taskName") String taskName);
+
+    void deleteByWorkLogIn(List<WorkLog> workLogs);
 }

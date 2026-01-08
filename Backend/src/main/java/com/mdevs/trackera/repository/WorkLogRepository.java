@@ -3,11 +3,13 @@ package com.mdevs.trackera.repository;
 import com.mdevs.trackera.entity.User;
 import com.mdevs.trackera.entity.WorkLog;
 import com.mdevs.trackera.shared.enums.WorkLogStatus;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @Repository
 public interface WorkLogRepository extends BaseRepository<WorkLog> {
@@ -26,4 +28,6 @@ public interface WorkLogRepository extends BaseRepository<WorkLog> {
             "ELSE 'PARTIALLY' END " +
             "FROM WorkLog w JOIN WorkLogDetail wld on wld.workLog = w WHERE w = :worklog")
     WorkLogStatus calculateWorkLogStatus(@Param("worklog") WorkLog worklog);
+
+    List<WorkLog> findByWorkDateLessThanEqualAndIdGreaterThanOrderById(LocalDate minDate, Long maxId, Pageable pageable);
 }

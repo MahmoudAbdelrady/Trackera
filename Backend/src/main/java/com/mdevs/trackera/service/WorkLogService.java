@@ -268,6 +268,17 @@ public class WorkLogService {
 
         return result;
     }
+
+    @Transactional
+    public long deleteDeprecatedWorkLogsBatch(long maxId, int pageSize) {
+        List<WorkLog> deprecatedWorkLogs = workLogRepository.findByWorkDateLessThanEqualAndIdGreaterThanOrderById(AppConfig.getMinQueryableDate(), maxId, Pageable.ofSize(pageSize));
+        if (!deprecatedWorkLogs.isEmpty()) {
+            workLogDetailRepository.deleteByWorkLogIn(deprecatedWorkLogs);
+            workLogRepository.deleteAllInBatch(deprecatedWorkLogs);
+            return deprecatedWorkLogs.getLast().getId();
+        }
+        return -1;
+    }
     //</editor-fold>
 
     //<editor-fold desc="Jira Synchronization">
