@@ -16,12 +16,12 @@ public class JiraController {
     private final JiraService jiraService;
 
     @GetMapping("/tasks")
-    public ResponseEntity<?> GetUserTasks(@RequestParam(required = false, defaultValue = "false") boolean forceUpdate) {
+    public ResponseEntity<?> getUserTasks(@RequestParam(required = false, defaultValue = "false") boolean forceUpdate) {
         return ResponseEntity.ok(jiraService.getUserTasks(forceUpdate));
     }
 
     @GetMapping("/sites")
-    public ResponseEntity<?> GetUserSites() {
+    public ResponseEntity<?> getUserSites() {
         return ResponseEntity.ok(jiraService.getUserSites(AppConfig.getAuthenticatedCurrentUser()));
     }
 }
