@@ -62,6 +62,18 @@ interface WorklogEntry {
   syncError?: string;
 }
 
+interface WorklogSummaryCard {
+  label: string;
+  subLabel: string;
+  code: string;
+  value: string;
+}
+
+interface WorklogSummaryResponse {
+  currentMonthSummary: WorklogSummaryCard[];
+  previousMonthLoggedHours: string;
+}
+
 interface WorklogSelection {
   taskNames?: string[];
   entryIds?: string[];
@@ -99,6 +111,8 @@ export type {
   WorkLogSearchFilter,
   JiraSyncEventType,
   JiraSyncEventProps,
+  WorklogSummaryCard,
+  WorklogSummaryResponse,
 };
 
 export { WORKLOG_STATUS, WORKLOG_EVALUATION, JIRA_SYNC_EVENT };

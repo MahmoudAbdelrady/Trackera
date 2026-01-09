@@ -25,6 +25,8 @@ import type {
   WorkLogSearchFilter,
   JiraSyncEventType,
   JiraSyncEventProps,
+  WorklogSummaryCard,
+  WorklogSummaryResponse,
 } from "./worklog";
 
 import { WORKLOG_STATUS, WORKLOG_EVALUATION, JIRA_SYNC_EVENT } from "./worklog";
@@ -52,6 +54,8 @@ export type {
   JiraSyncEventProps,
   OAuthProvider,
   OAuthProviderInfo,
+  WorklogSummaryCard,
+  WorklogSummaryResponse,
 };
 
 export { WORKLOG_STATUS, WORKLOG_EVALUATION, JIRA_SYNC_EVENT, OPERATORS, filterOperatorsMetadata, OAUTH_PROVIDERS };
