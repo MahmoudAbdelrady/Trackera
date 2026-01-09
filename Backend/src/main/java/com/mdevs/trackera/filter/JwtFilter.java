@@ -1,6 +1,5 @@
 package com.mdevs.trackera.filter;
 
-import com.mdevs.trackera.config.security.ApiConfig;
 import com.mdevs.trackera.entity.User;
 import com.mdevs.trackera.service.UserService;
 import com.mdevs.trackera.shared.annotations.PublicAPI;
@@ -10,28 +9,33 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.web.method.HandlerMethod;
+import org.springframework.web.servlet.HandlerExecutionChain;
+import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Set;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class JwtFilter extends OncePerRequestFilter {
     private final JwtUtil jwtUtil;
 
-    private final ApiConfig apiConfig;
-
     private final UserService userService;
 
+    private final RequestMappingHandlerMapping handlerMapping;
+
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
+    protected void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull FilterChain filterChain) throws ServletException, IOException {
         String jwt = jwtUtil.getToken(request, true);
         if (jwt == null) {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
@@ -53,7 +57,15 @@ public class JwtFilter extends OncePerRequestFilter {
     }
 
     @Override
-    protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
-        return apiConfig.hasAnnotations(request.getRequestURI(), request.getMethod(), Set.of(PublicAPI.class));
+    protected boolean shouldNotFilter(@NonNull HttpServletRequest request) throws ServletException {
+        try {
+            HandlerExecutionChain chain = handlerMapping.getHandler(request);
+            if (chain != null && chain.getHandler() instanceof HandlerMethod handlerMethod) {
+                return handlerMethod.hasMethodAnnotation(PublicAPI.class) || handlerMethod.getBeanType().isAnnotationPresent(PublicAPI.class);
+            }
+        } catch (Exception e) {
+            log.error("Could not resolve handler for request: {}", request.getRequestURI(), e);
+        }
+        return false;
     }
 }
