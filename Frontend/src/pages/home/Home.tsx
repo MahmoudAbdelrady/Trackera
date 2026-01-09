@@ -10,14 +10,20 @@ import {
 } from "../../components";
 import classes from "./scss/home.module.css";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { type PaginatedResponse, type Worklog, WORKLOG_STATUS, JIRA_SYNC_EVENT } from "../../shared/types";
+import {
+  type PaginatedResponse,
+  type Worklog,
+  WORKLOG_STATUS,
+  JIRA_SYNC_EVENT,
+  type WorklogSummaryResponse,
+} from "../../shared/types";
 import { createPaginationConfig } from "../../utils";
 import { showErrorToast, showSuccessToast } from "../../utils/toast-handler/showToast";
 import { userQueries } from "../../state/queries";
 import { useJiraSyncSSE } from "../../shared/hooks";
 import { worklogApis } from "../../state/api";
-import type { WorklogSummaryCard } from "../../components/worklogs/worklog-status-card/WorklogStatusCard";
 import { AppLayout } from "../../layouts";
+import { Badge } from "antd";
 
 const Home = () => {
   const { data: loggedUserData } = userQueries.useMeQuery();
@@ -26,7 +32,7 @@ const Home = () => {
   const [isFetchingWorklogs, setIsFetchingWorklogs] = useState<boolean>(true);
   const [isDeletingWorklog, setIsDeletingWorklog] = useState<boolean>(false);
   const [worklogsResponse, setWorklogsResponse] = useState<PaginatedResponse<Worklog> | null>(null);
-  const [worklogSummary, setWorklogSummary] = useState<WorklogSummaryCard[]>([]);
+  const [worklogSummaryResponse, setWorklogSummaryResponse] = useState<WorklogSummaryResponse | null>(null);
   const [selectedWorklog, setSelectedWorklog] = useState<Worklog | undefined>(undefined);
   const [searchFilters, setSearchFilters] = useState<Record<string, any>>({});
   const hasInProgress = useMemo(
@@ -76,7 +82,7 @@ const Home = () => {
 
   const fetchWorklogSummary = useCallback(async () => {
     try {
-      setWorklogSummary(await worklogApis.getWorklogSummary());
+      setWorklogSummaryResponse(await worklogApis.getWorklogSummary());
     } catch (error: any) {
       showErrorToast(error);
     }
@@ -156,7 +162,7 @@ const Home = () => {
       </WorklogModal>
       <AppLayout>
         <div className={classes.worklog_status_cards_container}>
-          {worklogSummary.map((card) => (
+          {worklogSummaryResponse?.currentMonthSummary.map((card) => (
             <WorklogStatusCard
               key={card.code}
               label={card.label}
@@ -166,6 +172,16 @@ const Home = () => {
             />
           ))}
         </div>
+        {worklogSummaryResponse?.previousMonthLoggedHours &&
+          worklogSummaryResponse?.previousMonthLoggedHours !== "0" && (
+            <div className={classes.prev_month_worklog}>
+              <Badge.Ribbon text="Last Month" color="#9bb9f8" styles={{ content: { color: "#000" } }}>
+                <div className={classes.prev_data}>
+                  Logged Hours: {worklogSummaryResponse?.previousMonthLoggedHours}
+                </div>
+              </Badge.Ribbon>
+            </div>
+          )}
         <div className={classes.worklogs_content}>
           <SearchFilter setFilters={setSearchFilters} jiraLinked={loggedUserData?.jiraLinked || false} />
           <div className={classes.worklogs_container}>

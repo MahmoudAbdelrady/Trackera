@@ -145,18 +145,21 @@ public class WorkLogService {
     //</editor-fold>
 
     //<editor-fold desc="Summary & Analytics">
-    public List<WorkLogSummaryDTO> getCurrentMonthSummary() {
+    public WorklogSummaryResultDTO getCurrentMonthSummary() {
         User currentUser = AppConfig.getAuthenticatedCurrentUser();
         LocalDate now = LocalDate.now();
+        LocalDate previousMonth = now.minusMonths(1);
         DecimalFormat durationDecimalFormat = DurationFormatter.getDurationDecimalFormat();
         int totalLogged = workLogRepository.sumTotalMinutesByUserAndWorkDateBetween(currentUser, now.withDayOfMonth(1), now.withDayOfMonth(now.lengthOfMonth()));
         int targetMinutes = (Integer) userPreferenceService.getPreferenceValue(currentUser, UserPreferenceOption.WORKLOGS_MONTHLY_TARGET_HOURS) * 60;
         int remainingMinutes = Math.max(targetMinutes - totalLogged, 0);
-        return List.of(
+        int previousMonthLoggedHours = workLogRepository.sumTotalMinutesByUserAndWorkDateBetween(currentUser, previousMonth.withDayOfMonth(1), previousMonth.withDayOfMonth(previousMonth.lengthOfMonth()));
+        List<WorkLogSummaryDTO> summaryDTOS = List.of(
                 new WorkLogSummaryDTO("Logged Hours", "Equivalent to " + DurationFormatter.formatDuration(totalLogged, true), "logged", durationDecimalFormat.format(totalLogged / 60.0)),
                 new WorkLogSummaryDTO("Target Hours", "Equivalent to " + DurationFormatter.formatDuration(targetMinutes, true), "target", durationDecimalFormat.format(targetMinutes / 60.0)),
                 new WorkLogSummaryDTO("Remaining Hours", "Equivalent to " + DurationFormatter.formatDuration(remainingMinutes, true), "remaining", durationDecimalFormat.format(remainingMinutes / 60.0))
         );
+        return new WorklogSummaryResultDTO(summaryDTOS, durationDecimalFormat.format(previousMonthLoggedHours / 60.0));
     }
     //</editor-fold>
 

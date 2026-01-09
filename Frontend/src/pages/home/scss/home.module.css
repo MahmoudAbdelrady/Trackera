@@ -8,4 +8,20 @@
   .worklog_status_cards_container {
     flex-direction: column;
   }
+}
+
+.prev_month_worklog {
+  margin-top: 20px;
+  width: 300px;
+  margin-left: auto;
+}
+.prev_month_worklog .prev_data {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  padding: 15px 10px;
+  font-weight: bold;
+  background-color: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px 0 0 12px;
 }/*# sourceMappingURL=home.module.css.map */
