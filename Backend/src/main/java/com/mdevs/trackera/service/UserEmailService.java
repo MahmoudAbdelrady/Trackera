@@ -73,7 +73,7 @@ public class UserEmailService {
 
     public void ensureEmailAvailable(String email) {
         if (userEmailRepository.existsByEmail(email)) {
-            throw new BusinessException("Email already in use");
+            throw new BusinessException("Email is already in use");
         }
     }
     //</editor-fold>
