@@ -4,6 +4,7 @@ import com.mdevs.trackera.config.general.AppConfig;
 import com.mdevs.trackera.dto.auth.*;
 import com.mdevs.trackera.dto.user.PasswordDTO;
 import com.mdevs.trackera.entity.*;
+import com.mdevs.trackera.shared.email.EmailParameterMapper;
 import com.mdevs.trackera.shared.email.EmailTemplates;
 import com.mdevs.trackera.shared.SecurityTokenBuilder;
 import com.mdevs.trackera.shared.exceptions.types.UnauthorizedException;
@@ -57,7 +58,7 @@ public class AuthService {
                 .targetEmail(user.getPrimaryEmail().getEmail())
                 .type(SecurityToken.Type.ACCOUNT_ACTIVATION)
                 .templateName(EmailTemplates.VERIFICATION_MAIL_TEMPLATE)
-                .extraParameters(EmailTemplateUtil.getTemplateParams(SecurityToken.Type.ACCOUNT_ACTIVATION))
+                .extraParameters(EmailParameterMapper.getSecurityTemplateParams(SecurityToken.Type.ACCOUNT_ACTIVATION))
                 .build();
         securityTokenService.createAndSend(securityTokenBuilder);
     }
@@ -83,7 +84,7 @@ public class AuthService {
                         .targetEmail(loginDTO.getEmail())
                         .type(SecurityToken.Type.ACCOUNT_ACTIVATION)
                         .templateName(EmailTemplates.VERIFICATION_MAIL_TEMPLATE)
-                        .extraParameters(EmailTemplateUtil.getTemplateParams(SecurityToken.Type.ACCOUNT_ACTIVATION))
+                        .extraParameters(EmailParameterMapper.getSecurityTemplateParams(SecurityToken.Type.ACCOUNT_ACTIVATION))
                         .build();
                 securityTokenService.createAndSend(securityTokenBuilder);
                 message = "Account not activated. An activation link has been sent to your email.";

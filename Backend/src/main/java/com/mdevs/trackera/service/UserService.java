@@ -14,6 +14,7 @@ import com.mdevs.trackera.entity.UserEmail;
 import com.mdevs.trackera.entity.OAuthConnection;
 import com.mdevs.trackera.repository.UserRepository;
 import com.mdevs.trackera.shared.email.EmailService;
+import com.mdevs.trackera.shared.email.EmailTemplateParams;
 import com.mdevs.trackera.shared.email.EmailTemplates;
 import com.mdevs.trackera.shared.SecurityTokenBuilder;
 import com.mdevs.trackera.shared.enums.UserPreferenceOption;
@@ -22,7 +23,7 @@ import com.mdevs.trackera.shared.enums.OAuthProvider;
 import com.mdevs.trackera.shared.exceptions.types.NotFoundException;
 import com.mdevs.trackera.shared.mappers.UserMapper;
 import com.mdevs.trackera.utils.JsonUtil;
-import com.mdevs.trackera.utils.EmailTemplateUtil;
+import com.mdevs.trackera.shared.email.EmailParameterMapper;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -228,7 +229,7 @@ public class UserService implements UserDetailsService {
                 .targetEmail(user.getPrimaryEmail().getEmail())
                 .type(isForReset ? SecurityToken.Type.PASSWORD_RESET : SecurityToken.Type.PASSWORD_CHANGE)
                 .templateName(EmailTemplates.VERIFICATION_MAIL_TEMPLATE)
-                .extraParameters(EmailTemplateUtil.getTemplateParams(isForReset ? SecurityToken.Type.PASSWORD_RESET : SecurityToken.Type.PASSWORD_CHANGE))
+                .extraParameters(EmailParameterMapper.getSecurityTemplateParams(isForReset ? SecurityToken.Type.PASSWORD_RESET : SecurityToken.Type.PASSWORD_CHANGE))
                 .pageUrl("/change-password")
                 .build();
         securityTokenService.createAndSend(securityTokenBuilder);
@@ -275,8 +276,8 @@ public class UserService implements UserDetailsService {
         userEmailService.deleteIfUnused(currentPrimary);
 
         Map<String, String> parameters = Map.of(
-                "emailType", "Email Changed",
-                "emailTypeDesc", "Your account's email has been changed to " + email + ". If you did not perform this action, please contact support immediately."
+                EmailTemplateParams.EMAIL_TYPE, "Email Changed",
+                EmailTemplateParams.EMAIL_TYPE_DESC, "Your account's email has been changed to " + email + ". If you did not perform this action, please contact support immediately."
         );
         EmailRequest emailRequest = EmailRequest.builder()
                 .targetEmail(currentPrimary.getEmail())
@@ -302,7 +303,7 @@ public class UserService implements UserDetailsService {
                 .type(SecurityToken.Type.NEW_EMAIL_VERIFICATION)
                 .additionalInfo(email)
                 .templateName(EmailTemplates.VERIFICATION_MAIL_TEMPLATE)
-                .extraParameters(EmailTemplateUtil.getTemplateParams(SecurityToken.Type.NEW_EMAIL_VERIFICATION))
+                .extraParameters(EmailParameterMapper.getSecurityTemplateParams(SecurityToken.Type.NEW_EMAIL_VERIFICATION))
                 .build();
         securityTokenService.createAndSend(securityTokenBuilder);
     }

@@ -7,6 +7,7 @@ import com.mdevs.trackera.entity.User;
 import com.mdevs.trackera.repository.SecurityTokenRepository;
 import com.mdevs.trackera.shared.email.EmailService;
 import com.mdevs.trackera.shared.SecurityTokenBuilder;
+import com.mdevs.trackera.shared.email.EmailTemplateParams;
 import com.mdevs.trackera.shared.exceptions.types.UnauthorizedException;
 import com.mdevs.trackera.utils.CryptoUtil;
 import lombok.RequiredArgsConstructor;
@@ -68,8 +69,8 @@ public class SecurityTokenService {
         String token = cryptoUtil.hashForSecurityToken(securityToken.getId());
 
         Map<String, String> templateParameters = new HashMap<>();
-        templateParameters.put("emailType", builder.getType().getLabel());
-        templateParameters.put("verificationLink", AppConfig.getFrontendUrl() + (builder.getPageUrl() != null ? builder.getPageUrl() : "/security-verification") + "?token=" + token);
+        templateParameters.put(EmailTemplateParams.EMAIL_TYPE, builder.getType().getLabel());
+        templateParameters.put(EmailTemplateParams.VERIFICATION_LINK, AppConfig.getFrontendUrl() + (builder.getPageUrl() != null ? builder.getPageUrl() : "/security-verification") + "?token=" + token);
         if (builder.getExtraParameters() != null && !builder.getExtraParameters().isEmpty()) {
             templateParameters.putAll(builder.getExtraParameters());
         }
