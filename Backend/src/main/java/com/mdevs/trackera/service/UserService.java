@@ -13,8 +13,8 @@ import com.mdevs.trackera.entity.User;
 import com.mdevs.trackera.entity.UserEmail;
 import com.mdevs.trackera.entity.OAuthConnection;
 import com.mdevs.trackera.repository.UserRepository;
-import com.mdevs.trackera.shared.EmailService;
-import com.mdevs.trackera.shared.EmailTemplates;
+import com.mdevs.trackera.shared.email.EmailService;
+import com.mdevs.trackera.shared.email.EmailTemplates;
 import com.mdevs.trackera.shared.SecurityTokenBuilder;
 import com.mdevs.trackera.shared.enums.UserPreferenceOption;
 import com.mdevs.trackera.shared.exceptions.types.BusinessException;
@@ -274,11 +274,15 @@ public class UserService implements UserDetailsService {
 
         userEmailService.deleteIfUnused(currentPrimary);
 
+        Map<String, String> parameters = Map.of(
+                "emailType", "Email Changed",
+                "emailTypeDesc", "Your account's email has been changed to " + email + ". If you did not perform this action, please contact support immediately."
+        );
         EmailRequest emailRequest = EmailRequest.builder()
-                .targetEmail(email)
+                .targetEmail(currentPrimary.getEmail())
                 .subject("Email Changed")
-                .templateName(EmailTemplates.INFO_MAIL_TEMPLATE)
-                .parameters(Map.of("content", "Your account's email has been changed to " + email + ". If you did not perform this action, please contact support immediately."))
+                .templateName(EmailTemplates.VERIFICATION_MAIL_TEMPLATE)
+                .parameters(parameters)
                 .build();
         emailService.send(emailRequest);
     }

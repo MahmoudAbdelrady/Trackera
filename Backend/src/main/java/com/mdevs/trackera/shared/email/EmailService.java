@@ -1,4 +1,4 @@
-package com.mdevs.trackera.shared;
+package com.mdevs.trackera.shared.email;
 
 import com.mdevs.trackera.dto.email.EmailRequest;
 import com.mdevs.trackera.utils.TrackeraMailSender;

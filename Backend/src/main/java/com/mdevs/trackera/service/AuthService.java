@@ -4,7 +4,7 @@ import com.mdevs.trackera.config.general.AppConfig;
 import com.mdevs.trackera.dto.auth.*;
 import com.mdevs.trackera.dto.user.PasswordDTO;
 import com.mdevs.trackera.entity.*;
-import com.mdevs.trackera.shared.EmailTemplates;
+import com.mdevs.trackera.shared.email.EmailTemplates;
 import com.mdevs.trackera.shared.SecurityTokenBuilder;
 import com.mdevs.trackera.shared.exceptions.types.UnauthorizedException;
 import com.mdevs.trackera.shared.enums.OAuthProvider;

@@ -5,7 +5,7 @@ import com.mdevs.trackera.dto.email.EmailRequest;
 import com.mdevs.trackera.entity.SecurityToken;
 import com.mdevs.trackera.entity.User;
 import com.mdevs.trackera.repository.SecurityTokenRepository;
-import com.mdevs.trackera.shared.EmailService;
+import com.mdevs.trackera.shared.email.EmailService;
 import com.mdevs.trackera.shared.SecurityTokenBuilder;
 import com.mdevs.trackera.shared.exceptions.types.UnauthorizedException;
 import com.mdevs.trackera.utils.CryptoUtil;
