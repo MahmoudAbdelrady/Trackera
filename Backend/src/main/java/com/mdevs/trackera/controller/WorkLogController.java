@@ -4,6 +4,7 @@ import com.mdevs.trackera.dto.worklog.WorkLogSelectionDTO;
 import com.mdevs.trackera.dto.worklog.ManageWorkLogDTO;
 import com.mdevs.trackera.dto.worklog.WorkLogSearchFilterDTO;
 import com.mdevs.trackera.service.WorkLogService;
+import com.mdevs.trackera.shared.annotations.RateLimited;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
@@ -62,6 +63,7 @@ public class WorkLogController {
         return new ResponseEntity<>(workLogService.getWorkLogTaskEntries(uuid, taskName), HttpStatus.OK);
     }
 
+    @RateLimited(permitsPerMinute = 60)
     @PostMapping("/{uuid}/sync")
     public ResponseEntity<?> syncWorkLog(@PathVariable String uuid, @RequestBody(required = false) WorkLogSelectionDTO workLogSelectionDTO, @RequestParam(required = false, defaultValue = "true") boolean sync) {
         workLogService.performJiraSync(uuid, workLogSelectionDTO, sync);
