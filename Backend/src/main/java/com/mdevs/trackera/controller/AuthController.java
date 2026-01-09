@@ -5,6 +5,7 @@ import com.mdevs.trackera.dto.user.PasswordDTO;
 import com.mdevs.trackera.service.AuthService;
 import com.mdevs.trackera.service.SecurityTokenService;
 import com.mdevs.trackera.shared.annotations.PublicAPI;
+import com.mdevs.trackera.shared.annotations.RateLimited;
 import com.mdevs.trackera.utils.CookieHelper;
 import com.mdevs.trackera.utils.ExceptionResponseMaker;
 import jakarta.servlet.http.HttpServletRequest;
@@ -27,6 +28,7 @@ public class AuthController {
     private final SecurityTokenService securityTokenService;
 
     @PublicAPI
+    @RateLimited
     @PostMapping("/signup")
     public ResponseEntity<?> signUp(@RequestBody @Valid SignUpDTO signUpDTO) {
         authService.signUp(signUpDTO);
@@ -34,6 +36,7 @@ public class AuthController {
     }
 
     @PublicAPI
+    @RateLimited
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody @Valid LoginDTO loginDTO, HttpServletResponse response) {
         Map<String, Object> result = authService.login(loginDTO, response);
@@ -41,22 +44,26 @@ public class AuthController {
     }
 
     @PublicAPI
+    @RateLimited
     @GetMapping("/oauth/{providerCode}")
     public ResponseEntity<?> oAuth(@PathVariable String providerCode, @RequestParam(required = false, defaultValue = "false") boolean forceLink, HttpServletRequest request) {
         return new ResponseEntity<>(Map.of("url", authService.oAuth(providerCode, forceLink, request)), HttpStatus.OK);
     }
 
     @PublicAPI
+    @RateLimited
     @PostMapping("/oauth/{providerCode}/callback")
     public ResponseEntity<?> oAuthCallback(@PathVariable String providerCode, @RequestBody @Valid OAuthRequestDTO oAuthRequestDTO, HttpServletResponse response) {
         return new ResponseEntity<>(authService.oAuthCallback(providerCode, oAuthRequestDTO, response), HttpStatus.OK);
     }
 
+    @RateLimited
     @PostMapping("/oauth/unlink/{providerCode}")
     public ResponseEntity<?> unlinkOAuthProvider(@PathVariable String providerCode) {
         return new ResponseEntity<>(authService.unlinkOAuthProvider(providerCode), HttpStatus.OK);
     }
 
+    @RateLimited
     @PostMapping("/logout")
     public ResponseEntity<?> logout(HttpServletRequest request, HttpServletResponse response) {
         authService.logout(request, response);
@@ -71,6 +78,7 @@ public class AuthController {
     }
 
     @PublicAPI
+    @RateLimited
     @PostMapping("/jwt/refresh")
     public ResponseEntity<?> refreshJwt(@CookieValue(value = CookieHelper.REFRESH_TOKEN_COOKIE_NAME, required = false) String refreshToken, HttpServletResponse response) {
         authService.refreshJwt(refreshToken, response);
@@ -78,6 +86,7 @@ public class AuthController {
     }
 
     @PublicAPI
+    @RateLimited
     @PostMapping("/token/consume")
     public ResponseEntity<?> consumeSecurityToken(@RequestParam String token) {
         try {
@@ -88,6 +97,7 @@ public class AuthController {
     }
 
     @PublicAPI
+    @RateLimited
     @PostMapping("/token/validate")
     public ResponseEntity<?> validateSecurityToken(@RequestParam String token) {
         securityTokenService.validateAndGet(token);
@@ -95,6 +105,7 @@ public class AuthController {
     }
 
     @PublicAPI
+    @RateLimited
     @PostMapping("/password/request-reset")
     public ResponseEntity<?> requestResetPassword(@RequestBody Map<String, String> body) {
         authService.requestResetPassword(body.get("email"));
@@ -102,6 +113,7 @@ public class AuthController {
     }
 
     @PublicAPI
+    @RateLimited
     @PostMapping("/password")
     public ResponseEntity<?> resetPassword(@RequestParam String token, @RequestBody @Valid PasswordDTO passwordDTO) {
         authService.resetUserPassword(token, passwordDTO);
