@@ -30,7 +30,7 @@ public class RateLimitAspect {
         if (apiRateLimiter.tryConsume(resolveClientKey(), request.getRequestURI(), rateLimited.permitsPerMinute(), rateLimited.refillIntervalMinutes())) {
             return joinPoint.proceed();
         } else {
-            throw new RateLimitExceededException("Too many requests - Rate limit exceeded");
+            throw new RateLimitExceededException("Too many requests - Please try again later.");
         }
     }
 
