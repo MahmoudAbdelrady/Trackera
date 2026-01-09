@@ -1,10 +1,7 @@
 package com.mdevs.trackera.shared.exceptions;
 
 import com.mdevs.trackera.config.general.AppConfig;
-import com.mdevs.trackera.shared.exceptions.types.BusinessException;
-import com.mdevs.trackera.shared.exceptions.types.JiraException;
-import com.mdevs.trackera.shared.exceptions.types.NotFoundException;
-import com.mdevs.trackera.shared.exceptions.types.UnauthorizedException;
+import com.mdevs.trackera.shared.exceptions.types.*;
 import com.mdevs.trackera.utils.ExceptionResponseMaker;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -72,6 +69,11 @@ public class TrackeraExceptionHandler {
             status = HttpStatus.INTERNAL_SERVER_ERROR;
         }
         return ExceptionResponseMaker.makeResponse(exception.getMessage(), status);
+    }
+
+    @ExceptionHandler(RateLimitExceededException.class)
+    public ResponseEntity<?> handleRateLimitExceededException(RateLimitExceededException exception) {
+        return ExceptionResponseMaker.makeResponse(exception.getMessage(), HttpStatus.TOO_MANY_REQUESTS);
     }
 
     @ExceptionHandler(Exception.class)
