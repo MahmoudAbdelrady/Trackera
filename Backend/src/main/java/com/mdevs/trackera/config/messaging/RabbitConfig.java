@@ -35,6 +35,13 @@ public class RabbitConfig {
     @Value("${trackera.rabbitmq.prefetch}")
     private int prefetchCount;
 
+    @Value("${trackera.rabbitmq.concurrent-consumers}")
+    private int concurrentConsumers;
+
+    @Value("${trackera.rabbitmq.max-concurrent-consumers}")
+    private int maxConcurrentConsumers;
+
+
     @Bean
     public DirectExchange jobExchange() {
         return new DirectExchange(JOB_EXCHANGE, true, false);
@@ -113,6 +120,8 @@ public class RabbitConfig {
         factory.setMessageConverter(jsonMessageConverter());
         factory.setAcknowledgeMode(AcknowledgeMode.MANUAL);
         factory.setPrefetchCount(prefetchCount);
+        factory.setConcurrentConsumers(concurrentConsumers);
+        factory.setMaxConcurrentConsumers(maxConcurrentConsumers);
         return factory;
     }
 }

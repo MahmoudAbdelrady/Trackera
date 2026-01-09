@@ -4,6 +4,7 @@ import com.mdevs.trackera.dto.notification.NotificationDTO;
 import com.mdevs.trackera.shared.SseRegistry;
 import com.mdevs.trackera.utils.JwtUtil;
 import io.jsonwebtoken.Claims;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -16,18 +17,13 @@ import java.util.Map;
 
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class NotificationService {
     private final SseRegistry sseRegistry;
 
     private final JwtUtil jwtUtil;
 
     private final ApplicationEventPublisher applicationEventPublisher;
-
-    public NotificationService(SseRegistry sseRegistry, JwtUtil jwtUtil, ApplicationEventPublisher applicationEventPublisher) {
-        this.sseRegistry = sseRegistry;
-        this.jwtUtil = jwtUtil;
-        this.applicationEventPublisher = applicationEventPublisher;
-    }
 
     public SseEmitter createSubscription(String accessToken) {
         SseEmitter sseEmitter = new SseEmitter(0L);
@@ -73,14 +69,14 @@ public class NotificationService {
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
     private void publishNotificationEvent(NotificationDTO notificationDTO) {
-        for (SseEmitter emitter : sseRegistry.get(notificationDTO.getUserUuid())) {
+        for (SseEmitter emitter : sseRegistry.get(notificationDTO.userUuid())) {
             try {
                 emitter.send(SseEmitter.event()
-                        .name(notificationDTO.getEventName())
-                        .data(notificationDTO.getData()));
+                        .name(notificationDTO.eventName())
+                        .data(notificationDTO.data()));
             } catch (IOException e) {
-                log.error("Error while sending SSE event to user: {}", notificationDTO.getUserUuid(), e);
-                sseRegistry.remove(notificationDTO.getUserUuid(), emitter);
+                log.error("Error while sending SSE event to user: {}", notificationDTO.userUuid(), e);
+                sseRegistry.remove(notificationDTO.userUuid(), emitter);
             }
         }
     }

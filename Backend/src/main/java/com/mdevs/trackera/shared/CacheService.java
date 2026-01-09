@@ -1,5 +1,6 @@
 package com.mdevs.trackera.shared;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
@@ -10,12 +11,9 @@ import java.util.Set;
 
 @Component
 @Slf4j
+@RequiredArgsConstructor
 public class CacheService {
     private final RedisTemplate<String, Object> redisTemplate;
-
-    public CacheService(RedisTemplate<String, Object> redisTemplate) {
-        this.redisTemplate = redisTemplate;
-    }
 
     public void set(String key, Object value) {
         redisTemplate.opsForValue().set(key, value);

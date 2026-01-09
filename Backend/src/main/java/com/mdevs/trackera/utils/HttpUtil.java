@@ -1,16 +1,36 @@
 package com.mdevs.trackera.utils;
 
-import lombok.Getter;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
+import org.springframework.http.*;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
 
-public class HttpUtil {
-    @Getter
+public final class HttpUtil {
     private static final RestTemplate restTemplate = new RestTemplate();
+
+    private HttpUtil() {}
+
+    //<editor-fold desc="Core Exchange Method">
+
+    public static <T> ResponseEntity<T> exchange(String url, HttpMethod method, HttpEntity<?> entity, Class<T> responseType) {
+        return restTemplate.exchange(url, method, entity, responseType);
+    }
+
+    //</editor-fold>
+
+    //<editor-fold desc="Convenience Methods">
+
+    public static <T> T get(String url, HttpEntity<?> entity, Class<T> responseType) {
+        return restTemplate.exchange(url, HttpMethod.GET, entity, responseType).getBody();
+    }
+
+    public static <T> T post(String url, HttpEntity<?> entity, Class<T> responseType) {
+        return restTemplate.exchange(url, HttpMethod.POST, entity, responseType).getBody();
+    }
+
+    //</editor-fold>
+
+    //<editor-fold desc="Entity Builders">
 
     public static <T> HttpEntity<T> createBearerAuthEntity(String accessToken) {
         return new HttpEntity<>(createBearerAuthHeaders(accessToken, false));
@@ -18,6 +38,12 @@ public class HttpUtil {
 
     public static <T> HttpEntity<T> createBearerAuthEntity(String accessToken, T body) {
         return new HttpEntity<>(body, createBearerAuthHeaders(accessToken, true));
+    }
+
+    public static <T> HttpEntity<T> createJsonEntity(T body) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        return new HttpEntity<>(body, headers);
     }
 
     private static HttpHeaders createBearerAuthHeaders(String accessToken, boolean hasBody) {
@@ -29,4 +55,6 @@ public class HttpUtil {
         }
         return headers;
     }
+
+    //</editor-fold>
 }

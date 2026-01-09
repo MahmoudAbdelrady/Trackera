@@ -1,6 +1,6 @@
 package com.mdevs.trackera.entity;
 
-import com.mdevs.trackera.oauth.OAuthProvider;
+import com.mdevs.trackera.shared.enums.OAuthProvider;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -41,7 +41,7 @@ public class OAuthConnection extends BaseEntity {
         this.provider = provider;
     }
 
-    public boolean isExpired() {
-        return LocalDateTime.now().isAfter(accessTokenExpiry);
+    public boolean isExpiringSoon() {
+        return LocalDateTime.now().plusMinutes(1).isAfter(accessTokenExpiry); // 1 minute buffer
     }
 }

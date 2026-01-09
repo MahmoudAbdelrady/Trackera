@@ -6,10 +6,10 @@ import com.mdevs.trackera.dto.auth.OAuthRequestDTO;
 import com.mdevs.trackera.dto.jira.JiraProjectDTO;
 import com.mdevs.trackera.entity.User;
 import com.mdevs.trackera.service.JiraService;
-import com.mdevs.trackera.oauth.OAuthProvider;
+import com.mdevs.trackera.shared.enums.OAuthProvider;
 import com.mdevs.trackera.oauth.OAuthServiceProvider;
 import com.mdevs.trackera.shared.enums.UserPreferenceOption;
-import com.mdevs.trackera.utils.AppUtils;
+import com.mdevs.trackera.utils.JsonUtil;
 import com.mdevs.trackera.utils.HttpUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -17,7 +17,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClientException;
-import org.springframework.web.client.RestTemplate;
 
 import java.util.*;
 
@@ -51,10 +50,9 @@ public class JiraOAuthServiceProvider extends OAuthServiceProvider {
             OAuthAccessCredentialsDTO tokenResponse = getJiraTokenResponse(authRequest.getAuthCode(), securityParams.get("codeVerifier"));
 
             HttpEntity<Void> entity = HttpUtil.createBearerAuthEntity(tokenResponse.getAccessToken());
-            RestTemplate restTemplate = HttpUtil.getRestTemplate();
 
-            JiraProjectDTO jiraProjectDTO = fetchJiraPrimaryProject(restTemplate, entity);
-            Map<String, Object> userJiraInfo = fetchJiraUserInfo(jiraProjectDTO, restTemplate, entity);
+            JiraProjectDTO jiraProjectDTO = fetchJiraPrimaryProject(entity);
+            Map<String, Object> userJiraInfo = fetchJiraUserInfo(jiraProjectDTO, entity);
 
             return buildJiraOAuthUserInfo(securityParams, tokenResponse, jiraProjectDTO, userJiraInfo);
         } catch (Exception e) {
@@ -76,7 +74,7 @@ public class JiraOAuthServiceProvider extends OAuthServiceProvider {
 
     @Override
     public void handlePostLinkingActions(User user, OAuthUserInfoDTO userInfo) {
-        String primaryProjectPreference = AppUtils.convertObjectToJsonString(userInfo.getAdditionalInfo().get(UserPreferenceOption.JIRA_PRIMARY_PROJECT.getCode()));
+        String primaryProjectPreference = JsonUtil.convertObjectToJsonString(userInfo.getAdditionalInfo().get(UserPreferenceOption.JIRA_PRIMARY_PROJECT.getCode()));
         userPreferenceService.createOrUpdate(user, UserPreferenceOption.JIRA_PRIMARY_PROJECT, primaryProjectPreference);
     }
 
@@ -103,17 +101,17 @@ public class JiraOAuthServiceProvider extends OAuthServiceProvider {
         }
     }
 
-    private JiraProjectDTO fetchJiraPrimaryProject(RestTemplate restTemplate, HttpEntity<Void> entity) {
-        JiraProjectDTO[] projects = restTemplate.exchange("https://api.atlassian.com/oauth/token/accessible-resources", HttpMethod.GET, entity, JiraProjectDTO[].class).getBody();
+    private JiraProjectDTO fetchJiraPrimaryProject(HttpEntity<Void> entity) {
+        JiraProjectDTO[] projects = HttpUtil.get("https://api.atlassian.com/oauth/token/accessible-resources", entity, JiraProjectDTO[].class);
         if (projects == null || projects.length == 0) {
             throw new SecurityException("Failed to fetch Jira primary project");
         }
         return projects[0];
     }
 
-    private Map<String, Object> fetchJiraUserInfo(JiraProjectDTO jiraProjectDTO, RestTemplate restTemplate, HttpEntity<Void> entity) {
+    private Map<String, Object> fetchJiraUserInfo(JiraProjectDTO jiraProjectDTO, HttpEntity<Void> entity) {
         String url = JiraService.getApiUrl(jiraProjectDTO) + "/myself";
-        Map<String, Object> userJiraInfo = restTemplate.exchange(url, HttpMethod.GET, entity, Map.class).getBody();
+        Map<String, Object> userJiraInfo = HttpUtil.get(url, entity, Map.class);
         if (userJiraInfo == null || userJiraInfo.isEmpty() || !userJiraInfo.containsKey("accountId")) {
             throw new SecurityException("Failed to fetch user info from Jira");
         }
@@ -147,8 +145,6 @@ public class JiraOAuthServiceProvider extends OAuthServiceProvider {
 
         HttpEntity<Map<String, String>> entity = new HttpEntity<>(requestBody, headers);
 
-        ResponseEntity<OAuthAccessCredentialsDTO> response = HttpUtil.getRestTemplate().exchange(JIRA_AUTH_BASE_URL + "/oauth/token", HttpMethod.POST, entity, OAuthAccessCredentialsDTO.class);
-
-        return response.getBody();
+        return HttpUtil.post(JIRA_AUTH_BASE_URL + "/oauth/token", entity, OAuthAccessCredentialsDTO.class);
     }
 }

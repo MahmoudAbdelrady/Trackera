@@ -7,7 +7,7 @@ import com.mdevs.trackera.entity.UserEmail;
 import com.mdevs.trackera.entity.OAuthConnection;
 import com.mdevs.trackera.repository.OAuthConnectionRepository;
 import com.mdevs.trackera.shared.exceptions.types.BusinessException;
-import com.mdevs.trackera.oauth.OAuthProvider;
+import com.mdevs.trackera.shared.enums.OAuthProvider;
 import com.mdevs.trackera.oauth.OAuthProviderFactory;
 import com.mdevs.trackera.utils.CryptoUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -63,15 +63,16 @@ public class OAuthConnectionService {
 
     public OAuthConnection getOrRefresh(User user, OAuthProvider provider) {
         OAuthConnection connection = validateAndGetConnection(user, provider);
-        if (connection.isExpired()) {
+        if (connection.isExpiringSoon()) {
             try {
-                connection = selfRef.refreshAndUpdateCredentials(connection.getId());
+                selfRef.refreshAndUpdateCredentials(connection.getId());
+                connection = oAuthConnectionRepository.findOne(connection.getId());
             } catch (Exception e) {
                 log.error("Error while resolving access token for provider {}: {}", connection.getProvider(), e.getMessage(), e);
-                throw new RuntimeException("Failed to authenticate with " + connection.getProvider());
+                throw new RuntimeException("Unexpected error during credentials refresh for " + provider, e);
             }
             if (connection.isRevoked()) {
-                throw new RuntimeException("Failed to refresh access token");
+                throw new RuntimeException("Access has been revoked. Please re-authenticate with " + provider);
             }
         }
         return connection;
@@ -97,26 +98,29 @@ public class OAuthConnectionService {
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public OAuthConnection refreshAndUpdateCredentials(Long connectionId) {
-        OAuthConnection connection = oAuthConnectionRepository.findOne(connectionId);
+    public void refreshAndUpdateCredentials(Long connectionId) {
+        OAuthConnection connection = oAuthConnectionRepository.findOneForUpdate(connectionId);
+        if (!connection.isExpiringSoon() || connection.isRevoked()) {
+            return;
+        }
+
         try {
             OAuthAccessCredentialsDTO newCredentials = oAuthProviderFactory.getProvider(connection.getProvider()).refreshOAuthProviderCredentials(connection);
-            connection = updateAccessCredentials(connection, newCredentials);
+            updateAccessCredentials(connection, newCredentials);
         } catch (HttpClientErrorException exception) {
             connection.setRevoked(true);
-            connection = oAuthConnectionRepository.save(connection);
+            oAuthConnectionRepository.save(connection);
         }
-        return connection;
     }
 
-    public OAuthConnection updateAccessCredentials(OAuthConnection existingConnection, OAuthAccessCredentialsDTO accessCredentialsDTO) {
+    public void updateAccessCredentials(OAuthConnection existingConnection, OAuthAccessCredentialsDTO accessCredentialsDTO) {
         existingConnection.setAccessToken(cryptoUtil.encryptToBase64(accessCredentialsDTO.getAccessToken(), false));
         if (accessCredentialsDTO.getRefreshToken() != null) {
             existingConnection.setRefreshToken(cryptoUtil.encryptToBase64(accessCredentialsDTO.getRefreshToken(), false));
         }
         existingConnection.setAccessTokenExpiry(LocalDateTime.now().plusSeconds(accessCredentialsDTO.getExpiresIn()));
         existingConnection.setRevoked(false);
-        return oAuthConnectionRepository.save(existingConnection);
+        oAuthConnectionRepository.save(existingConnection);
     }
     //</editor-fold>
 
@@ -140,6 +144,11 @@ public class OAuthConnectionService {
         if (connection != null && !connection.isRevoked()) {
             throw new BusinessException("The current account is already linked with " + provider.getDisplayName());
         }
+    }
+
+    public boolean isConnected(User user, OAuthProvider provider) {
+        OAuthConnection connection = oAuthConnectionRepository.findByUserAndProvider(user, provider);
+        return connection != null && !connection.isRevoked();
     }
     //</editor-fold>
 }

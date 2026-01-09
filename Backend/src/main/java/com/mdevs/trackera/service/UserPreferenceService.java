@@ -6,7 +6,8 @@ import com.mdevs.trackera.entity.UserPreference;
 import com.mdevs.trackera.repository.UserPreferenceRepository;
 import com.mdevs.trackera.shared.enums.UserPreferenceOption;
 import com.mdevs.trackera.shared.exceptions.types.BusinessException;
-import com.mdevs.trackera.utils.AppUtils;
+import com.mdevs.trackera.utils.JsonUtil;
+import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,19 +16,16 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Service
+@RequiredArgsConstructor
 public class UserPreferenceService {
     private final UserPreferenceRepository userPreferenceRepository;
-
-    public UserPreferenceService(UserPreferenceRepository userPreferenceRepository) {
-        this.userPreferenceRepository = userPreferenceRepository;
-    }
 
     //<editor-fold desc="Retrieval">
     public Map<String, Object> getAll() {
         Map<String, Object> preferencesMap = new HashMap<>();
         userPreferenceRepository.findAllByUser(AppConfig.getAuthenticatedCurrentUser()).forEach(pref -> {
             UserPreferenceOption option = pref.getOption();
-            preferencesMap.put(option.getCode(), AppUtils.convertValue(pref.getValue(), option.getValueType()));
+            preferencesMap.put(option.getCode(), JsonUtil.convertValue(pref.getValue(), option.getValueType()));
         });
         return preferencesMap;
     }
@@ -40,7 +38,7 @@ public class UserPreferenceService {
 
         String value = preference.getValue();
 
-        return AppUtils.convertValue(value, option.getValueType());
+        return JsonUtil.convertValue(value, option.getValueType());
     }
     //</editor-fold>
 

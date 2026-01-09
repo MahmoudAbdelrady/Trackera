@@ -10,7 +10,7 @@ import org.hibernate.annotations.ColumnDefault;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(indexes = {@Index(columnList = "IS_ACCESS_TOKEN, USER_ID"), @Index(columnList = "EXPIRY_DATE")})
+@Table(indexes = {@Index(columnList = "EXPIRY_DATE"), @Index(columnList = "USER_ID, TOKEN_FINGERPRINT, IS_ACCESS_TOKEN")})
 @Getter
 @Setter
 @NoArgsConstructor
@@ -19,13 +19,13 @@ public class UserInvalidToken extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     private User user;
 
-    @Column(nullable = false, columnDefinition = "LONGTEXT")
-    private String token;
+    @Column(nullable = false, length = 64, unique = true)
+    private String tokenFingerprint;
 
     @Column(nullable = false, columnDefinition = "TIMESTAMP(0)")
     private LocalDateTime expiryDate;
 
     @Column(nullable = false)
-    @ColumnDefault("1")
+    @ColumnDefault("true")
     private boolean isAccessToken = true;
 }

@@ -1,25 +1,30 @@
 package com.mdevs.trackera.service;
 
 import com.mdevs.trackera.config.general.AppConfig;
+import com.mdevs.trackera.dto.auth.OAuthProviderDTO;
+import com.mdevs.trackera.dto.auth.OAuthProviderInfoDTO;
+import com.mdevs.trackera.dto.email.EmailRequest;
 import com.mdevs.trackera.dto.user.LoggedUserDTO;
 import com.mdevs.trackera.dto.auth.OAuthUserInfoDTO;
-import com.mdevs.trackera.dto.auth.PasswordDTO;
+import com.mdevs.trackera.dto.user.PasswordDTO;
 import com.mdevs.trackera.dto.auth.SignUpDTO;
 import com.mdevs.trackera.entity.SecurityToken;
 import com.mdevs.trackera.entity.User;
 import com.mdevs.trackera.entity.UserEmail;
 import com.mdevs.trackera.entity.OAuthConnection;
-import com.mdevs.trackera.repository.UserEmailRepository;
 import com.mdevs.trackera.repository.UserRepository;
-import com.mdevs.trackera.shared.EmailTemplates;
+import com.mdevs.trackera.shared.email.EmailService;
+import com.mdevs.trackera.shared.email.EmailTemplateParams;
+import com.mdevs.trackera.shared.email.EmailTemplates;
 import com.mdevs.trackera.shared.SecurityTokenBuilder;
 import com.mdevs.trackera.shared.enums.UserPreferenceOption;
 import com.mdevs.trackera.shared.exceptions.types.BusinessException;
-import com.mdevs.trackera.oauth.OAuthProvider;
-import com.mdevs.trackera.shared.TrackeraEmailTarget;
+import com.mdevs.trackera.shared.enums.OAuthProvider;
+import com.mdevs.trackera.shared.exceptions.types.NotFoundException;
 import com.mdevs.trackera.shared.mappers.UserMapper;
-import com.mdevs.trackera.utils.AppUtils;
-import com.mdevs.trackera.utils.EmailTemplateUtil;
+import com.mdevs.trackera.utils.JsonUtil;
+import com.mdevs.trackera.shared.email.EmailParameterMapper;
+import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -31,10 +36,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.*;
 
 @Service
+@RequiredArgsConstructor
 public class UserService implements UserDetailsService {
     private final UserRepository userRepository;
-
-    private final UserEmailRepository userEmailRepository;
 
     private final UserEmailService userEmailService;
 
@@ -46,48 +50,52 @@ public class UserService implements UserDetailsService {
 
     private final SecurityTokenService securityTokenService;
 
+    private final EmailService emailService;
+
     private final PasswordEncoder passwordEncoder;
 
     private final UserMapper userMapper;
 
-    public UserService(UserRepository userRepository, UserEmailRepository userEmailRepository, UserEmailService userEmailService, OAuthConnectionService oAuthConnectionService,
-                       UserPreferenceService userPreferenceService, JiraService jiraService, SecurityTokenService securityTokenService, PasswordEncoder passwordEncoder, UserMapper userMapper) {
-        this.userRepository = userRepository;
-        this.userEmailRepository = userEmailRepository;
-        this.userEmailService = userEmailService;
-        this.oAuthConnectionService = oAuthConnectionService;
-        this.userPreferenceService = userPreferenceService;
-        this.jiraService = jiraService;
-        this.securityTokenService = securityTokenService;
-        this.passwordEncoder = passwordEncoder;
-        this.userMapper = userMapper;
-    }
-
+    //<editor-fold desc="User Find Methods">
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
         return Optional.ofNullable(userRepository.findByPrimaryEmail(email)).orElseThrow(() -> new UsernameNotFoundException("Account not found."));
     }
 
-    //<editor-fold desc="User Info Retrieval">
-    public LoggedUserDTO getMeInfo() {
-        return userMapper.toLoggedUserDTO(AppConfig.getAuthenticatedCurrentUser());
+    public User findByIdOrThrow(Long id) {
+        return userRepository.findById(id).orElseThrow(() -> new NotFoundException("User not found"));
     }
 
-    public List<Map<String, Object>> getUserOAuthProviders() {
+    public User findByUuidOrThrow(String uuid) {
+        return Optional.ofNullable(userRepository.findByUuid(uuid)).orElseThrow(() -> new NotFoundException("User not found"));
+    }
+
+    public User findByPrimaryEmail(String email) {
+        return userRepository.findByPrimaryEmail(email);
+    }
+    //</editor-fold>
+
+    //<editor-fold desc="User Info Retrieval">
+    public LoggedUserDTO getMeInfo() {
+        User loggedUser = AppConfig.getAuthenticatedCurrentUser();
+        LoggedUserDTO loggedUserDTO = userMapper.toLoggedUserDTO(loggedUser);
+        loggedUserDTO.setJiraLinked(oAuthConnectionService.isConnected(loggedUser, OAuthProvider.JIRA));
+        return loggedUserDTO;
+    }
+
+    public List<OAuthProviderInfoDTO> getUserOAuthProviders() {
         User loggedUser = AppConfig.getAuthenticatedCurrentUser();
         Map<OAuthProvider, OAuthConnection> linkedProviders = oAuthConnectionService.getConnectionsAsMap(loggedUser);
 
         return Arrays.stream(OAuthProvider.values()).map(provider -> {
             OAuthConnection userProvider = linkedProviders.get(provider);
             boolean isLinked = userProvider != null;
-            Map<String, Object> providerInfo = new HashMap<>();
-            providerInfo.put("provider", Map.of("name", provider.getDisplayName(), "code", provider.getCode()));
-            providerInfo.put("isLinked", isLinked);
+            OAuthProviderInfoDTO providerInfoDTO = new OAuthProviderInfoDTO(OAuthProviderDTO.from(provider), isLinked);
             if (isLinked) {
-                providerInfo.put("email", userProvider.getAccountEmail().getEmail());
-                providerInfo.put("isRevoked", userProvider.isRevoked());
+                providerInfoDTO.setEmail(userProvider.getAccountEmail().getEmail());
+                providerInfoDTO.setIsRevoked(userProvider.isRevoked());
             }
-            return providerInfo;
+            return providerInfoDTO;
         }).toList();
     }
     //</editor-fold>
@@ -99,7 +107,7 @@ public class UserService implements UserDetailsService {
             userPreferenceService.validatePreference(preference);
             if (preference.getKey().equals(UserPreferenceOption.JIRA_PRIMARY_PROJECT.getCode())) {
                 oAuthConnectionService.validateAndGetConnection(currentUser, OAuthProvider.JIRA);
-                preference.setValue(AppUtils.convertObjectToJsonString(jiraService.findSiteById(currentUser, preference.getValue().toString())));
+                preference.setValue(JsonUtil.convertObjectToJsonString(jiraService.findSiteById(currentUser, preference.getValue().toString())));
             }
         }
         userPreferenceService.updateAll(currentUser, updatedPreferences);
@@ -110,9 +118,8 @@ public class UserService implements UserDetailsService {
     //<editor-fold desc="Registration & Authentication">
     @Transactional
     public User create(SignUpDTO signUpDTO) {
-        if (userEmailRepository.existsByEmail(signUpDTO.getEmail())) {
-            throw new BusinessException("Email already in use");
-        }
+        userEmailService.ensureEmailAvailable(signUpDTO.getEmail());
+
         if (!signUpDTO.getPassword().equals(signUpDTO.getConfirmPassword())) {
             throw new BusinessException("Passwords do not match");
         }
@@ -132,7 +139,7 @@ public class UserService implements UserDetailsService {
 
     @Transactional
     public Map<String, Object> createOrGetOAuthUser(OAuthUserInfoDTO oAuthUserInfo, OAuthProvider oAuthProvider) {
-        User authenticatedUser = Optional.ofNullable(userEmailRepository.findByEmail(oAuthUserInfo.getEmail())).map(UserEmail::getUser).orElse(null);
+        User authenticatedUser = Optional.ofNullable(userEmailService.findByEmail(oAuthUserInfo.getEmail())).map(UserEmail::getUser).orElse(null);
         boolean isNewUser = authenticatedUser == null;
 
         if (!isNewUser) {
@@ -150,7 +157,7 @@ public class UserService implements UserDetailsService {
     @Transactional
     public void handleExistingUserOAuthLogin(User authenticatedUser, OAuthUserInfoDTO oAuthUserInfo, OAuthProvider oAuthProvider) {
         OAuthConnection oAuthConnection = oAuthConnectionService.getConnectionByUserAndEmailOrThrow(authenticatedUser, oAuthUserInfo.getEmail(), oAuthProvider);
-        if (oAuthConnection.isExpired() || oAuthConnection.isRevoked()) {
+        if (oAuthConnection.isExpiringSoon() || oAuthConnection.isRevoked()) {
             oAuthConnectionService.updateAccessCredentials(oAuthConnection, oAuthUserInfo.getAccessCredentials());
         }
         handleOAuthEmailMatching(authenticatedUser, oAuthUserInfo);
@@ -222,7 +229,7 @@ public class UserService implements UserDetailsService {
                 .targetEmail(user.getPrimaryEmail().getEmail())
                 .type(isForReset ? SecurityToken.Type.PASSWORD_RESET : SecurityToken.Type.PASSWORD_CHANGE)
                 .templateName(EmailTemplates.VERIFICATION_MAIL_TEMPLATE)
-                .extraParameters(EmailTemplateUtil.getTemplateParams(isForReset ? SecurityToken.Type.PASSWORD_RESET : SecurityToken.Type.PASSWORD_CHANGE))
+                .extraParameters(EmailParameterMapper.getSecurityTemplateParams(isForReset ? SecurityToken.Type.PASSWORD_RESET : SecurityToken.Type.PASSWORD_CHANGE))
                 .pageUrl("/change-password")
                 .build();
         securityTokenService.createAndSend(securityTokenBuilder);
@@ -235,7 +242,7 @@ public class UserService implements UserDetailsService {
         User loggedUser = AppConfig.getAuthenticatedCurrentUser();
         userEmailService.ensureValidEmailFormat(email);
 
-        UserEmail existingUserEmail = userEmailRepository.findByEmail(email);
+        UserEmail existingUserEmail = userEmailService.findByEmail(email);
         if (existingUserEmail != null) {
             userEmailService.ensureEmailAvailableForUser(loggedUser, existingUserEmail);
         }
@@ -268,12 +275,17 @@ public class UserService implements UserDetailsService {
 
         userEmailService.deleteIfUnused(currentPrimary);
 
-        TrackeraEmailTarget.builder()
+        Map<String, String> parameters = Map.of(
+                EmailTemplateParams.EMAIL_TYPE, "Email Changed",
+                EmailTemplateParams.EMAIL_TYPE_DESC, "Your account's email has been changed to " + email + ". If you did not perform this action, please contact support immediately."
+        );
+        EmailRequest emailRequest = EmailRequest.builder()
                 .targetEmail(currentPrimary.getEmail())
                 .subject("Email Changed")
-                .templateName(EmailTemplates.INFO_MAIL_TEMPLATE)
-                .parameters(Map.of("content", "Your account's email has been changed to " + email + ". If you did not perform this action, please contact support immediately."))
-                .build().send();
+                .templateName(EmailTemplates.VERIFICATION_MAIL_TEMPLATE)
+                .parameters(parameters)
+                .build();
+        emailService.send(emailRequest);
     }
 
     public void sendEmailVerification() {
@@ -291,7 +303,7 @@ public class UserService implements UserDetailsService {
                 .type(SecurityToken.Type.NEW_EMAIL_VERIFICATION)
                 .additionalInfo(email)
                 .templateName(EmailTemplates.VERIFICATION_MAIL_TEMPLATE)
-                .extraParameters(EmailTemplateUtil.getTemplateParams(SecurityToken.Type.NEW_EMAIL_VERIFICATION))
+                .extraParameters(EmailParameterMapper.getSecurityTemplateParams(SecurityToken.Type.NEW_EMAIL_VERIFICATION))
                 .build();
         securityTokenService.createAndSend(securityTokenBuilder);
     }

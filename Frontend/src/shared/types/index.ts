@@ -2,7 +2,14 @@ import type { PaginatedResponse } from "./global";
 
 import { OPERATORS, filterOperatorsMetadata } from "./global";
 
-import type { LoginFormFields, SignUpFormFields, ChangePasswordFormFields, OAuthAccount, OAuthProvider } from "./auth";
+import type {
+  LoginFormFields,
+  SignUpFormFields,
+  ChangePasswordFormFields,
+  OAuthAccount,
+  OAuthProvider,
+  OAuthProviderInfo,
+} from "./auth";
 
 import { OAUTH_PROVIDERS } from "./auth";
 
@@ -44,6 +51,7 @@ export type {
   JiraSyncEventType,
   JiraSyncEventProps,
   OAuthProvider,
+  OAuthProviderInfo,
 };
 
 export { WORKLOG_STATUS, WORKLOG_EVALUATION, JIRA_SYNC_EVENT, OPERATORS, filterOperatorsMetadata, OAUTH_PROVIDERS };

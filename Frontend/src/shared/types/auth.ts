@@ -28,10 +28,16 @@ interface ChangePasswordFormFields {
   confirmNewPassword: string;
 }
 
+interface OAuthProviderInfo {
+  displayName: string;
+  code: string;
+}
+
 interface OAuthAccount {
-  provider: Record<string, string>;
-  isLinked: boolean;
+  provider: OAuthProviderInfo;
+  linked: boolean;
   email?: string;
+  isRevoked?: boolean;
 }
 
 const OAUTH_PROVIDERS = {
@@ -41,6 +47,14 @@ const OAUTH_PROVIDERS = {
 
 type OAuthProvider = (typeof OAUTH_PROVIDERS)[keyof typeof OAUTH_PROVIDERS];
 
-export type { LoginFormFields, SignUpFormFields, ChangePasswordFormFields, OAuthAccount, UserInfo, OAuthProvider };
+export type {
+  LoginFormFields,
+  SignUpFormFields,
+  ChangePasswordFormFields,
+  OAuthAccount,
+  UserInfo,
+  OAuthProvider,
+  OAuthProviderInfo,
+};
 
 export { OAUTH_PROVIDERS };

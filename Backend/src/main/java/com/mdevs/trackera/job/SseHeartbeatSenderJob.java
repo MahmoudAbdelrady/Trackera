@@ -1,6 +1,7 @@
 package com.mdevs.trackera.job;
 
 import com.mdevs.trackera.shared.SseRegistry;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -10,15 +11,13 @@ import java.util.concurrent.CompletableFuture;
 
 @Slf4j
 @Component
-public class SseHeartbeatSenderJob {
+@RequiredArgsConstructor
+public class SseHeartbeatSenderJob implements TrackeraJob {
     private final SseRegistry sseRegistry;
 
-    public SseHeartbeatSenderJob(SseRegistry sseRegistry) {
-        this.sseRegistry = sseRegistry;
-    }
-
     @Scheduled(fixedRate = 15_000)
-    public void sendHeartbeats() {
+    @Override
+    public void execute() {
         if (sseRegistry.getEmitters().isEmpty()) {
             return;
         }

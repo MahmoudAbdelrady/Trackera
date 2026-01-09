@@ -5,11 +5,13 @@ import com.mdevs.trackera.entity.UserEmail;
 import com.mdevs.trackera.repository.UserEmailRepository;
 import com.mdevs.trackera.repository.OAuthConnectionRepository;
 import com.mdevs.trackera.shared.exceptions.types.BusinessException;
-import com.mdevs.trackera.oauth.OAuthProvider;
+import com.mdevs.trackera.shared.enums.OAuthProvider;
+import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 
 @Service
+@RequiredArgsConstructor
 public class UserEmailService {
     private final UserEmailRepository userEmailRepository;
 
@@ -17,16 +19,14 @@ public class UserEmailService {
 
     public static final String EMAIL_REGEX = "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9-]+(?:\\.[a-zA-Z0-9-]+)*\\.[a-zA-Z]{2,}$";
 
-
-    public UserEmailService(UserEmailRepository userEmailRepository, OAuthConnectionRepository OAuthConnectionRepository) {
-        this.userEmailRepository = userEmailRepository;
-        this.OAuthConnectionRepository = OAuthConnectionRepository;
-    }
-
     //<editor-fold desc="Creation">
     public UserEmail create(User user, String email) {
         UserEmail userEmail = new UserEmail(user, email);
         return userEmailRepository.save(userEmail);
+    }
+
+    public UserEmail findByEmail(String email) {
+        return userEmailRepository.findByEmail(email);
     }
 
     public UserEmail getOrCreate(User user, String email) {
@@ -68,6 +68,12 @@ public class UserEmailService {
         boolean isPrimaryOrPending = loggedUser.getPrimaryEmail().getId().equals(existingUserEmail.getId()) || (loggedUser.getPendingEmail() != null && loggedUser.getPendingEmail().getId().equals(existingUserEmail.getId()));
         if (isPrimaryOrPending) {
             throw new BusinessException("Email is already associated with your account");
+        }
+    }
+
+    public void ensureEmailAvailable(String email) {
+        if (userEmailRepository.existsByEmail(email)) {
+            throw new BusinessException("Email is already in use");
         }
     }
     //</editor-fold>

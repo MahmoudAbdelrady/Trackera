@@ -4,7 +4,6 @@ import org.aspectj.lang.ProceedingJoinPoint;
 import org.slf4j.Logger;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 public class LoggingUtil {
@@ -20,14 +19,10 @@ public class LoggingUtil {
             return result;
         } catch (Throwable throwable) {
             extendedArgs.add(throwable.getMessage());
-            logger.error("[ERROR] " + logInfo + " || Reason: {}", extendedArgs.toArray(), throwable);
+            List<Object> errorArgs = new ArrayList<>(extendedArgs);
+            errorArgs.add(throwable);
+            logger.error("[ERROR] " + logInfo + " || Reason: {}", errorArgs.toArray());
             throw throwable;
         }
-    }
-
-    private static Object[] append(Object[] original, Object extra) {
-        Object[] newArr = Arrays.copyOf(original, original.length + 1);
-        newArr[original.length] = extra;
-        return newArr;
     }
 }

@@ -20,7 +20,7 @@ import com.mdevs.trackera.service.WorkLogService;
 import com.mdevs.trackera.shared.enums.WorkLogStatus;
 import com.mdevs.trackera.shared.enums.WorkLogSyncMessageType;
 import com.mdevs.trackera.shared.exceptions.types.JiraException;
-import com.mdevs.trackera.utils.AppUtils;
+import com.mdevs.trackera.utils.JsonUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.context.annotation.Lazy;
@@ -60,7 +60,7 @@ public class WorkLogSyncJobHandler implements BackgroundJobHandler {
 
     @Override
     public void handle(BackgroundJob job) {
-        WorkLogSyncPayloadDTO workLogSyncPayloadDTO = AppUtils.convertJsonStringToObject(job.getPayload(), WorkLogSyncPayloadDTO.class);
+        WorkLogSyncPayloadDTO workLogSyncPayloadDTO = JsonUtil.convertJsonStringToObject(job.getPayload(), WorkLogSyncPayloadDTO.class);
         User syncUser = userRepository.findOne(workLogSyncPayloadDTO.getUserId());
         boolean isLastRetry = job.getRetryCount() >= RabbitConfig.MAX_RETRIES;
 
@@ -71,7 +71,7 @@ public class WorkLogSyncJobHandler implements BackgroundJobHandler {
         }
 
         List<WorkLogDetailSyncRequestDTO> detailsToSync = workLogSyncPayloadDTO.getDetailsToSync();
-        if (StringUtils.isEmpty(resultDTO.getHardError()) && (detailsToSync != null && !detailsToSync.isEmpty())) {
+        if (StringUtils.isEmpty(resultDTO.getHardError()) && detailsToSync != null && !detailsToSync.isEmpty()) {
             resultDTO = processSyncDetails(workLogSyncPayloadDTO.getWorkLogId(), detailsToSync, syncUser, isLastRetry);
         }
 
@@ -102,7 +102,7 @@ public class WorkLogSyncJobHandler implements BackgroundJobHandler {
             } catch (Exception e) {
                 if (isLastRetry) {
                     List<Long> failedIds = detailsToUnsync.stream().map(WorkLogDetailSyncRequestDTO::getDetailId).filter(Objects::nonNull).toList();
-                    selfRef.handleFailedSync(syncUser, failedIds, WorkLogStatus.SYNCED, e.getMessage());
+                    selfRef.handleFailedSync(syncUser, failedIds, WorkLogStatus.SYNCED, e.getMessage()); // Revert to SYNCED on failure to unsync
                 }
                 resultDTO.setHardError(e.getMessage());
                 break;
@@ -127,7 +127,7 @@ public class WorkLogSyncJobHandler implements BackgroundJobHandler {
             } catch (Exception e) {
                 if (isLastRetry) {
                     List<Long> failedIds = detailsToSync.stream().map(WorkLogDetailSyncRequestDTO::getDetailId).filter(Objects::nonNull).toList();
-                    selfRef.handleFailedSync(syncUser, failedIds, WorkLogStatus.NOT_SYNCED, e.getMessage());
+                    selfRef.handleFailedSync(syncUser, failedIds, WorkLogStatus.NOT_SYNCED, e.getMessage()); // Revert to NOT_SYNCED on failure to sync
                 }
                 resultDTO.setHardError(e.getMessage());
                 break;
@@ -219,7 +219,7 @@ public class WorkLogSyncJobHandler implements BackgroundJobHandler {
 
     @Transactional
     public void updateJobPayload(BackgroundJob job, WorkLogSyncPayloadDTO workLogSyncPayloadDTO) {
-        job.setPayload(AppUtils.convertObjectToJsonString(workLogSyncPayloadDTO));
+        job.setPayload(JsonUtil.convertObjectToJsonString(workLogSyncPayloadDTO));
         backgroundJobRepository.save(job);
     }
 

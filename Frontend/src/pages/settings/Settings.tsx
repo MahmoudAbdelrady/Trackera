@@ -75,10 +75,11 @@ const Settings = () => {
             oAuthAccounts.map((account) => (
               <LinkedAccount
                 key={account.provider.code}
-                platform={account.provider}
+                providerInfo={account.provider}
                 accountIdentifier={account.email}
-                isLinked={account.isLinked}
-                onLink={() => linkProviderAccount(account.provider.code)}
+                linked={account.linked}
+                isRevoked={account.isRevoked}
+                onLink={() => linkProviderAccount(account.provider.code, account.isRevoked || false)}
                 onUnlink={() => unlinkProviderAccount(account.provider.code)}
               />
             ))

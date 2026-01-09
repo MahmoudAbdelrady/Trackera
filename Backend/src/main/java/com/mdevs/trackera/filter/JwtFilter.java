@@ -1,7 +1,8 @@
 package com.mdevs.trackera.filter;
 
 import com.mdevs.trackera.config.security.ApiConfig;
-import com.mdevs.trackera.dto.auth.AuthFilterUserDTO;
+import com.mdevs.trackera.entity.User;
+import com.mdevs.trackera.service.UserService;
 import com.mdevs.trackera.shared.annotations.PublicAPI;
 import com.mdevs.trackera.utils.JwtUtil;
 import io.jsonwebtoken.Claims;
@@ -9,6 +10,7 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -20,19 +22,17 @@ import java.util.List;
 import java.util.Set;
 
 @Component
+@RequiredArgsConstructor
 public class JwtFilter extends OncePerRequestFilter {
     private final JwtUtil jwtUtil;
 
     private final ApiConfig apiConfig;
 
-    public JwtFilter(JwtUtil jwtUtil, ApiConfig apiConfig) {
-        this.jwtUtil = jwtUtil;
-        this.apiConfig = apiConfig;
-    }
+    private final UserService userService;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-        String jwt = jwtUtil.getToken(request);
+        String jwt = jwtUtil.getToken(request, true);
         if (jwt == null) {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             return;
@@ -46,8 +46,8 @@ public class JwtFilter extends OncePerRequestFilter {
             return;
         }
 
-        AuthFilterUserDTO authFilterUserDTO = new AuthFilterUserDTO(claims.get("id", String.class));
-        Authentication authentication = new UsernamePasswordAuthenticationToken(authFilterUserDTO, null, List.of());
+        User user = userService.findByUuidOrThrow(claims.get("id", String.class));
+        Authentication authentication = new UsernamePasswordAuthenticationToken(user, null, List.of());
         SecurityContextHolder.getContext().setAuthentication(authentication);
         filterChain.doFilter(request, response);
     }

@@ -3,6 +3,7 @@ package com.mdevs.trackera.config.security;
 import com.mdevs.trackera.config.general.AppConfig;
 import com.mdevs.trackera.filter.JwtFilter;
 import com.mdevs.trackera.service.UserService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -19,22 +20,18 @@ import org.springframework.web.cors.CorsConfiguration;
 import java.util.List;
 
 @Configuration
+@RequiredArgsConstructor
 public class SecurityConfig {
     private final UserService userService;
 
     private final PasswordEncoder passwordEncoder;
-
-    public SecurityConfig(UserService userService, PasswordEncoder passwordEncoder) {
-        this.userService = userService;
-        this.passwordEncoder = passwordEncoder;
-    }
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity, JwtFilter jwtFilter) {
         try {
             httpSecurity
                     .csrf(AbstractHttpConfigurer::disable)
-                    .cors(config -> config.configurationSource(req -> {
+                    .cors(config -> config.configurationSource(_ -> {
                         CorsConfiguration corsConfiguration = new CorsConfiguration();
                         corsConfiguration.setAllowedOrigins(List.of(AppConfig.getFrontendUrl()));
                         corsConfiguration.setAllowedMethods(List.of("*"));
@@ -58,7 +55,7 @@ public class SecurityConfig {
     }
 
     @Bean
-    public AuthenticationManager authenticationManager() {
-        return new ProviderManager(authenticationProvider());
+    public AuthenticationManager authenticationManager(AuthenticationProvider authenticationProvider) {
+        return new ProviderManager(authenticationProvider);
     }
 }

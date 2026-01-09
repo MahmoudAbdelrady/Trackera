@@ -1,47 +1,77 @@
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
-    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Trackera</title>
 </head>
-<body style="margin:0;padding:0;font-family:ui-sans-serif,system-ui,sans-serif,'Apple Color Emoji','Segoe UI Emoji','Segoe UI Symbol','Noto Color Emoji';">
-
-<!-- HEADER -->
-<div style="background-color:#2563eb;color:#ffffff;padding:15px;font-size:20px;font-weight:bold;">
-    <h1 style="margin:0;color:#ffffff;font-size:24px;display:block;">Trackera</h1>
-</div>
-
-<!-- CONTENT -->
-<div style="padding:20px;">
-
-    <!-- Content Header -->
-    <h2 th:text="${emailType}"
-        style="margin:0 0 10px 0;font-size:18px;color:#4b0082;display:block;">
-    </h2>
-
-    <!-- Description -->
-    <p th:text="${emailTypeDesc}"
-       style="margin:0 0 20px 0;color:#5c5c5c;font-size:14px;line-height:1.4;display:block;">
-    </p>
-
-    <!-- Button -->
-    <div style="text-align:left;margin-bottom:20px;">
-        <a th:href="${verificationLink}" th:text="${linkLabel}" target="_blank" style="padding:15px 25px;font-weight:500;background-color:#2563eb;border-radius:12px;color:#ffffff;text-decoration:none;display:inline-block;">
-        </a>
-    </div>
-
-    <!-- Footer Note -->
-    <p style="margin:0;color:#5c5c5c;font-size:13px;line-height:1.4;display:block;">
-        The link is valid for 15 minutes. If you didn't request this, please ignore the email.
-    </p>
-
-</div>
-
-<!-- GLOBAL FOOTER -->
-<div style="border-top:1px solid #e5e7eb;text-align:center;padding:20px;background-color:#dddddd;">
-    <p style="margin:0;font-size:13px;color:#2563eb;display:block;">
-        Trackera - All rights reserved.
-    </p>
-</div>
+<body style="margin: 0; padding: 0; background-color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
+<table role="presentation" cellpadding="0" cellspacing="0" style="width: 100%; background-color: #f8fafc;">
+    <tr>
+        <td style="padding: 40px 20px;">
+            <table role="presentation" cellpadding="0" cellspacing="0" style="max-width: 560px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);">
+                <!-- Header -->
+                <tr>
+                    <td style="padding: 40px 40px 24px 40px; text-align: center;">
+                        <div style="width: 48px; height: 48px; background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%); border-radius: 12px; margin: 0 auto 24px auto; display: inline-block;"></div>
+                        <h1 style="margin: 0; font-size: 24px; font-weight: 600; color: #0f172a; line-height: 1.4;" th:text="${emailType}"></h1>
+                    </td>
+                </tr>
+                <!-- Body -->
+                <tr>
+                    <td style="padding: 0 40px 32px 40px;">
+                        <p style="margin: 0; font-size: 16px; line-height: 1.6; color: #475569;" th:text="${emailTypeDesc}">
+                        </p>
+                    </td>
+                </tr>
+                <!-- CTA Button -->
+                <tr th:if="${verificationLink}">
+                    <td style="padding: 0 40px 24px 40px;">
+                        <table role="presentation" cellpadding="0" cellspacing="0" style="width: 100%;">
+                            <tr>
+                                <td style="text-align: center;">
+                                    <a th:href="${verificationLink}" th:text="${linkLabel}"
+                                       style="display: inline-block; padding: 14px 32px;
+                                              background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
+                                              color: #ffffff; text-decoration: none; font-size: 16px;
+                                              font-weight: 600; border-radius: 8px;">
+                                    </a>
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+                <!-- Link fallback -->
+                <tr th:if="${verificationLink}">
+                    <td style="padding: 0 40px 32px 40px;">
+                        <p style="margin: 0 0 8px 0; font-size: 14px; line-height: 1.5; color: #94a3b8;">
+                            Or copy and paste this link into your browser:
+                        </p>
+                        <p style="margin: 0; font-size: 14px; line-height: 1.5; color: #2563eb; word-break: break-all;" th:text="${verificationLink}">
+                        </p>
+                    </td>
+                </tr>
+                <!-- Expiry notice -->
+                <tr th:if="${verificationLink}">
+                    <td style="padding: 0 40px 32px 40px;">
+                        <div style="background-color: #fef3c7; border-radius: 8px; padding: 16px;">
+                            <p style="margin: 0; font-size: 14px; line-height: 1.5; color: #92400e;">
+                                This link expires in 15 minutes. If you didn't request this, you can safely ignore this email.
+                            </p>
+                        </div>
+                    </td>
+                </tr>
+                <!-- Footer -->
+                <tr>
+                    <td style="padding: 24px 40px; border-top: 1px solid #e2e8f0;">
+                        <p style="margin: 0; font-size: 14px; line-height: 1.5; color: #94a3b8; text-align: center;">
+                            © 2026 Trackera. All rights reserved.<br>
+                        </p>
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+</table>
 </body>
 </html>

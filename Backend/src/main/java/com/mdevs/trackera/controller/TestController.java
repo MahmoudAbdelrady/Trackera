@@ -7,16 +7,14 @@ import com.mdevs.trackera.shared.enums.WorkLogStatus;
 import com.mdevs.trackera.shared.enums.WorkLogSyncMessageType;
 import com.mdevs.trackera.utils.CookieHelper;
 import com.mdevs.trackera.utils.JwtUtil;
-import io.jsonwebtoken.Claims;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
-import java.io.IOException;
-import java.util.Map;
-
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("/test")
 @PublicAPI
 public class TestController {
@@ -25,12 +23,6 @@ public class TestController {
     private final RedisTemplate<String, Object> redisTemplate;
 
     private final JwtUtil jwtUtil;
-
-    public TestController(SseRegistry sseRegistry, RedisTemplate<String, Object> redisTemplate, JwtUtil jwtUtil) {
-        this.sseRegistry = sseRegistry;
-        this.redisTemplate = redisTemplate;
-        this.jwtUtil = jwtUtil;
-    }
 
     @GetMapping("/subscribe")
     public SseEmitter subscribe(@CookieValue(value = CookieHelper.ACCESS_TOKEN_COOKIE_NAME, required = false) String accessToken) {

@@ -8,7 +8,7 @@ import com.mdevs.trackera.entity.User;
 import com.mdevs.trackera.entity.WorkLog;
 import com.mdevs.trackera.entity.WorkLogDetail;
 import com.mdevs.trackera.job.handlers.WorkLogSyncJobHandler;
-import com.mdevs.trackera.oauth.OAuthProvider;
+import com.mdevs.trackera.shared.enums.OAuthProvider;
 import com.mdevs.trackera.repository.WorkLogDetailRepository;
 import com.mdevs.trackera.repository.WorkLogRepository;
 import com.mdevs.trackera.shared.FileHandler;
@@ -22,10 +22,12 @@ import com.mdevs.trackera.shared.exceptions.types.NotFoundException;
 import com.mdevs.trackera.shared.exceptions.types.UnauthorizedException;
 import com.mdevs.trackera.shared.DurationFormatter;
 import com.mdevs.trackera.shared.mappers.WorkLogMapper;
-import com.mdevs.trackera.utils.AppUtils;
+import com.mdevs.trackera.utils.DateTimeUtil;
+import com.mdevs.trackera.utils.JsonUtil;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.TypedQuery;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.domain.Page;
@@ -47,6 +49,7 @@ import java.util.stream.Collectors;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class WorkLogService {
     private final WorkLogRepository workLogRepository;
 
@@ -68,17 +71,6 @@ public class WorkLogService {
     private static final Pattern DURATION_PATTERN = Pattern.compile("(?:(\\d+)h)?\\s*(?:(\\d+)m)?");
 
     public static final String WORKLOG_SYNC_STATUS_EVENT_NAME = "worklog-sync-status";
-
-    public WorkLogService(WorkLogRepository workLogRepository, WorkLogDetailRepository workLogDetailRepository, UserPreferenceService userPreferenceService,
-                          OAuthConnectionService oAuthConnectionService, BackgroundJobService backgroundJobService, NotificationService notificationService, WorkLogMapper workLogMapper) {
-        this.workLogRepository = workLogRepository;
-        this.workLogDetailRepository = workLogDetailRepository;
-        this.userPreferenceService = userPreferenceService;
-        this.oAuthConnectionService = oAuthConnectionService;
-        this.backgroundJobService = backgroundJobService;
-        this.notificationService = notificationService;
-        this.workLogMapper = workLogMapper;
-    }
 
     //<editor-fold desc="Search & Retrieval">
     public Page<WorkLogInfoDTO> searchAllWorkLogs(WorkLogSearchFilterDTO searchFilterDTO, Pageable pageable) {
@@ -141,8 +133,8 @@ public class WorkLogService {
         return workLogDetails.stream().map(workLogDetail -> {
             WorkLogEntryDTO workLogEntryDTO = new WorkLogEntryDTO();
             workLogEntryDTO.setId(workLogDetail.getUuid());
-            workLogEntryDTO.setFromTime(DurationFormatter.getDateTime12hFormatter().format(workLogDetail.getStartTime()));
-            workLogEntryDTO.setToTime(DurationFormatter.getDateTime12hFormatter().format(workLogDetail.getEndTime()));
+            workLogEntryDTO.setFromTime(DateTimeUtil.getDateTime12hFormatter().format(workLogDetail.getStartTime()));
+            workLogEntryDTO.setToTime(DateTimeUtil.getDateTime12hFormatter().format(workLogDetail.getEndTime()));
             workLogEntryDTO.setDuration(DurationFormatter.formatDuration(workLogDetail.getDuration(), false));
             workLogEntryDTO.setDescription(workLogDetail.getDescription());
             workLogEntryDTO.setStatus(workLogDetail.getStatus());
@@ -188,7 +180,7 @@ public class WorkLogService {
             WorkLogSyncPayloadDTO workLogSyncPayloadDTO = new WorkLogSyncPayloadDTO(workLog.getUser().getId(), workLog.getId());
             List<WorkLogDetailSyncRequestDTO> detailsToSync = workLogDetails.stream().map(detail -> new WorkLogDetailSyncRequestDTO(workLog.getUuid(), detail.getId(), detail.getTaskName(), null)).toList();
             workLogSyncPayloadDTO.setDetailsToSync(detailsToSync);
-            backgroundJobService.enqueueJob(WorkLogSyncJobHandler.class, AppUtils.convertObjectToJsonString(workLogSyncPayloadDTO));
+            backgroundJobService.enqueueJob(WorkLogSyncJobHandler.class, JsonUtil.convertObjectToJsonString(workLogSyncPayloadDTO));
 
             WorkLogSyncMessageDTO syncMessageDTO = new WorkLogSyncMessageDTO(WorkLogSyncMessageType.WORKLOG, workLog.getUuid(), null, null, workLog.getStatus(), null);
             notificationService.sendNotification(new NotificationDTO(AppConfig.getAuthenticatedCurrentUser().getUuid(), WORKLOG_SYNC_STATUS_EVENT_NAME, syncMessageDTO));
@@ -230,7 +222,7 @@ public class WorkLogService {
 
         if (workLogSyncPayloadDTO.hasWork()) {
             oAuthConnectionService.validateAndGetConnection(workLog.getUser(), OAuthProvider.JIRA);
-            backgroundJobService.enqueueJob(WorkLogSyncJobHandler.class, AppUtils.convertObjectToJsonString(workLogSyncPayloadDTO));
+            backgroundJobService.enqueueJob(WorkLogSyncJobHandler.class, JsonUtil.convertObjectToJsonString(workLogSyncPayloadDTO));
         }
 
         return Map.of("message", "Worklog updated successfully");
@@ -252,7 +244,7 @@ public class WorkLogService {
         if (!detailsToUnsync.isEmpty()) {
             oAuthConnectionService.validateAndGetConnection(workLog.getUser(), OAuthProvider.JIRA);
             workLogSyncPayloadDTO.setDetailsToUnsync(detailsToUnsync);
-            backgroundJobService.enqueueJob(WorkLogSyncJobHandler.class, AppUtils.convertObjectToJsonString(workLogSyncPayloadDTO));
+            backgroundJobService.enqueueJob(WorkLogSyncJobHandler.class, JsonUtil.convertObjectToJsonString(workLogSyncPayloadDTO));
         }
         workLogDetailRepository.deleteAll(detailsToDelete);
 
@@ -275,6 +267,17 @@ public class WorkLogService {
         }
 
         return result;
+    }
+
+    @Transactional
+    public long deleteDeprecatedWorkLogsBatch(long maxId, int pageSize) {
+        List<Long> deprecatedWorkLogsIds = workLogRepository.findByWorkDateLessThanEqualAndIdGreaterThanOrderById(AppConfig.getMinQueryableDate(), maxId, Pageable.ofSize(pageSize));
+        if (!deprecatedWorkLogsIds.isEmpty()) {
+            workLogDetailRepository.deleteByWorkLogIn(deprecatedWorkLogsIds);
+            workLogRepository.deleteAllByIdInBatch(deprecatedWorkLogsIds);
+            return deprecatedWorkLogsIds.getLast();
+        }
+        return -1;
     }
     //</editor-fold>
 
@@ -345,13 +348,7 @@ public class WorkLogService {
     }
 
     private Map<String, Object> processWorkLogFile(MultipartFile worklogFile) {
-        List<Map<WorkLogColumn, String>> parsedData;
-        try {
-            parsedData = FileHandler.validateAndParse(worklogFile);
-        } catch (Exception ex) {
-            log.error("Error processing worklog file", ex);
-            throw new RuntimeException(ex.getMessage());
-        }
+        List<Map<WorkLogColumn, String>> parsedData = FileHandler.validateAndParse(worklogFile);
 
         if (parsedData.isEmpty()) {
             throw new BusinessException("The uploaded file is empty or does not contain any valid data.");
@@ -429,9 +426,9 @@ public class WorkLogService {
 
         if (expectedType == LocalTime.class) {
             try {
-                result = LocalTime.parse(cell, DurationFormatter.getDateTime12hFormatter());
+                result = LocalTime.parse(cell, DateTimeUtil.getDateTime12hFormatter());
             } catch (Exception e) {
-                throw new BusinessException("[" + cellName + "] Invalid time format. Expected format is hh:mm AM/PM");
+                throw new BusinessException("[" + cellName + "] Invalid time format. Expected format is h:mm AM/PM");
             }
         }
 
@@ -471,7 +468,7 @@ public class WorkLogService {
             } else {
                 DayOfWeek dayOfWeek = manageWorkLogDTO.getLogDate().getDayOfWeek();
                 String dayName = dayOfWeek.name().substring(0, 1).toUpperCase() + dayOfWeek.name().substring(1).toLowerCase();
-                String formattedDate = DurationFormatter.getCompactedDateFormatter().format(manageWorkLogDTO.getLogDate());
+                String formattedDate = DateTimeUtil.getCompactedDateFormatter().format(manageWorkLogDTO.getLogDate());
                 workLog.setName("Worklog - " + dayName + formattedDate);
             }
 
@@ -547,7 +544,7 @@ public class WorkLogService {
         } else {
             workLogSyncPayloadDTO.setDetailsToUnsync(detailSyncRequests);
         }
-        backgroundJobService.enqueueJob(WorkLogSyncJobHandler.class, AppUtils.convertObjectToJsonString(workLogSyncPayloadDTO));
+        backgroundJobService.enqueueJob(WorkLogSyncJobHandler.class, JsonUtil.convertObjectToJsonString(workLogSyncPayloadDTO));
     }
 
     private void markDetailsForSync(List<WorkLogDetail> workLogDetails, boolean sync) {

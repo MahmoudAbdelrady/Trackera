@@ -1,5 +1,6 @@
 package com.mdevs.trackera.utils;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.nio.charset.StandardCharsets;
@@ -10,12 +11,9 @@ import java.util.Map;
 import java.util.StringJoiner;
 
 @Component
+@RequiredArgsConstructor
 public class OAuthUtil {
     private final CryptoUtil cryptoUtil;
-
-    public OAuthUtil(CryptoUtil cryptoUtil) {
-        this.cryptoUtil = cryptoUtil;
-    }
 
     public Map<String, String> generateSecurityParams(Long userId) {
         String state = generateState();

@@ -1,28 +1,28 @@
 package com.mdevs.trackera.utils;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import lombok.Getter;
 
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.util.Date;
-
-public class AppUtils {
-    @Getter
+public final class JsonUtil {
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
     static {
         objectMapper.registerModule(new JavaTimeModule());
         objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+    }
+
+    private JsonUtil() {
     }
 
     public static String convertObjectToJsonString(Object data) {
         try {
             return objectMapper.writeValueAsString(data);
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("Failed to serialize object to JSON: " + e.getMessage(), e);
         }
     }
 
@@ -30,12 +30,16 @@ public class AppUtils {
         try {
             return objectMapper.readValue(jsonString, clazz);
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("Failed to deserialize JSON string to object: " + e.getMessage(), e);
         }
     }
 
-    public static LocalDateTime convertDateToLocalDateTime(Date date) {
-        return LocalDateTime.ofInstant(date.toInstant(), ZoneId.systemDefault());
+    public static JsonNode convertJsonStringToTree(String json) {
+        try {
+            return objectMapper.readTree(json);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to parse JSON string to JsonNode: " + e.getMessage(), e);
+        }
     }
 
     public static <T> T convertValue(Object value, Class<T> targetType) {
@@ -62,7 +66,7 @@ public class AppUtils {
             } else if (targetType == String.class) {
                 return targetType.cast(s);
             } else {
-                return AppUtils.convertJsonStringToObject(value.toString(), targetType);
+                return JsonUtil.convertJsonStringToObject(value.toString(), targetType);
             }
         }
 
