@@ -59,7 +59,7 @@ public class UserController {
     }
 
     @PostMapping("/preferences")
-    public ResponseEntity<?> updatePreferences(@RequestBody Map<String, Object> updatedPreferences){
+    public ResponseEntity<?> updatePreferences(@RequestBody Map<String, Object> updatedPreferences) {
         userService.updateUserPreferences(updatedPreferences);
         return new ResponseEntity<>("Preferences updated successfully.", HttpStatus.OK);
     }

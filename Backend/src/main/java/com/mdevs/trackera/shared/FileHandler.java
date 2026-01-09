@@ -25,7 +25,6 @@ import java.util.stream.Stream;
 
 @Slf4j
 public class FileHandler {
-
     private static final Tika tika = new Tika();
 
     private static final List<String> EXCEL_MIME_TYPES = List.of(

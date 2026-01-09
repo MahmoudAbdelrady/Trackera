@@ -21,7 +21,7 @@ public class WorkLogController {
     private final WorkLogService workLogService;
 
     @PostMapping("/search")
-    public ResponseEntity<?> searchAllWorkLogs(@RequestBody(required = false)WorkLogSearchFilterDTO searchFilterDTO, Pageable pageable) {
+    public ResponseEntity<?> searchAllWorkLogs(@RequestBody(required = false) WorkLogSearchFilterDTO searchFilterDTO, Pageable pageable) {
         return new ResponseEntity<>(workLogService.searchAllWorkLogs(searchFilterDTO, pageable), HttpStatus.OK);
     }
 

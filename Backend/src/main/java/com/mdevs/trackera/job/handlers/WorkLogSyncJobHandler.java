@@ -71,7 +71,7 @@ public class WorkLogSyncJobHandler implements BackgroundJobHandler {
         }
 
         List<WorkLogDetailSyncRequestDTO> detailsToSync = workLogSyncPayloadDTO.getDetailsToSync();
-        if (StringUtils.isEmpty(resultDTO.getHardError()) && (detailsToSync != null && !detailsToSync.isEmpty())) {
+        if (StringUtils.isEmpty(resultDTO.getHardError()) && detailsToSync != null && !detailsToSync.isEmpty()) {
             resultDTO = processSyncDetails(workLogSyncPayloadDTO.getWorkLogId(), detailsToSync, syncUser, isLastRetry);
         }
 
@@ -102,7 +102,7 @@ public class WorkLogSyncJobHandler implements BackgroundJobHandler {
             } catch (Exception e) {
                 if (isLastRetry) {
                     List<Long> failedIds = detailsToUnsync.stream().map(WorkLogDetailSyncRequestDTO::getDetailId).filter(Objects::nonNull).toList();
-                    selfRef.handleFailedSync(syncUser, failedIds, WorkLogStatus.SYNCED, e.getMessage());
+                    selfRef.handleFailedSync(syncUser, failedIds, WorkLogStatus.SYNCED, e.getMessage()); // Revert to SYNCED on failure to unsync
                 }
                 resultDTO.setHardError(e.getMessage());
                 break;
@@ -127,7 +127,7 @@ public class WorkLogSyncJobHandler implements BackgroundJobHandler {
             } catch (Exception e) {
                 if (isLastRetry) {
                     List<Long> failedIds = detailsToSync.stream().map(WorkLogDetailSyncRequestDTO::getDetailId).filter(Objects::nonNull).toList();
-                    selfRef.handleFailedSync(syncUser, failedIds, WorkLogStatus.NOT_SYNCED, e.getMessage());
+                    selfRef.handleFailedSync(syncUser, failedIds, WorkLogStatus.NOT_SYNCED, e.getMessage()); // Revert to NOT_SYNCED on failure to sync
                 }
                 resultDTO.setHardError(e.getMessage());
                 break;
