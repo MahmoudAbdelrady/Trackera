@@ -7,11 +7,12 @@ import org.springframework.stereotype.Component;
 
 import java.util.Arrays;
 
-@Component
 public class CookieHelper {
     public static final String ACCESS_TOKEN_COOKIE_NAME = "accessToken";
 
     public static final String REFRESH_TOKEN_COOKIE_NAME = "refreshToken";
+
+    public static final String CSRF_COOKIE_NAME = "csrfToken";
 
     public static final String COOKIE_GENERAL_PATH = "/trackera";
 
@@ -19,7 +20,7 @@ public class CookieHelper {
 
     public static final int REFRESH_TOKEN_ROTATION_THRESHOLD_DAYS = 3;
 
-    public Cookie create(String name, String value, boolean isHttpOnly, String path, int maxAge) {
+    public static Cookie create(String name, String value, boolean isHttpOnly, String path, int maxAge) {
         Cookie cookie = new Cookie(name, value);
         cookie.setHttpOnly(isHttpOnly);
         cookie.setSecure(AppConfig.isProductionEnv());

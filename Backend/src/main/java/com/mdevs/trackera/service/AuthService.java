@@ -47,8 +47,6 @@ public class AuthService {
 
     private final JwtUtil jwtUtil;
 
-    private final CookieHelper cookieHelper;
-
     //<editor-fold desc="Registration & Authentication">
     @Transactional
     public void signUp(SignUpDTO signUpDTO) {
@@ -113,7 +111,7 @@ public class AuthService {
             log.warn("Error invalidating tokens during logout: {}", e.getMessage(), e);
         }
 
-        addAuthCookiesToResponse(response, null, null, true);
+        addAuthCookiesToResponse(response, null, null, null, true);
     }
 
     public void getSession(String refreshToken) {
@@ -135,7 +133,7 @@ public class AuthService {
             userInvalidTokenService.create(tokenUser, refreshToken, refreshTokenClaims.getExpiration(), false);
         }
 
-        addAuthCookiesToResponse(response, newAccessToken, newRefreshToken, false);
+        addAuthCookiesToResponse(response, newAccessToken, newRefreshToken, null, false);
     }
     //</editor-fold>
 
@@ -253,11 +251,11 @@ public class AuthService {
     private void generateLoginInfo(User user, HttpServletResponse response) {
         String accessToken = jwtUtil.generateToken(user.getUuid(), true);
         String refreshToken = jwtUtil.generateToken(user.getUuid(), false);
-        addAuthCookiesToResponse(response, accessToken, refreshToken, false);
+        addAuthCookiesToResponse(response, accessToken, refreshToken, UUID.randomUUID().toString(), false);
     }
 
-    private void addAuthCookiesToResponse(HttpServletResponse response, String accessToken, String refreshToken, boolean clear) {
-        response.addCookie(cookieHelper.create(
+    private void addAuthCookiesToResponse(HttpServletResponse response, String accessToken, String refreshToken, String csrfToken, boolean clear) {
+        response.addCookie(CookieHelper.create(
                 CookieHelper.ACCESS_TOKEN_COOKIE_NAME,
                 accessToken,
                 true,
@@ -265,13 +263,23 @@ public class AuthService {
                 clear ? 0 : CookieHelper.getTokenCookieMaxAge(true)
         ));
 
-        if (!StringUtils.isEmpty(refreshToken)) {
-            response.addCookie(cookieHelper.create(
+        if (!StringUtils.isEmpty(refreshToken) || clear) {
+            response.addCookie(CookieHelper.create(
                     CookieHelper.REFRESH_TOKEN_COOKIE_NAME,
                     refreshToken,
                     true,
                     CookieHelper.COOKIE_AUTH_PATH,
                     clear ? 0 : CookieHelper.getTokenCookieMaxAge(false)
+            ));
+        }
+
+        if (!StringUtils.isEmpty(csrfToken) || clear) {
+            response.addCookie(CookieHelper.create(
+                    CookieHelper.CSRF_COOKIE_NAME,
+                    csrfToken,
+                    false,
+                    "/",
+                    clear ? 0 : CookieHelper.getTokenCookieMaxAge(true)
             ));
         }
     }
