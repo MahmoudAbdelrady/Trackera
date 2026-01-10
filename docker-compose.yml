@@ -1,0 +1,53 @@
+services:
+  backend:
+    build: ./Backend
+    container_name: trackera-backend
+    ports:
+      - "8080:8080"
+    environment:
+      JAVA_OPTS: -Dspring.profiles.active=local
+    depends_on:
+      - mdbserver
+      - redis
+      - rabbitmq
+
+  frontend:
+    build:
+      context: ./Frontend
+      args:
+        TRACKERA_MAX_FILE_SIZE: ${VITE_TRACKERA_MAX_FILE_SIZE}
+    container_name: trackera-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+
+  mdbserver:
+    image: mariadb
+    container_name: trackera-mariadb
+    environment:
+      MYSQL_ROOT_PASSWORD: root123
+      MYSQL_DATABASE: trackeradb
+    ports:
+      - "3307:3306"
+    volumes:
+      - mariadb_data:/var/lib/mysql
+
+  redis:
+    image: redis:alpine
+    container_name: trackera-redis
+    ports:
+      - "6379:6379"
+
+  rabbitmq:
+    image: rabbitmq:management-alpine
+    container_name: trackera-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672" # management UI
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS}
+
+volumes:
+  mariadb_data:

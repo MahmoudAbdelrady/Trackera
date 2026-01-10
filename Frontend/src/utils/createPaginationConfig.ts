@@ -13,7 +13,7 @@ const createPaginationConfig = <T>(
   onChange: (page: number, pageSize: number) => {
     onPageChange(page - 1, pageSize);
   },
-  onShowSizeChange: (current: number, size: number) => {
+  onShowSizeChange: (_current: number, size: number) => {
     onPageChange(0, size);
   },
 });
