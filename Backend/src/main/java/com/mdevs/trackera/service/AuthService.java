@@ -263,7 +263,7 @@ public class AuthService {
                 CookieHelper.ACCESS_TOKEN_COOKIE_NAME,
                 accessToken,
                 true,
-                CookieHelper.COOKIE_GENERAL_PATH,
+                CookieHelper.COOKIE_ROOT_PATH,
                 clear ? 0 : CookieHelper.getTokenCookieMaxAge(true)
         ));
 
@@ -282,7 +282,7 @@ public class AuthService {
                     CookieHelper.CSRF_COOKIE_NAME,
                     csrfToken,
                     false,
-                    "/",
+                    CookieHelper.COOKIE_ROOT_PATH,
                     clear ? 0 : CookieHelper.getTokenCookieMaxAge(false)
             ));
         }

@@ -13,6 +13,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.LocalDate;
+import java.util.Arrays;
 import java.util.Objects;
 import java.util.Properties;
 
@@ -72,7 +73,7 @@ public class AppConfig {
     }
 
     public static boolean isProductionEnv() {
-        return applicationContext.getEnvironment().getProperty("trackera.environment", "dev").equalsIgnoreCase("prod");
+        return Arrays.stream(applicationContext.getEnvironment().getActiveProfiles()).anyMatch(profile -> profile.equalsIgnoreCase("prod"));
     }
 
     public static int getMaxJobFailures() {

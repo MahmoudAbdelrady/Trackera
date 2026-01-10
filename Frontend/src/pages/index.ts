@@ -7,7 +7,6 @@ import Home from "./home/Home";
 import WorklogDetails from "./worklog-details/WorklogDetails";
 import JiraTasks from "./jira-tasks/JiraTasks";
 import Settings from "./settings/Settings";
-import Test from "./test/Test";
 import OAuthCallback from "./oauth-callback/OAuthCallback";
 import PrivacyPolicy from "./privacy-policy/PrivacyPolicy";
 import NotFound from "./not-found/NotFound";
@@ -22,7 +21,6 @@ export {
   WorklogDetails,
   JiraTasks,
   Settings,
-  Test,
   OAuthCallback,
   PrivacyPolicy,
   NotFound,
