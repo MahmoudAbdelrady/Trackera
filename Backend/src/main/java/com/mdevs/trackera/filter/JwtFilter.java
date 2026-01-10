@@ -15,7 +15,6 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
-import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
 
 import java.io.IOException;
 import java.util.List;
@@ -27,13 +26,6 @@ public class JwtFilter extends TrackeraSecurityFilter {
     private final JwtUtil jwtUtil;
 
     private final UserService userService;
-
-    private final RequestMappingHandlerMapping handlerMapping;
-
-    @Override
-    protected RequestMappingHandlerMapping getHandlerMapping() {
-        return handlerMapping;
-    }
 
     @Override
     protected void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull FilterChain filterChain) throws ServletException, IOException {
