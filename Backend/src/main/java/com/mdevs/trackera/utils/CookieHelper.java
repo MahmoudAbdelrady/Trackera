@@ -25,6 +25,7 @@ public class CookieHelper {
         cookie.setSecure(AppConfig.isProductionEnv());
         cookie.setPath(path);
         cookie.setMaxAge(maxAge);
+        cookie.setAttribute("SameSite", "Lax");
         return cookie;
     }
 
