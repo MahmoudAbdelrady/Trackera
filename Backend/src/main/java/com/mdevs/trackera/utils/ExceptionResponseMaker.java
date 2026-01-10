@@ -4,7 +4,7 @@ import com.mdevs.trackera.shared.exceptions.TrackeraExceptionResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
-public class ExceptionResponseMaker {
+public final class ExceptionResponseMaker {
     private static final TrackeraExceptionResponse trackeraExceptionResponse = new TrackeraExceptionResponse();
 
     public static ResponseEntity<?> makeResponse(String message, HttpStatus status) {
