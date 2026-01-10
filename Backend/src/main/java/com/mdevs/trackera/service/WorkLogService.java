@@ -273,7 +273,7 @@ public class WorkLogService {
     }
 
     @Transactional
-    public long deleteDeprecatedWorkLogsBatch(long maxId, int pageSize) {
+    public long deleteDeprecatedWithBatch(long maxId, int pageSize) {
         List<Long> deprecatedWorkLogsIds = workLogRepository.findByWorkDateLessThanEqualAndIdGreaterThanOrderById(AppConfig.getMinQueryableDate(), maxId, Pageable.ofSize(pageSize));
         if (!deprecatedWorkLogsIds.isEmpty()) {
             workLogDetailRepository.deleteByWorkLogIn(deprecatedWorkLogsIds);

@@ -193,7 +193,7 @@ const JiraTasks = () => {
           </div>
         </>
       ) : (
-        <AccessDenied />
+        <AccessDenied message="Jira is not linked to your account. Please link Jira to access this page." fitParent />
       )}
     </AppLayout>
   );

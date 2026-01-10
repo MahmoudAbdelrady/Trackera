@@ -40,7 +40,7 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody @Valid LoginDTO loginDTO, HttpServletResponse response) {
         Map<String, Object> result = authService.login(loginDTO, response);
-        return result.containsKey("isError") ? ExceptionResponseMaker.makeResponse(result.get("message").toString(), HttpStatus.FORBIDDEN) : new ResponseEntity<>(result, HttpStatus.OK);
+        return result != null && result.containsKey("isError") ? ExceptionResponseMaker.makeResponse(result.get("message").toString(), HttpStatus.FORBIDDEN) : new ResponseEntity<>(result, HttpStatus.OK);
     }
 
     @PublicAPI
@@ -80,8 +80,10 @@ public class AuthController {
     @PublicAPI
     @RateLimited
     @PostMapping("/jwt/refresh")
-    public ResponseEntity<?> refreshJwt(@CookieValue(value = CookieHelper.REFRESH_TOKEN_COOKIE_NAME, required = false) String refreshToken, HttpServletResponse response) {
-        authService.refreshJwt(refreshToken, response);
+    public ResponseEntity<?> refreshJwt(@CookieValue(value = CookieHelper.REFRESH_TOKEN_COOKIE_NAME, required = false) String refreshToken,
+                                        @CookieValue(value = CookieHelper.CSRF_COOKIE_NAME, required = false) String csrfCookieToken,
+                                        HttpServletRequest request, HttpServletResponse response) {
+        authService.refreshJwt(refreshToken, csrfCookieToken, request, response);
         return new ResponseEntity<>(HttpStatus.OK);
     }
 

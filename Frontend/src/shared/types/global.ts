@@ -28,6 +28,8 @@ const filterOperatorsMetadata = [
   { label: "Between", value: OPERATORS.BETWEEN },
 ];
 
-export type { PaginatedResponse };
+type AxiosErrorType = "SERVER" | "AUTH" | "FORBIDDEN";
+
+export type { PaginatedResponse, AxiosErrorType };
 
 export { OPERATORS, filterOperatorsMetadata };

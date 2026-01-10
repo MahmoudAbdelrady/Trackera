@@ -1,4 +1,4 @@
-import type { PaginatedResponse } from "./global";
+import type { PaginatedResponse, AxiosErrorType } from "./global";
 
 import { OPERATORS, filterOperatorsMetadata } from "./global";
 
@@ -36,6 +36,7 @@ import type { JiraTask, JiraSite } from "./jira";
 export type {
   SyncPayload,
   PaginatedResponse,
+  AxiosErrorType,
   WorklogEvaluationType,
   WorklogStatusType,
   Worklog,

@@ -22,8 +22,8 @@ import queryClient from "./state/queries";
 import { useEffect } from "react";
 import { authApis } from "./state/api";
 import { useAuthStore } from "./state/store";
-import type { AxiosError } from "axios";
 import { SSEContextProvider } from "./shared/contexts";
+import { categorizeAxiosError } from "./utils";
 
 const router = createBrowserRouter([
   {
@@ -121,9 +121,11 @@ const App = () => {
       try {
         await authApis.isAuthenticated();
         isAuthenticated = true;
-      } catch (error: AxiosError | any) {
-        if (!error.response || error.response.status !== 401) {
-          authState.setError(true);
+        authState.setErrorType(undefined);
+      } catch (error: unknown) {
+        const errorCategory = categorizeAxiosError(error);
+        if (errorCategory) {
+          authState.setErrorType(errorCategory);
         }
         isAuthenticated = false;
       }

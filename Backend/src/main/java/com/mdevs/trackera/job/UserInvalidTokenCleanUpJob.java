@@ -20,7 +20,7 @@ public class UserInvalidTokenCleanUpJob implements TrackeraJob {
         batchJobExecutor.execute(
                 UserInvalidTokenCleanUpJob.class.getSimpleName(),
                 AppConfig.getBatchJobPageSize(),
-                userInvalidTokenService::deleteExpiredTokensBatch
+                userInvalidTokenService::deleteExpiredWithBatch
         );
     }
 }

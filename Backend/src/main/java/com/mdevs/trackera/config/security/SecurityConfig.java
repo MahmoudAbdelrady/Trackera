@@ -1,6 +1,7 @@
 package com.mdevs.trackera.config.security;
 
 import com.mdevs.trackera.config.general.AppConfig;
+import com.mdevs.trackera.filter.CsrfTokenFilter;
 import com.mdevs.trackera.filter.JwtFilter;
 import com.mdevs.trackera.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -27,7 +28,7 @@ public class SecurityConfig {
     private final PasswordEncoder passwordEncoder;
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity, JwtFilter jwtFilter) {
+    public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity, JwtFilter jwtFilter, CsrfTokenFilter csrfTokenFilter) {
         try {
             httpSecurity
                     .csrf(AbstractHttpConfigurer::disable)
@@ -39,6 +40,7 @@ public class SecurityConfig {
                         corsConfiguration.setAllowCredentials(true);
                         return corsConfiguration;
                     }))
+                    .addFilterBefore(csrfTokenFilter, UsernamePasswordAuthenticationFilter.class)
                     .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
             return httpSecurity.build();

@@ -1,13 +1,20 @@
 import { EmptyState } from "../";
 
-const AccessDenied = () => {
+interface AccessDeniedProps {
+  message: string;
+  fitParent?: boolean;
+}
+
+const AccessDenied = (props: AccessDeniedProps) => {
+  const { message, fitParent } = props;
+
   return (
     <EmptyState
       imgSrc="/Assets/access_denied.svg"
       alt="Access Denied"
       title="Access Denied"
-      message="Jira is not linked to your account. Please link Jira to access this page."
-      fitParent
+      message={message}
+      fitParent={fitParent}
     />
   );
 };

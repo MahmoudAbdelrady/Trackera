@@ -6,6 +6,7 @@ import createPaginationConfig from "./createPaginationConfig";
 import formatDate from "./formatDate";
 import buildWorklogSyncButtonProps from "./buildWorklogSyncButtonProps";
 import { isNullOrEmpty } from "./helpers";
+import { categorizeAxiosError } from "./categorizeAxiosError";
 
 export {
   getFormikErrors,
@@ -17,4 +18,5 @@ export {
   formatDate,
   buildWorklogSyncButtonProps,
   isNullOrEmpty,
+  categorizeAxiosError,
 };

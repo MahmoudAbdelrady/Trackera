@@ -2,7 +2,6 @@ package com.mdevs.trackera.filter;
 
 import com.mdevs.trackera.entity.User;
 import com.mdevs.trackera.service.UserService;
-import com.mdevs.trackera.shared.annotations.PublicAPI;
 import com.mdevs.trackera.utils.JwtUtil;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.FilterChain;
@@ -16,9 +15,6 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
-import org.springframework.web.filter.OncePerRequestFilter;
-import org.springframework.web.method.HandlerMethod;
-import org.springframework.web.servlet.HandlerExecutionChain;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
 
 import java.io.IOException;
@@ -27,12 +23,17 @@ import java.util.List;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class JwtFilter extends OncePerRequestFilter {
+public class JwtFilter extends TrackeraSecurityFilter {
     private final JwtUtil jwtUtil;
 
     private final UserService userService;
 
     private final RequestMappingHandlerMapping handlerMapping;
+
+    @Override
+    protected RequestMappingHandlerMapping getHandlerMapping() {
+        return handlerMapping;
+    }
 
     @Override
     protected void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull FilterChain filterChain) throws ServletException, IOException {
@@ -54,18 +55,5 @@ public class JwtFilter extends OncePerRequestFilter {
         Authentication authentication = new UsernamePasswordAuthenticationToken(user, null, List.of());
         SecurityContextHolder.getContext().setAuthentication(authentication);
         filterChain.doFilter(request, response);
-    }
-
-    @Override
-    protected boolean shouldNotFilter(@NonNull HttpServletRequest request) throws ServletException {
-        try {
-            HandlerExecutionChain chain = handlerMapping.getHandler(request);
-            if (chain != null && chain.getHandler() instanceof HandlerMethod handlerMethod) {
-                return handlerMethod.hasMethodAnnotation(PublicAPI.class) || handlerMethod.getBeanType().isAnnotationPresent(PublicAPI.class);
-            }
-        } catch (Exception e) {
-            log.error("Could not resolve handler for request: {}", request.getRequestURI(), e);
-        }
-        return false;
     }
 }

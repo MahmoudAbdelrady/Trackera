@@ -25,12 +25,12 @@ public class UserInvalidTokenService {
         userInvalidTokenRepository.save(invalidAccessToken);
     }
 
-    public boolean isTokenInvalid(String userUuid, String token, boolean isAccessToken) {
+    public boolean isInvalid(String userUuid, String token, boolean isAccessToken) {
         return userInvalidTokenRepository.existsByUserUuidAndTokenFingerprintAndIsAccessToken(userUuid, DigestUtils.sha256Hex(token), isAccessToken);
     }
 
     @Transactional
-    public long deleteExpiredTokensBatch(long maxId, int pageSize) {
+    public long deleteExpiredWithBatch(long maxId, int pageSize) {
         List<Long> invalidTokensIds = userInvalidTokenRepository.findExpiredAfterIdOrderById(LocalDateTime.now(), maxId, Pageable.ofSize(pageSize));
         if (!invalidTokensIds.isEmpty()) {
             userInvalidTokenRepository.deleteAllByIdInBatch(invalidTokensIds);

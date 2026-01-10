@@ -6,7 +6,7 @@ import org.slf4j.Logger;
 import java.util.ArrayList;
 import java.util.List;
 
-public class LoggingUtil {
+public final class LoggingUtil {
     public static Object proceedWithLogging(ProceedingJoinPoint joinPoint, Logger logger, String logInfo, List<Object> args) throws Throwable {
         logger.info("[START] " + logInfo, args.toArray());
         List<Object> extendedArgs = new ArrayList<>(args);

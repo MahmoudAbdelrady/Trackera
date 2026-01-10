@@ -20,7 +20,7 @@ public class SecurityTokenCleanUpJob implements TrackeraJob {
         batchJobExecutor.execute(
                 SecurityTokenCleanUpJob.class.getSimpleName(),
                 AppConfig.getBatchJobPageSize(),
-                securityTokenService::deleteExpiredTokensBatch
+                securityTokenService::deleteExpiredWithBatch
         );
     }
 }

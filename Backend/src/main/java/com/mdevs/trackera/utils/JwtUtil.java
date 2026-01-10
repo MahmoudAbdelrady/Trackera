@@ -49,7 +49,7 @@ public class JwtUtil {
     public Claims validateAndGetTokenPayload(String token, boolean isAccessToken) {
         Claims claims = getTokenPayload(token, isAccessToken);
         String uuid = claims.get("id", String.class);
-        if (userInvalidTokenService.isTokenInvalid(uuid, token, isAccessToken)) {
+        if (userInvalidTokenService.isInvalid(uuid, token, isAccessToken)) {
             throw new SecurityException("Session expired.");
         }
         return claims;
