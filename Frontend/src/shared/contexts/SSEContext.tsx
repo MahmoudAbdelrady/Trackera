@@ -42,7 +42,6 @@ export const SSEContextProvider = ({ children }: { children: ReactNode }) => {
     });
 
     es.onerror = (error) => {
-      console.log("SSE error:", error);
       disconnect();
     };
 
