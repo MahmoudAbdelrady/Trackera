@@ -7,7 +7,6 @@ import {
   Home,
   JiraTasks,
   Settings,
-  Test,
   WorklogDetails,
   ForgotPassword,
   ChangePassword,
@@ -87,14 +86,6 @@ const router = createBrowserRouter([
     element: (
       <PrivateRoute>
         <Settings />
-      </PrivateRoute>
-    ),
-  },
-  {
-    path: "/test",
-    element: (
-      <PrivateRoute>
-        <Test />
       </PrivateRoute>
     ),
   },

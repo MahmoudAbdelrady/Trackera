@@ -13,9 +13,9 @@ public final class CookieHelper {
 
     public static final String CSRF_COOKIE_NAME = "csrfToken";
 
-    public static final String COOKIE_GENERAL_PATH = "/trackera";
+    public static final String COOKIE_ROOT_PATH = "/";
 
-    public static final String COOKIE_AUTH_PATH = "/trackera/auth";
+    public static final String COOKIE_AUTH_PATH = "/auth";
 
     public static final int REFRESH_TOKEN_ROTATION_THRESHOLD_DAYS = 3;
 

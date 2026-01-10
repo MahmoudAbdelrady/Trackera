@@ -14,7 +14,6 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -91,11 +90,7 @@ public class AuthController {
     @RateLimited
     @PostMapping("/token/consume")
     public ResponseEntity<?> consumeSecurityToken(@RequestParam String token) {
-        try {
-            return new ResponseEntity<>(authService.consumeToken(token), HttpStatus.OK);
-        } catch (ObjectOptimisticLockingFailureException ex) {
-            return new ResponseEntity<>(new AuthResultDTO("Token validated successfully", null), HttpStatus.OK); // @TODO --> Remove in production
-        }
+        return new ResponseEntity<>(authService.consumeToken(token), HttpStatus.OK);
     }
 
     @PublicAPI
