@@ -19,8 +19,7 @@ public abstract class TrackeraSecurityFilter extends OncePerRequestFilter {
         try {
             HandlerExecutionChain chain = getHandlerMapping().getHandler(request);
             if (chain != null && chain.getHandler() instanceof HandlerMethod handlerMethod) {
-                return handlerMethod.hasMethodAnnotation(PublicAPI.class)
-                        || handlerMethod.getBeanType().isAnnotationPresent(PublicAPI.class);
+                return handlerMethod.hasMethodAnnotation(PublicAPI.class) || handlerMethod.getBeanType().isAnnotationPresent(PublicAPI.class);
             }
         } catch (Exception e) {
             log.error("Could not resolve handler for request: {}", request.getRequestURI(), e);

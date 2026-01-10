@@ -20,7 +20,7 @@ public class WorkLogCleanUpJob implements TrackeraJob {
         batchJobExecutor.execute(
                 WorkLogCleanUpJob.class.getSimpleName(),
                 AppConfig.getBatchJobPageSize(),
-                workLogService::deleteDeprecatedWorkLogsBatch
+                workLogService::deleteDeprecatedWithBatch
         );
     }
 }

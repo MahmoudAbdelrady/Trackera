@@ -3,7 +3,6 @@ package com.mdevs.trackera.utils;
 import com.mdevs.trackera.config.general.AppConfig;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
-import org.springframework.stereotype.Component;
 
 import java.util.Arrays;
 

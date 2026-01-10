@@ -91,7 +91,7 @@ public class SecurityTokenService {
     }
 
     @Transactional
-    public long deleteExpiredTokensBatch(long maxId, int pageSize) {
+    public long deleteExpiredWithBatch(long maxId, int pageSize) {
         List<Long> securityTokensIds = securityTokenRepository
                 .findSecurityRequestTokenWithCreationDateLessThanEqual(LocalDateTime.now().minusMinutes(SecurityTokenService.MAX_SECURITY_TOKEN_MINUTES), maxId, Pageable.ofSize(pageSize));
         if (!securityTokensIds.isEmpty()) {

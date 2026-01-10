@@ -47,6 +47,8 @@ public class AuthService {
 
     private final JwtUtil jwtUtil;
 
+    private final CsrfUtil csrfUtil;
+
     //<editor-fold desc="Registration & Authentication">
     @Transactional
     public void signUp(SignUpDTO signUpDTO) {
@@ -118,8 +120,10 @@ public class AuthService {
         jwtUtil.validateAndGetTokenPayload(refreshToken, false);
     }
 
-    public void refreshJwt(String refreshToken, HttpServletResponse response) {
+    public void refreshJwt(String refreshToken, String csrfCookieToken, HttpServletRequest request, HttpServletResponse response) {
         Claims refreshTokenClaims = jwtUtil.validateAndGetTokenPayload(refreshToken, false);
+        csrfUtil.validate(csrfCookieToken, request.getHeader(CsrfUtil.CSRF_HEADER_NAME));
+
         String userUuid = refreshTokenClaims.get("id", String.class);
         String newAccessToken = jwtUtil.generateToken(userUuid, true);
         String newRefreshToken = null;
@@ -133,7 +137,7 @@ public class AuthService {
             userInvalidTokenService.create(tokenUser, refreshToken, refreshTokenClaims.getExpiration(), false);
         }
 
-        addAuthCookiesToResponse(response, newAccessToken, newRefreshToken, null, false);
+        addAuthCookiesToResponse(response, newAccessToken, newRefreshToken, newRefreshToken != null ? csrfUtil.generate() : null, false);
     }
     //</editor-fold>
 
@@ -251,7 +255,7 @@ public class AuthService {
     private void generateLoginInfo(User user, HttpServletResponse response) {
         String accessToken = jwtUtil.generateToken(user.getUuid(), true);
         String refreshToken = jwtUtil.generateToken(user.getUuid(), false);
-        addAuthCookiesToResponse(response, accessToken, refreshToken, UUID.randomUUID().toString(), false);
+        addAuthCookiesToResponse(response, accessToken, refreshToken, csrfUtil.generate(), false);
     }
 
     private void addAuthCookiesToResponse(HttpServletResponse response, String accessToken, String refreshToken, String csrfToken, boolean clear) {
@@ -279,7 +283,7 @@ public class AuthService {
                     csrfToken,
                     false,
                     "/",
-                    clear ? 0 : CookieHelper.getTokenCookieMaxAge(true)
+                    clear ? 0 : CookieHelper.getTokenCookieMaxAge(false)
             ));
         }
     }

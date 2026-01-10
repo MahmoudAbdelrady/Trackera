@@ -1,6 +1,7 @@
 package com.mdevs.trackera.filter;
 
 import com.mdevs.trackera.utils.CookieHelper;
+import com.mdevs.trackera.utils.CsrfUtil;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -17,6 +18,8 @@ import java.io.IOException;
 @Component
 @RequiredArgsConstructor
 public class CsrfTokenFilter extends TrackeraSecurityFilter {
+    private final CsrfUtil csrfUtil;
+
     private final RequestMappingHandlerMapping handlerMapping;
 
     @Override
@@ -27,9 +30,11 @@ public class CsrfTokenFilter extends TrackeraSecurityFilter {
     @Override
     protected void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull FilterChain filterChain) throws ServletException, IOException {
         String csrfCookieToken = CookieHelper.extractCookieValue(request, CookieHelper.CSRF_COOKIE_NAME);
-        String csrfHeaderToken = request.getHeader("X-CSRF-TOKEN");
+        String csrfHeaderToken = request.getHeader(CsrfUtil.CSRF_HEADER_NAME);
 
-        if (csrfCookieToken == null || !csrfCookieToken.equals(csrfHeaderToken)) {
+        try {
+            csrfUtil.validate(csrfCookieToken, csrfHeaderToken);
+        } catch (Exception e) {
             log.warn("CSRF token validation failed");
             response.setStatus(HttpServletResponse.SC_FORBIDDEN);
             return;
