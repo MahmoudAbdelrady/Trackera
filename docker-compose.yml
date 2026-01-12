@@ -27,8 +27,8 @@ services:
     image: mariadb
     container_name: trackera-mariadb
     environment:
-      MYSQL_ROOT_PASSWORD: root123
-      MYSQL_DATABASE: trackeradb
+      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD}
+      MARIADB_DATABASE: ${MARIADB_DATABASE}
     ports:
       - "3307:3306"
     volumes:
