@@ -72,6 +72,10 @@ public class AppConfig {
         return LocalDate.now().minusYears(1).withDayOfYear(1);
     }
 
+    public static String getAppBaseUrl() {
+        return applicationContext.getEnvironment().getProperty("trackera.app.base-url");
+    }
+
     public static boolean isProductionEnv() {
         return Arrays.stream(applicationContext.getEnvironment().getActiveProfiles()).anyMatch(profile -> profile.equalsIgnoreCase("prod"));
     }

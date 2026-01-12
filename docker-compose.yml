@@ -15,6 +15,7 @@ services:
     build:
       context: ./Frontend
       args:
+        TRACKERA_BACKEND_URL: ${VITE_TRACKERA_BACKEND_URL}
         TRACKERA_MAX_FILE_SIZE: ${VITE_TRACKERA_MAX_FILE_SIZE}
     container_name: trackera-frontend
     ports:

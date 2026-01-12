@@ -7,9 +7,11 @@ RUN npm install -g pnpm
 WORKDIR /app
 
 # Build arguments
+ARG TRACKERA_BACKEND_URL
 ARG TRACKERA_MAX_FILE_SIZE
 
 # Environment variables for Vite
+ENV VITE_TRACKERA_BACKEND_URL=$TRACKERA_BACKEND_URL
 ENV VITE_TRACKERA_MAX_FILE_SIZE=$TRACKERA_MAX_FILE_SIZE
 
 COPY package.json pnpm-lock.yaml ./
