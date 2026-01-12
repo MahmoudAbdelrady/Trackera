@@ -1,0 +1,174 @@
+name: Manual Docker Build, Scan & Push
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_branch:
+      description: "Branch to build"
+      required: true
+      default: dev
+      type: choice
+      options:
+        - dev
+        - main
+      force_backend:
+        description: "Force backend build"
+        type: boolean
+        default: false
+      force_frontend:
+        description: "Force frontend build"
+        type: boolean
+        default: false
+
+jobs:
+  changes:
+    name: Detect Changes
+    runs-on: ubuntu-latest
+
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+      frontend: ${{ steps.filter.outputs.frontend }}
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.inputs.target_branch }}
+
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            backend:
+              - 'Backend/**'
+            frontend:
+              - 'Frontend/**'
+
+  backend:
+    name: Backend - Build, Scan & Push
+    needs: changes
+    runs-on: ubuntu-latest
+    if: needs.changes.outputs.backend == 'true' || inputs.force_backend
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.inputs.target_branch }}
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Compute backend image tags
+        id: tags
+        run: |
+          SHORT_SHA=$(echo $GITHUB_SHA | cut -c1-7)
+
+          if [[ "${{ github.event.inputs.target_branch }}" == "main" ]]; then
+            echo "tags=trackera-backend:latest,trackera-backend:${SHORT_SHA}" >> $GITHUB_OUTPUT
+            echo "scan_tag=trackera-backend:latest" >> $GITHUB_OUTPUT
+          else
+            echo "tags=trackera-backend:dev,trackera-backend:dev-${SHORT_SHA}" >> $GITHUB_OUTPUT
+            echo "scan_tag=trackera-backend:dev" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Build backend image (local)
+        uses: docker/build-push-action@v5
+        with:
+          context: ./Backend
+          file: ./Backend/Dockerfile
+          load: true
+          tags: ${{ steps.tags.outputs.tags }}
+
+      # Non-blocking scan
+      - name: Backend security scan (warnings)
+        uses: aquasecurity/trivy-action@v0.20.0
+        continue-on-error: true
+        with:
+          image-ref: ${{ steps.tags.outputs.scan_tag }}
+          severity: LOW,MEDIUM
+          format: table
+
+      # Blocking scan
+      - name: Backend security scan (critical)
+        uses: aquasecurity/trivy-action@v0.20.0
+        with:
+          image-ref: ${{ steps.tags.outputs.scan_tag }}
+          severity: HIGH,CRITICAL
+          exit-code: 1
+          format: table
+
+      - name: Push backend image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./Backend
+          file: ./Backend/Dockerfile
+          push: true
+          tags: ${{ steps.tags.outputs.tags }}
+
+  frontend:
+    name: Frontend - Build, Scan & Push
+    needs: changes
+    runs-on: ubuntu-latest
+    if: needs.changes.outputs.frontend == 'true' || inputs.force_frontend
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.inputs.target_branch }}
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Compute frontend image tags
+        id: tags
+        run: |
+          SHORT_SHA=$(echo $GITHUB_SHA | cut -c1-7)
+
+          if [[ "${{ github.event.inputs.target_branch }}" == "main" ]]; then
+            echo "tags=trackera-frontend:latest,trackera-frontend:${SHORT_SHA}" >> $GITHUB_OUTPUT
+            echo "scan_tag=trackera-frontend:latest" >> $GITHUB_OUTPUT
+          else
+            echo "tags=trackera-frontend:dev,trackera-frontend:dev-${SHORT_SHA}" >> $GITHUB_OUTPUT
+            echo "scan_tag=trackera-frontend:dev" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Build frontend image (local)
+        uses: docker/build-push-action@v5
+        with:
+          context: ./Frontend
+          file: ./Frontend/Dockerfile
+          load: true
+          tags: ${{ steps.tags.outputs.tags }}
+
+      # Non-blocking scan
+      - name: Frontend security scan (warnings)
+        uses: aquasecurity/trivy-action@v0.20.0
+        continue-on-error: true
+        with:
+          image-ref: ${{ steps.tags.outputs.scan_tag }}
+          severity: LOW,MEDIUM
+          format: table
+
+      # Blocking scan
+      - name: Frontend security scan (critical)
+        uses: aquasecurity/trivy-action@v0.20.0
+        with:
+          image-ref: ${{ steps.tags.outputs.scan_tag }}
+          severity: HIGH,CRITICAL
+          exit-code: 1
+          format: table
+
+      - name: Push frontend image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./Frontend
+          file: ./Frontend/Dockerfile
+          push: true
+          tags: ${{ steps.tags.outputs.tags }}
