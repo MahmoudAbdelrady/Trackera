@@ -34,7 +34,7 @@ jobs:
             maven-
 
       - name: Build backend
-        run: ./mvnw clean package -DskipTests
+        run: ./mvnw clean package -DskipTests -B -ntp
 
   build-frontend:
     name: Build Frontend (Vite)
