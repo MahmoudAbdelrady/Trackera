@@ -1,5 +1,6 @@
 import { createContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { authApis } from "../../state/api";
+import { API_BASE_URL } from "../constants";
 
 interface SSEContextValue {
   isConnected: boolean;
@@ -23,7 +24,7 @@ export const SSEContextProvider = ({ children }: { children: ReactNode }) => {
   const connect = () => {
     if (eventSourceRef.current) return;
 
-    const es = new EventSource(`${import.meta.env.VITE_TRACKERA_BACKEND_URL}/notifications/subscribe`, {
+    const es = new EventSource(`${API_BASE_URL}/notifications/subscribe`, {
       withCredentials: true,
     });
 
@@ -41,7 +42,7 @@ export const SSEContextProvider = ({ children }: { children: ReactNode }) => {
       }
     });
 
-    es.onerror = (error) => {
+    es.onerror = (_error) => {
       disconnect();
     };
 

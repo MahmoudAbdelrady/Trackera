@@ -15,7 +15,7 @@ public final class CookieHelper {
 
     public static final String COOKIE_ROOT_PATH = "/";
 
-    public static final String COOKIE_AUTH_PATH = "/auth";
+    public static final String COOKIE_AUTH_PATH = AppConfig.getAppBaseUrl() + "/auth";
 
     public static final int REFRESH_TOKEN_ROTATION_THRESHOLD_DAYS = 3;
 
