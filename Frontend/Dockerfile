@@ -1,5 +1,5 @@
 # Build stage
-FROM node:alpine AS build
+FROM node:25-alpine AS build
 
 # Install pnpm
 RUN npm install -g pnpm
@@ -21,7 +21,7 @@ COPY . .
 RUN pnpm run build
 
 # Production stage
-FROM nginx:alpine
+FROM nginx:1.29-alpine
 
 # Copy build output to Nginx
 COPY --from=build /app/dist /usr/share/nginx/html
