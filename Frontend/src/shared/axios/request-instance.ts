@@ -1,8 +1,9 @@
 import axios from "axios";
 import { csrfInterceptor, refreshJwtInterceptor } from "./interceptors";
+import { API_BASE_URL } from "../constants";
 
 const requestInstance = axios.create({
-  baseURL: import.meta.env.VITE_TRACKERA_BACKEND_URL,
+  baseURL: API_BASE_URL,
   withCredentials: true,
 });
 

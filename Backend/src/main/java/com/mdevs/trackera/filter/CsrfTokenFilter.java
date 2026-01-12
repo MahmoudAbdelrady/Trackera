@@ -10,7 +10,6 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
 
 import java.io.IOException;
 
@@ -19,13 +18,6 @@ import java.io.IOException;
 @RequiredArgsConstructor
 public class CsrfTokenFilter extends TrackeraSecurityFilter {
     private final CsrfUtil csrfUtil;
-
-    private final RequestMappingHandlerMapping handlerMapping;
-
-    @Override
-    protected RequestMappingHandlerMapping getHandlerMapping() {
-        return handlerMapping;
-    }
 
     @Override
     protected void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull FilterChain filterChain) throws ServletException, IOException {

@@ -16,7 +16,6 @@ import {
 } from "./pages";
 import { Toaster } from "react-hot-toast";
 import { QueryClientProvider } from "@tanstack/react-query";
-import { GoogleOAuthProvider } from "@react-oauth/google";
 import queryClient from "./state/queries";
 import { useEffect } from "react";
 import { authApis } from "./state/api";
@@ -130,12 +129,10 @@ const App = () => {
 
   return (
     <SSEContextProvider>
-      <GoogleOAuthProvider clientId={import.meta.env.VITE_TRACKERA_GOOGLE_CLIENT_ID}>
-        <QueryClientProvider client={queryClient}>
-          <Toaster />
-          <RouterProvider router={router} />
-        </QueryClientProvider>
-      </GoogleOAuthProvider>
+      <QueryClientProvider client={queryClient}>
+        <Toaster />
+        <RouterProvider router={router} />
+      </QueryClientProvider>
     </SSEContextProvider>
   );
 };
