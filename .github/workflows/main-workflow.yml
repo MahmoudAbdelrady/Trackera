@@ -4,13 +4,13 @@ on:
   workflow_dispatch:
     inputs:
       target_branch:
-      description: "Branch to build"
-      required: true
-      default: dev
-      type: choice
-      options:
-        - dev
-        - main
+        description: "Branch to build"
+        required: true
+        default: dev
+        type: choice
+        options:
+          - dev
+          - main
       force_backend:
         description: "Force backend build"
         type: boolean
