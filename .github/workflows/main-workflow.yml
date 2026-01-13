@@ -75,7 +75,7 @@ jobs:
           fi
 
       - name: Build backend image (local)
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: ./Backend
           file: ./Backend/Dockerfile
@@ -84,7 +84,7 @@ jobs:
 
       # Non-blocking scan
       - name: Backend security scan (warnings)
-        uses: aquasecurity/trivy-action@v0.20.0
+        uses: aquasecurity/trivy-action@v0.33.1
         continue-on-error: true
         with:
           image-ref: ${{ steps.tags.outputs.scan_tag }}
@@ -93,7 +93,7 @@ jobs:
 
       # Blocking scan
       - name: Backend security scan (critical)
-        uses: aquasecurity/trivy-action@v0.20.0
+        uses: aquasecurity/trivy-action@v0.33.1
         with:
           image-ref: ${{ steps.tags.outputs.scan_tag }}
           severity: HIGH,CRITICAL
@@ -101,7 +101,7 @@ jobs:
           format: table
 
       - name: Push backend image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: ./Backend
           file: ./Backend/Dockerfile
@@ -140,7 +140,7 @@ jobs:
           fi
 
       - name: Build frontend image (local)
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: ./Frontend
           file: ./Frontend/Dockerfile
@@ -149,7 +149,7 @@ jobs:
 
       # Non-blocking scan
       - name: Frontend security scan (warnings)
-        uses: aquasecurity/trivy-action@v0.20.0
+        uses: aquasecurity/trivy-action@v0.33.1
         continue-on-error: true
         with:
           image-ref: ${{ steps.tags.outputs.scan_tag }}
@@ -158,7 +158,7 @@ jobs:
 
       # Blocking scan
       - name: Frontend security scan (critical)
-        uses: aquasecurity/trivy-action@v0.20.0
+        uses: aquasecurity/trivy-action@v0.33.1
         with:
           image-ref: ${{ steps.tags.outputs.scan_tag }}
           severity: HIGH,CRITICAL
@@ -166,7 +166,7 @@ jobs:
           format: table
 
       - name: Push frontend image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: ./Frontend
           file: ./Frontend/Dockerfile
