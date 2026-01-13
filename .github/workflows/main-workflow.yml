@@ -67,11 +67,11 @@ jobs:
           SHORT_SHA=$(echo $GITHUB_SHA | cut -c1-7)
 
           if [[ "${{ github.event.inputs.target_branch }}" == "main" ]]; then
-            echo "tags=trackera-backend:latest,trackera-backend:${SHORT_SHA}" >> $GITHUB_OUTPUT
-            echo "scan_tag=trackera-backend:latest" >> $GITHUB_OUTPUT
+            echo "tags=${{ secrets.DOCKER_USERNAME }}/trackera-backend:latest,${{ secrets.DOCKER_USERNAME }}/trackera-backend:${SHORT_SHA}" >> $GITHUB_OUTPUT
+            echo "scan_tag=${{ secrets.DOCKER_USERNAME }}/trackera-backend:latest" >> $GITHUB_OUTPUT
           else
-            echo "tags=trackera-backend:dev,trackera-backend:dev-${SHORT_SHA}" >> $GITHUB_OUTPUT
-            echo "scan_tag=trackera-backend:dev" >> $GITHUB_OUTPUT
+            echo "tags=${{ secrets.DOCKER_USERNAME }}/trackera-backend:dev,${{ secrets.DOCKER_USERNAME }}/trackera-backend:dev-${SHORT_SHA}" >> $GITHUB_OUTPUT
+            echo "scan_tag=${{ secrets.DOCKER_USERNAME }}/trackera-backend:dev" >> $GITHUB_OUTPUT
           fi
 
       - name: Build backend image (local)
@@ -132,11 +132,11 @@ jobs:
           SHORT_SHA=$(echo $GITHUB_SHA | cut -c1-7)
 
           if [[ "${{ github.event.inputs.target_branch }}" == "main" ]]; then
-            echo "tags=trackera-frontend:latest,trackera-frontend:${SHORT_SHA}" >> $GITHUB_OUTPUT
-            echo "scan_tag=trackera-frontend:latest" >> $GITHUB_OUTPUT
+            echo "tags=${{ secrets.DOCKER_USERNAME }}/trackera-frontend:latest,${{ secrets.DOCKER_USERNAME }}/trackera-frontend:${SHORT_SHA}" >> $GITHUB_OUTPUT
+            echo "scan_tag=${{ secrets.DOCKER_USERNAME }}/trackera-frontend:latest" >> $GITHUB_OUTPUT
           else
-            echo "tags=trackera-frontend:dev,trackera-frontend:dev-${SHORT_SHA}" >> $GITHUB_OUTPUT
-            echo "scan_tag=trackera-frontend:dev" >> $GITHUB_OUTPUT
+            echo "tags=${{ secrets.DOCKER_USERNAME }}/trackera-frontend:dev,${{ secrets.DOCKER_USERNAME }}/trackera-frontend:dev-${SHORT_SHA}" >> $GITHUB_OUTPUT
+            echo "scan_tag=${{ secrets.DOCKER_USERNAME }}/trackera-frontend:dev" >> $GITHUB_OUTPUT
           fi
 
       - name: Build frontend image (local)
