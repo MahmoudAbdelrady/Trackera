@@ -11,43 +11,21 @@ on:
         options:
           - dev
           - main
-      force_backend:
-        description: "Force backend build"
+      deploy_backend:
+        description: "Deploy Backend"
         type: boolean
         default: false
-      force_frontend:
-        description: "Force frontend build"
+      deploy_frontend:
+        description: "Deploy Frontend"
         type: boolean
         default: false
 
 jobs:
-  changes:
-    name: Detect Changes
-    runs-on: ubuntu-latest
-
-    outputs:
-      backend: ${{ steps.filter.outputs.backend }}
-      frontend: ${{ steps.filter.outputs.frontend }}
-
-    steps:
-      - uses: actions/checkout@v6
-        with:
-          ref: ${{ github.event.inputs.target_branch }}
-
-      - uses: dorny/paths-filter@v3
-        id: filter
-        with:
-          filters: |
-            backend:
-              - 'Backend/**'
-            frontend:
-              - 'Frontend/**'
-
   backend:
     name: Backend - Build, Scan & Push
     needs: changes
     runs-on: ubuntu-latest
-    if: needs.changes.outputs.backend == 'true' || inputs.force_backend
+    if: inputs.deploy_backend
 
     steps:
       - uses: actions/checkout@v6
@@ -112,7 +90,7 @@ jobs:
     name: Frontend - Build, Scan & Push
     needs: changes
     runs-on: ubuntu-latest
-    if: needs.changes.outputs.frontend == 'true' || inputs.force_frontend
+    if: inputs.deploy_frontend
 
     steps:
       - uses: actions/checkout@v6
