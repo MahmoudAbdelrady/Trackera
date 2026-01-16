@@ -23,7 +23,6 @@ on:
 jobs:
   backend:
     name: Backend - Build, Scan & Push
-    needs: changes
     runs-on: ubuntu-latest
     if: inputs.deploy_backend
 
@@ -88,7 +87,6 @@ jobs:
 
   frontend:
     name: Frontend - Build, Scan & Push
-    needs: changes
     runs-on: ubuntu-latest
     if: inputs.deploy_frontend
 
