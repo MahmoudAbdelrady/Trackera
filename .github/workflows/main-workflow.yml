@@ -43,7 +43,7 @@ jobs:
         run: |
           SHORT_SHA=$(echo $GITHUB_SHA | cut -c1-7)
 
-          if [[ "${{ inputs.target_branch }}" == "main" ]]; then
+          if [[ "${{ inputs.target_branch }}" == 'main' ]]; then
             echo "tags=${{ secrets.DOCKER_USERNAME }}/trackera-backend:latest,${{ secrets.DOCKER_USERNAME }}/trackera-backend:${SHORT_SHA}" >> $GITHUB_OUTPUT
             echo "scan_tag=${{ secrets.DOCKER_USERNAME }}/trackera-backend:latest" >> $GITHUB_OUTPUT
           else
@@ -87,7 +87,7 @@ jobs:
 
   frontend:
     name: Frontend - Build, Scan & Push
-    environment: ${{ inputs.target_branch == "main" && "Production" || "Development" }}
+    environment: ${{ inputs.target_branch == 'main' && 'Production' || 'Development' }}
     runs-on: ubuntu-latest
     if: inputs.deploy_frontend
 
@@ -108,7 +108,7 @@ jobs:
         run: |
           SHORT_SHA=$(echo $GITHUB_SHA | cut -c1-7)
 
-          if [[ "${{ inputs.target_branch }}" == "main" ]]; then
+          if [[ "${{ inputs.target_branch }}" == 'main' ]]; then
             echo "tags=${{ secrets.DOCKER_USERNAME }}/trackera-frontend:latest,${{ secrets.DOCKER_USERNAME }}/trackera-frontend:${SHORT_SHA}" >> $GITHUB_OUTPUT
             echo "scan_tag=${{ secrets.DOCKER_USERNAME }}/trackera-frontend:latest" >> $GITHUB_OUTPUT
           else
