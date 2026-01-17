@@ -20,7 +20,7 @@ public abstract class TrackeraSecurityFilter extends OncePerRequestFilter {
 
     @Override
     protected boolean shouldNotFilter(@NonNull HttpServletRequest request) throws ServletException {
-        if (request.getRequestURI().startsWith("/actuator")) {
+        if (request.getRequestURI().startsWith("/actuator") || request.getRequestURI().startsWith("/app-docs")) {
             return true;
         }
         try {

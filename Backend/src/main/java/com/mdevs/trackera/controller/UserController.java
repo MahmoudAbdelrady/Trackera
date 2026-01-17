@@ -1,5 +1,7 @@
 package com.mdevs.trackera.controller;
 
+import com.mdevs.trackera.dto.auth.OAuthProviderInfoDTO;
+import com.mdevs.trackera.dto.user.LoggedUserDTO;
 import com.mdevs.trackera.dto.user.PasswordDTO;
 import com.mdevs.trackera.service.UserPreferenceService;
 import com.mdevs.trackera.service.UserService;
@@ -10,6 +12,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -21,51 +24,51 @@ public class UserController {
     private final UserPreferenceService userPreferenceService;
 
     @GetMapping("/me")
-    public ResponseEntity<?> getMeInfo() {
+    public ResponseEntity<LoggedUserDTO> getMeInfo() {
         return ResponseEntity.ok(userService.getMeInfo());
     }
 
     @GetMapping("/oauth-providers")
-    public ResponseEntity<?> getUserOAuthProviders() {
+    public ResponseEntity<List<OAuthProviderInfoDTO>> getUserOAuthProviders() {
         return new ResponseEntity<>(userService.getUserOAuthProviders(), HttpStatus.OK);
     }
 
     @RateLimited
     @PostMapping("/password")
-    public ResponseEntity<?> changePassword(@RequestBody @Valid PasswordDTO passwordDTO) {
+    public ResponseEntity<String> changePassword(@RequestBody @Valid PasswordDTO passwordDTO) {
         userService.changePassword(passwordDTO);
         return new ResponseEntity<>("Password changed successfully.", HttpStatus.OK);
     }
 
     @RateLimited
     @PostMapping("/email/request-change")
-    public ResponseEntity<?> requestEmailChange(@RequestBody Map<String, Object> body) {
+    public ResponseEntity<String> requestEmailChange(@RequestBody Map<String, Object> body) {
         userService.requestEmailChange((String) body.get("email"));
         return new ResponseEntity<>("We’ve sent a verification link to your new email. Please verify to complete the change.", HttpStatus.CREATED);
     }
 
     @RateLimited
     @PostMapping("/email/send-verification")
-    public ResponseEntity<?> sendEmailVerification() {
+    public ResponseEntity<String> sendEmailVerification() {
         userService.sendEmailVerification();
         return new ResponseEntity<>("Verification email sent successfully. Please check your email.", HttpStatus.OK);
     }
 
     @RateLimited
     @DeleteMapping("/email/pending")
-    public ResponseEntity<?> removePendingEmail() {
+    public ResponseEntity<String> removePendingEmail() {
         userService.removePendingEmail();
         return new ResponseEntity<>("Pending email removed successfully.", HttpStatus.OK);
     }
 
     @GetMapping("/preferences")
-    public ResponseEntity<?> getPreferences() {
+    public ResponseEntity<Map<String, Object>> getPreferences() {
         return new ResponseEntity<>(userPreferenceService.getAll(), HttpStatus.OK);
     }
 
     @RateLimited(permitsPerMinute = 20)
     @PostMapping("/preferences")
-    public ResponseEntity<?> updatePreferences(@RequestBody Map<String, Object> updatedPreferences) {
+    public ResponseEntity<String> updatePreferences(@RequestBody Map<String, Object> updatedPreferences) {
         userService.updateUserPreferences(updatedPreferences);
         return new ResponseEntity<>("Preferences updated successfully.", HttpStatus.OK);
     }

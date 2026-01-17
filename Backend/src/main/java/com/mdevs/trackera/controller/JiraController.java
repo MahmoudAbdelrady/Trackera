@@ -1,6 +1,7 @@
 package com.mdevs.trackera.controller;
 
 import com.mdevs.trackera.config.general.AppConfig;
+import com.mdevs.trackera.dto.jira.JiraProjectDTO;
 import com.mdevs.trackera.service.JiraService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -8,6 +9,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
@@ -21,7 +24,7 @@ public class JiraController {
     }
 
     @GetMapping("/sites")
-    public ResponseEntity<?> getUserSites() {
+    public ResponseEntity<List<JiraProjectDTO>> getUserSites() {
         return ResponseEntity.ok(jiraService.getUserSites(AppConfig.getAuthenticatedCurrentUser()));
     }
 }
