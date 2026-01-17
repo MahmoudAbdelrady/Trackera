@@ -69,7 +69,7 @@ cd trackera
 
 ### Environment Variables
 
-Copy `.env.example` to `.env` and fill in credentials:
+Copy the following `.env.example` to `.env` and fill in credentials:
 
 ```
 # Database
@@ -137,7 +137,7 @@ docker-compose -f docker-compose.local.yml up --build
 
 ## Frontend
 
-See [FRONTEND.md](FRONTEND.md) for:
+See [FRONTEND.md](docs/FRONTEND.md) for:
 
 - Folder structure
 - Routing & state management
