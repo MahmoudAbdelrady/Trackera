@@ -1,5 +1,5 @@
 import { Button, Tabs, type TableProps, type TabsProps } from "antd";
-import { TrackeraTable, StatusBadge, AccessDenied, type StatusBadgeProps } from "../../components";
+import { TrackeraTable, StatusBadge, AccessDenied, type StatusBadgeProps, AvatarWithFallback } from "../../components";
 import { ExternalLink, RefreshCw } from "lucide-react";
 import { type JiraTask } from "../../shared/types";
 import { Link } from "react-router-dom";
@@ -47,14 +47,12 @@ const JiraTasks = () => {
           <div className={classes.project_cell}>
             {project ? (
               <>
-                <img
+                <AvatarWithFallback
                   src={project.icon}
                   alt={project.name}
-                  onError={() => {
-                    return (
-                      <div className={classes.project_avatar_fallback}>{project.name.slice(0, 2).toUpperCase()}</div>
-                    );
-                  }}
+                  fallbackText={project.name}
+                  width="28px"
+                  height="28px"
                 />
                 <span>{project.name}</span>
               </>
