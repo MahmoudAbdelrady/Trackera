@@ -1,0 +1,15 @@
+@use "../../../shared/styles/colors" as *;
+@use "../../../shared/styles/mixins" as *;
+
+img {
+  border-radius: 6px;
+}
+
+.avatar_fallback {
+  @include center;
+  border-radius: 6px;
+  background: #2d2f36;
+  color: #fff;
+  font-weight: 600;
+  padding: 6px;
+}

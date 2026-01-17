@@ -24,20 +24,6 @@
 .project_cell {
   @include start;
   gap: 8px;
-  img {
-    width: 28px;
-    height: 28px;
-    border-radius: 6px;
-  }
-  .project_avatar_fallback {
-    @include center;
-    width: 28px;
-    height: 28px;
-    border-radius: 6px;
-    background: #2d2f36;
-    color: #fff;
-    font-weight: 600;
-  }
 }
 
 .task_link {
