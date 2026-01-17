@@ -33,6 +33,17 @@
   height: 28px;
   border-radius: 6px;
 }
+.project_cell .project_avatar_fallback {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: #2d2f36;
+  color: #fff;
+  font-weight: 600;
+}
 
 .task_link {
   position: relative;
