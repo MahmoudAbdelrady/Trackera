@@ -11,48 +11,25 @@ on:
         options:
           - dev
           - main
-      force_backend:
-        description: "Force backend build"
+      deploy_backend:
+        description: "Deploy Backend"
         type: boolean
         default: false
-      force_frontend:
-        description: "Force frontend build"
+      deploy_frontend:
+        description: "Deploy Frontend"
         type: boolean
         default: false
 
 jobs:
-  changes:
-    name: Detect Changes
-    runs-on: ubuntu-latest
-
-    outputs:
-      backend: ${{ steps.filter.outputs.backend }}
-      frontend: ${{ steps.filter.outputs.frontend }}
-
-    steps:
-      - uses: actions/checkout@v6
-        with:
-          ref: ${{ github.event.inputs.target_branch }}
-
-      - uses: dorny/paths-filter@v3
-        id: filter
-        with:
-          filters: |
-            backend:
-              - 'Backend/**'
-            frontend:
-              - 'Frontend/**'
-
   backend:
     name: Backend - Build, Scan & Push
-    needs: changes
     runs-on: ubuntu-latest
-    if: needs.changes.outputs.backend == 'true' || inputs.force_backend
+    if: inputs.deploy_backend
 
     steps:
       - uses: actions/checkout@v6
         with:
-          ref: ${{ github.event.inputs.target_branch }}
+          ref: ${{ inputs.target_branch }}
 
       - uses: docker/setup-buildx-action@v3
 
@@ -66,7 +43,7 @@ jobs:
         run: |
           SHORT_SHA=$(echo $GITHUB_SHA | cut -c1-7)
 
-          if [[ "${{ github.event.inputs.target_branch }}" == "main" ]]; then
+          if [[ "${{ inputs.target_branch }}" == 'main' ]]; then
             echo "tags=${{ secrets.DOCKER_USERNAME }}/trackera-backend:latest,${{ secrets.DOCKER_USERNAME }}/trackera-backend:${SHORT_SHA}" >> $GITHUB_OUTPUT
             echo "scan_tag=${{ secrets.DOCKER_USERNAME }}/trackera-backend:latest" >> $GITHUB_OUTPUT
           else
@@ -110,14 +87,14 @@ jobs:
 
   frontend:
     name: Frontend - Build, Scan & Push
-    needs: changes
+    environment: ${{ inputs.target_branch == 'main' && 'Production' || 'Development' }}
     runs-on: ubuntu-latest
-    if: needs.changes.outputs.frontend == 'true' || inputs.force_frontend
+    if: inputs.deploy_frontend
 
     steps:
       - uses: actions/checkout@v6
         with:
-          ref: ${{ github.event.inputs.target_branch }}
+          ref: ${{ inputs.target_branch }}
 
       - uses: docker/setup-buildx-action@v3
 
@@ -131,7 +108,7 @@ jobs:
         run: |
           SHORT_SHA=$(echo $GITHUB_SHA | cut -c1-7)
 
-          if [[ "${{ github.event.inputs.target_branch }}" == "main" ]]; then
+          if [[ "${{ inputs.target_branch }}" == 'main' ]]; then
             echo "tags=${{ secrets.DOCKER_USERNAME }}/trackera-frontend:latest,${{ secrets.DOCKER_USERNAME }}/trackera-frontend:${SHORT_SHA}" >> $GITHUB_OUTPUT
             echo "scan_tag=${{ secrets.DOCKER_USERNAME }}/trackera-frontend:latest" >> $GITHUB_OUTPUT
           else
@@ -146,6 +123,9 @@ jobs:
           file: ./Frontend/Dockerfile
           load: true
           tags: ${{ steps.tags.outputs.tags }}
+          build-args: |
+            TRACKERA_BACKEND_URL=${{ vars.BACKEND_URL }}
+            TRACKERA_MAX_FILE_SIZE=${{ vars.MAX_FILE_SIZE }}
 
       # Non-blocking scan
       - name: Frontend security scan (warnings)
@@ -172,3 +152,6 @@ jobs:
           file: ./Frontend/Dockerfile
           push: true
           tags: ${{ steps.tags.outputs.tags }}
+          build-args: |
+            TRACKERA_BACKEND_URL=${{ vars.BACKEND_URL }}
+            TRACKERA_MAX_FILE_SIZE=${{ vars.MAX_FILE_SIZE }}

@@ -22,83 +22,89 @@ import { authApis } from "./state/api";
 import { useAuthStore } from "./state/store";
 import { SSEContextProvider } from "./shared/contexts";
 import { categorizeAxiosError } from "./utils";
+import { ServerError } from "./components";
 
 const router = createBrowserRouter([
   {
-    path: "/login",
-    element: (
-      <GuestRoute>
-        <Login />
-      </GuestRoute>
-    ),
-  },
-  {
-    path: "/sign-up",
-    element: (
-      <GuestRoute>
-        <SignUp />
-      </GuestRoute>
-    ),
-  },
-  {
-    path: "/forgot-password",
-    element: (
-      <GuestRoute>
-        <ForgotPassword />
-      </GuestRoute>
-    ),
-  },
-  {
-    path: "/change-password",
-    element: <ChangePassword />,
-  },
-  {
-    path: "/security-verification",
-    element: <SecurityVerification />,
-  },
-  {
-    path: "/",
-    element: (
-      <PrivateRoute>
-        <Home />
-      </PrivateRoute>
-    ),
-  },
-  {
-    path: "/worklog-details/:worklogId",
-    element: (
-      <PrivateRoute>
-        <WorklogDetails />
-      </PrivateRoute>
-    ),
-  },
-  {
-    path: "/jira-tasks",
-    element: (
-      <PrivateRoute>
-        <JiraTasks />
-      </PrivateRoute>
-    ),
-  },
-  {
-    path: "/settings",
-    element: (
-      <PrivateRoute>
-        <Settings />
-      </PrivateRoute>
-    ),
-  },
-  {
-    path: "/oauth/:provider/callback",
-    element: <OAuthCallback />,
-  },
-  {
-    path: "/privacy-policy",
-    element: <PrivacyPolicy />,
-  },
-  {
-    path: "*",
-    element: <NotFound />,
+    errorElement: <ServerError />,
+    children: [
+      {
+        path: "/login",
+        element: (
+          <GuestRoute>
+            <Login />
+          </GuestRoute>
+        ),
+      },
+      {
+        path: "/sign-up",
+        element: (
+          <GuestRoute>
+            <SignUp />
+          </GuestRoute>
+        ),
+      },
+      {
+        path: "/forgot-password",
+        element: (
+          <GuestRoute>
+            <ForgotPassword />
+          </GuestRoute>
+        ),
+      },
+      {
+        path: "/change-password",
+        element: <ChangePassword />,
+      },
+      {
+        path: "/security-verification",
+        element: <SecurityVerification />,
+      },
+      {
+        path: "/",
+        element: (
+          <PrivateRoute>
+            <Home />
+          </PrivateRoute>
+        ),
+      },
+      {
+        path: "/worklog-details/:worklogId",
+        element: (
+          <PrivateRoute>
+            <WorklogDetails />
+          </PrivateRoute>
+        ),
+      },
+      {
+        path: "/jira-tasks",
+        element: (
+          <PrivateRoute>
+            <JiraTasks />
+          </PrivateRoute>
+        ),
+      },
+      {
+        path: "/settings",
+        element: (
+          <PrivateRoute>
+            <Settings />
+          </PrivateRoute>
+        ),
+      },
+      {
+        path: "/oauth/:provider/callback",
+        element: <OAuthCallback />,
+      },
+      {
+        path: "/privacy-policy",
+        element: <PrivacyPolicy />,
+      },
+      {
+        path: "*",
+        element: <NotFound />,
+      },
+    ],
   },
 ]);
 
