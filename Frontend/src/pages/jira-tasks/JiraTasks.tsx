@@ -47,7 +47,15 @@ const JiraTasks = () => {
           <div className={classes.project_cell}>
             {project ? (
               <>
-                <img src={project.icon} alt={project.name} />
+                <img
+                  src={project.icon}
+                  alt={project.name}
+                  onError={() => {
+                    return (
+                      <div className={classes.project_avatar_fallback}>{project.name.slice(0, 2).toUpperCase()}</div>
+                    );
+                  }}
+                />
                 <span>{project.name}</span>
               </>
             ) : (
@@ -157,7 +165,7 @@ const JiraTasks = () => {
         ),
       },
     ],
-    [jiraTasksColumns, jiraTasks, isLoading]
+    [jiraTasksColumns, jiraTasks, isLoading],
   );
 
   const fetchJiraTasks = useCallback(async (forceUpdate: boolean = false) => {
