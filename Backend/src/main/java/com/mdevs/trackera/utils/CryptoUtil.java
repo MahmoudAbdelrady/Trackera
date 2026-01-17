@@ -6,6 +6,7 @@ import org.springframework.stereotype.Component;
 import javax.crypto.Cipher;
 import javax.crypto.Mac;
 import javax.crypto.SecretKey;
+import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -21,7 +22,8 @@ public class CryptoUtil {
     @Value("${trackera.hasher.encryption_key}")
     private String encryptionSecretKey;
 
-    private static final String ENCRYPTION_ALGORITHM = "AES";
+    private static final String ENCRYPTION_ALGORITHM = "AES/CBC/PKCS5Padding";
+    private static final int IV_LENGTH = 16;
 
     private static final SecureRandom secureRandom = new SecureRandom();
 
@@ -113,9 +115,21 @@ public class CryptoUtil {
 
     private byte[] encrypt(String text) {
         try {
+            // Generate random IV for each encryption
+            byte[] iv = new byte[IV_LENGTH];
+            secureRandom.nextBytes(iv);
+            IvParameterSpec ivSpec = new IvParameterSpec(iv);
+
             Cipher cipher = Cipher.getInstance(ENCRYPTION_ALGORITHM);
-            cipher.init(Cipher.ENCRYPT_MODE, getAesKey());
-            return cipher.doFinal(text.getBytes(StandardCharsets.UTF_8));
+            cipher.init(Cipher.ENCRYPT_MODE, getAesKey(), ivSpec);
+            byte[] encryptedBytes = cipher.doFinal(text.getBytes(StandardCharsets.UTF_8));
+
+            // Prepend IV to ciphertext (IV + encrypted data)
+            byte[] combined = new byte[IV_LENGTH + encryptedBytes.length];
+            System.arraycopy(iv, 0, combined, 0, IV_LENGTH);
+            System.arraycopy(encryptedBytes, 0, combined, IV_LENGTH, encryptedBytes.length);
+
+            return combined;
         } catch (Exception e) {
             throw new RuntimeException("Encryption failed", e);
         }
@@ -123,9 +137,19 @@ public class CryptoUtil {
 
     private String decrypt(byte[] encryptedBytes) {
         try {
+            // Extract IV from the beginning of the ciphertext
+            byte[] iv = new byte[IV_LENGTH];
+            System.arraycopy(encryptedBytes, 0, iv, 0, IV_LENGTH);
+            IvParameterSpec ivSpec = new IvParameterSpec(iv);
+
+            // Extract the actual ciphertext
+            byte[] ciphertext = new byte[encryptedBytes.length - IV_LENGTH];
+            System.arraycopy(encryptedBytes, IV_LENGTH, ciphertext, 0, ciphertext.length);
+
             Cipher cipher = Cipher.getInstance(ENCRYPTION_ALGORITHM);
-            cipher.init(Cipher.DECRYPT_MODE, getAesKey());
-            byte[] decryptedBytes = cipher.doFinal(encryptedBytes);
+            cipher.init(Cipher.DECRYPT_MODE, getAesKey(), ivSpec);
+            byte[] decryptedBytes = cipher.doFinal(ciphertext);
+
             return new String(decryptedBytes, StandardCharsets.UTF_8);
         } catch (Exception e) {
             throw new RuntimeException("Decryption failed", e);
