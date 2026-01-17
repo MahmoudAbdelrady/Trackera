@@ -87,7 +87,7 @@ jobs:
 
   frontend:
     name: Frontend - Build, Scan & Push
-    environment: ${{ inputs.environment == 'production' ? 'Production' : 'Development' }}
+    environment: ${{ inputs.target_branch == 'main' && 'Production' || 'Development' }}
     runs-on: ubuntu-latest
     if: inputs.deploy_frontend
 
