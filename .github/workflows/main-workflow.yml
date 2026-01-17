@@ -87,6 +87,7 @@ jobs:
 
   frontend:
     name: Frontend - Build, Scan & Push
+    environment: ${{ inputs.environment == 'production' ? 'Production' : 'Development' }}
     runs-on: ubuntu-latest
     if: inputs.deploy_frontend
 
@@ -122,6 +123,9 @@ jobs:
           file: ./Frontend/Dockerfile
           load: true
           tags: ${{ steps.tags.outputs.tags }}
+          build-args: |
+            TRACKERA_BACKEND_URL=${{ vars.BACKEND_URL }}
+            TRACKERA_MAX_FILE_SIZE=${{ vars.MAX_FILE_SIZE }}
 
       # Non-blocking scan
       - name: Frontend security scan (warnings)

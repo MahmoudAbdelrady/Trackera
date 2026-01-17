@@ -19,8 +19,8 @@ const manageWorklog = object({
     then: (schema) =>
       schema
         .required("Log file is required")
-        .test("fileSize", "File size must be less than 5MB", (value?: File) => {
-          return !value || value.size <= 5 * 1024 * 1024;
+        .test("fileSize", `File size must be less than ${import.meta.env.VITE_TRACKERA_MAX_FILE_SIZE}MB`, (value?: File) => {
+          return !value || value.size <= parseInt(import.meta.env.VITE_TRACKERA_MAX_FILE_SIZE!) * 1024 * 1024;
         })
         .test("fileType", "Invalid file type", (value?: File) => {
           return !value || ALLOWED_FILE_TYPES.includes(value.type);
