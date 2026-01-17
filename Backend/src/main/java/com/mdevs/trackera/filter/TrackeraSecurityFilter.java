@@ -20,7 +20,6 @@ public abstract class TrackeraSecurityFilter extends OncePerRequestFilter {
 
     @Override
     protected boolean shouldNotFilter(@NonNull HttpServletRequest request) throws ServletException {
-        System.out.println("API: " + request.getRequestURI());
         if (request.getRequestURI().startsWith("/actuator")) {
             return true;
         }
