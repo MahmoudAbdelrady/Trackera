@@ -18,8 +18,4 @@ public record JiraTaskResponse(String key, Map<String, Object> fields) {
     public Map<String, Object> getTimeTracking() {
         return (Map<String, Object>) fields.get("timetracking");
     }
-
-    public Object getResolution() {
-        return fields.get("resolution");
-    }
 }

@@ -232,27 +232,34 @@ public class JiraService {
 
     private JiraTaskDTO buildTaskInfo(JiraTaskResponse task, String projectBaseUrl, JiraTaskDTO.TimeTrackingDTO timeTracking) {
         Map<String, Object> status = task.getStatus();
+        Map<String, Object> statusCategory = (Map<String, Object>) status.get("statusCategory");
+
+        String statusName = (String) status.get("name");
+        String categoryKey = statusCategory != null ? (String) statusCategory.get("key") : null;
+
+        JiraTaskDTO.StatusDTO statusDTO = new JiraTaskDTO.StatusDTO(statusName, categoryKey);
+
         Map<String, Object> project = task.getProject();
+        Map<String, Object> avatarUrls = (Map<String, Object>) project.get("avatarUrls");
+
+        JiraTaskDTO.ProjectDTO projectDTO = new JiraTaskDTO.ProjectDTO(
+                (String) project.get("name"),
+                avatarUrls != null ? (String) avatarUrls.get("48x48") : null
+        );
 
         return new JiraTaskDTO(
                 task.getSummary(),
                 projectBaseUrl + "/browse/" + task.key(),
-                new JiraTaskDTO.StatusDTO(
-                        (String) status.get("name"),
-                        (String) ((Map<String, Object>) status.get("statusCategory")).get("key")
-                ),
-                task.getResolution() != null && !task.getResolution().toString().isEmpty(),
-                new JiraTaskDTO.ProjectDTO(
-                        (String) project.get("name"),
-                        (String) ((Map<String, Object>) project.get("avatarUrls")).get("48x48")
-                ),
+                statusDTO,
+                "done".equals(categoryKey),
+                projectDTO,
                 timeTracking
         );
     }
 
     private String getJiraTasksSearchCondition() {
         String maxDate = String.valueOf(LocalDate.now().minusMonths(3).withDayOfMonth(1));
-        return "assignee=currentUser() AND (resolution IS EMPTY OR (resolutiondate >= '" + maxDate + "' AND timespent > 0)) ORDER BY created DESC";
+        return "assignee=currentUser() AND (statusCategory != done OR (statusCategory = done AND statusCategoryChangedDate >= '" + maxDate + "' AND timespent > 0)) ORDER BY created DESC";
     }
 
     @Retryable(retryFor = Exception.class, backoff = @Backoff(delay = 1000, multiplier = 3))
