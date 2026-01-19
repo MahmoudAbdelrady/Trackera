@@ -259,7 +259,7 @@ public class JiraService {
 
     private String getJiraTasksSearchCondition() {
         String maxDate = String.valueOf(LocalDate.now().minusMonths(3).withDayOfMonth(1));
-        return "assignee=currentUser() AND (statusCategory != Done OR (statusCategory = Done AND statusCategoryChangedDate >= '" + maxDate + "' AND timespent > 0)) ORDER BY created DESC";
+        return "assignee=currentUser() AND (statusCategory != done OR (statusCategory = done AND statusCategoryChangedDate >= '" + maxDate + "' AND timespent > 0)) ORDER BY created DESC";
     }
 
     @Retryable(retryFor = Exception.class, backoff = @Backoff(delay = 1000, multiplier = 3))
