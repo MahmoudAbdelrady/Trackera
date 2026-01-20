@@ -89,7 +89,7 @@ const PreferencesSection = (props: PreferencesProps) => {
       const preferencesToUpdate = Object.fromEntries(
         Object.entries(updatedPreferences)
           .filter(([key, value]) => !isEqual(initialPreferences[key], value))
-          .map(([key, value]) => [key, transformPreferenceValue(key, value)])
+          .map(([key, value]) => [key, transformPreferenceValue(key, value)]),
       );
       const result = await userApis.updatePreferences(preferencesToUpdate);
       setInitialPreferences(updatedPreferences);
@@ -122,7 +122,7 @@ const PreferencesSection = (props: PreferencesProps) => {
                 onChange={(value) =>
                   handlePreferenceChange(
                     PreferenceKeys.JIRA_PRIMARY_PROJECT,
-                    jiraSites.find((site) => site.id === value)
+                    jiraSites.find((site) => site.id === value),
                   )
                 }
               />
@@ -135,6 +135,7 @@ const PreferencesSection = (props: PreferencesProps) => {
               value={updatedPreferences[PreferenceKeys.WORKLOGS_MONTHLY_TARGET_HOURS]}
               onChange={(value) => handlePreferenceChange(PreferenceKeys.WORKLOGS_MONTHLY_TARGET_HOURS, value)}
               className={classes.preference_input}
+              min={1}
             />
           </UserPreference>
           <Button

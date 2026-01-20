@@ -81,6 +81,33 @@ public class UserPreferenceService {
         if (preference.getValue() == null || StringUtils.isEmpty(preference.getValue().toString())) {
             throw new BusinessException("Preference value is required");
         }
+
+        UserPreferenceOption option = UserPreferenceOption.fromCode(preference.getKey());
+
+        switch (option) {
+            case JIRA_PRIMARY_PROJECT -> validateJiraPrimaryProject(preference.getValue());
+            case WORKLOGS_MONTHLY_TARGET_HOURS -> validateMonthlyTargetHours(preference.getValue());
+        }
+    }
+
+    private void validateJiraPrimaryProject(Object value) {
+        if (value == null || StringUtils.isEmpty(value.toString())) {
+            throw new BusinessException("Jira primary project is required");
+        }
+    }
+
+    private void validateMonthlyTargetHours(Object value) {
+        if (value == null) {
+            throw new BusinessException("Monthly target hours is required");
+        }
+        try {
+            int hours = Integer.parseInt(value.toString());
+            if (hours < 0) {
+                throw new BusinessException("Monthly target hours must be greater than 0");
+            }
+        } catch (NumberFormatException e) {
+            throw new BusinessException("Monthly target hours must be a valid number");
+        }
     }
     //</editor-fold>
 }
