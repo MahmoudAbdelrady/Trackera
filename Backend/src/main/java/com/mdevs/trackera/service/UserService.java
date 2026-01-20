@@ -22,6 +22,7 @@ import com.mdevs.trackera.shared.exceptions.types.BusinessException;
 import com.mdevs.trackera.shared.enums.OAuthProvider;
 import com.mdevs.trackera.shared.exceptions.types.NotFoundException;
 import com.mdevs.trackera.shared.mappers.UserMapper;
+import com.mdevs.trackera.utils.DateTimeUtil;
 import com.mdevs.trackera.utils.JsonUtil;
 import com.mdevs.trackera.shared.email.EmailParameterMapper;
 import lombok.RequiredArgsConstructor;
@@ -97,6 +98,16 @@ public class UserService implements UserDetailsService {
             }
             return providerInfoDTO;
         }).toList();
+    }
+
+    public Object getPreferenceAllValues(String code) {
+        UserPreferenceOption option = UserPreferenceOption.fromCode(code);
+        User user = AppConfig.getAuthenticatedCurrentUser();
+        return switch (option) {
+            case JIRA_PRIMARY_PROJECT -> jiraService.getUserSites(user);
+            case TIMEZONE -> DateTimeUtil.getAvailableTimezones();
+            default -> throw new BusinessException("Preference code not supported: " + code);
+        };
     }
     //</editor-fold>
 

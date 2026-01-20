@@ -8,7 +8,8 @@ import lombok.Getter;
 @Getter
 public enum UserPreferenceOption {
     JIRA_PRIMARY_PROJECT("jiraPrimaryProject", JiraProjectDTO.class),
-    WORKLOGS_MONTHLY_TARGET_HOURS("worklogsMonthlyTargetHours", Integer.class);
+    WORKLOGS_MONTHLY_TARGET_HOURS("worklogsMonthlyTargetHours", Integer.class),
+    TIMEZONE("timeZone", String.class);
 
     private final String code;
 

@@ -141,8 +141,9 @@ public class JiraService {
     //<editor-fold desc="Integration & Processing">
     public String addOrUpdateWorkLog(User user, WorkLogDetail workLogDetail) {
         Map<String, Object> requestBody = new HashMap<>();
+        String zoneId = (String) userPreferenceService.getPreferenceValue(user, UserPreferenceOption.TIMEZONE);
         requestBody.put("comment", createJiraCommentObject(workLogDetail.getDescription()));
-        requestBody.put("started", JIRA_DATE_FORMATTER.format(LocalDateTime.of(workLogDetail.getWorkLog().getWorkDate(), workLogDetail.getStartTime()).atZone(ZoneId.systemDefault())));
+        requestBody.put("started", JIRA_DATE_FORMATTER.format(LocalDateTime.of(workLogDetail.getWorkLog().getWorkDate(), workLogDetail.getStartTime()).atZone(zoneId != null ? ZoneId.of(zoneId) : ZoneId.systemDefault())));
         requestBody.put("timeSpentSeconds", workLogDetail.getDuration() * 60);
 
         boolean isUpdate = !StringUtils.isEmpty(workLogDetail.getJiraId());
