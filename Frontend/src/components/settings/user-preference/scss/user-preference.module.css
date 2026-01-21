@@ -4,10 +4,15 @@
   align-items: center;
   gap: 8px;
 }
-@media (max-width: 480px) {
+@media (max-width: 512px) {
   .preference {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
+    justify-content: center;
+    align-items: flex-start;
+    flex-direction: column;
+    width: 100%;
   }
+}
+.preference .preference_value {
+  width: 100%;
 }/*# sourceMappingURL=user-preference.module.css.map */

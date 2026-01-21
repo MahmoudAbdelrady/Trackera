@@ -11,23 +11,6 @@ interface SignUpFormFields {
   confirmPassword: string;
 }
 
-interface UserInfo {
-  firstname: string;
-  lastname: string;
-  primaryEmail: string;
-  pendingEmail: string | null;
-  profilePicture: string | null;
-  avatarColor: string;
-  passwordSet: boolean;
-  jiraLinked: boolean;
-}
-
-interface ChangePasswordFormFields {
-  currentPassword?: string;
-  newPassword: string;
-  confirmNewPassword: string;
-}
-
 interface OAuthProviderInfo {
   displayName: string;
   code: string;
@@ -47,14 +30,6 @@ const OAUTH_PROVIDERS = {
 
 type OAuthProvider = (typeof OAUTH_PROVIDERS)[keyof typeof OAUTH_PROVIDERS];
 
-export type {
-  LoginFormFields,
-  SignUpFormFields,
-  ChangePasswordFormFields,
-  OAuthAccount,
-  UserInfo,
-  OAuthProvider,
-  OAuthProviderInfo,
-};
+export type { LoginFormFields, SignUpFormFields, OAuthAccount, OAuthProvider, OAuthProviderInfo };
 
 export { OAUTH_PROVIDERS };

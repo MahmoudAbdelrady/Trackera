@@ -11,6 +11,14 @@
 .preferences_section .preference_select {
   min-width: 150px;
 }
+.preferences_section .preference_select.timezone {
+  min-width: 400px;
+}
+@media (max-width: 512px) {
+  .preferences_section .preference_select, .preferences_section .preference_select.timezone {
+    min-width: 100%;
+  }
+}
 .preferences_section .preference_input {
   color: #5c5c5c;
 }
