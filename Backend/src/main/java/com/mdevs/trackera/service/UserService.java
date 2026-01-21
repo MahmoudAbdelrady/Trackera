@@ -138,7 +138,7 @@ public class UserService implements UserDetailsService {
     private TimezoneOptionDTO findTimezoneOrThrow(String timezoneId) {
         return DateTimeUtil.getAvailableTimezones().stream()
                 .filter(tz -> tz.id().equalsIgnoreCase(timezoneId))
-                .findFirst().orElseThrow(() -> new NotFoundException("Timezone not found"));
+                .findFirst().orElseThrow(() -> new NotFoundException("Timezone is not valid"));
     }
     //</editor-fold>
 

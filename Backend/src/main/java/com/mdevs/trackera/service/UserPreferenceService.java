@@ -6,6 +6,7 @@ import com.mdevs.trackera.entity.UserPreference;
 import com.mdevs.trackera.repository.UserPreferenceRepository;
 import com.mdevs.trackera.shared.enums.UserPreferenceOption;
 import com.mdevs.trackera.shared.exceptions.types.BusinessException;
+import com.mdevs.trackera.shared.exceptions.types.NotFoundException;
 import com.mdevs.trackera.utils.DateTimeUtil;
 import com.mdevs.trackera.utils.JsonUtil;
 import lombok.RequiredArgsConstructor;
@@ -119,7 +120,7 @@ public class UserPreferenceService {
         }
 
         if (!DateTimeUtil.getAvailableTimezoneIds().contains(value.toString())) {
-            throw new BusinessException("Timezone is not valid");
+            throw new NotFoundException("Timezone is not valid");
         }
     }
     //</editor-fold>
