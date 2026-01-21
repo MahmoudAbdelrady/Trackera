@@ -5,12 +5,14 @@ import { showErrorToast, showSuccessToast } from "../../../../utils/toast-handle
 import { useEffect, useState } from "react";
 import type { JiraSite } from "../../../../shared/types";
 import { isEqual } from "lodash";
-import { jiraApis, userApis } from "../../../../state/api";
+import { userApis } from "../../../../state/api";
+import type { TimeZoneOption } from "../../../../shared/types";
 
 // preferences keys
 const PreferenceKeys = {
   JIRA_PRIMARY_PROJECT: "jiraPrimaryProject",
   WORKLOGS_MONTHLY_TARGET_HOURS: "worklogsMonthlyTargetHours",
+  TIMEZONE: "timeZone",
 } as const;
 
 interface PreferencesProps {
@@ -27,9 +29,11 @@ const PreferencesSection = (props: PreferencesProps) => {
   const [initialPreferences, setInitialPreferences] = useState<Record<string, any>>({});
   const [updatedPreferences, setUpdatedPreferences] = useState<Record<string, any>>({});
 
-  // jira sites
+  // drop-down preferences
   const [isFetchingSites, setIsFetchingSites] = useState<boolean>(false);
   const [jiraSites, setJiraSites] = useState<JiraSite[]>([]);
+  const [isFetchingTimeZones, setIsFetchingTimeZones] = useState<boolean>(false);
+  const [timeZones, setTimeZones] = useState<TimeZoneOption[]>([]);
 
   useEffect(() => {
     const fetchUserPreferences = async () => {
@@ -41,6 +45,8 @@ const PreferencesSection = (props: PreferencesProps) => {
         setUpdatedPreferences(preferences);
         const primarySite = preferences[PreferenceKeys.JIRA_PRIMARY_PROJECT];
         setJiraSites(primarySite ? [primarySite] : []);
+        const selectedTimeZone = preferences[PreferenceKeys.TIMEZONE];
+        setTimeZones(selectedTimeZone ? [selectedTimeZone] : []);
       } catch (error) {
         showErrorToast(error);
       }
@@ -53,20 +59,30 @@ const PreferencesSection = (props: PreferencesProps) => {
     }
   }, [fetchPreferences, setFetchPreferences]);
 
-  const fetchJiraSites = async () => {
-    setIsFetchingSites(true);
+  const fetchJiraSites = () =>
+    fetchPreferenceOptions<JiraSite>(PreferenceKeys.JIRA_PRIMARY_PROJECT, setIsFetchingSites, setJiraSites);
+
+  const fetchTimeZones = () =>
+    fetchPreferenceOptions<TimeZoneOption>(PreferenceKeys.TIMEZONE, setIsFetchingTimeZones, setTimeZones);
+
+  const fetchPreferenceOptions = async <T extends { id: string }>(
+    preferenceKey: string,
+    setLoading: (loading: boolean) => void,
+    setOptions: (options: T[]) => void,
+  ) => {
+    setLoading(true);
     try {
-      const result = await jiraApis.getJiraSites();
-      const selectedSite = updatedPreferences[PreferenceKeys.JIRA_PRIMARY_PROJECT];
-      if (selectedSite && !result.find((s: JiraSite) => s.id === selectedSite.id)) {
-        setJiraSites([selectedSite, ...result]);
+      const result = await userApis.getPreferenceAllValues(preferenceKey);
+      const selectedValue = updatedPreferences[preferenceKey];
+      if (selectedValue && !result.find((item: T) => item.id === selectedValue.id)) {
+        setOptions([selectedValue, ...result]);
       } else {
-        setJiraSites(result);
+        setOptions(result);
       }
     } catch (error: any) {
       showErrorToast(error);
     }
-    setIsFetchingSites(false);
+    setLoading(false);
   };
 
   const handlePreferenceChange = (key: string, value: any) => {
@@ -80,6 +96,9 @@ const PreferencesSection = (props: PreferencesProps) => {
     if (key === PreferenceKeys.JIRA_PRIMARY_PROJECT) {
       return (value as JiraSite).id;
     }
+    if (key === PreferenceKeys.TIMEZONE) {
+      return (value as TimeZoneOption).id;
+    }
     return value;
   };
 
@@ -89,7 +108,7 @@ const PreferencesSection = (props: PreferencesProps) => {
       const preferencesToUpdate = Object.fromEntries(
         Object.entries(updatedPreferences)
           .filter(([key, value]) => !isEqual(initialPreferences[key], value))
-          .map(([key, value]) => [key, transformPreferenceValue(key, value)])
+          .map(([key, value]) => [key, transformPreferenceValue(key, value)]),
       );
       const result = await userApis.updatePreferences(preferencesToUpdate);
       setInitialPreferences(updatedPreferences);
@@ -122,7 +141,7 @@ const PreferencesSection = (props: PreferencesProps) => {
                 onChange={(value) =>
                   handlePreferenceChange(
                     PreferenceKeys.JIRA_PRIMARY_PROJECT,
-                    jiraSites.find((site) => site.id === value)
+                    jiraSites.find((site) => site.id === value),
                   )
                 }
               />
@@ -135,6 +154,31 @@ const PreferencesSection = (props: PreferencesProps) => {
               value={updatedPreferences[PreferenceKeys.WORKLOGS_MONTHLY_TARGET_HOURS]}
               onChange={(value) => handlePreferenceChange(PreferenceKeys.WORKLOGS_MONTHLY_TARGET_HOURS, value)}
               className={classes.preference_input}
+              min={1}
+            />
+          </UserPreference>
+          <UserPreference label="Time Zone">
+            <Select
+              options={timeZones.map((tz) => ({ label: tz.label, value: tz.id }))}
+              value={updatedPreferences[PreferenceKeys.TIMEZONE]?.id}
+              className={`${classes.preference_select} ${classes.timezone}`}
+              loading={isFetchingTimeZones}
+              notFoundContent={isFetchingTimeZones ? <Spin size="small" /> : "No Data"}
+              showSearch={{
+                filterOption: (input, option) => (option?.label ?? "").toLowerCase().includes(input.toLowerCase()),
+              }}
+              placeholder="Select Time Zone"
+              onOpenChange={(open) => {
+                if (open) {
+                  fetchTimeZones();
+                }
+              }}
+              onChange={(value) =>
+                handlePreferenceChange(
+                  PreferenceKeys.TIMEZONE,
+                  timeZones.find((tz) => tz.id === value),
+                )
+              }
             />
           </UserPreference>
           <Button

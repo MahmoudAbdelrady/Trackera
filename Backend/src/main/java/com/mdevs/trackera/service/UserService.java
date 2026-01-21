@@ -8,6 +8,7 @@ import com.mdevs.trackera.dto.user.LoggedUserDTO;
 import com.mdevs.trackera.dto.auth.OAuthUserInfoDTO;
 import com.mdevs.trackera.dto.user.PasswordDTO;
 import com.mdevs.trackera.dto.auth.SignUpDTO;
+import com.mdevs.trackera.dto.user.TimezoneOptionDTO;
 import com.mdevs.trackera.entity.SecurityToken;
 import com.mdevs.trackera.entity.User;
 import com.mdevs.trackera.entity.UserEmail;
@@ -22,6 +23,7 @@ import com.mdevs.trackera.shared.exceptions.types.BusinessException;
 import com.mdevs.trackera.shared.enums.OAuthProvider;
 import com.mdevs.trackera.shared.exceptions.types.NotFoundException;
 import com.mdevs.trackera.shared.mappers.UserMapper;
+import com.mdevs.trackera.utils.DateTimeUtil;
 import com.mdevs.trackera.utils.JsonUtil;
 import com.mdevs.trackera.shared.email.EmailParameterMapper;
 import lombok.RequiredArgsConstructor;
@@ -98,20 +100,45 @@ public class UserService implements UserDetailsService {
             return providerInfoDTO;
         }).toList();
     }
+
+    public Object getPreferenceAllValues(String code) {
+        UserPreferenceOption option = UserPreferenceOption.fromCode(code);
+        User user = AppConfig.getAuthenticatedCurrentUser();
+        return switch (option) {
+            case JIRA_PRIMARY_PROJECT -> jiraService.getUserSites(user);
+            case TIMEZONE -> DateTimeUtil.getAvailableTimezones();
+            default -> throw new BusinessException("Preference code not supported: " + code);
+        };
+    }
     //</editor-fold>
 
     //<editor-fold desc="User Info Management">
     public void updateUserPreferences(Map<String, Object> updatedPreferences) {
         User currentUser = AppConfig.getAuthenticatedCurrentUser();
+        boolean jiraSiteChanged = false;
         for (Map.Entry<String, Object> preference : updatedPreferences.entrySet()) {
             userPreferenceService.validatePreference(preference);
-            if (preference.getKey().equals(UserPreferenceOption.JIRA_PRIMARY_PROJECT.getCode())) {
-                oAuthConnectionService.validateAndGetConnection(currentUser, OAuthProvider.JIRA);
-                preference.setValue(JsonUtil.convertObjectToJsonString(jiraService.findSiteById(currentUser, preference.getValue().toString())));
+            UserPreferenceOption preferenceOption = UserPreferenceOption.fromCode(preference.getKey());
+            switch (preferenceOption) {
+                case JIRA_PRIMARY_PROJECT -> {
+                    oAuthConnectionService.validateAndGetConnection(currentUser, OAuthProvider.JIRA);
+                    preference.setValue(JsonUtil.convertObjectToJsonString(jiraService.findSiteById(currentUser, preference.getValue().toString())));
+                    jiraSiteChanged = true;
+                }
+                case TIMEZONE ->
+                        preference.setValue(JsonUtil.convertObjectToJsonString(findTimezoneOrThrow(preference.getValue().toString())));
             }
         }
         userPreferenceService.updateAll(currentUser, updatedPreferences);
-        jiraService.handleSiteChange(currentUser);
+        if (jiraSiteChanged) {
+            jiraService.handleSiteChange(currentUser);
+        }
+    }
+
+    private TimezoneOptionDTO findTimezoneOrThrow(String timezoneId) {
+        return DateTimeUtil.getAvailableTimezones().stream()
+                .filter(tz -> tz.id().equalsIgnoreCase(timezoneId))
+                .findFirst().orElseThrow(() -> new NotFoundException("Timezone is not valid"));
     }
     //</editor-fold>
 

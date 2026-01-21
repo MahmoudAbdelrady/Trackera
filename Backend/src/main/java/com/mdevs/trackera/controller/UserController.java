@@ -63,6 +63,11 @@ public class UserController {
         return new ResponseEntity<>(userPreferenceService.getAll(), HttpStatus.OK);
     }
 
+    @GetMapping("/preferences/values")
+    public ResponseEntity<Object> getPreferenceAllValues(@RequestParam String code) {
+        return new ResponseEntity<>(userService.getPreferenceAllValues(code), HttpStatus.OK);
+    }
+
     @RateLimited(permitsPerMinute = 20)
     @PostMapping("/preferences")
     public ResponseEntity<?> updatePreferences(@RequestBody Map<String, Object> updatedPreferences) {

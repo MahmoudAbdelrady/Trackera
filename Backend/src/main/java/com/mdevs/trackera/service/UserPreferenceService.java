@@ -6,6 +6,8 @@ import com.mdevs.trackera.entity.UserPreference;
 import com.mdevs.trackera.repository.UserPreferenceRepository;
 import com.mdevs.trackera.shared.enums.UserPreferenceOption;
 import com.mdevs.trackera.shared.exceptions.types.BusinessException;
+import com.mdevs.trackera.shared.exceptions.types.NotFoundException;
+import com.mdevs.trackera.utils.DateTimeUtil;
 import com.mdevs.trackera.utils.JsonUtil;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
@@ -80,6 +82,45 @@ public class UserPreferenceService {
         }
         if (preference.getValue() == null || StringUtils.isEmpty(preference.getValue().toString())) {
             throw new BusinessException("Preference value is required");
+        }
+
+        UserPreferenceOption option = UserPreferenceOption.fromCode(preference.getKey());
+        Object preferenceValue = preference.getValue();
+
+        switch (option) {
+            case JIRA_PRIMARY_PROJECT -> validateJiraPrimaryProject(preferenceValue);
+            case WORKLOGS_MONTHLY_TARGET_HOURS -> validateMonthlyTargetHours(preferenceValue);
+            case TIMEZONE -> validateTimezone(preferenceValue);
+        }
+    }
+
+    private void validateJiraPrimaryProject(Object value) {
+        if (value == null || StringUtils.isEmpty(value.toString())) {
+            throw new BusinessException("Jira primary project is required");
+        }
+    }
+
+    private void validateMonthlyTargetHours(Object value) {
+        if (value == null) {
+            throw new BusinessException("Monthly target hours is required");
+        }
+        try {
+            int hours = Integer.parseInt(value.toString());
+            if (hours < 0) {
+                throw new BusinessException("Monthly target hours must be greater than 0");
+            }
+        } catch (NumberFormatException e) {
+            throw new BusinessException("Monthly target hours must be a valid number");
+        }
+    }
+
+    private void validateTimezone(Object value) {
+        if (value == null || StringUtils.isEmpty(value.toString())) {
+            throw new BusinessException("Timezone is required");
+        }
+
+        if (!DateTimeUtil.getAvailableTimezoneIds().contains(value.toString())) {
+            throw new NotFoundException("Timezone is not valid");
         }
     }
     //</editor-fold>

@@ -4,7 +4,11 @@
 .preference {
   @include start;
   gap: 8px;
-  @media (max-width: 480px) {
-    @include between;
+  @media (max-width: 512px) {
+    @include start-col;
+    width: 100%;
+  }
+  .preference_value {
+    width: 100%;
   }
 }

@@ -2,16 +2,11 @@ import type { PaginatedResponse, AxiosErrorType } from "./global";
 
 import { OPERATORS, filterOperatorsMetadata } from "./global";
 
-import type {
-  LoginFormFields,
-  SignUpFormFields,
-  ChangePasswordFormFields,
-  OAuthAccount,
-  OAuthProvider,
-  OAuthProviderInfo,
-} from "./auth";
+import type { LoginFormFields, SignUpFormFields, OAuthAccount, OAuthProvider, OAuthProviderInfo } from "./auth";
 
 import { OAUTH_PROVIDERS } from "./auth";
+
+import type { UserInfo, ChangePasswordFormFields, TimeZoneOption } from "./user";
 
 import type {
   SyncPayload,
@@ -46,7 +41,9 @@ export type {
   WorklogError,
   LoginFormFields,
   SignUpFormFields,
+  UserInfo,
   ChangePasswordFormFields,
+  TimeZoneOption,
   WorkLogSearchFilter,
   JiraTask,
   JiraSite,
