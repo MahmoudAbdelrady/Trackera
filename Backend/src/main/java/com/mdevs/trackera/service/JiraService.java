@@ -5,6 +5,7 @@ import com.mdevs.trackera.config.general.AppConfig;
 import com.mdevs.trackera.dto.jira.JiraProjectDTO;
 import com.mdevs.trackera.dto.jira.JiraTaskDTO;
 import com.mdevs.trackera.dto.jira.JiraTaskResponse;
+import com.mdevs.trackera.dto.user.TimezoneOptionDTO;
 import com.mdevs.trackera.dto.worklog.WorkLogDetailSyncRequestDTO;
 import com.mdevs.trackera.entity.User;
 import com.mdevs.trackera.entity.OAuthConnection;
@@ -107,8 +108,12 @@ public class JiraService {
 
     //<editor-fold desc="Caching & Data access">
     public void handleSiteChange(User user) {
-        String cacheKey = USER_JIRA_TASKS_CACHE_KEY_PREFIX + user.getId();
-        cacheService.evict(cacheKey);
+        try {
+            String cacheKey = USER_JIRA_TASKS_CACHE_KEY_PREFIX + user.getId();
+            cacheService.evict(cacheKey);
+        } catch (Exception e) {
+            log.error("Failed to evict Jira tasks cache for user {}: {}", user.getId(), e.getMessage(), e);
+        }
     }
 
     private Map<String, Object> fetchAndCacheTasks(User user, String cacheKey, LocalDateTime now) {
@@ -141,9 +146,9 @@ public class JiraService {
     //<editor-fold desc="Integration & Processing">
     public String addOrUpdateWorkLog(User user, WorkLogDetail workLogDetail) {
         Map<String, Object> requestBody = new HashMap<>();
-        String zoneId = (String) userPreferenceService.getPreferenceValue(user, UserPreferenceOption.TIMEZONE);
+        TimezoneOptionDTO timezoneOptionDTO = (TimezoneOptionDTO) userPreferenceService.getPreferenceValue(user, UserPreferenceOption.TIMEZONE);
         requestBody.put("comment", createJiraCommentObject(workLogDetail.getDescription()));
-        requestBody.put("started", JIRA_DATE_FORMATTER.format(LocalDateTime.of(workLogDetail.getWorkLog().getWorkDate(), workLogDetail.getStartTime()).atZone(zoneId != null ? ZoneId.of(zoneId) : ZoneId.systemDefault())));
+        requestBody.put("started", JIRA_DATE_FORMATTER.format(LocalDateTime.of(workLogDetail.getWorkLog().getWorkDate(), workLogDetail.getStartTime()).atZone(timezoneOptionDTO != null ? ZoneId.of(timezoneOptionDTO.id()) : ZoneId.systemDefault())));
         requestBody.put("timeSpentSeconds", workLogDetail.getDuration() * 60);
 
         boolean isUpdate = !StringUtils.isEmpty(workLogDetail.getJiraId());

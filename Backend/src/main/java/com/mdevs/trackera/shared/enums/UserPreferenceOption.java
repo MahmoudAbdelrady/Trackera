@@ -1,6 +1,7 @@
 package com.mdevs.trackera.shared.enums;
 
 import com.mdevs.trackera.dto.jira.JiraProjectDTO;
+import com.mdevs.trackera.dto.user.TimezoneOptionDTO;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -9,7 +10,7 @@ import lombok.Getter;
 public enum UserPreferenceOption {
     JIRA_PRIMARY_PROJECT("jiraPrimaryProject", JiraProjectDTO.class),
     WORKLOGS_MONTHLY_TARGET_HOURS("worklogsMonthlyTargetHours", Integer.class),
-    TIMEZONE("timeZone", String.class);
+    TIMEZONE("timeZone", TimezoneOptionDTO.class);
 
     private final String code;
 
