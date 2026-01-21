@@ -1,6 +1,6 @@
 import requestInstance from "../../shared/axios/request-instance";
 import type { ChangePasswordFormFields } from "../../shared/types";
-import type { UserInfo } from "../../shared/types/auth";
+import type { UserInfo } from "../../shared/types";
 
 const fetchMe = async () => {
   const response = await requestInstance.get<UserInfo>("/user/me");
@@ -9,11 +9,6 @@ const fetchMe = async () => {
 
 const getOAuthProviders = async () => {
   const response = await requestInstance.get("/user/oauth-providers");
-  return response.data;
-};
-
-const getPreferences = async () => {
-  const response = await requestInstance.get("/user/preferences");
   return response.data;
 };
 
@@ -37,6 +32,16 @@ const removePendingEmail = async () => {
   return response.data;
 };
 
+const getPreferences = async () => {
+  const response = await requestInstance.get("/user/preferences");
+  return response.data;
+};
+
+const getPreferenceAllValues = async (preferenceCode: string) => {
+  const response = await requestInstance.get(`/user/preferences/values?code=${preferenceCode}`);
+  return response.data;
+};
+
 const updatePreferences = async (preferences: Record<string, any>) => {
   const response = await requestInstance.post("/user/preferences", { ...preferences });
   return response.data;
@@ -46,6 +51,7 @@ const userApis = {
   fetchMe,
   getOAuthProviders,
   getPreferences,
+  getPreferenceAllValues,
   changePassword,
   requestEmailChange,
   sendEmailVerification,

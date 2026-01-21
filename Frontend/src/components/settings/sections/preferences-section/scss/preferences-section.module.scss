@@ -10,6 +10,15 @@
   }
   .preference_select {
     min-width: 150px;
+    &.timezone {
+      min-width: 400px;
+    }
+    @media (max-width: 512px) {
+      &,
+      &.timezone {
+        min-width: 100%;
+      }
+    }
   }
   .preference_input {
     color: $subtitleColor;

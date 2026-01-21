@@ -39,6 +39,7 @@ public final class DateTimeUtil {
     public static List<String> getAvailableTimezoneIds() {
         Instant now = Instant.now();
         return ZoneId.getAvailableZoneIds().stream()
+                .filter(DateTimeUtil::isCommonTimezone)
                 .map(ZoneId::of)
                 .sorted(Comparator.comparing(z -> z.getRules().getOffset(now)))
                 .map(ZoneId::getId).toList();
@@ -47,6 +48,7 @@ public final class DateTimeUtil {
     public static List<TimezoneOptionDTO> getAvailableTimezones() {
         Instant now = Instant.now();
         return ZoneId.getAvailableZoneIds().stream()
+                .filter(DateTimeUtil::isCommonTimezone)
                 .map(ZoneId::of)
                 .sorted(Comparator.comparing(z -> z.getRules().getOffset(now)))
                 .map(zoneId -> {
@@ -55,5 +57,16 @@ public final class DateTimeUtil {
                     return new TimezoneOptionDTO(zoneId.getId(), label);
                 })
                 .toList();
+    }
+
+    private static boolean isCommonTimezone(String zoneId) {
+        if (!zoneId.contains("/")) return false;
+
+        return (zoneId.startsWith("Africa/") ||
+                zoneId.startsWith("America/") ||
+                zoneId.startsWith("Asia/") ||
+                zoneId.startsWith("Australia/") ||
+                zoneId.startsWith("Europe/") ||
+                zoneId.startsWith("Atlantic/")) && (!zoneId.equalsIgnoreCase("Asia/Tel_Aviv"));
     }
 }
