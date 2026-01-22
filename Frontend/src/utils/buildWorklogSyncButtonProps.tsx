@@ -1,6 +1,6 @@
 import type { TableActionButtonProps } from "../components";
 import { WORKLOG_STATUS, type SyncPayload } from "../shared/types";
-import type { UserInfo } from "../shared/types/auth";
+import type { UserInfo } from "../shared/types";
 import { CalendarCog, CalendarOff, CalendarSync, CalendarX2 } from "lucide-react";
 
 type SyncableItem = {
@@ -25,7 +25,7 @@ function buildSyncButtonProps<T extends SyncableItem>({
   const hasSynced = selectedItems.some((e) => e.status === WORKLOG_STATUS.SYNCED);
   const hasNotSynced = selectedItems.some((e) => e.status === WORKLOG_STATUS.NOT_SYNCED);
   const hasInProgress = selectedItems.some(
-    (e) => e.status === WORKLOG_STATUS.SYNC_IN_PROGRESS || e.status === WORKLOG_STATUS.UNSYNC_IN_PROGRESS
+    (e) => e.status === WORKLOG_STATUS.SYNC_IN_PROGRESS || e.status === WORKLOG_STATUS.UNSYNC_IN_PROGRESS,
   );
 
   const syncedItems = selectedItems.filter((e) => e.status === WORKLOG_STATUS.SYNCED);
