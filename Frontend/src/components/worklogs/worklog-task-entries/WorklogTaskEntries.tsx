@@ -7,7 +7,7 @@ import buildSyncButtonProps from "../../../utils/buildWorklogSyncButtonProps";
 import { worklogApis } from "../../../state/api";
 import { showErrorToast } from "../../../utils/toast-handler/showToast";
 import { useNavigate } from "react-router-dom";
-import type { UserInfo } from "../../../shared/types/auth";
+import type { UserInfo } from "../../../shared/types";
 
 interface WorklogTaskEntriesProps {
   loggedUserData: UserInfo;
@@ -51,7 +51,7 @@ const WorklogTaskEntries = (props: WorklogTaskEntriesProps) => {
           setSelectedEntry(record);
         },
       }),
-    [worklogId, worklogEntries, loggedUserData?.jiraLinked, triggerSync]
+    [worklogId, worklogEntries, loggedUserData?.jiraLinked, triggerSync],
   );
 
   const fetchEntries = useCallback(async () => {
