@@ -3,6 +3,7 @@
   justify-content: flex-start;
   align-items: center;
   gap: 8px;
+  width: 100%;
 }
 @media (max-width: 512px) {
   .preference {
@@ -10,9 +11,8 @@
     justify-content: center;
     align-items: flex-start;
     flex-direction: column;
+  }
+  .preference .preference_value {
     width: 100%;
   }
-}
-.preference .preference_value {
-  width: 100%;
 }/*# sourceMappingURL=user-preference.module.css.map */
