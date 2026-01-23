@@ -4,6 +4,7 @@ import { API_BASE_URL } from "../constants";
 
 interface SSEContextValue {
   isConnected: boolean;
+  isConnecting: boolean;
   subscribe: (eventName: string, handler: (data: any) => void) => () => void;
   forceConnect: () => void;
   allowDisconnect: () => void;
@@ -15,6 +16,7 @@ export const SSEContextProvider = ({ children }: { children: ReactNode }) => {
   const eventSourceRef = useRef<EventSource | null>(null);
   const listenersRef = useRef<Map<string, Set<(data: any) => void>>>(new Map());
   const [isConnected, setIsConnected] = useState(false);
+  const [isConnecting, setIsConnecting] = useState(false);
   const forceConnectionRef = useRef(false);
 
   const hasActiveListeners = () => {
@@ -24,6 +26,7 @@ export const SSEContextProvider = ({ children }: { children: ReactNode }) => {
   const connect = () => {
     if (eventSourceRef.current) return;
 
+    setIsConnecting(true);
     const es = new EventSource(`${API_BASE_URL}/notifications/subscribe`, {
       withCredentials: true,
     });
@@ -47,6 +50,7 @@ export const SSEContextProvider = ({ children }: { children: ReactNode }) => {
     };
 
     eventSourceRef.current = es;
+    setIsConnecting(false);
   };
 
   const disconnect = () => {
@@ -118,7 +122,7 @@ export const SSEContextProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   return (
-    <SSEContext.Provider value={{ isConnected, subscribe, forceConnect, allowDisconnect }}>
+    <SSEContext.Provider value={{ isConnected, isConnecting, subscribe, forceConnect, allowDisconnect }}>
       {children}
     </SSEContext.Provider>
   );

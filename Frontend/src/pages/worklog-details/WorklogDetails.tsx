@@ -48,7 +48,7 @@ const WorklogDetails = () => {
   const [isDeletingTask, setIsDeletingTask] = useState<boolean>(false);
   const selectedWorklogTasks = useMemo(
     () => worklogTasks.filter((task) => selectedTaskNames.includes(task.taskName)),
-    [worklogTasks, selectedTaskNames]
+    [worklogTasks, selectedTaskNames],
   );
 
   // worklog entries
@@ -131,7 +131,7 @@ const WorklogDetails = () => {
     return result;
   };
 
-  const { triggerSync } = useJiraSyncSSE({
+  const { triggerSync, isConnecting } = useJiraSyncSSE({
     hasInProgress,
     onStatusEvent: (event) => {
       if (event.type === JIRA_SYNC_EVENT.TASK || event.type === JIRA_SYNC_EVENT.ALL) {
@@ -151,8 +151,8 @@ const WorklogDetails = () => {
           prevEntries.map((entry) =>
             event.entryIds?.includes(entry.id) && event.logId === worklogId
               ? { ...entry, status: event.status, syncError: event.syncError }
-              : entry
-          )
+              : entry,
+          ),
         );
       }
 
@@ -181,7 +181,7 @@ const WorklogDetails = () => {
           setSelectedTask(record);
         },
       }),
-    [loggedUserData?.jiraLinked, worklogId, worklogTasks, triggerSync]
+    [loggedUserData?.jiraLinked, worklogId, worklogTasks, triggerSync],
   );
 
   const clearDeleteTaskModalFields = () => {
@@ -203,6 +203,7 @@ const WorklogDetails = () => {
             fetchWorklogTasks();
           }}
           triggerSync={triggerSync}
+          isConnecting
           onCloseHandler={() => {
             setSelectedTask(null);
             setTaskModalState({ type: null, task: null });
@@ -275,6 +276,7 @@ const WorklogDetails = () => {
                     extractIdentifier: (task: WorklogTask) => task.taskName,
                     isEntry: false,
                     triggerSync: ({ taskNames, sync }) => triggerSync({ worklogId: worklogId, taskNames, sync }),
+                    isConnecting,
                   })}
                 />
               )}

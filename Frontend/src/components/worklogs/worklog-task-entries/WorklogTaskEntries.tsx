@@ -17,6 +17,7 @@ interface WorklogTaskEntriesProps {
   setWorklogEntries: (entries: WorklogEntry[]) => void;
   refetchData: () => void;
   triggerSync: (params: SyncPayload) => void;
+  isConnecting: boolean;
   onCloseHandler: () => void;
 }
 
@@ -29,6 +30,7 @@ const WorklogTaskEntries = (props: WorklogTaskEntriesProps) => {
     setWorklogEntries,
     refetchData,
     triggerSync,
+    isConnecting,
     onCloseHandler,
   } = props;
   const navigate = useNavigate();
@@ -174,6 +176,7 @@ const WorklogTaskEntries = (props: WorklogTaskEntriesProps) => {
             extractIdentifier: (entry: WorklogEntry) => entry.id,
             isEntry: true,
             triggerSync: ({ entryIds, sync }) => triggerSync({ worklogId: worklogId, entryIds, sync }),
+            isConnecting,
           })}
         />
       </WorkLogModal>
