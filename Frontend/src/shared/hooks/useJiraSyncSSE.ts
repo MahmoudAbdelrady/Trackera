@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef } from "react";
 import type { JiraSyncEventProps, SyncPayload } from "../types";
-import { showErrorToast } from "../../utils/toast-handler/showToast";
+import { showErrorToast, showSuccessToast } from "../../utils/toast-handler/showToast";
 import { worklogApis } from "../../state/api";
 import { useSSEContext } from "./useSSEContext";
 
 interface JiraSyncSSEReturn {
   triggerSync: (payload: SyncPayload) => void;
+  isConnecting: boolean;
 }
 
 interface JiraSyncSSEOptions {
@@ -18,7 +19,7 @@ export const useJiraSyncSSE = ({ hasInProgress, onStatusEvent }: JiraSyncSSEOpti
   const [sseAck, setSseAck] = useState(false);
   const [wantsSSE, setWantsSSE] = useState(false);
 
-  const { isConnected, subscribe, forceConnect, allowDisconnect } = useSSEContext();
+  const { isConnected, isConnecting, subscribe, forceConnect, allowDisconnect } = useSSEContext();
   const unsubscribeRef = useRef<null | (() => void)>(null);
 
   const shouldSubscribe = wantsSSE || hasInProgress;
@@ -76,11 +77,12 @@ export const useJiraSyncSSE = ({ hasInProgress, onStatusEvent }: JiraSyncSSEOpti
 
   const fireSync = async (payload: SyncPayload) => {
     try {
-      await worklogApis.syncWorklog(payload);
+      const response = await worklogApis.syncWorklog(payload);
+      showSuccessToast(response);
     } catch (error) {
       showErrorToast(error);
     }
   };
 
-  return { triggerSync };
+  return { triggerSync, isConnecting };
 };
