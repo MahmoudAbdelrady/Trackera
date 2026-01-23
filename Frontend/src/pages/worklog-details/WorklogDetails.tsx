@@ -171,6 +171,7 @@ const WorklogDetails = () => {
         worklogId: worklogId!,
         worklogTasks: worklogTasks,
         jiraLinked: loggedUserData?.jiraLinked || false,
+        isConnecting: isConnecting,
         onSync: triggerSync,
         onView: (record) => {
           setSelectedTask(record);
@@ -203,7 +204,7 @@ const WorklogDetails = () => {
             fetchWorklogTasks();
           }}
           triggerSync={triggerSync}
-          isConnecting
+          isConnecting={isConnecting}
           onCloseHandler={() => {
             setSelectedTask(null);
             setTaskModalState({ type: null, task: null });
@@ -276,7 +277,7 @@ const WorklogDetails = () => {
                     extractIdentifier: (task: WorklogTask) => task.taskName,
                     isEntry: false,
                     triggerSync: ({ taskNames, sync }) => triggerSync({ worklogId: worklogId, taskNames, sync }),
-                    isConnecting,
+                    isConnecting: isConnecting,
                   })}
                 />
               )}

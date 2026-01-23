@@ -39,9 +39,9 @@ const Home = () => {
     () =>
       worklogsResponse?.content.some(
         (worklog) =>
-          worklog.status === WORKLOG_STATUS.SYNC_IN_PROGRESS || worklog.status === WORKLOG_STATUS.UNSYNC_IN_PROGRESS
+          worklog.status === WORKLOG_STATUS.SYNC_IN_PROGRESS || worklog.status === WORKLOG_STATUS.UNSYNC_IN_PROGRESS,
       ) ?? false,
-    [worklogsResponse?.content]
+    [worklogsResponse?.content],
   );
 
   useEffect(() => {
@@ -52,7 +52,7 @@ const Home = () => {
     fetchWorklogSummary();
   }, []);
 
-  const { triggerSync } = useJiraSyncSSE({
+  const { triggerSync, isConnecting } = useJiraSyncSSE({
     hasInProgress,
     onStatusEvent: (event) => {
       setWorklogsResponse((prev) => {
@@ -60,7 +60,7 @@ const Home = () => {
         const updatedContent = prev.content.map((worklog) =>
           worklog.id === event.logId && (event.type === JIRA_SYNC_EVENT.WORKLOG || event.type === JIRA_SYNC_EVENT.ALL)
             ? { ...worklog, status: event.status, hasError: !!event.syncError }
-            : worklog
+            : worklog,
         );
         return { ...prev, content: updatedContent };
       });
@@ -77,7 +77,7 @@ const Home = () => {
       }
       setIsFetchingWorklogs(false);
     },
-    [searchFilters]
+    [searchFilters],
   );
 
   const fetchWorklogSummary = useCallback(async () => {
@@ -107,6 +107,7 @@ const Home = () => {
     () =>
       createWorklogColumns({
         jiraLinked: loggedUserData?.jiraLinked || false,
+        isConnecting: isConnecting,
         onSync: triggerSync,
         onEdit: (record) => {
           setSelectedWorklog(record);
@@ -117,7 +118,7 @@ const Home = () => {
           setDeleteWorklogVisible(true);
         },
       }),
-    [loggedUserData?.jiraLinked, triggerSync]
+    [loggedUserData?.jiraLinked, triggerSync],
   );
 
   return (
