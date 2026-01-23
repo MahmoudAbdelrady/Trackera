@@ -47,6 +47,7 @@ const WorklogTaskEntries = (props: WorklogTaskEntriesProps) => {
         worklogId: worklogId!,
         worklogEntries: worklogEntries,
         jiraLinked: loggedUserData?.jiraLinked,
+        isConnecting: isConnecting,
         onSync: triggerSync,
         onDelete: (record) => {
           setDeleteEntryVisible(true);
