@@ -23,6 +23,7 @@ on:
 jobs:
   backend:
     name: Backend - Build, Scan & Push
+    environment: ${{ inputs.target_branch == 'main' && 'Production' || 'Development' }}
     runs-on: ubuntu-latest
     if: inputs.deploy_backend
 
