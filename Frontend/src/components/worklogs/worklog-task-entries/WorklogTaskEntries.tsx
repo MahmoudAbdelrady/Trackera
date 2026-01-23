@@ -176,7 +176,7 @@ const WorklogTaskEntries = (props: WorklogTaskEntriesProps) => {
             extractIdentifier: (entry: WorklogEntry) => entry.id,
             isEntry: true,
             triggerSync: ({ entryIds, sync }) => triggerSync({ worklogId: worklogId, entryIds, sync }),
-            isConnecting,
+            isConnecting: isConnecting,
           })}
         />
       </WorkLogModal>
