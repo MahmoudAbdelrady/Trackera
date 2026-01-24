@@ -24,6 +24,7 @@ import { useJiraSyncSSE } from "../../shared/hooks";
 import { worklogApis } from "../../state/api";
 import { AppLayout } from "../../layouts";
 import { Badge } from "antd";
+import type { JiraSyncSSEReturn } from "../../shared/hooks/useJiraSyncSSE";
 
 const Home = () => {
   const { data: loggedUserData } = userQueries.useMeQuery();
@@ -52,7 +53,7 @@ const Home = () => {
     fetchWorklogSummary();
   }, []);
 
-  const { triggerSync, isRequestingSync } = useJiraSyncSSE({
+  const jiraSyncSSE: JiraSyncSSEReturn = useJiraSyncSSE({
     hasInProgress,
     onStatusEvent: (event) => {
       setWorklogsResponse((prev) => {
@@ -107,8 +108,7 @@ const Home = () => {
     () =>
       createWorklogColumns({
         jiraLinked: loggedUserData?.jiraLinked || false,
-        isRequestingSync: isRequestingSync,
-        onSync: triggerSync,
+        jiraSyncSSE: jiraSyncSSE,
         onEdit: (record) => {
           setSelectedWorklog(record);
           setManageWorklogVisible(true);
@@ -118,7 +118,7 @@ const Home = () => {
           setDeleteWorklogVisible(true);
         },
       }),
-    [loggedUserData?.jiraLinked, triggerSync],
+    [loggedUserData?.jiraLinked, jiraSyncSSE],
   );
 
   return (

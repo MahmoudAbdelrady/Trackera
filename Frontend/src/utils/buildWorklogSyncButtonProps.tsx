@@ -1,4 +1,5 @@
 import type { TableActionButtonProps } from "../components";
+import type { JiraSyncSSEReturn } from "../shared/hooks/useJiraSyncSSE";
 import { WORKLOG_STATUS, type SyncPayload } from "../shared/types";
 import type { UserInfo } from "../shared/types";
 import { CalendarCog, CalendarOff, CalendarSync, CalendarX2 } from "lucide-react";
@@ -10,18 +11,18 @@ type SyncableItem = {
 interface BuildSyncButtonPropsOptions<T extends SyncableItem> {
   loggedUserData: UserInfo | undefined;
   selectedItems: T[];
+  worklogId: string;
   extractIdentifier: (item: T) => string;
-  triggerSync: (payload: SyncPayload) => void;
-  isRequestingSync: boolean;
+  jiraSyncSSE: JiraSyncSSEReturn;
   isEntry?: boolean;
 }
 
 function buildSyncButtonProps<T extends SyncableItem>({
   loggedUserData,
   selectedItems,
+  worklogId,
   extractIdentifier,
-  triggerSync,
-  isRequestingSync,
+  jiraSyncSSE,
   isEntry = false,
 }: BuildSyncButtonPropsOptions<T>): TableActionButtonProps[] {
   const hasSynced = selectedItems.some((e) => e.status === WORKLOG_STATUS.SYNCED);
@@ -35,7 +36,7 @@ function buildSyncButtonProps<T extends SyncableItem>({
   const toIds = (arr: T[]) => arr.map(extractIdentifier);
 
   const createPayload = (items: T[], sync: boolean): SyncPayload =>
-    isEntry ? { entryIds: toIds(items), sync } : { taskNames: toIds(items), sync };
+    isEntry ? { worklogId: worklogId!, entryIds: toIds(items), sync } : { worklogId: worklogId!, taskNames: toIds(items), sync };
 
   let actions: TableActionButtonProps[] = [];
 
@@ -47,8 +48,8 @@ function buildSyncButtonProps<T extends SyncableItem>({
     return [{ label: "Sync to Jira", icon: <CalendarSync />, disabled: true }];
   }
 
-  if (hasInProgress || isRequestingSync) {
-    return [{ label: "Actions Unavailable", icon: <CalendarOff />, disabled: true, loading: isRequestingSync }];
+  if (hasInProgress || jiraSyncSSE.isRequestingSync) {
+    return [{ label: "Actions Unavailable", icon: <CalendarOff />, disabled: true, loading: jiraSyncSSE.isRequestingSync }];
   }
 
   if (hasSynced && hasNotSynced) {
@@ -60,13 +61,13 @@ function buildSyncButtonProps<T extends SyncableItem>({
           {
             label: `Sync to Jira (${notSyncedItems.length})`,
             icon: <CalendarSync />,
-            onClick: () => triggerSync(createPayload(notSyncedItems, true)),
+            onClick: () => jiraSyncSSE.triggerSync(createPayload(notSyncedItems, true)),
             customClasses: ["sync"],
           },
           {
             label: `Unsync from Jira (${syncedItems.length})`,
             icon: <CalendarX2 />,
-            onClick: () => triggerSync(createPayload(syncedItems, false)),
+            onClick: () => jiraSyncSSE.triggerSync(createPayload(syncedItems, false)),
             customClasses: ["unsync"],
           },
         ],
@@ -79,7 +80,7 @@ function buildSyncButtonProps<T extends SyncableItem>({
       {
         label: `Sync to Jira (${notSyncedItems.length})`,
         icon: <CalendarSync />,
-        onClick: () => triggerSync(createPayload(notSyncedItems, true)),
+        onClick: () => jiraSyncSSE.triggerSync(createPayload(notSyncedItems, true)),
       },
     ];
   }
@@ -89,7 +90,7 @@ function buildSyncButtonProps<T extends SyncableItem>({
       {
         label: `Unsync from Jira (${syncedItems.length})`,
         icon: <CalendarX2 />,
-        onClick: () => triggerSync(createPayload(syncedItems, false)),
+        onClick: () => jiraSyncSSE.triggerSync(createPayload(syncedItems, false)),
       },
     ];
   }

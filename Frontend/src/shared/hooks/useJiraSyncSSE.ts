@@ -4,7 +4,7 @@ import { showErrorToast, showSuccessToast } from "../../utils/toast-handler/show
 import { worklogApis } from "../../state/api";
 import { useSSEContext } from "./useSSEContext";
 
-interface JiraSyncSSEReturn {
+export interface JiraSyncSSEReturn {
   triggerSync: (payload: SyncPayload) => void;
   isRequestingSync: boolean;
 }

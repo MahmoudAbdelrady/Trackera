@@ -25,6 +25,7 @@ import buildSyncButtonProps from "../../utils/buildWorklogSyncButtonProps";
 import { useJiraSyncSSE } from "../../shared/hooks";
 import { worklogApis } from "../../state/api";
 import { AppLayout } from "../../layouts";
+import type { JiraSyncSSEReturn } from "../../shared/hooks/useJiraSyncSSE";
 
 const WorklogDetails = () => {
   const { worklogId } = useParams();
@@ -131,7 +132,7 @@ const WorklogDetails = () => {
     return result;
   };
 
-  const { triggerSync, isRequestingSync } = useJiraSyncSSE({
+  const jiraSyncSSE: JiraSyncSSEReturn = useJiraSyncSSE({
     hasInProgress,
     onStatusEvent: (event) => {
       if (event.type === JIRA_SYNC_EVENT.TASK || event.type === JIRA_SYNC_EVENT.ALL) {
@@ -171,8 +172,7 @@ const WorklogDetails = () => {
         worklogId: worklogId!,
         worklogTasks: worklogTasks,
         jiraLinked: loggedUserData?.jiraLinked || false,
-        isRequestingSync: isRequestingSync,
-        onSync: triggerSync,
+        jiraSyncSSE: jiraSyncSSE,
         onView: (record) => {
           setSelectedTask(record);
           setTaskModalState({ type: "view", task: record });
@@ -182,7 +182,7 @@ const WorklogDetails = () => {
           setSelectedTask(record);
         },
       }),
-    [loggedUserData?.jiraLinked, worklogId, worklogTasks, triggerSync],
+    [loggedUserData?.jiraLinked, worklogId, worklogTasks, jiraSyncSSE],
   );
 
   const clearDeleteTaskModalFields = () => {
@@ -203,8 +203,7 @@ const WorklogDetails = () => {
             fetchWorklogInfo();
             fetchWorklogTasks();
           }}
-          triggerSync={triggerSync}
-          isRequestingSync={isRequestingSync}
+          jiraSyncSSE={jiraSyncSSE}
           onCloseHandler={() => {
             setSelectedTask(null);
             setTaskModalState({ type: null, task: null });
@@ -275,9 +274,9 @@ const WorklogDetails = () => {
                     loggedUserData: loggedUserData,
                     selectedItems: selectedWorklogTasks,
                     extractIdentifier: (task: WorklogTask) => task.taskName,
+                    worklogId: worklogId!,
                     isEntry: false,
-                    triggerSync: ({ taskNames, sync }) => triggerSync({ worklogId: worklogId, taskNames, sync }),
-                    isRequestingSync: isRequestingSync,
+                    jiraSyncSSE: jiraSyncSSE,
                   })}
                 />
               )}

@@ -9,26 +9,26 @@ import { Button, Tooltip } from "antd";
 import { CalendarOff, CalendarSync, CalendarX2, Eye, SquarePen, Trash } from "lucide-react";
 import { Link } from "react-router-dom";
 import classes from "./scss/worklog-action-buttons.module.css";
+import type { JiraSyncSSEReturn } from "../../../shared/hooks/useJiraSyncSSE";
 
 interface ActionButtonsProps {
   record: Worklog | WorklogTask | WorklogEntry;
   jiraLinked: boolean;
   viewLink?: string;
   syncParams: SyncPayload;
-  isRequestingSync: boolean;
-  onSync: (params: SyncPayload) => void;
+  jiraSyncSSE: JiraSyncSSEReturn;
   onEdit?: () => void;
   onView?: () => void;
   onDelete: () => void;
 }
 
 const WorklogActionButtons = (props: ActionButtonsProps) => {
-  const { record, jiraLinked, viewLink, syncParams, isRequestingSync, onSync, onEdit, onView, onDelete } = props;
+  const { record, jiraLinked, viewLink, syncParams, jiraSyncSSE, onEdit, onView, onDelete } = props;
 
   const isSynced = record.status === WORKLOG_STATUS.SYNCED;
   const isSyncing = record.status === WORKLOG_STATUS.SYNC_IN_PROGRESS;
   const isUnsyncing = record.status === WORKLOG_STATUS.UNSYNC_IN_PROGRESS;
-  const syncInProgress = isSyncing || isUnsyncing || isRequestingSync;
+  const syncInProgress = isSyncing || isUnsyncing || jiraSyncSSE.isRequestingSync;
   const isDisabled = !jiraLinked || syncInProgress;
 
   const getTooltipTitle = () => {
@@ -49,7 +49,7 @@ const WorklogActionButtons = (props: ActionButtonsProps) => {
         <Button
           type="text"
           icon={getIcon()}
-          onClick={() => onSync(syncParams)}
+          onClick={() => jiraSyncSSE.triggerSync(syncParams)}
           className={`${classes.log_action_btn} ${isSynced ? classes.unsync : classes.sync} ${
             isDisabled && classes.disabled
           }`}
