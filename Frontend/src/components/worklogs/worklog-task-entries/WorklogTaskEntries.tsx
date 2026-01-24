@@ -18,6 +18,7 @@ interface WorklogTaskEntriesProps {
   refetchData: () => void;
   triggerSync: (params: SyncPayload) => void;
   isConnecting: boolean;
+  syncRequested: boolean;
   onCloseHandler: () => void;
 }
 
@@ -31,6 +32,7 @@ const WorklogTaskEntries = (props: WorklogTaskEntriesProps) => {
     refetchData,
     triggerSync,
     isConnecting,
+    syncRequested,
     onCloseHandler,
   } = props;
   const navigate = useNavigate();
@@ -48,6 +50,7 @@ const WorklogTaskEntries = (props: WorklogTaskEntriesProps) => {
         worklogEntries: worklogEntries,
         jiraLinked: loggedUserData?.jiraLinked,
         isConnecting: isConnecting,
+        syncRequested: syncRequested,
         onSync: triggerSync,
         onDelete: (record) => {
           setDeleteEntryVisible(true);
@@ -178,6 +181,7 @@ const WorklogTaskEntries = (props: WorklogTaskEntriesProps) => {
             isEntry: true,
             triggerSync: ({ entryIds, sync }) => triggerSync({ worklogId: worklogId, entryIds, sync }),
             isConnecting: isConnecting,
+            syncRequested: syncRequested,
           })}
         />
       </WorkLogModal>

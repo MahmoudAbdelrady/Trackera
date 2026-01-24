@@ -13,6 +13,7 @@ interface BuildSyncButtonPropsOptions<T extends SyncableItem> {
   extractIdentifier: (item: T) => string;
   triggerSync: (payload: SyncPayload) => void;
   isConnecting: boolean;
+  syncRequested: boolean;
   isEntry?: boolean;
 }
 
@@ -22,6 +23,7 @@ function buildSyncButtonProps<T extends SyncableItem>({
   extractIdentifier,
   triggerSync,
   isConnecting,
+  syncRequested,
   isEntry = false,
 }: BuildSyncButtonPropsOptions<T>): TableActionButtonProps[] {
   const hasSynced = selectedItems.some((e) => e.status === WORKLOG_STATUS.SYNCED);
@@ -47,8 +49,10 @@ function buildSyncButtonProps<T extends SyncableItem>({
     return [{ label: "Sync to Jira", icon: <CalendarSync />, disabled: true }];
   }
 
-  if (hasInProgress || isConnecting) {
-    return [{ label: "Actions Unavailable", icon: <CalendarOff />, disabled: true }];
+  if (hasInProgress || isConnecting || syncRequested) {
+    return [
+      { label: "Actions Unavailable", icon: <CalendarOff />, disabled: true, loading: isConnecting || syncRequested },
+    ];
   }
 
   if (hasSynced && hasNotSynced) {

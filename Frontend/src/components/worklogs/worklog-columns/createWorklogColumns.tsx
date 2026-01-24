@@ -12,13 +12,14 @@ import { CircleAlert } from "lucide-react";
 interface WorklogColumnsParams {
   jiraLinked: boolean;
   isConnecting: boolean;
+  syncRequested: boolean;
   onSync: (params: SyncPayload) => void;
   onEdit: (record: Worklog) => void;
   onDelete: (record: Worklog) => void;
 }
 
 const createWorklogColumns = (props: WorklogColumnsParams): TableProps<Worklog>["columns"] => {
-  const { jiraLinked, isConnecting, onSync, onEdit, onDelete } = props;
+  const { jiraLinked, isConnecting, syncRequested, onSync, onEdit, onDelete } = props;
 
   return [
     {
@@ -73,6 +74,7 @@ const createWorklogColumns = (props: WorklogColumnsParams): TableProps<Worklog>[
           record={record}
           jiraLinked={jiraLinked}
           isConnecting={isConnecting}
+          syncRequested={syncRequested}
           onSync={onSync}
           onEdit={() => onEdit(record)}
           onDelete={() => onDelete(record)}

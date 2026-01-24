@@ -16,6 +16,7 @@ interface ActionButtonsProps {
   viewLink?: string;
   syncParams: SyncPayload;
   isConnecting: boolean;
+  syncRequested: boolean;
   onSync: (params: SyncPayload) => void;
   onEdit?: () => void;
   onView?: () => void;
@@ -23,12 +24,13 @@ interface ActionButtonsProps {
 }
 
 const WorklogActionButtons = (props: ActionButtonsProps) => {
-  const { record, jiraLinked, viewLink, syncParams, isConnecting, onSync, onEdit, onView, onDelete } = props;
+  const { record, jiraLinked, viewLink, syncParams, isConnecting, syncRequested, onSync, onEdit, onView, onDelete } =
+    props;
 
   const isSynced = record.status === WORKLOG_STATUS.SYNCED;
   const isSyncing = record.status === WORKLOG_STATUS.SYNC_IN_PROGRESS;
   const isUnsyncing = record.status === WORKLOG_STATUS.UNSYNC_IN_PROGRESS;
-  const syncInProgress = isSyncing || isUnsyncing || isConnecting;
+  const syncInProgress = isSyncing || isUnsyncing || isConnecting || syncRequested;
   const isDisabled = !jiraLinked || syncInProgress;
 
   const getTooltipTitle = () => {

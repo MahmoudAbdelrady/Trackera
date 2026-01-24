@@ -52,7 +52,7 @@ const Home = () => {
     fetchWorklogSummary();
   }, []);
 
-  const { triggerSync, isConnecting } = useJiraSyncSSE({
+  const { triggerSync, isConnecting, syncRequested } = useJiraSyncSSE({
     hasInProgress,
     onStatusEvent: (event) => {
       setWorklogsResponse((prev) => {
@@ -108,6 +108,7 @@ const Home = () => {
       createWorklogColumns({
         jiraLinked: loggedUserData?.jiraLinked || false,
         isConnecting: isConnecting,
+        syncRequested: syncRequested,
         onSync: triggerSync,
         onEdit: (record) => {
           setSelectedWorklog(record);
