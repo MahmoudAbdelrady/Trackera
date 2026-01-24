@@ -7,6 +7,7 @@ import { useSSEContext } from "./useSSEContext";
 export interface JiraSyncSSEReturn {
   triggerSync: (payload: SyncPayload) => void;
   isRequestingSync: boolean;
+  activeSyncPayload: SyncPayload | null;
 }
 
 interface JiraSyncSSEOptions {
@@ -53,7 +54,6 @@ export const useJiraSyncSSE = ({ hasInProgress, onStatusEvent }: JiraSyncSSEOpti
     if (!pendingSyncPayload || !isConnected) return;
 
     fireSync(pendingSyncPayload);
-    setPendingSyncPayload(null);
   }, [isConnected, pendingSyncPayload]);
 
   // --- Auto-close connection when no in-progress worklogs and no pending sync ---
@@ -85,7 +85,12 @@ export const useJiraSyncSSE = ({ hasInProgress, onStatusEvent }: JiraSyncSSEOpti
       showErrorToast(error);
     }
     setSyncRequested(false);
+    setPendingSyncPayload(null);
   };
 
-  return { triggerSync, isRequestingSync: isConnecting || syncRequested };
+  return {
+    triggerSync,
+    isRequestingSync: isConnecting || syncRequested,
+    activeSyncPayload: isConnecting || syncRequested ? pendingSyncPayload : null,
+  };
 };

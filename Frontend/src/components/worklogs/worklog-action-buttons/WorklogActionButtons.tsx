@@ -28,7 +28,22 @@ const WorklogActionButtons = (props: ActionButtonsProps) => {
   const isSynced = record.status === WORKLOG_STATUS.SYNCED;
   const isSyncing = record.status === WORKLOG_STATUS.SYNC_IN_PROGRESS;
   const isUnsyncing = record.status === WORKLOG_STATUS.UNSYNC_IN_PROGRESS;
-  const syncInProgress = isSyncing || isUnsyncing || jiraSyncSSE.isRequestingSync;
+
+  const isSyncingCurrentRecord = () => {
+    const { activeSyncPayload } = jiraSyncSSE;
+    if (!activeSyncPayload) return false;
+    if (activeSyncPayload.taskNames?.length) {
+      return activeSyncPayload.taskNames.includes((record as WorklogTask).taskName);
+    } else if (activeSyncPayload.entryIds?.length) {
+      return activeSyncPayload.entryIds.includes((record as WorklogEntry).id);
+    } else if (activeSyncPayload.worklogId && !activeSyncPayload.taskNames && !activeSyncPayload.entryIds) {
+      return activeSyncPayload.worklogId === (record as Worklog).id;
+    }
+    return false;
+  };
+
+  const isRequestingSyncForThisRecord = jiraSyncSSE.isRequestingSync && isSyncingCurrentRecord();
+  const syncInProgress = isSyncing || isUnsyncing || isRequestingSyncForThisRecord;
   const isDisabled = !jiraLinked || syncInProgress;
 
   const getTooltipTitle = () => {
@@ -54,6 +69,7 @@ const WorklogActionButtons = (props: ActionButtonsProps) => {
             isDisabled && classes.disabled
           }`}
           disabled={isDisabled}
+          loading={isRequestingSyncForThisRecord}
         />
       </Tooltip>
 
