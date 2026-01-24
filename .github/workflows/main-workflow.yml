@@ -3,14 +3,6 @@ name: Manual Docker Build, Scan & Push
 on:
   workflow_dispatch:
     inputs:
-      target_branch:
-        description: "Branch to build"
-        required: true
-        default: dev
-        type: choice
-        options:
-          - dev
-          - main
       deploy_backend:
         description: "Deploy Backend"
         type: boolean
@@ -23,14 +15,12 @@ on:
 jobs:
   backend:
     name: Backend - Build, Scan & Push
-    environment: ${{ inputs.target_branch == 'main' && 'Production' || 'Development' }}
+    environment: ${{ github.ref_name == 'main' && 'Production' || 'Development' }}
     runs-on: ubuntu-latest
     if: inputs.deploy_backend
 
     steps:
       - uses: actions/checkout@v6
-        with:
-          ref: ${{ inputs.target_branch }}
 
       - uses: docker/setup-buildx-action@v3
 
@@ -44,7 +34,7 @@ jobs:
         run: |
           SHORT_SHA=$(echo $GITHUB_SHA | cut -c1-7)
 
-          if [[ "${{ inputs.target_branch }}" == 'main' ]]; then
+          if [[ "${{ github.ref_name }}" == 'main' ]]; then
             echo "tags=${{ secrets.DOCKER_USERNAME }}/trackera-backend:latest,${{ secrets.DOCKER_USERNAME }}/trackera-backend:${SHORT_SHA}" >> $GITHUB_OUTPUT
             echo "scan_tag=${{ secrets.DOCKER_USERNAME }}/trackera-backend:latest" >> $GITHUB_OUTPUT
           else
@@ -88,14 +78,12 @@ jobs:
 
   frontend:
     name: Frontend - Build, Scan & Push
-    environment: ${{ inputs.target_branch == 'main' && 'Production' || 'Development' }}
+    environment: ${{ github.ref_name == 'main' && 'Production' || 'Development' }}
     runs-on: ubuntu-latest
     if: inputs.deploy_frontend
 
     steps:
       - uses: actions/checkout@v6
-        with:
-          ref: ${{ inputs.target_branch }}
 
       - uses: docker/setup-buildx-action@v3
 
@@ -109,7 +97,7 @@ jobs:
         run: |
           SHORT_SHA=$(echo $GITHUB_SHA | cut -c1-7)
 
-          if [[ "${{ inputs.target_branch }}" == 'main' ]]; then
+          if [[ "${{ github.ref_name }}" == 'main' ]]; then
             echo "tags=${{ secrets.DOCKER_USERNAME }}/trackera-frontend:latest,${{ secrets.DOCKER_USERNAME }}/trackera-frontend:${SHORT_SHA}" >> $GITHUB_OUTPUT
             echo "scan_tag=${{ secrets.DOCKER_USERNAME }}/trackera-frontend:latest" >> $GITHUB_OUTPUT
           else
