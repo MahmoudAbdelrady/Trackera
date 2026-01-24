@@ -1,6 +1,9 @@
 # Use Amazon Corretto JDK
 FROM amazoncorretto:25-alpine AS build
 
+# Update packages
+RUN apk update && apk upgrade --no-cache
+
 WORKDIR /app
 
 # Copy ONLY Maven files first (for dependency caching)

@@ -1,5 +1,5 @@
 # Build stage
-FROM node:25.4.0-alpine3.22 AS build
+FROM node:25-alpine AS build
 
 # Install pnpm
 RUN npm install -g pnpm
@@ -21,7 +21,10 @@ COPY . .
 RUN pnpm run build
 
 # Production stage
-FROM nginx:1.29.4-alpine
+FROM nginx:1.29-alpine
+
+# Update packages
+RUN apk update && apk upgrade --no-cache
 
 # Copy build output to Nginx
 COPY --from=build /app/dist /usr/share/nginx/html
