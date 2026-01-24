@@ -182,9 +182,9 @@ const PrivacyPolicy = () => {
             <div className={classes.inner_policy}>
               <p>If you have any questions or concerns about this Privacy Policy, you can contact us at:</p>
               <div className={classes.info_box}>
-                <Mail />{" "}
-                <Link to="mailto:trackera@gmail.com" className={classes.link}>
-                  trackera@gmail.com
+                <Mail />
+                <Link to="mailto:mdevs.lab@gmail.com" className={classes.link}>
+                  mdevs.lab@gmail.com
                 </Link>
               </div>
             </div>
