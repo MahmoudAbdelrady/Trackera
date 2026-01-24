@@ -1,21 +1,21 @@
 import { Tooltip, type TableProps } from "antd";
-import { WORKLOG_STATUS, type SyncPayload, type WorklogEntry, type WorklogStatusType } from "../../../shared/types";
+import { WORKLOG_STATUS, type WorklogEntry, type WorklogStatusType } from "../../../shared/types";
 import StatusBadge from "../../status-badge/StatusBadge";
 import { CircleAlert } from "lucide-react";
 import WorkLogActionButtons from "../worklog-action-buttons/WorklogActionButtons";
 import { statusMetadata } from "../worklog.metadata";
+import type { JiraSyncSSEReturn } from "../../../shared/hooks/useJiraSyncSSE";
 
 interface WorklogEntryColumnsParams {
   worklogId: string;
   worklogEntries: WorklogEntry[];
   jiraLinked: boolean;
-  isConnecting: boolean;
-  onSync: (params: SyncPayload) => void;
+  jiraSyncSSE: JiraSyncSSEReturn;
   onDelete: (task: WorklogEntry) => void;
 }
 
 const createWorklogEntryColumns = (props: WorklogEntryColumnsParams): TableProps<WorklogEntry>["columns"] => {
-  const { worklogId, worklogEntries, jiraLinked, isConnecting, onSync, onDelete } = props;
+  const { worklogId, worklogEntries, jiraLinked, jiraSyncSSE, onDelete } = props;
 
   return [
     {
@@ -78,8 +78,7 @@ const createWorklogEntryColumns = (props: WorklogEntryColumnsParams): TableProps
         <WorkLogActionButtons
           record={record}
           jiraLinked={jiraLinked}
-          isConnecting={isConnecting}
-          onSync={onSync}
+          jiraSyncSSE={jiraSyncSSE}
           onDelete={() => onDelete(record)}
           syncParams={{
             worklogId: worklogId,

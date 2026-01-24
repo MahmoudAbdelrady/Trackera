@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { WORKLOG_STATUS, type SyncPayload, type WorklogEntry, type WorklogTask } from "../../../shared/types";
+import { WORKLOG_STATUS, type WorklogEntry, type WorklogTask } from "../../../shared/types";
 import TrackeraTable from "../../trackera-table/TrackeraTable";
 import WorkLogModal from "../modals/worklog-modal/WorklogModal";
 import { createWorklogEntryColumns, DeleteWarning } from "../../";
@@ -8,6 +8,7 @@ import { worklogApis } from "../../../state/api";
 import { showErrorToast } from "../../../utils/toast-handler/showToast";
 import { useNavigate } from "react-router-dom";
 import type { UserInfo } from "../../../shared/types";
+import type { JiraSyncSSEReturn } from "../../../shared/hooks/useJiraSyncSSE";
 
 interface WorklogTaskEntriesProps {
   loggedUserData: UserInfo;
@@ -16,8 +17,7 @@ interface WorklogTaskEntriesProps {
   worklogEntries: WorklogEntry[];
   setWorklogEntries: (entries: WorklogEntry[]) => void;
   refetchData: () => void;
-  triggerSync: (params: SyncPayload) => void;
-  isConnecting: boolean;
+  jiraSyncSSE: JiraSyncSSEReturn;
   onCloseHandler: () => void;
 }
 
@@ -29,8 +29,7 @@ const WorklogTaskEntries = (props: WorklogTaskEntriesProps) => {
     worklogEntries,
     setWorklogEntries,
     refetchData,
-    triggerSync,
-    isConnecting,
+    jiraSyncSSE,
     onCloseHandler,
   } = props;
   const navigate = useNavigate();
@@ -47,14 +46,13 @@ const WorklogTaskEntries = (props: WorklogTaskEntriesProps) => {
         worklogId: worklogId!,
         worklogEntries: worklogEntries,
         jiraLinked: loggedUserData?.jiraLinked,
-        isConnecting: isConnecting,
-        onSync: triggerSync,
+        jiraSyncSSE: jiraSyncSSE,
         onDelete: (record) => {
           setDeleteEntryVisible(true);
           setSelectedEntry(record);
         },
       }),
-    [worklogId, worklogEntries, loggedUserData?.jiraLinked, triggerSync],
+    [worklogId, worklogEntries, loggedUserData?.jiraLinked, jiraSyncSSE],
   );
 
   const fetchEntries = useCallback(async () => {
@@ -175,9 +173,9 @@ const WorklogTaskEntries = (props: WorklogTaskEntriesProps) => {
             loggedUserData: loggedUserData,
             selectedItems: selectedWorklogEntries,
             extractIdentifier: (entry: WorklogEntry) => entry.id,
+            worklogId: worklogId!,
             isEntry: true,
-            triggerSync: ({ entryIds, sync }) => triggerSync({ worklogId: worklogId, entryIds, sync }),
-            isConnecting: isConnecting,
+            jiraSyncSSE: jiraSyncSSE,
           })}
         />
       </WorkLogModal>

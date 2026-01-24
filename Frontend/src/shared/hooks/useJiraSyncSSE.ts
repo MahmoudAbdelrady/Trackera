@@ -4,9 +4,10 @@ import { showErrorToast, showSuccessToast } from "../../utils/toast-handler/show
 import { worklogApis } from "../../state/api";
 import { useSSEContext } from "./useSSEContext";
 
-interface JiraSyncSSEReturn {
+export interface JiraSyncSSEReturn {
   triggerSync: (payload: SyncPayload) => void;
-  isConnecting: boolean;
+  isRequestingSync: boolean;
+  activeSyncPayload: SyncPayload | null;
 }
 
 interface JiraSyncSSEOptions {
@@ -16,8 +17,9 @@ interface JiraSyncSSEOptions {
 
 export const useJiraSyncSSE = ({ hasInProgress, onStatusEvent }: JiraSyncSSEOptions): JiraSyncSSEReturn => {
   const [pendingSyncPayload, setPendingSyncPayload] = useState<SyncPayload | null>(null);
-  const [sseAck, setSseAck] = useState(false);
-  const [wantsSSE, setWantsSSE] = useState(false);
+  const [sseAck, setSseAck] = useState<boolean>(false);
+  const [wantsSSE, setWantsSSE] = useState<boolean>(false);
+  const [syncRequested, setSyncRequested] = useState<boolean>(false);
 
   const { isConnected, isConnecting, subscribe, forceConnect, allowDisconnect } = useSSEContext();
   const unsubscribeRef = useRef<null | (() => void)>(null);
@@ -52,7 +54,6 @@ export const useJiraSyncSSE = ({ hasInProgress, onStatusEvent }: JiraSyncSSEOpti
     if (!pendingSyncPayload || !isConnected) return;
 
     fireSync(pendingSyncPayload);
-    setPendingSyncPayload(null);
   }, [isConnected, pendingSyncPayload]);
 
   // --- Auto-close connection when no in-progress worklogs and no pending sync ---
@@ -76,13 +77,20 @@ export const useJiraSyncSSE = ({ hasInProgress, onStatusEvent }: JiraSyncSSEOpti
   };
 
   const fireSync = async (payload: SyncPayload) => {
+    setSyncRequested(true);
     try {
       const response = await worklogApis.syncWorklog(payload);
       showSuccessToast(response);
     } catch (error) {
       showErrorToast(error);
     }
+    setSyncRequested(false);
+    setPendingSyncPayload(null);
   };
 
-  return { triggerSync, isConnecting };
+  return {
+    triggerSync,
+    isRequestingSync: isConnecting || syncRequested,
+    activeSyncPayload: isConnecting || syncRequested ? pendingSyncPayload : null,
+  };
 };
