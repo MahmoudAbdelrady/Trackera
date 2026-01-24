@@ -9,14 +9,13 @@ interface WorklogEntryColumnsParams {
   worklogId: string;
   worklogEntries: WorklogEntry[];
   jiraLinked: boolean;
-  isConnecting: boolean;
-  syncRequested: boolean;
+  isRequestingSync: boolean;
   onSync: (params: SyncPayload) => void;
   onDelete: (task: WorklogEntry) => void;
 }
 
 const createWorklogEntryColumns = (props: WorklogEntryColumnsParams): TableProps<WorklogEntry>["columns"] => {
-  const { worklogId, worklogEntries, jiraLinked, isConnecting, syncRequested, onSync, onDelete } = props;
+  const { worklogId, worklogEntries, jiraLinked, isRequestingSync, onSync, onDelete } = props;
 
   return [
     {
@@ -79,8 +78,7 @@ const createWorklogEntryColumns = (props: WorklogEntryColumnsParams): TableProps
         <WorkLogActionButtons
           record={record}
           jiraLinked={jiraLinked}
-          isConnecting={isConnecting}
-          syncRequested={syncRequested}
+          isRequestingSync={isRequestingSync}
           onSync={onSync}
           onDelete={() => onDelete(record)}
           syncParams={{

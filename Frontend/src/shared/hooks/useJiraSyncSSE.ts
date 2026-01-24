@@ -6,8 +6,7 @@ import { useSSEContext } from "./useSSEContext";
 
 interface JiraSyncSSEReturn {
   triggerSync: (payload: SyncPayload) => void;
-  isConnecting: boolean;
-  syncRequested: boolean;
+  isRequestingSync: boolean;
 }
 
 interface JiraSyncSSEOptions {
@@ -88,5 +87,5 @@ export const useJiraSyncSSE = ({ hasInProgress, onStatusEvent }: JiraSyncSSEOpti
     setSyncRequested(false);
   };
 
-  return { triggerSync, isConnecting, syncRequested };
+  return { triggerSync, isRequestingSync: isConnecting || syncRequested };
 };

@@ -131,7 +131,7 @@ const WorklogDetails = () => {
     return result;
   };
 
-  const { triggerSync, isConnecting, syncRequested } = useJiraSyncSSE({
+  const { triggerSync, isRequestingSync } = useJiraSyncSSE({
     hasInProgress,
     onStatusEvent: (event) => {
       if (event.type === JIRA_SYNC_EVENT.TASK || event.type === JIRA_SYNC_EVENT.ALL) {
@@ -171,8 +171,7 @@ const WorklogDetails = () => {
         worklogId: worklogId!,
         worklogTasks: worklogTasks,
         jiraLinked: loggedUserData?.jiraLinked || false,
-        isConnecting: isConnecting,
-        syncRequested: syncRequested,
+        isRequestingSync: isRequestingSync,
         onSync: triggerSync,
         onView: (record) => {
           setSelectedTask(record);
@@ -205,8 +204,7 @@ const WorklogDetails = () => {
             fetchWorklogTasks();
           }}
           triggerSync={triggerSync}
-          isConnecting={isConnecting}
-          syncRequested={syncRequested}
+          isRequestingSync={isRequestingSync}
           onCloseHandler={() => {
             setSelectedTask(null);
             setTaskModalState({ type: null, task: null });
@@ -279,8 +277,7 @@ const WorklogDetails = () => {
                     extractIdentifier: (task: WorklogTask) => task.taskName,
                     isEntry: false,
                     triggerSync: ({ taskNames, sync }) => triggerSync({ worklogId: worklogId, taskNames, sync }),
-                    isConnecting: isConnecting,
-                    syncRequested: syncRequested,
+                    isRequestingSync: isRequestingSync,
                   })}
                 />
               )}
