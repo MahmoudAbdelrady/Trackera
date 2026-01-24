@@ -23,6 +23,9 @@ RUN pnpm run build
 # Production stage
 FROM nginx:1.29-alpine
 
+# Update packages
+RUN apk update && apk upgrade --no-cache
+
 # Copy build output to Nginx
 COPY --from=build /app/dist /usr/share/nginx/html
 
