@@ -1,24 +1,23 @@
 import type { TableProps } from "antd";
 import {
   WORKLOG_STATUS,
-  type SyncPayload,
   type Worklog,
   type WorklogEvaluationType,
   type WorklogStatusType,
 } from "../../../shared/types";
 import { StatusBadge, statusMetadata, WorklogActionButtons, worklogEvaluationMetadata } from "../..";
 import { CircleAlert } from "lucide-react";
+import type { JiraSyncSSEReturn } from "../../../shared/hooks/useJiraSyncSSE";
 
 interface WorklogColumnsParams {
   jiraLinked: boolean;
-  isConnecting: boolean;
-  onSync: (params: SyncPayload) => void;
+  jiraSyncSSE: JiraSyncSSEReturn;
   onEdit: (record: Worklog) => void;
   onDelete: (record: Worklog) => void;
 }
 
 const createWorklogColumns = (props: WorklogColumnsParams): TableProps<Worklog>["columns"] => {
-  const { jiraLinked, isConnecting, onSync, onEdit, onDelete } = props;
+  const { jiraLinked, jiraSyncSSE, onEdit, onDelete } = props;
 
   return [
     {
@@ -72,8 +71,7 @@ const createWorklogColumns = (props: WorklogColumnsParams): TableProps<Worklog>[
         <WorklogActionButtons
           record={record}
           jiraLinked={jiraLinked}
-          isConnecting={isConnecting}
-          onSync={onSync}
+          jiraSyncSSE={jiraSyncSSE}
           onEdit={() => onEdit(record)}
           onDelete={() => onDelete(record)}
           viewLink={`/worklog-details/${record.id}`}

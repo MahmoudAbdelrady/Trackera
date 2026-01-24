@@ -36,12 +36,8 @@ const TrackeraTable = <T,>(props: TrackeraTableProps<T>) => {
         <div className={classes.table_actions}>
           {tableActionBtns.map((button, index) => {
             return button.options && button.options.length > 0 ? (
-              <Dropdown
-                trigger={["click"]}
-                menu={{ items: getTableActionButtons(button) }}
-                className={classes.log_button_dropdown}
-              >
-                <div className={classes.btn_info}>
+              <Dropdown trigger={["click"]} menu={{ items: getTableActionButtons(button) }}>
+                <div className={classes.log_button_dropdown}>
                   {button.icon}
                   {button.label}
                 </div>
@@ -51,6 +47,7 @@ const TrackeraTable = <T,>(props: TrackeraTableProps<T>) => {
                 key={index}
                 icon={button.icon}
                 disabled={button.disabled}
+                loading={button.loading}
                 className={`${classes.log_button} ${button.customClasses
                   ?.map((className) => classes[className])
                   .join(" ")}`}

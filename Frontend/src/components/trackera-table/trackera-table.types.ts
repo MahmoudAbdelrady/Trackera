@@ -13,6 +13,7 @@ interface TableActionButtonProps {
   disabled?: boolean;
   onClick?: () => void;
   options?: TableActionButtonOptions[];
+  loading?: boolean;
 }
 
 export type { TableActionButtonProps };
