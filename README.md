@@ -153,8 +153,9 @@ See [FRONTEND.md](docs/FRONTEND.md) for:
 ---
 
 ## API
-
-API documentation is available via Swagger UI at `/app-docs/swagger-ui.html` for interactive API documentation.
+API documentation is available via Swagger UI for interactive API documentation at:
+- Production: [https://trackera.mdevs.cloud/api/app-docs/swagger-ui.html](https://trackera.mdevs.cloud/api/app-docs/swagger-ui.html)
+- Local: [http://localhost:8080/app-docs/swagger-ui.html](http://localhost:8080/app-docs/swagger-ui.html)
 
 ---
 
