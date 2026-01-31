@@ -14,6 +14,8 @@ import java.util.Map;
 
 @Repository
 public interface WorkLogDetailRepository extends BaseRepository<WorkLogDetail> {
+    WorkLogDetail findByUuid(String uuid);
+
     void deleteAllByWorkLog(WorkLog workLog);
 
     @Query("SELECT NEW MAP(wld.taskName as taskName, SUM(wld.duration) AS totalMinutes, " +

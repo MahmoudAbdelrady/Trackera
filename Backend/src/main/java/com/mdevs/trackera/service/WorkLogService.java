@@ -230,6 +230,96 @@ public class WorkLogService {
 
         return Map.of("message", "Worklog updated successfully");
     }
+
+    @Transactional
+    public void updateWorkLogDetail(String uuid, UpdateWorkLogDetailPayloadDTO detailPayloadDTO) {
+        WorkLog workLog = ensureWorkLogExistsAndHasPermission(uuid);
+        ensureWorkLogSyncNotInProgress(workLog);
+        validateWorkLogDetail(detailPayloadDTO);
+        List<WorkLogDetail> detailsToUnsync = new ArrayList<>();
+        List<WorkLogDetail> workLogDetails = new ArrayList<>();
+        WorkLogDetail workLogDetail = null;
+
+        if (detailPayloadDTO.getIsTask()) {
+            workLogDetails = workLogDetailRepository.findByWorkLogAndTaskName(workLog, detailPayloadDTO.getTaskName());
+            if (workLogDetails.isEmpty()) {
+                throw new NotFoundException("WorkLog task not found");
+            }
+
+            workLogDetails.forEach(detail -> {
+                detail.setTaskName(detailPayloadDTO.getTaskName());
+                if (detail.getStatus().equals(WorkLogStatus.SYNCED)) {
+                    detailsToUnsync.add(detail);
+                }
+            });
+
+            workLogDetailRepository.saveAll(workLogDetails);
+        } else {
+            workLogDetail = workLogDetailRepository.findByUuid(detailPayloadDTO.getEntryId());
+            if (workLogDetail == null) {
+                throw new NotFoundException("WorkLog entry not found");
+            }
+            workLogDetail.setTaskName(detailPayloadDTO.getTaskName());
+
+            WorkLogDetailNewDataDTO detailNewData = detailPayloadDTO.getNewData();
+            workLogDetail.setStartTime(detailNewData.getStartTime());
+            workLogDetail.setEndTime(detailNewData.getEndTime());
+            workLogDetail.setDuration(parseDuration(detailNewData.getDuration()));
+            workLogDetail.setDescription(detailNewData.getDescription());
+            if (workLogDetail.getStatus().equals(WorkLogStatus.SYNCED)) {
+                detailsToUnsync.add(workLogDetail);
+            }
+
+            workLogDetailRepository.save(workLogDetail);
+        }
+
+        if (!detailsToUnsync.isEmpty()) {
+            handleJiraSyncing(workLog, detailsToUnsync, false);
+        }
+
+        if (detailPayloadDTO.isSyncToJira()) {
+            handleJiraSyncing(workLog, detailPayloadDTO.getIsTask() ? workLogDetails : List.of(Objects.requireNonNull(workLogDetail)), true);
+        }
+
+        workLog.setStatus(workLogRepository.calculateWorkLogStatus(workLog));
+        workLogRepository.save(workLog);
+    }
+
+    private void validateWorkLogDetail(UpdateWorkLogDetailPayloadDTO detailPayloadDTO) {
+        WorkLogDetailNewDataDTO detailNewDataDTO = detailPayloadDTO.getNewData();
+        if (detailNewDataDTO == null) {
+            throw new BusinessException("New updated data is required");
+        }
+        if (StringUtils.isEmpty(detailNewDataDTO.getName())) {
+            throw new BusinessException("WorkLog new task name is required");
+        }
+
+        if (detailPayloadDTO.getIsTask()) {
+            if (StringUtils.isEmpty(detailPayloadDTO.getTaskName())) {
+                throw new BusinessException("Task name is required");
+            }
+        } else {
+            if (StringUtils.isEmpty(detailPayloadDTO.getEntryId())) {
+                throw new BusinessException("WorkLog entry id is required");
+            }
+
+            if (detailNewDataDTO.getStartTime() == null) {
+                throw new BusinessException("WorkLog new start time is required");
+            }
+
+            if (detailNewDataDTO.getEndTime() == null) {
+                throw new BusinessException("WorkLog new end time is required");
+            }
+
+            if (StringUtils.isEmpty(detailNewDataDTO.getDuration())) {
+                throw new BusinessException("WorkLog new duration is required");
+            }
+
+            if (StringUtils.isEmpty(detailNewDataDTO.getDescription())) {
+                throw new BusinessException("WorkLog new description is required");
+            }
+        }
+    }
     //</editor-fold>
 
     //<editor-fold desc="Deletion">
