@@ -239,6 +239,7 @@ public class WorkLogService {
         List<WorkLogDetail> detailsToUnsync = new ArrayList<>();
         List<WorkLogDetail> workLogDetails = new ArrayList<>();
         WorkLogDetail workLogDetail = null;
+        WorkLogSyncPayloadDTO workLogSyncPayloadDTO = new WorkLogSyncPayloadDTO(workLog.getUser().getId(), workLog.getId());
 
         if (detailPayloadDTO.getIsTask()) {
             workLogDetails = workLogDetailRepository.findByWorkLogAndTaskName(workLog, detailPayloadDTO.getTaskName());
@@ -247,7 +248,7 @@ public class WorkLogService {
             }
 
             workLogDetails.forEach(detail -> {
-                detail.setTaskName(detailPayloadDTO.getTaskName());
+                detail.setTaskName(detailPayloadDTO.getNewData().getName());
                 if (detail.getStatus().equals(WorkLogStatus.SYNCED)) {
                     detailsToUnsync.add(detail);
                 }
@@ -274,15 +275,31 @@ public class WorkLogService {
         }
 
         if (!detailsToUnsync.isEmpty()) {
-            handleJiraSyncing(workLog, detailsToUnsync, false);
+            markDetailsForSync(detailsToUnsync, false);
+            List<WorkLogDetailSyncRequestDTO> detailUnSyncRequests = detailsToUnsync.stream()
+                    .map(detail -> new WorkLogDetailSyncRequestDTO(workLog.getUuid(), detail.getId(), detail.getTaskName(), detail.getJiraId()))
+                    .toList();
+            workLogSyncPayloadDTO.setDetailsToUnsync(detailUnSyncRequests);
         }
 
         if (detailPayloadDTO.isSyncToJira()) {
-            handleJiraSyncing(workLog, detailPayloadDTO.getIsTask() ? workLogDetails : List.of(Objects.requireNonNull(workLogDetail)), true);
+            List<WorkLogDetail> detailsToSync = detailPayloadDTO.getIsTask() ? workLogDetails : List.of(Objects.requireNonNull(workLogDetail));
+            markDetailsForSync(detailsToSync, true);
+
+            List<WorkLogDetailSyncRequestDTO> detailSyncRequests = detailsToSync.stream()
+                    .map(detail -> new WorkLogDetailSyncRequestDTO(workLog.getUuid(), detail.getId(), detail.getTaskName(), null))
+                    .toList();
+
+            workLogSyncPayloadDTO.setDetailsToSync(detailSyncRequests);
         }
 
         workLog.setStatus(workLogRepository.calculateWorkLogStatus(workLog));
         workLogRepository.save(workLog);
+        
+        if (workLogSyncPayloadDTO.hasWork()) {
+            oAuthConnectionService.validateAndGetConnection(workLog.getUser(), OAuthProvider.JIRA);
+            backgroundJobService.enqueueJob(WorkLogSyncJobHandler.class, JsonUtil.convertObjectToJsonString(workLogSyncPayloadDTO));
+        }
     }
 
     private void validateWorkLogDetail(UpdateWorkLogDetailPayloadDTO detailPayloadDTO) {

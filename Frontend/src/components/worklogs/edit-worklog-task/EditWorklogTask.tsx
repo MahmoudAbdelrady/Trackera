@@ -8,11 +8,15 @@ import { useState } from "react";
 import classes from "./scss/edit-worklog-task.module.css";
 import { Alert, Switch, Tooltip } from "antd";
 import type { WorklogTask } from "../../../shared/types";
+import { worklogApis } from "../../../state/api";
+import { showSuccessToast, showErrorToast } from "../../../utils/toast-handler/showToast";
 
 interface EditWorklogTaskProps {
+  worklogId: string;
   worklogTask: WorklogTask;
   setIsOpen: (isOpen: boolean) => void;
   jiraLinked: boolean;
+  refetchData: () => void;
 }
 
 interface EditWorklogTaskFormValues {
@@ -21,16 +25,29 @@ interface EditWorklogTaskFormValues {
 }
 
 const EditWorklogTask = (props: EditWorklogTaskProps) => {
-  const { worklogTask, setIsOpen, jiraLinked } = props;
+  const { worklogId, worklogTask, setIsOpen, jiraLinked, refetchData } = props;
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
   const editWorklogTaskFormik = useFormik<EditWorklogTaskFormValues>({
     initialValues: { taskName: worklogTask.taskName, syncToJira: false },
     validationSchema: editWorklogTask,
-    onSubmit: (values) => {
+    onSubmit: async (values) => {
       setIsLoading(true);
-      console.log(values);
-      // TODO
+      try {
+        const result = await worklogApis.updateWorklogDetail(worklogId, {
+          taskName: worklogTask.taskName,
+          isTask: true,
+          syncToJira: values.syncToJira,
+          newData: {
+            name: values.taskName,
+          },
+        });
+        showSuccessToast(result);
+        refetchData();
+        setIsOpen(false);
+      } catch (error: unknown) {
+        showErrorToast(error);
+      }
       setIsLoading(false);
     },
   });
@@ -70,14 +87,14 @@ const EditWorklogTask = (props: EditWorklogTaskProps) => {
             editWorklogTaskFormik.dirty &&
             worklogTask.status !== "NOT_SYNCED" && (
               <Alert
-                title="Changing the task name will be applied to the synced tasks"
+                title="The current synced data of this task will be unsynced upon update"
                 type="warning"
                 showIcon
                 style={{ marginTop: "10px" }}
               />
             )}
         </div>
-        {editWorklogTaskFormik.dirty && worklogTask.status !== "NOT_SYNCED" && (
+        {editWorklogTaskFormik.dirty && (
           <div className={classes.form_group}>
             <span className={classes.label}>Sync to Jira after update:</span>
             <Switch

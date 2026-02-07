@@ -12,12 +12,16 @@ import Alert from "antd/es/alert/Alert";
 import Tooltip from "antd/es/tooltip";
 import { Form, Switch, TimePicker } from "antd";
 import classes from "./scss/edit-worklog-entry.module.css";
+import { worklogApis } from "../../../state/api";
+import { showErrorToast, showSuccessToast } from "../../../utils/toast-handler/showToast";
 
 interface EditWorklogEntryProps {
+  worklogId: string;
   taskName: string;
   worklogEntry: WorklogEntry;
   setIsOpen: (isOpen: boolean) => void;
   jiraLinked: boolean;
+  refetchData: () => void;
 }
 
 interface EditWorklogEntryFormValues {
@@ -30,7 +34,7 @@ interface EditWorklogEntryFormValues {
 }
 
 const EditWorklogEntry = (props: EditWorklogEntryProps) => {
-  const { taskName, worklogEntry, setIsOpen, jiraLinked } = props;
+  const { worklogId, taskName, worklogEntry, setIsOpen, jiraLinked, refetchData } = props;
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
   const editWorklogEntryFormik = useFormik<EditWorklogEntryFormValues>({
@@ -43,10 +47,28 @@ const EditWorklogEntry = (props: EditWorklogEntryProps) => {
       syncToJira: false,
     },
     validationSchema: editWorklogEntry,
-    onSubmit: (values) => {
+    onSubmit: async (values) => {
       setIsLoading(true);
-      console.log(values);
-      // TODO
+      try {
+        const result = await worklogApis.updateWorklogDetail(worklogId, {
+          taskName: taskName,
+          entryId: worklogEntry.id,
+          isTask: false,
+          syncToJira: values.syncToJira,
+          newData: {
+            name: values.taskName,
+            startTime: values.fromTime?.format("h:mm A"),
+            endTime: values.toTime?.format("h:mm A"),
+            duration: values.duration,
+            description: values.description,
+          },
+        });
+        showSuccessToast(result);
+        refetchData();
+        setIsOpen(false);
+      } catch (error: unknown) {
+        showErrorToast(error);
+      }
       setIsLoading(false);
     },
   });
@@ -170,13 +192,13 @@ const EditWorklogEntry = (props: EditWorklogEntryProps) => {
           editWorklogEntryFormik.dirty &&
           worklogEntry.status !== "NOT_SYNCED" && (
             <Alert
-              title="The changed data of this entry will be synced to Jira"
+              title="The current synced data of this entry will be unsynced upon update"
               type="warning"
               showIcon
               style={{ marginTop: "10px" }}
             />
           )}
-        {editWorklogEntryFormik.dirty && worklogEntry.status !== "NOT_SYNCED" && (
+        {editWorklogEntryFormik.dirty && (
           <div className={classes.form_group}>
             <span className={classes.label}>Sync to Jira after update:</span>
             <Switch

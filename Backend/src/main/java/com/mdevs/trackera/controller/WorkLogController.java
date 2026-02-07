@@ -63,6 +63,12 @@ public class WorkLogController {
         return new ResponseEntity<>(workLogService.getWorkLogTaskEntries(uuid, taskName), HttpStatus.OK);
     }
 
+    @PutMapping("/{uuid}/details")
+    public ResponseEntity<String> updateWorkLogDetail(@PathVariable String uuid, @RequestBody @Valid UpdateWorkLogDetailPayloadDTO payload) {
+        workLogService.updateWorkLogDetail(uuid, payload);
+        return new ResponseEntity<>((payload.getIsTask() ? "Task" : "Entry") + " updated successfully", HttpStatus.OK);
+    }
+
     @RateLimited(permitsPerMinute = 60)
     @PostMapping("/{uuid}/sync")
     public ResponseEntity<String> syncWorkLog(@PathVariable String uuid, @RequestBody(required = false) WorkLogSelectionDTO workLogSelectionDTO, @RequestParam(required = false, defaultValue = "true") boolean sync) {

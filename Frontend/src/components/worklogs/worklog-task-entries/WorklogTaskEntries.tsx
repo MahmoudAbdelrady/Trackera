@@ -45,7 +45,6 @@ const WorklogTaskEntries = (props: WorklogTaskEntriesProps) => {
     type: null,
     entry: null,
   });
-  const [isEditingEntry, setIsEditingEntry] = useState<boolean>(false);
   const [isDeletingEntry, setIsDeletingEntry] = useState<boolean>(false);
 
   const worklogEntryColumns = useMemo(
@@ -64,7 +63,7 @@ const WorklogTaskEntries = (props: WorklogTaskEntriesProps) => {
           setEntryModalState({ type: "delete", entry: record });
         },
       }),
-    [worklogId, worklogEntries, loggedUserData?.jiraLinked, jiraSyncSSE]
+    [worklogId, worklogEntries, loggedUserData?.jiraLinked, jiraSyncSSE],
   );
 
   const fetchEntries = useCallback(async () => {
@@ -124,10 +123,12 @@ const WorklogTaskEntries = (props: WorklogTaskEntriesProps) => {
     <>
       {entryModalState.type === "edit" && (
         <EditWorklogEntry
+          worklogId={worklogId}
           taskName={selectedTask.taskName}
           worklogEntry={entryModalState.entry!}
           setIsOpen={clearEntryModalFields}
           jiraLinked={loggedUserData?.jiraLinked ?? false}
+          refetchData={refetchData}
         />
       )}
 

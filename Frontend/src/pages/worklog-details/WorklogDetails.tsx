@@ -20,7 +20,7 @@ import {
 } from "../../shared/types";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { showErrorToast, showSuccessToast } from "../../utils/toast-handler/showToast";
+import { showSuccessToast, showErrorToast } from "../../utils/toast-handler/showToast";
 import { userQueries } from "../../state/queries";
 import buildSyncButtonProps from "../../utils/buildWorklogSyncButtonProps";
 import { useJiraSyncSSE } from "../../shared/hooks";
@@ -118,8 +118,7 @@ const WorklogDetails = () => {
       if (result.isLast) {
         navigate("/");
       } else {
-        fetchWorklogTasks();
-        fetchWorklogInfo();
+        refetchData();
         setSelectedTaskNames([]);
       }
     } catch (error: any) {
@@ -193,6 +192,11 @@ const WorklogDetails = () => {
     [loggedUserData?.jiraLinked, worklogId, worklogTasks, jiraSyncSSE],
   );
 
+  const refetchData = () => {
+    fetchWorklogInfo();
+    fetchWorklogTasks();
+  };
+
   const clearTaskModalFields = () => {
     setTaskModalState({ type: null, task: null });
     setSelectedTask(null);
@@ -202,9 +206,11 @@ const WorklogDetails = () => {
     <>
       {taskModalState.type === "edit" && (
         <EditWorklogTask
+          worklogId={worklogId!}
           worklogTask={selectedTask!}
           setIsOpen={() => clearTaskModalFields()}
           jiraLinked={loggedUserData?.jiraLinked ?? false}
+          refetchData={refetchData}
         />
       )}
 
@@ -215,10 +221,7 @@ const WorklogDetails = () => {
           selectedTask={selectedTask!}
           worklogEntries={worklogEntries}
           setWorklogEntries={setWorklogEntries}
-          refetchData={() => {
-            fetchWorklogInfo();
-            fetchWorklogTasks();
-          }}
+          refetchData={refetchData}
           jiraSyncSSE={jiraSyncSSE}
           onCloseHandler={() => {
             setSelectedTask(null);

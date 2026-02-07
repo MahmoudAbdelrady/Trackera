@@ -62,6 +62,22 @@ interface WorklogEntry {
   syncError?: string;
 }
 
+interface WorklogDetailNewDataPayload {
+  name: string;
+  startTime?: string;
+  endTime?: string;
+  duration?: string;
+  description?: string;
+}
+
+interface UpdateWorkLogDetailPayloadDTO {
+  taskName?: string;
+  entryId?: string;
+  isTask: boolean;
+  syncToJira: boolean;
+  newData: WorklogDetailNewDataPayload;
+}
+
 interface WorklogSummaryCard {
   label: string;
   subLabel: string;
@@ -106,6 +122,7 @@ export type {
   Worklog,
   WorklogTask,
   WorklogEntry,
+  UpdateWorkLogDetailPayloadDTO,
   WorklogSelection,
   WorklogError,
   WorkLogSearchFilter,

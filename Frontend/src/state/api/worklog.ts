@@ -1,5 +1,5 @@
 import requestInstance from "../../shared/axios/request-instance";
-import type { SyncPayload, WorklogSelection } from "../../shared/types";
+import type { SyncPayload, UpdateWorkLogDetailPayloadDTO, WorklogSelection } from "../../shared/types";
 
 const getWorklogs = async (pageNum: number = 0, pageSize: number = 10, searchFilters?: Record<string, any>) => {
   const response = await requestInstance.post(`/worklog/search?page=${pageNum}&size=${pageSize}`, searchFilters);
@@ -23,6 +23,11 @@ const getWorklogTasks = async (worklogId: string) => {
 
 const getWorklogTaskEntries = async (worklogId: string, taskName: string) => {
   const response = await requestInstance.get(`/worklog/${worklogId}/details/task?taskName=${taskName}`);
+  return response.data;
+};
+
+const updateWorklogDetail = async (worklogId: string, detailsPayload: UpdateWorkLogDetailPayloadDTO) => {
+  const response = await requestInstance.put(`/worklog/${worklogId}/details`, detailsPayload);
   return response.data;
 };
 
@@ -57,6 +62,7 @@ const worklogApis = {
   getWorklogTasks,
   getWorklogTaskEntries,
   updateWorklog,
+  updateWorklogDetail,
   deleteWorklog,
   syncWorklog,
 };
