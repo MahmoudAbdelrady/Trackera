@@ -75,7 +75,13 @@ const WorklogActionButtons = (props: ActionButtonsProps) => {
 
       {onEdit && (
         <Tooltip title="Edit">
-          <SquarePen onClick={onEdit} className={`${classes.log_action_btn} ${classes.edit}`} />
+          <Button
+            type="text"
+            icon={<SquarePen />}
+            onClick={onEdit}
+            className={`${classes.log_action_btn} ${classes.edit} ${syncInProgress && classes.disabled}`}
+            disabled={syncInProgress}
+          />
         </Tooltip>
       )}
 

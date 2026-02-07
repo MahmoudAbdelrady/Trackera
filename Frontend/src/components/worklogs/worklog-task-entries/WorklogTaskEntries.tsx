@@ -9,6 +9,7 @@ import { showErrorToast } from "../../../utils/toast-handler/showToast";
 import { useNavigate } from "react-router-dom";
 import type { UserInfo } from "../../../shared/types";
 import type { JiraSyncSSEReturn } from "../../../shared/hooks/useJiraSyncSSE";
+import EditWorklogEntry from "../edit-worklog-entry/EditWorklogEntry";
 
 interface WorklogTaskEntriesProps {
   loggedUserData: UserInfo;
@@ -36,9 +37,16 @@ const WorklogTaskEntries = (props: WorklogTaskEntriesProps) => {
 
   const [isFetchingEntries, setIsFetchingEntries] = useState<boolean>(false);
   const [selectedWorklogEntries, setSelectedWorklogEntries] = useState<WorklogEntry[]>([]);
-  const [isDeletingEntry, setIsDeletingEntry] = useState<boolean>(false);
   const [selectedEntry, setSelectedEntry] = useState<WorklogEntry | null>(null);
-  const [deleteEntryVisible, setDeleteEntryVisible] = useState<boolean>(false);
+  const [entryModalState, setEntryModalState] = useState<{
+    type: "edit" | "delete" | null;
+    entry: WorklogEntry | null;
+  }>({
+    type: null,
+    entry: null,
+  });
+  const [isEditingEntry, setIsEditingEntry] = useState<boolean>(false);
+  const [isDeletingEntry, setIsDeletingEntry] = useState<boolean>(false);
 
   const worklogEntryColumns = useMemo(
     () =>
@@ -47,12 +55,16 @@ const WorklogTaskEntries = (props: WorklogTaskEntriesProps) => {
         worklogEntries: worklogEntries,
         jiraLinked: loggedUserData?.jiraLinked,
         jiraSyncSSE: jiraSyncSSE,
-        onDelete: (record) => {
-          setDeleteEntryVisible(true);
+        onEdit: (record) => {
           setSelectedEntry(record);
+          setEntryModalState({ type: "edit", entry: record });
+        },
+        onDelete: (record) => {
+          setSelectedEntry(record);
+          setEntryModalState({ type: "delete", entry: record });
         },
       }),
-    [worklogId, worklogEntries, loggedUserData?.jiraLinked, jiraSyncSSE],
+    [worklogId, worklogEntries, loggedUserData?.jiraLinked, jiraSyncSSE]
   );
 
   const fetchEntries = useCallback(async () => {
@@ -80,8 +92,8 @@ const WorklogTaskEntries = (props: WorklogTaskEntriesProps) => {
     }
   }, [worklogEntries]);
 
-  const clearDeleteEntryModalFields = () => {
-    setDeleteEntryVisible(false);
+  const clearEntryModalFields = () => {
+    setEntryModalState({ type: null, entry: null });
     setSelectedEntry(null);
   };
 
@@ -105,14 +117,23 @@ const WorklogTaskEntries = (props: WorklogTaskEntriesProps) => {
     }
 
     setIsDeletingEntry(false);
-    clearDeleteEntryModalFields();
+    clearEntryModalFields();
   };
 
   return (
     <>
-      {deleteEntryVisible && (
+      {entryModalState.type === "edit" && (
+        <EditWorklogEntry
+          taskName={selectedTask.taskName}
+          worklogEntry={entryModalState.entry!}
+          setIsOpen={clearEntryModalFields}
+          jiraLinked={loggedUserData?.jiraLinked ?? false}
+        />
+      )}
+
+      {entryModalState.type === "delete" && (
         <WorkLogModal
-          title={`Delete ${selectedTask?.taskName} Entry`}
+          title={`Delete ${selectedTask.taskName} Entry`}
           properties={{
             open: true,
             centered: true,
@@ -123,7 +144,7 @@ const WorklogTaskEntries = (props: WorklogTaskEntriesProps) => {
             onOk: handleDeleteWorkLogEntry,
             okButtonProps: { loading: isDeletingEntry, disabled: isDeletingEntry, danger: true },
             cancelButtonProps: { disabled: isDeletingEntry },
-            onCancel: clearDeleteEntryModalFields,
+            onCancel: clearEntryModalFields,
           }}
         >
           <DeleteWarning

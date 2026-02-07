@@ -8,8 +8,8 @@ interface InputFieldProps {
   name: string;
   placeholder?: string;
   value?: string;
-  onChange?: (event: React.ChangeEvent<HTMLInputElement>) => void;
-  onBlur?: (event: React.FocusEvent<HTMLInputElement>) => void;
+  onChange?: (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
+  onBlur?: (event: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
   error?: string;
   disabled?: boolean;
 }
@@ -49,6 +49,8 @@ const InputField = (props: InputFieldProps) => {
             onCopy={handlePreventPasswordCopyPaste}
             onPaste={handlePreventPasswordCopyPaste}
           />
+        ) : type === "textarea" ? (
+          <Input.TextArea {...fieldProps} prefix={undefined} rows={5} />
         ) : (
           <Input {...fieldProps} />
         )}

@@ -12,11 +12,12 @@ interface WorklogTaskColumnsParams {
   jiraLinked: boolean;
   jiraSyncSSE: JiraSyncSSEReturn;
   onView: (task: WorklogTask) => void;
+  onEdit: (task: WorklogTask) => void;
   onDelete: (task: WorklogTask) => void;
 }
 
 const createWorklogTaskColumns = (props: WorklogTaskColumnsParams): TableProps<WorklogTask>["columns"] => {
-  const { worklogId, worklogTasks, jiraLinked, jiraSyncSSE, onView, onDelete } = props;
+  const { worklogId, worklogTasks, jiraLinked, jiraSyncSSE, onView, onEdit, onDelete } = props;
 
   return [
     {
@@ -72,6 +73,7 @@ const createWorklogTaskColumns = (props: WorklogTaskColumnsParams): TableProps<W
           jiraLinked={jiraLinked}
           jiraSyncSSE={jiraSyncSSE}
           onView={() => onView(record)}
+          onEdit={() => onEdit(record)}
           onDelete={() => onDelete(record)}
           syncParams={{
             worklogId: worklogId,

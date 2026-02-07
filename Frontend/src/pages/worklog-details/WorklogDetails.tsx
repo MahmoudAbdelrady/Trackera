@@ -5,6 +5,7 @@ import {
   createWorklogTaskColumns,
   WorklogTaskEntries,
   DeleteWarning,
+  EditWorklogTask,
 } from "../../components";
 import classes from "./scss/worklog-details.module.css";
 import { Empty, Skeleton } from "antd";
@@ -41,7 +42,10 @@ const WorklogDetails = () => {
   const [worklogTasks, setWorklogTasks] = useState<WorklogTask[]>([]);
   const [selectedTask, setSelectedTask] = useState<WorklogTask | null>(null);
   const [selectedTaskNames, setSelectedTaskNames] = useState<string[]>([]);
-  const [taskModalState, setTaskModalState] = useState<{ type: "view" | "delete" | null; task: WorklogTask | null }>({
+  const [taskModalState, setTaskModalState] = useState<{
+    type: "edit" | "view" | "delete" | null;
+    task: WorklogTask | null;
+  }>({
     type: null,
     task: null,
   });
@@ -123,7 +127,7 @@ const WorklogDetails = () => {
     }
 
     setIsDeletingTask(false);
-    clearDeleteTaskModalFields();
+    clearTaskModalFields();
   };
 
   const handleWorkLogDeletion = async (selection: WorklogSelection) => {
@@ -177,6 +181,10 @@ const WorklogDetails = () => {
           setSelectedTask(record);
           setTaskModalState({ type: "view", task: record });
         },
+        onEdit: (record) => {
+          setSelectedTask(record);
+          setTaskModalState({ type: "edit", task: record });
+        },
         onDelete: (record) => {
           setTaskModalState({ type: "delete", task: record });
           setSelectedTask(record);
@@ -185,13 +193,21 @@ const WorklogDetails = () => {
     [loggedUserData?.jiraLinked, worklogId, worklogTasks, jiraSyncSSE],
   );
 
-  const clearDeleteTaskModalFields = () => {
+  const clearTaskModalFields = () => {
     setTaskModalState({ type: null, task: null });
     setSelectedTask(null);
   };
 
   return (
     <>
+      {taskModalState.type === "edit" && (
+        <EditWorklogTask
+          worklogTask={selectedTask!}
+          setIsOpen={() => clearTaskModalFields()}
+          jiraLinked={loggedUserData?.jiraLinked ?? false}
+        />
+      )}
+
       {taskModalState.type === "view" && (
         <WorklogTaskEntries
           loggedUserData={loggedUserData!}
@@ -213,7 +229,7 @@ const WorklogDetails = () => {
 
       {taskModalState.type === "delete" && (
         <WorklogModal
-          title={`Delete ${selectedTask?.taskName} Task Log`}
+          title={`Delete ${selectedTask!.taskName} Task Log`}
           properties={{
             open: true,
             centered: true,
@@ -224,7 +240,7 @@ const WorklogDetails = () => {
             onOk: handleDeleteWorkLogTask,
             okButtonProps: { loading: isDeletingTask, disabled: isDeletingTask, danger: true },
             cancelButtonProps: { disabled: isDeletingTask },
-            onCancel: clearDeleteTaskModalFields,
+            onCancel: clearTaskModalFields,
           }}
         >
           <DeleteWarning
