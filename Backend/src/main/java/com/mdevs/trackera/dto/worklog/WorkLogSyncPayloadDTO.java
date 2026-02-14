@@ -14,7 +14,7 @@ import java.util.List;
 public class WorkLogSyncPayloadDTO {
     private Long userId;
 
-    private Long workLogId;
+    private String workLogUuid;
 
     private List<WorkLogDetailSyncRequestDTO> detailsToSync;
 
@@ -24,12 +24,20 @@ public class WorkLogSyncPayloadDTO {
         this.userId = userId;
     }
 
-    public WorkLogSyncPayloadDTO(Long userId, Long workLogId) {
+    public WorkLogSyncPayloadDTO(Long userId, String workLogUuid) {
         this.userId = userId;
-        this.workLogId = workLogId;
+        this.workLogUuid = workLogUuid;
+    }
+
+    public List<WorkLogDetailSyncRequestDTO> getDetailsToSync() {
+        return detailsToSync != null ? detailsToSync : List.of();
+    }
+
+    public List<WorkLogDetailSyncRequestDTO> getDetailsToUnsync() {
+        return detailsToUnsync != null ? detailsToUnsync : List.of();
     }
 
     public boolean hasWork() {
-        return (detailsToSync != null && !detailsToSync.isEmpty()) || (detailsToUnsync != null && !detailsToUnsync.isEmpty());
+        return !getDetailsToSync().isEmpty() || !getDetailsToUnsync().isEmpty();
     }
 }

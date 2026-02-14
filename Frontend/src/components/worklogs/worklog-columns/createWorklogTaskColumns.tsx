@@ -47,6 +47,7 @@ const createWorklogTaskColumns = (props: WorklogTaskColumnsParams): TableProps<W
               ...statusMetadata[status as WorklogStatusType],
               icon:
                 hasError &&
+                status !== WORKLOG_STATUS.IN_QUEUE &&
                 status !== WORKLOG_STATUS.SYNC_IN_PROGRESS &&
                 status !== WORKLOG_STATUS.UNSYNC_IN_PROGRESS ? (
                   <CircleAlert />

@@ -51,6 +51,7 @@ const WorklogInfo = (props: WorklogInfoProps) => {
                 ...statusMetaItem,
                 icon:
                   worklogInfo.hasError &&
+                  status !== WORKLOG_STATUS.IN_QUEUE &&
                   worklogInfo.status !== WORKLOG_STATUS.SYNC_IN_PROGRESS &&
                   worklogInfo.status !== WORKLOG_STATUS.UNSYNC_IN_PROGRESS ? (
                     <CircleAlert />

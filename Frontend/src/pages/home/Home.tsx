@@ -40,7 +40,9 @@ const Home = () => {
     () =>
       worklogsResponse?.content.some(
         (worklog) =>
-          worklog.status === WORKLOG_STATUS.SYNC_IN_PROGRESS || worklog.status === WORKLOG_STATUS.UNSYNC_IN_PROGRESS,
+          worklog.status === WORKLOG_STATUS.IN_QUEUE ||
+          WORKLOG_STATUS.SYNC_IN_PROGRESS ||
+          worklog.status === WORKLOG_STATUS.UNSYNC_IN_PROGRESS,
       ) ?? false,
     [worklogsResponse?.content],
   );

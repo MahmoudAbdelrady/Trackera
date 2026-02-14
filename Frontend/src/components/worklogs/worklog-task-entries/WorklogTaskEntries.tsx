@@ -185,6 +185,7 @@ const WorklogTaskEntries = (props: WorklogTaskEntriesProps) => {
               getCheckboxProps: (record) => ({
                 disabled:
                   !loggedUserData?.jiraLinked ||
+                  record.status === WORKLOG_STATUS.IN_QUEUE ||
                   record.status === WORKLOG_STATUS.SYNC_IN_PROGRESS ||
                   record.status === WORKLOG_STATUS.UNSYNC_IN_PROGRESS,
               }),
