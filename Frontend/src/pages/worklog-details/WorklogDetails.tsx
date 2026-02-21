@@ -18,7 +18,7 @@ import {
   JIRA_SYNC_EVENT,
   WORKLOG_STATUS,
 } from "../../shared/types";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { showSuccessToast, showErrorToast } from "../../utils/toast-handler/showToast";
 import { userQueries } from "../../state/queries";
@@ -53,15 +53,25 @@ const WorklogDetails = () => {
   const [isDeletingTask, setIsDeletingTask] = useState<boolean>(false);
   const selectedWorklogTasks = useMemo(
     () => worklogTasks.filter((task) => selectedTaskNames.includes(task.taskName)),
-    [worklogTasks, selectedTaskNames],
+    [worklogTasks, selectedTaskNames]
   );
 
   // worklog entries
   const [worklogEntries, setWorklogEntries] = useState<WorklogEntry[]>([]);
+  const entriesTaskRef = useRef<string | null>(null);
+
+  const handleSetWorklogEntries = useCallback(
+    (entries: WorklogEntry[]) => {
+      setWorklogEntries(entries);
+      entriesTaskRef.current = selectedTask?.taskName ?? null;
+    },
+    [selectedTask?.taskName]
+  );
 
   // sse subscription
   const hasInProgress = useMemo(() => {
     const inProgressStatuses: WorklogStatusType[] = [
+      WORKLOG_STATUS.IN_QUEUE,
       WORKLOG_STATUS.SYNC_IN_PROGRESS,
       WORKLOG_STATUS.UNSYNC_IN_PROGRESS,
     ];
@@ -155,8 +165,8 @@ const WorklogDetails = () => {
           prevEntries.map((entry) =>
             event.entryIds?.includes(entry.id) && event.logId === worklogId
               ? { ...entry, status: event.status, syncError: event.syncError }
-              : entry,
-          ),
+              : entry
+          )
         );
       }
 
@@ -189,7 +199,7 @@ const WorklogDetails = () => {
           setSelectedTask(record);
         },
       }),
-    [loggedUserData?.jiraLinked, worklogId, worklogTasks, jiraSyncSSE],
+    [loggedUserData?.jiraLinked, worklogId, worklogTasks, jiraSyncSSE]
   );
 
   const refetchData = () => {
@@ -220,7 +230,8 @@ const WorklogDetails = () => {
           worklogId={worklogId!}
           selectedTask={selectedTask!}
           worklogEntries={worklogEntries}
-          setWorklogEntries={setWorklogEntries}
+          setWorklogEntries={handleSetWorklogEntries}
+          skipInitialFetch={entriesTaskRef.current === selectedTask?.taskName && worklogEntries.length > 0}
           refetchData={refetchData}
           jiraSyncSSE={jiraSyncSSE}
           onCloseHandler={() => {
@@ -282,6 +293,7 @@ const WorklogDetails = () => {
                       getCheckboxProps: (record) => ({
                         disabled:
                           !loggedUserData?.jiraLinked ||
+                          record.status === WORKLOG_STATUS.IN_QUEUE ||
                           record.status === WORKLOG_STATUS.SYNC_IN_PROGRESS ||
                           record.status === WORKLOG_STATUS.UNSYNC_IN_PROGRESS,
                       }),

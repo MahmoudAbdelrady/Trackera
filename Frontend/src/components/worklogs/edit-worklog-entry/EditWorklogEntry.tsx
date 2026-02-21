@@ -19,29 +19,42 @@ interface EditWorklogEntryProps {
   worklogId: string;
   taskName: string;
   worklogEntry: WorklogEntry;
+  taskEntriesSize: number;
   setIsOpen: (isOpen: boolean) => void;
   jiraLinked: boolean;
   refetchData: () => void;
+  fetchEntries: () => void;
+  onCloseEntries: () => void;
 }
 
 interface EditWorklogEntryFormValues {
   taskName: string;
-  fromTime: Dayjs | null;
-  toTime: Dayjs | null;
+  startTime: Dayjs | null;
+  endTime: Dayjs | null;
   duration: string;
   description: string;
   syncToJira: boolean;
 }
 
 const EditWorklogEntry = (props: EditWorklogEntryProps) => {
-  const { worklogId, taskName, worklogEntry, setIsOpen, jiraLinked, refetchData } = props;
+  const {
+    worklogId,
+    taskName,
+    worklogEntry,
+    taskEntriesSize,
+    setIsOpen,
+    jiraLinked,
+    refetchData,
+    fetchEntries,
+    onCloseEntries,
+  } = props;
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
   const editWorklogEntryFormik = useFormik<EditWorklogEntryFormValues>({
     initialValues: {
       taskName: taskName,
-      fromTime: dayjs(worklogEntry.fromTime, "h:mm A"),
-      toTime: dayjs(worklogEntry.toTime, "h:mm A"),
+      startTime: dayjs(worklogEntry.fromTime, "h:mm A"),
+      endTime: dayjs(worklogEntry.toTime, "h:mm A"),
       duration: worklogEntry.duration,
       description: worklogEntry.description,
       syncToJira: false,
@@ -57,14 +70,19 @@ const EditWorklogEntry = (props: EditWorklogEntryProps) => {
           syncToJira: values.syncToJira,
           newData: {
             name: values.taskName,
-            startTime: values.fromTime?.format("h:mm A"),
-            endTime: values.toTime?.format("h:mm A"),
+            startTime: values.startTime?.format("h:mm A"),
+            endTime: values.endTime?.format("h:mm A"),
             duration: values.duration,
             description: values.description,
           },
         });
         showSuccessToast(result);
         refetchData();
+        if (taskName !== values.taskName && taskEntriesSize === 1) {
+          onCloseEntries();
+        } else {
+          fetchEntries();
+        }
         setIsOpen(false);
       } catch (error: unknown) {
         showErrorToast(error);
@@ -73,15 +91,15 @@ const EditWorklogEntry = (props: EditWorklogEntryProps) => {
     },
   });
 
-  const updateDuration = (fromTime: Dayjs | null, toTime: Dayjs | null) => {
-    if (!fromTime || !toTime) {
+  const updateDuration = (startTime: Dayjs | null, endTime: Dayjs | null) => {
+    if (!startTime || !endTime) {
       editWorklogEntryFormik.setFieldValue("duration", "");
       return;
     }
 
-    let diffMinutes = toTime.diff(fromTime, "minute");
+    let diffMinutes = endTime.diff(startTime, "minute");
 
-    // Handle case where toTime is before fromTime (crosses midnight)
+    // Handle case where endTime is before startTime (crosses midnight)
     if (diffMinutes < 0) {
       diffMinutes += 24 * 60; // Add 24 hours worth of minutes
     }
@@ -128,20 +146,20 @@ const EditWorklogEntry = (props: EditWorklogEntryProps) => {
         <div className={classes.form_group}>
           <Form.Item
             className={classes.form_item}
-            validateStatus={getFormikFieldStatus(editWorklogEntryFormik, "fromTime")}
-            help={getFormikFieldError(editWorklogEntryFormik, "fromTime") as string}
+            validateStatus={getFormikFieldStatus(editWorklogEntryFormik, "startTime")}
+            help={getFormikFieldError(editWorklogEntryFormik, "startTime") as string}
           >
-            <span className={classes.label}>From time:</span>
+            <span className={classes.label}>Start time:</span>
             <TimePicker
               format="h:mm A"
-              name="fromTime"
-              value={editWorklogEntryFormik.values.fromTime}
-              placeholder="Select from time"
+              name="startTime"
+              value={editWorklogEntryFormik.values.startTime}
+              placeholder="Select start time"
               onChange={(date) => {
-                editWorklogEntryFormik.setFieldValue("fromTime", date);
-                updateDuration(date, editWorklogEntryFormik.values.toTime);
+                editWorklogEntryFormik.setFieldValue("startTime", date);
+                updateDuration(date, editWorklogEntryFormik.values.endTime);
               }}
-              onBlur={() => editWorklogEntryFormik.setFieldTouched("fromTime", true)}
+              onBlur={() => editWorklogEntryFormik.setFieldTouched("startTime", true)}
               disabled={isLoading}
             />
           </Form.Item>
@@ -149,20 +167,20 @@ const EditWorklogEntry = (props: EditWorklogEntryProps) => {
         <div className={classes.form_group}>
           <Form.Item
             className={classes.form_item}
-            validateStatus={getFormikFieldStatus(editWorklogEntryFormik, "toTime")}
-            help={getFormikFieldError(editWorklogEntryFormik, "toTime") as string}
+            validateStatus={getFormikFieldStatus(editWorklogEntryFormik, "endTime")}
+            help={getFormikFieldError(editWorklogEntryFormik, "endTime") as string}
           >
-            <span className={classes.label}>To time:</span>
+            <span className={classes.label}>End time:</span>
             <TimePicker
               format="h:mm A"
-              name="toTime"
-              value={editWorklogEntryFormik.values.toTime}
-              placeholder="Select to time"
+              name="endTime"
+              value={editWorklogEntryFormik.values.endTime}
+              placeholder="Select end time"
               onChange={(date) => {
-                editWorklogEntryFormik.setFieldValue("toTime", date);
-                updateDuration(editWorklogEntryFormik.values.fromTime, date);
+                editWorklogEntryFormik.setFieldValue("endTime", date);
+                updateDuration(editWorklogEntryFormik.values.startTime, date);
               }}
-              onBlur={() => editWorklogEntryFormik.setFieldTouched("toTime", true)}
+              onBlur={() => editWorklogEntryFormik.setFieldTouched("endTime", true)}
               disabled={isLoading}
             />
           </Form.Item>

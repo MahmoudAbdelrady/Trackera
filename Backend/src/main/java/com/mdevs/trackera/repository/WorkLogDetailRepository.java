@@ -21,6 +21,7 @@ public interface WorkLogDetailRepository extends BaseRepository<WorkLogDetail> {
     @Query("SELECT NEW MAP(wld.taskName as taskName, SUM(wld.duration) AS totalMinutes, " +
             "CASE WHEN SUM(CASE WHEN wld.status = 'SYNC_IN_PROGRESS' THEN 1 ELSE 0 END) > 0 THEN 'SYNC_IN_PROGRESS' " +
             "     WHEN SUM(CASE WHEN wld.status = 'UNSYNC_IN_PROGRESS' THEN 1 ELSE 0 END) > 0 THEN 'UNSYNC_IN_PROGRESS' " +
+            "     WHEN SUM(CASE WHEN wld.status = 'IN_QUEUE' THEN 1 ELSE 0 END) > 0 THEN 'IN_QUEUE' " +
             "     WHEN SUM(CASE WHEN wld.status = 'NOT_SYNCED' THEN 1 ELSE 0 END) = 0 THEN 'SYNCED' " +
             "     WHEN SUM(CASE WHEN wld.status = 'SYNCED' THEN 1 ELSE 0 END) = 0 THEN 'NOT_SYNCED' " +
             "     ELSE 'PARTIALLY' END AS status," +
@@ -33,6 +34,9 @@ public interface WorkLogDetailRepository extends BaseRepository<WorkLogDetail> {
     boolean existsByWorkLogAndTaskName(WorkLog workLog, String taskName);
 
     List<WorkLogDetail> findByWorkLogAndTaskName(WorkLog workLog, String taskName);
+
+    @Query("SELECT wld FROM WorkLogDetail wld WHERE wld.workLog.uuid = :worklogUuid AND wld.taskName = :taskName")
+    List<WorkLogDetail> findByWorkLogUuidAndTaskName(@Param("worklogUuid") String worklogUuid, @Param("taskName") String taskName);
 
     List<WorkLogDetail> findByWorkLogAndStatus(WorkLog workLog, WorkLogStatus status);
 
@@ -50,12 +54,13 @@ public interface WorkLogDetailRepository extends BaseRepository<WorkLogDetail> {
 
     @Query("SELECT CASE WHEN SUM(CASE WHEN wld.status = 'SYNC_IN_PROGRESS' THEN 1 ELSE 0 END) > 0 THEN 'SYNC_IN_PROGRESS' " +
             "WHEN SUM(CASE WHEN wld.status = 'UNSYNC_IN_PROGRESS' THEN 1 ELSE 0 END) > 0 THEN 'UNSYNC_IN_PROGRESS' " +
+            "WHEN SUM(CASE WHEN wld.status = 'IN_QUEUE' THEN 1 ELSE 0 END) > 0 THEN 'IN_QUEUE' " +
             "WHEN SUM(CASE WHEN wld.status = 'NOT_SYNCED' THEN 1 ELSE 0 END) = 0 THEN 'SYNCED' " +
             "WHEN SUM(CASE WHEN wld.status = 'SYNCED' THEN 1 ELSE 0 END) = 0 THEN 'NOT_SYNCED' " +
             "ELSE 'PARTIALLY' END " +
-            "FROM WorkLogDetail wld WHERE wld.workLog.id = :workLogId AND wld.taskName = :taskName " +
+            "FROM WorkLogDetail wld WHERE wld.workLog.uuid = :workLogUuid AND wld.taskName = :taskName " +
             "GROUP BY wld.taskName")
-    WorkLogStatus calculateWorkLogTaskStatus(@Param("workLogId") Long workLogId, @Param("taskName") String taskName);
+    WorkLogStatus calculateWorkLogTaskStatus(@Param("workLogUuid") String workLogUuid, @Param("taskName") String taskName);
 
     @Modifying
     @Query("DELETE FROM WorkLogDetail wld WHERE wld.workLog.id IN :workLogsIds")

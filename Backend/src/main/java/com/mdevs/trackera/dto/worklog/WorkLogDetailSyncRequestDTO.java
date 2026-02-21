@@ -10,8 +10,6 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 public class WorkLogDetailSyncRequestDTO {
-    private String workLogId;
-
     private Long detailId;
 
     private String taskName;
