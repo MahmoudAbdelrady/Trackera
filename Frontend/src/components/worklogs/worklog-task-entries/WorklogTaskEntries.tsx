@@ -17,6 +17,7 @@ interface WorklogTaskEntriesProps {
   selectedTask: WorklogTask;
   worklogEntries: WorklogEntry[];
   setWorklogEntries: (entries: WorklogEntry[]) => void;
+  skipInitialFetch: boolean;
   refetchData: () => void;
   jiraSyncSSE: JiraSyncSSEReturn;
   onCloseHandler: () => void;
@@ -29,6 +30,7 @@ const WorklogTaskEntries = (props: WorklogTaskEntriesProps) => {
     selectedTask,
     worklogEntries,
     setWorklogEntries,
+    skipInitialFetch,
     refetchData,
     jiraSyncSSE,
     onCloseHandler,
@@ -63,7 +65,7 @@ const WorklogTaskEntries = (props: WorklogTaskEntriesProps) => {
           setEntryModalState({ type: "delete", entry: record });
         },
       }),
-    [worklogId, worklogEntries, loggedUserData?.jiraLinked, jiraSyncSSE],
+    [worklogId, worklogEntries, loggedUserData?.jiraLinked, jiraSyncSSE]
   );
 
   const fetchEntries = useCallback(async () => {
@@ -78,7 +80,9 @@ const WorklogTaskEntries = (props: WorklogTaskEntriesProps) => {
   }, [worklogId, selectedTask.taskName]);
 
   useEffect(() => {
-    fetchEntries();
+    if (!skipInitialFetch) {
+      fetchEntries();
+    }
   }, []);
 
   useEffect(() => {
@@ -126,9 +130,12 @@ const WorklogTaskEntries = (props: WorklogTaskEntriesProps) => {
           worklogId={worklogId}
           taskName={selectedTask.taskName}
           worklogEntry={entryModalState.entry!}
+          taskEntriesSize={worklogEntries.length}
           setIsOpen={clearEntryModalFields}
           jiraLinked={loggedUserData?.jiraLinked ?? false}
           refetchData={refetchData}
+          fetchEntries={fetchEntries}
+          onCloseEntries={onCloseHandler}
         />
       )}
 

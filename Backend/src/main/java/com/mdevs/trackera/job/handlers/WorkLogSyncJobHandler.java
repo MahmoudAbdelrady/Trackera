@@ -74,7 +74,7 @@ public class WorkLogSyncJobHandler implements BackgroundJobHandler {
         }
 
         if (workLogSyncPayloadDTO.getWorkLogUuid() != null) {
-            selfRef.updateWorkLogStatus(syncUser, workLogSyncPayloadDTO, resultDTO.hasError());
+            selfRef.updateWorkLogStatusAndSendNotification(syncUser, workLogSyncPayloadDTO, resultDTO.hasError());
         }
 
         selfRef.updateJobPayload(job, workLogSyncPayloadDTO);
@@ -191,13 +191,17 @@ public class WorkLogSyncJobHandler implements BackgroundJobHandler {
     }
 
     @Transactional
-    public void updateWorkLogStatus(User user, WorkLogSyncPayloadDTO workLogSyncPayloadDTO, boolean hasError) {
-        WorkLog workLog = workLogRepository.findByUuid(workLogSyncPayloadDTO.getWorkLogUuid());
-        workLog.setStatus(workLogRepository.calculateWorkLogStatus(workLog));
-        workLogRepository.save(workLog);
-
+    public void updateWorkLogStatusAndSendNotification(User user, WorkLogSyncPayloadDTO workLogSyncPayloadDTO, boolean hasError) {
+        WorkLog workLog = updateWorkLogStatus(workLogSyncPayloadDTO.getWorkLogUuid());
         WorkLogSyncMessageDTO syncMessageDTO = new WorkLogSyncMessageDTO(WorkLogSyncMessageType.WORKLOG, workLog.getUuid(), null, null, workLog.getStatus(), hasError ? "Some tasks had errors during synchronization." : null);
         notificationService.sendNotification(new NotificationDTO(user.getUuid(), WorkLogService.WORKLOG_SYNC_STATUS_EVENT_NAME, syncMessageDTO));
+    }
+
+    private WorkLog updateWorkLogStatus(String workLogUuid) {
+        WorkLog workLog = workLogRepository.findByUuid(workLogUuid);
+        workLog.setStatus(workLogRepository.calculateWorkLogStatus(workLog));
+        workLogRepository.save(workLog);
+        return workLog;
     }
 
     @Transactional
@@ -231,6 +235,7 @@ public class WorkLogSyncJobHandler implements BackgroundJobHandler {
         List<WorkLogDetail> workLogDetails = workLogDetailRepository.findAllById(detailIds);
         workLogDetails.forEach(detail -> detail.setStatus(workLogStatus));
         workLogDetailRepository.saveAll(workLogDetails);
+        updateWorkLogStatus(workLogUuid);
 
         WorkLogSyncMessageDTO syncMessageDTO = new WorkLogSyncMessageDTO(WorkLogSyncMessageType.ALL, workLogUuid, List.of(taskName), workLogDetails.stream().map(WorkLogDetail::getUuid).toList(), workLogStatus, null);
         notificationService.sendNotification(new NotificationDTO(user.getUuid(), WorkLogService.WORKLOG_SYNC_STATUS_EVENT_NAME, syncMessageDTO));

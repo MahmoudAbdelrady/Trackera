@@ -260,9 +260,9 @@ public class WorkLogService {
             if (workLogDetail == null) {
                 throw new NotFoundException("WorkLog entry not found");
             }
-            workLogDetail.setTaskName(detailPayloadDTO.getTaskName());
 
             WorkLogDetailNewDataDTO detailNewData = detailPayloadDTO.getNewData();
+            workLogDetail.setTaskName(StringUtils.isEmpty(detailNewData.getName()) ? workLogDetail.getTaskName() : detailNewData.getName());
             workLogDetail.setStartTime(detailNewData.getStartTime());
             workLogDetail.setEndTime(detailNewData.getEndTime());
             workLogDetail.setDuration(parseDuration(detailNewData.getDuration()));
