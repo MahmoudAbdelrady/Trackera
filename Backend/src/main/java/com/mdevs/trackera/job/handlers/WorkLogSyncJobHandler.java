@@ -94,6 +94,8 @@ public class WorkLogSyncJobHandler implements BackgroundJobHandler {
         Iterator<Map.Entry<String, List<WorkLogDetailSyncRequestDTO>>> iterator = taskDetails.entrySet().iterator();
         while (iterator.hasNext()) {
             Map.Entry<String, List<WorkLogDetailSyncRequestDTO>> entry = iterator.next();
+            String taskName = entry.getKey();
+            selfRef.markDetailsForStartingSyncOperation(syncUser, workLogUuid, taskName, entry.getValue().stream().map(WorkLogDetailSyncRequestDTO::getDetailId).filter(Objects::nonNull).toList(), isSync);
             for (WorkLogDetailSyncRequestDTO detail : entry.getValue()) {
                 try {
                     boolean hasError = isSync ? selfRef.syncWorkLogDetailToJira(syncUser, workLogUuid, detail) : selfRef.unSyncWorkLogDetailFromJira(syncUser, workLogUuid, detail);
@@ -109,11 +111,11 @@ public class WorkLogSyncJobHandler implements BackgroundJobHandler {
                     break;
                 }
             }
-            if (StringUtils.isEmpty(resultDTO.getHardError())) {
+            if (!StringUtils.isEmpty(resultDTO.getHardError())) {
                 break;
             }
             if (!isDeleteOperation) {
-                handleTasksCountAfterSyncOp(workLogSyncPayloadDTO, syncUser, entry.getKey(), workLogUuid, isSync, resultDTO.isHasSoftError());
+                handleTasksCountAfterSyncOp(workLogSyncPayloadDTO, syncUser, workLogUuid, taskName, isSync, resultDTO.isHasSoftError());
             }
             iterator.remove();
         }

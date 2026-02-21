@@ -14,6 +14,7 @@ const statusMetadata: Record<WorklogStatusType, StatusBadgeProps> = {
   NOT_SYNCED: { label: "Not Synced", type: "danger" },
   SYNC_IN_PROGRESS: { label: "Sync in Progress", type: "warning" },
   UNSYNC_IN_PROGRESS: { label: "Unsync in Progress", type: "warning" },
+  IN_QUEUE: { label: "In Queue", type: "info" },
 };
 
 export { worklogEvaluationMetadata, statusMetadata };

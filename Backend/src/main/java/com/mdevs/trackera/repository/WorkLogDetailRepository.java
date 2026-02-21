@@ -35,6 +35,9 @@ public interface WorkLogDetailRepository extends BaseRepository<WorkLogDetail> {
 
     List<WorkLogDetail> findByWorkLogAndTaskName(WorkLog workLog, String taskName);
 
+    @Query("SELECT wld FROM WorkLogDetail wld WHERE wld.workLog.uuid = :worklogUuid AND wld.taskName = :taskName")
+    List<WorkLogDetail> findByWorkLogUuidAndTaskName(@Param("worklogUuid") String worklogUuid, @Param("taskName") String taskName);
+
     List<WorkLogDetail> findByWorkLogAndStatus(WorkLog workLog, WorkLogStatus status);
 
     @Query("SELECT wld FROM WorkLogDetail wld WHERE wld.workLog = :workLog AND (:status IS NULL OR wld.status = :status)")

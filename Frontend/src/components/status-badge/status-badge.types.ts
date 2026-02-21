@@ -1,4 +1,4 @@
-type BadgeType = "main" | "success" | "warning" | "danger" | "default";
+type BadgeType = "main" | "success" | "warning" | "info" | "danger" | "default";
 
 interface StatusBadgeProps {
   label: string;

@@ -398,10 +398,10 @@ public class WorkLogService {
         WorkLog workLog = ensureWorkLogExistsAndHasPermission(uuid);
         validateSyncRequest(workLog, sync);
         List<WorkLogDetail> workLogDetails = getWorkLogDetailsBySelection(workLog, workLogSelectionDTO, sync ? WorkLogStatus.NOT_SYNCED : WorkLogStatus.SYNCED);
-        workLog.setStatus(sync ? WorkLogStatus.SYNC_IN_PROGRESS : WorkLogStatus.UNSYNC_IN_PROGRESS);
+        workLog.setStatus(WorkLogStatus.IN_QUEUE);
         workLogRepository.save(workLog);
         handleJiraSyncing(workLog, workLogDetails, sync);
-        handleWorkLogSyncNotifications(AppConfig.getAuthenticatedCurrentUser(), workLog, workLogDetails, sync ? WorkLogStatus.SYNC_IN_PROGRESS : WorkLogStatus.UNSYNC_IN_PROGRESS);
+        handleWorkLogSyncNotifications(AppConfig.getAuthenticatedCurrentUser(), workLog, workLogDetails, WorkLogStatus.IN_QUEUE);
     }
     //</editor-fold>
 
@@ -621,7 +621,7 @@ public class WorkLogService {
     }
 
     private void ensureWorkLogSyncNotInProgress(WorkLog workLog) {
-        if (workLog.getStatus().equals(WorkLogStatus.SYNC_IN_PROGRESS) || workLog.getStatus().equals(WorkLogStatus.UNSYNC_IN_PROGRESS) || workLog.getStatus().equals(WorkLogStatus.IN_QUEUE)) {
+        if (workLog.getStatus().equals(WorkLogStatus.IN_QUEUE) || workLog.getStatus().equals(WorkLogStatus.SYNC_IN_PROGRESS) || workLog.getStatus().equals(WorkLogStatus.UNSYNC_IN_PROGRESS)) {
             throw new BusinessException("WorkLog synchronization is already in progress");
         }
     }

@@ -30,7 +30,7 @@ function buildSyncButtonProps<T extends SyncableItem>({
   const hasInProgress = selectedItems.some(
     (e) =>
       e.status === WORKLOG_STATUS.IN_QUEUE ||
-      WORKLOG_STATUS.SYNC_IN_PROGRESS ||
+      e.status === WORKLOG_STATUS.SYNC_IN_PROGRESS ||
       e.status === WORKLOG_STATUS.UNSYNC_IN_PROGRESS,
   );
 
