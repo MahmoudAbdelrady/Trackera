@@ -2,6 +2,7 @@ package com.mdevs.trackera.controller;
 
 import com.mdevs.trackera.dto.worklog.*;
 import com.mdevs.trackera.service.WorkLogService;
+import com.mdevs.trackera.shared.enums.WorklogSyncOperation;
 import com.mdevs.trackera.shared.annotations.RateLimited;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -71,8 +72,8 @@ public class WorkLogController {
 
     @RateLimited(permitsPerMinute = 60)
     @PostMapping("/{uuid}/sync")
-    public ResponseEntity<String> syncWorkLog(@PathVariable String uuid, @RequestBody(required = false) WorkLogSelectionDTO workLogSelectionDTO, @RequestParam(required = false, defaultValue = "true") boolean sync) {
-        workLogService.performJiraSync(uuid, workLogSelectionDTO, sync);
-        return new ResponseEntity<>((sync ? "Sync" : "Unsync") + " request initiated successfully", HttpStatus.OK);
+    public ResponseEntity<String> syncWorkLog(@PathVariable String uuid, @RequestBody(required = false) WorkLogSelectionDTO workLogSelectionDTO, @RequestParam(required = false, defaultValue = "SYNC") WorklogSyncOperation operation) {
+        workLogService.performJiraSync(uuid, workLogSelectionDTO, operation);
+        return new ResponseEntity<>(operation.getLabel() + " request initiated successfully", HttpStatus.OK);
     }
 }

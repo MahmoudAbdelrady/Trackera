@@ -16,6 +16,7 @@ import com.mdevs.trackera.shared.WorkLogQueryBuilder;
 import com.mdevs.trackera.shared.enums.UserPreferenceOption;
 import com.mdevs.trackera.shared.enums.WorkLogColumn;
 import com.mdevs.trackera.shared.enums.WorkLogStatus;
+import com.mdevs.trackera.shared.enums.WorklogSyncOperation;
 import com.mdevs.trackera.shared.enums.WorkLogSyncMessageType;
 import com.mdevs.trackera.shared.exceptions.types.BusinessException;
 import com.mdevs.trackera.shared.exceptions.types.NotFoundException;
@@ -393,14 +394,14 @@ public class WorkLogService {
 
     //<editor-fold desc="Jira Synchronization">
     @Transactional
-    public void performJiraSync(String uuid, WorkLogSelectionDTO workLogSelectionDTO, boolean sync) {
+    public void performJiraSync(String uuid, WorkLogSelectionDTO workLogSelectionDTO, WorklogSyncOperation syncOperation) {
         oAuthConnectionService.validateAndGetConnection(AppConfig.getAuthenticatedCurrentUser(), OAuthProvider.JIRA);
         WorkLog workLog = ensureWorkLogExistsAndHasPermission(uuid);
-        validateSyncRequest(workLog, sync);
-        List<WorkLogDetail> workLogDetails = getWorkLogDetailsBySelection(workLog, workLogSelectionDTO, sync ? WorkLogStatus.NOT_SYNCED : WorkLogStatus.SYNCED);
+        validateSyncRequest(workLog, syncOperation);
+        List<WorkLogDetail> workLogDetails = getWorkLogDetailsBySelection(workLog, workLogSelectionDTO, syncOperation.equals(WorklogSyncOperation.UNSYNC) ? WorkLogStatus.SYNCED : WorkLogStatus.NOT_SYNCED);
         workLog.setStatus(WorkLogStatus.IN_QUEUE);
         workLogRepository.save(workLog);
-        handleJiraSyncing(workLog, workLogDetails, sync);
+        handleJiraSyncing(workLog, workLogDetails, syncOperation);
         handleWorkLogSyncNotifications(AppConfig.getAuthenticatedCurrentUser(), workLog, workLogDetails, WorkLogStatus.IN_QUEUE);
     }
     //</editor-fold>
@@ -610,10 +611,12 @@ public class WorkLogService {
         return workLog;
     }
 
-    private void validateSyncRequest(WorkLog workLog, boolean sync) {
-        if (sync && workLog.getStatus().equals(WorkLogStatus.SYNCED)) {
+    private void validateSyncRequest(WorkLog workLog, WorklogSyncOperation syncOperation) {
+        if (syncOperation.equals(WorklogSyncOperation.RESYNC)) {
+          throw new BusinessException("Unsupported sync operation");
+        } else if (syncOperation.equals(WorklogSyncOperation.SYNC) && workLog.getStatus().equals(WorkLogStatus.SYNCED)) {
             throw new BusinessException("WorkLog is already synced to Jira");
-        } else if (!sync && workLog.getStatus().equals(WorkLogStatus.NOT_SYNCED)) {
+        } else if (syncOperation.equals(WorklogSyncOperation.UNSYNC) && workLog.getStatus().equals(WorkLogStatus.NOT_SYNCED)) {
             throw new BusinessException("WorkLog is not synced to Jira");
         } else {
             ensureWorkLogSyncNotInProgress(workLog);
@@ -643,16 +646,16 @@ public class WorkLogService {
         return workLogDetails;
     }
 
-    private void handleJiraSyncing(WorkLog workLog, List<WorkLogDetail> workLogDetails, boolean sync) {
+    private void handleJiraSyncing(WorkLog workLog, List<WorkLogDetail> workLogDetails, WorklogSyncOperation syncOperation) {
         markDetailsForSync(workLogDetails);
         WorkLogSyncPayloadDTO workLogSyncPayloadDTO = new WorkLogSyncPayloadDTO(workLog.getUser().getId(), workLog.getUuid());
         List<WorkLogDetailSyncRequestDTO> detailSyncRequests = workLogDetails.stream()
                 .map(detail -> new WorkLogDetailSyncRequestDTO(detail.getId(), detail.getTaskName(), detail.getJiraId()))
                 .toList();
-        if (sync) {
-            workLogSyncPayloadDTO.setDetailsToSync(detailSyncRequests);
-        } else {
+        if (syncOperation.equals(WorklogSyncOperation.UNSYNC)) {
             workLogSyncPayloadDTO.setDetailsToUnsync(detailSyncRequests);
+        } else {
+            workLogSyncPayloadDTO.setDetailsToSync(detailSyncRequests);
         }
         backgroundJobService.enqueueJob(WorkLogSyncJobHandler.class, JsonUtil.convertObjectToJsonString(workLogSyncPayloadDTO));
     }
