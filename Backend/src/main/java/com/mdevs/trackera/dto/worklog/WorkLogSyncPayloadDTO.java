@@ -20,6 +20,8 @@ public class WorkLogSyncPayloadDTO {
 
     private List<WorkLogDetailSyncRequestDTO> detailsToUnsync;
 
+    private List<WorkLogDetailSyncRequestDTO> detailsToReSync;
+
     public WorkLogSyncPayloadDTO(Long userId) {
         this.userId = userId;
     }
@@ -37,7 +39,11 @@ public class WorkLogSyncPayloadDTO {
         return detailsToUnsync != null ? detailsToUnsync : List.of();
     }
 
+    public List<WorkLogDetailSyncRequestDTO> getDetailsToReSync() {
+        return detailsToReSync != null ? detailsToReSync : List.of();
+    }
+
     public boolean hasWork() {
-        return !getDetailsToSync().isEmpty() || !getDetailsToUnsync().isEmpty();
+        return !getDetailsToSync().isEmpty() || !getDetailsToUnsync().isEmpty() || !getDetailsToReSync().isEmpty();
     }
 }

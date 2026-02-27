@@ -67,20 +67,8 @@ public class WorkLogSyncJobHandler implements BackgroundJobHandler {
 
         WorkLogSyncResultDTO resultDTO = new WorkLogSyncResultDTO();
 
-        // Identify and process RESYNC details (present in both lists)
-        Set<Long> unsyncIds = workLogSyncPayloadDTO.getDetailsToUnsync().stream().map(WorkLogDetailSyncRequestDTO::getDetailId).filter(Objects::nonNull).collect(Collectors.toSet());
-        Set<Long> syncIds = workLogSyncPayloadDTO.getDetailsToSync().stream().map(WorkLogDetailSyncRequestDTO::getDetailId).filter(Objects::nonNull).collect(Collectors.toSet());
-        Set<Long> resyncIds = new HashSet<>(unsyncIds);
-        resyncIds.retainAll(syncIds);
-
-        if (!resyncIds.isEmpty()) {
-            List<WorkLogDetailSyncRequestDTO> resyncDetails = workLogSyncPayloadDTO.getDetailsToSync().stream().filter(d -> d.getDetailId() != null && resyncIds.contains(d.getDetailId())).toList();
-            workLogSyncPayloadDTO.setDetailsToUnsync(workLogSyncPayloadDTO.getDetailsToUnsync().stream().filter(d -> d.getDetailId() == null || !resyncIds.contains(d.getDetailId())).toList());
-            workLogSyncPayloadDTO.setDetailsToSync(workLogSyncPayloadDTO.getDetailsToSync().stream().filter(d -> d.getDetailId() == null || !resyncIds.contains(d.getDetailId())).toList());
-
-            WorkLogSyncPayloadDTO resyncPayload = new WorkLogSyncPayloadDTO(workLogSyncPayloadDTO.getUserId(), workLogSyncPayloadDTO.getWorkLogUuid());
-            resyncPayload.setDetailsToSync(resyncDetails);
-            resultDTO = processDetailsSyncingOperationV2(resyncPayload, syncUser, WorklogSyncOperation.RESYNC, isLastRetry);
+        if (!workLogSyncPayloadDTO.getDetailsToReSync().isEmpty()) {
+            resultDTO = processDetailsSyncingOperationV2(workLogSyncPayloadDTO, syncUser, WorklogSyncOperation.RESYNC, isLastRetry);
         }
 
         if (StringUtils.isEmpty(resultDTO.getHardError()) && !workLogSyncPayloadDTO.getDetailsToUnsync().isEmpty()) {
@@ -103,7 +91,14 @@ public class WorkLogSyncJobHandler implements BackgroundJobHandler {
     }
 
     private WorkLogSyncResultDTO processDetailsSyncingOperationV2(WorkLogSyncPayloadDTO workLogSyncPayloadDTO, User syncUser, WorklogSyncOperation syncOperation, boolean isLastRetry) {
-        List<WorkLogDetailSyncRequestDTO> detailsList = !syncOperation.equals(WorklogSyncOperation.UNSYNC) ? workLogSyncPayloadDTO.getDetailsToSync() : workLogSyncPayloadDTO.getDetailsToUnsync();
+        List<WorkLogDetailSyncRequestDTO> detailsList;
+        if (syncOperation.equals(WorklogSyncOperation.RESYNC)) {
+            detailsList = workLogSyncPayloadDTO.getDetailsToReSync();
+        } else if (syncOperation.equals(WorklogSyncOperation.UNSYNC)) {
+            detailsList = workLogSyncPayloadDTO.getDetailsToUnsync();
+        } else {
+            detailsList = workLogSyncPayloadDTO.getDetailsToSync();
+        }
         Map<String, List<WorkLogDetailSyncRequestDTO>> taskDetails = detailsList.stream().collect(Collectors.groupingBy(WorkLogDetailSyncRequestDTO::getTaskName));
         WorkLogSyncResultDTO resultDTO = new WorkLogSyncResultDTO();
         String workLogUuid = workLogSyncPayloadDTO.getWorkLogUuid();
@@ -118,7 +113,8 @@ public class WorkLogSyncJobHandler implements BackgroundJobHandler {
                 try {
                     boolean hasError;
                     if (syncOperation.equals(WorklogSyncOperation.RESYNC)) {
-                        selfRef.unSyncWorkLogDetailFromJira(syncUser, workLogUuid, detail, true);
+                        WorkLogDetailSyncRequestDTO unsyncDto = new WorkLogDetailSyncRequestDTO(detail.getDetailId(), detail.getOldTaskName(), detail.getJiraId());
+                        selfRef.unSyncWorkLogDetailFromJira(syncUser, workLogUuid, unsyncDto, true);
                         hasError = selfRef.syncWorkLogDetailToJira(syncUser, workLogUuid, detail);
                     } else if (syncOperation.equals(WorklogSyncOperation.UNSYNC)) {
                         hasError = selfRef.unSyncWorkLogDetailFromJira(syncUser, workLogUuid, detail, false);

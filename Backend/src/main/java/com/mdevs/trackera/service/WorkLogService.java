@@ -47,6 +47,7 @@ import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 @Slf4j
@@ -238,6 +239,7 @@ public class WorkLogService {
         ensureWorkLogSyncNotInProgress(workLog);
         validateWorkLogDetail(detailPayloadDTO);
         List<WorkLogDetail> detailsToUnsync = new ArrayList<>();
+        String oldTaskName;
         List<WorkLogDetail> workLogDetails = new ArrayList<>();
         WorkLogDetail workLogDetail = null;
         WorkLogSyncPayloadDTO workLogSyncPayloadDTO = new WorkLogSyncPayloadDTO(workLog.getUser().getId(), workLog.getUuid());
@@ -248,6 +250,7 @@ public class WorkLogService {
                 throw new NotFoundException("WorkLog task not found");
             }
 
+            oldTaskName = detailPayloadDTO.getTaskName();
             workLogDetails.forEach(detail -> {
                 detail.setTaskName(detailPayloadDTO.getNewData().getName());
                 if (detail.getStatus().equals(WorkLogStatus.SYNCED)) {
@@ -262,6 +265,7 @@ public class WorkLogService {
                 throw new NotFoundException("WorkLog entry not found");
             }
 
+            oldTaskName = workLogDetail.getTaskName();
             WorkLogDetailNewDataDTO detailNewData = detailPayloadDTO.getNewData();
             workLogDetail.setTaskName(StringUtils.isEmpty(detailNewData.getName()) ? workLogDetail.getTaskName() : detailNewData.getName());
             workLogDetail.setStartTime(detailNewData.getStartTime());
@@ -275,23 +279,40 @@ public class WorkLogService {
             workLogDetailRepository.save(workLogDetail);
         }
 
-        if (!detailsToUnsync.isEmpty()) {
-            markDetailsForSync(detailsToUnsync);
-            List<WorkLogDetailSyncRequestDTO> detailUnSyncRequests = detailsToUnsync.stream()
-                    .map(detail -> new WorkLogDetailSyncRequestDTO(detail.getId(), detail.getTaskName(), detail.getJiraId()))
-                    .toList();
-            workLogSyncPayloadDTO.setDetailsToUnsync(detailUnSyncRequests);
-        }
-
         if (detailPayloadDTO.isSyncToJira()) {
             List<WorkLogDetail> detailsToSync = detailPayloadDTO.getIsTask() ? workLogDetails : List.of(Objects.requireNonNull(workLogDetail));
-            markDetailsForSync(detailsToSync);
+            markDetailsForSync(Stream.concat(detailsToSync.stream(), detailsToUnsync.stream()).toList());
 
-            List<WorkLogDetailSyncRequestDTO> detailSyncRequests = detailsToSync.stream()
-                    .map(detail -> new WorkLogDetailSyncRequestDTO(detail.getId(), detail.getTaskName(), null))
-                    .toList();
+            Set<Long> unsyncDetailIds = detailsToUnsync.stream().map(WorkLogDetail::getId).collect(Collectors.toSet());
+            List<WorkLogDetail> resyncDetails = detailsToSync.stream().filter(d -> unsyncDetailIds.contains(d.getId())).toList();
+            List<WorkLogDetail> syncOnlyDetails = detailsToSync.stream().filter(d -> !unsyncDetailIds.contains(d.getId())).toList();
+            Set<Long> resyncIds = resyncDetails.stream().map(WorkLogDetail::getId).collect(Collectors.toSet());
+            List<WorkLogDetail> unsyncOnlyDetails = detailsToUnsync.stream().filter(d -> !resyncIds.contains(d.getId())).toList();
 
-            workLogSyncPayloadDTO.setDetailsToSync(detailSyncRequests);
+            if (!resyncDetails.isEmpty()) {
+                workLogSyncPayloadDTO.setDetailsToReSync(resyncDetails.stream()
+                        .map(detail -> {
+                            WorkLogDetailSyncRequestDTO dto = new WorkLogDetailSyncRequestDTO(detail.getId(), detail.getTaskName(), detail.getJiraId());
+                            dto.setOldTaskName(oldTaskName);
+                            return dto;
+                        })
+                        .toList());
+            }
+            if (!unsyncOnlyDetails.isEmpty()) {
+                workLogSyncPayloadDTO.setDetailsToUnsync(unsyncOnlyDetails.stream()
+                        .map(detail -> new WorkLogDetailSyncRequestDTO(detail.getId(), detail.getTaskName(), detail.getJiraId()))
+                        .toList());
+            }
+            if (!syncOnlyDetails.isEmpty()) {
+                workLogSyncPayloadDTO.setDetailsToSync(syncOnlyDetails.stream()
+                        .map(detail -> new WorkLogDetailSyncRequestDTO(detail.getId(), detail.getTaskName(), null))
+                        .toList());
+            }
+        } else if (!detailsToUnsync.isEmpty()) {
+            markDetailsForSync(detailsToUnsync);
+            workLogSyncPayloadDTO.setDetailsToUnsync(detailsToUnsync.stream()
+                    .map(detail -> new WorkLogDetailSyncRequestDTO(detail.getId(), detail.getTaskName(), detail.getJiraId()))
+                    .toList());
         }
 
         workLog.setStatus(workLogRepository.calculateWorkLogStatus(workLog));
