@@ -48,7 +48,7 @@ const deleteWorklog = async (worklogId: string, worklogSelection: WorklogSelecti
 
 const syncWorklog = async (payload: SyncPayload) => {
   const { worklogId: worklogId, taskNames, entryIds, sync } = payload;
-  const response = await requestInstance.post(`/worklog/${worklogId}/sync${sync ? "" : "?sync=false"}`, {
+  const response = await requestInstance.post(`/worklog/${worklogId}/sync${sync ? "" : "?operation=UNSYNC"}`, {
     taskNames,
     entryIds,
   });
