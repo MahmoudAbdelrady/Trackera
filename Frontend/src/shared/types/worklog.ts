@@ -116,6 +116,13 @@ type JiraSyncEventProps = {
   syncError?: string;
 };
 
+interface UpdateWorklogDetailResponse {
+  message: string;
+  worklogInfo: Worklog;
+  task: WorklogTask;
+  entry?: WorklogEntry;
+}
+
 export type {
   SyncPayload,
   WorklogEvaluationType,
@@ -124,6 +131,7 @@ export type {
   WorklogTask,
   WorklogEntry,
   UpdateWorkLogDetailPayloadDTO,
+  UpdateWorklogDetailResponse,
   WorklogSelection,
   WorklogError,
   WorkLogSearchFilter,

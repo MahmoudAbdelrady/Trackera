@@ -7,7 +7,7 @@ import { getFormikFieldProps } from "../../../utils";
 import { useState } from "react";
 import classes from "./scss/edit-worklog-task.module.css";
 import { Alert, Switch, Tooltip } from "antd";
-import type { WorklogTask } from "../../../shared/types";
+import type { WorklogTask, UpdateWorklogDetailResponse } from "../../../shared/types";
 import { worklogApis } from "../../../state/api";
 import { showSuccessToast, showErrorToast } from "../../../utils/toast-handler/showToast";
 
@@ -16,7 +16,8 @@ interface EditWorklogTaskProps {
   worklogTask: WorklogTask;
   setIsOpen: (isOpen: boolean) => void;
   jiraLinked: boolean;
-  refetchData: () => void;
+  onBeforeSync: () => void;
+  onUpdateSuccess: (data: UpdateWorklogDetailResponse, oldTaskName: string) => void;
 }
 
 interface EditWorklogTaskFormValues {
@@ -25,7 +26,7 @@ interface EditWorklogTaskFormValues {
 }
 
 const EditWorklogTask = (props: EditWorklogTaskProps) => {
-  const { worklogId, worklogTask, setIsOpen, jiraLinked, refetchData } = props;
+  const { worklogId, worklogTask, setIsOpen, jiraLinked, onBeforeSync, onUpdateSuccess } = props;
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
   const editWorklogTaskFormik = useFormik<EditWorklogTaskFormValues>({
@@ -33,6 +34,9 @@ const EditWorklogTask = (props: EditWorklogTaskProps) => {
     validationSchema: editWorklogTask,
     onSubmit: async (values) => {
       setIsLoading(true);
+      if (values.syncToJira) {
+        onBeforeSync();
+      }
       try {
         const result = await worklogApis.updateWorklogDetail(worklogId, {
           taskName: worklogTask.taskName,
@@ -42,8 +46,8 @@ const EditWorklogTask = (props: EditWorklogTaskProps) => {
             name: values.taskName,
           },
         });
-        showSuccessToast(result);
-        refetchData();
+        showSuccessToast(result.message);
+        onUpdateSuccess(result, worklogTask.taskName);
         setIsOpen(false);
       } catch (error: unknown) {
         showErrorToast(error);

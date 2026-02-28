@@ -41,7 +41,7 @@ public class WorkLogController {
     @PutMapping("/{uuid}")
     public ResponseEntity<?> updateWorkLog(@PathVariable String uuid, @RequestPart(name = "worklogInfo") @Valid ManageWorkLogDTO manageWorkLogDTO, @RequestPart(required = false) MultipartFile file) {
         Map<String, Object> result = workLogService.updateWorkLog(uuid, manageWorkLogDTO, file);
-        return result.containsKey("isError") ? new ResponseEntity<>(result, HttpStatus.BAD_REQUEST) : new ResponseEntity<>(result.get("message"), HttpStatus.OK);
+        return new ResponseEntity<>(result, result.containsKey("isError") ? HttpStatus.BAD_REQUEST : HttpStatus.OK);
     }
 
     @DeleteMapping("/{uuid}")
@@ -65,9 +65,8 @@ public class WorkLogController {
     }
 
     @PutMapping("/{uuid}/details")
-    public ResponseEntity<String> updateWorkLogDetail(@PathVariable String uuid, @RequestBody @Valid UpdateWorkLogDetailPayloadDTO payload) {
-        workLogService.updateWorkLogDetail(uuid, payload);
-        return new ResponseEntity<>((payload.getIsTask() ? "Task" : "Entry") + " updated successfully", HttpStatus.OK);
+    public ResponseEntity<UpdateWorkLogDetailResponseDTO> updateWorkLogDetail(@PathVariable String uuid, @RequestBody @Valid UpdateWorkLogDetailPayloadDTO payload) {
+        return new ResponseEntity<>(workLogService.updateWorkLogDetail(uuid, payload), HttpStatus.OK);
     }
 
     @RateLimited(permitsPerMinute = 60)

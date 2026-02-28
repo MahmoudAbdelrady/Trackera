@@ -14,7 +14,8 @@ import classes from "./scss/manage-worklog-modal.module.css";
 
 interface ManageWorklogModalProps {
   setIsOpen: (isOpen: boolean) => void;
-  refreshWorklogData: () => void;
+  refreshWorklogData: (updatedWorklog?: Worklog) => void;
+  onBeforeSync?: () => void;
   selectedWorklog?: Worklog;
   setSelectedWorklog?: (worklog: Worklog | undefined) => void;
   jiraLinked: boolean;
@@ -30,7 +31,7 @@ interface ManageWorklogFormValues {
 }
 
 const ManageWorklogModal = (props: ManageWorklogModalProps) => {
-  const { jiraLinked, selectedWorklog, setIsOpen, setSelectedWorklog, refreshWorklogData } = props;
+  const { jiraLinked, selectedWorklog, setIsOpen, setSelectedWorklog, refreshWorklogData, onBeforeSync } = props;
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [fileList, setFileList] = useState<UploadFile[]>([]);
   const [worklogFileErrors, setWorklogFileErrors] = useState<WorklogError[]>([]);
@@ -57,12 +58,20 @@ const ManageWorklogModal = (props: ManageWorklogModalProps) => {
     enableReinitialize: true,
     onSubmit: async (values) => {
       setIsLoading(true);
+      if (values.syncToJira) {
+        onBeforeSync?.();
+      }
       try {
         const formData = getFormData(values, isEditMode);
         const result = await worklogApis.updateWorklog(isEditMode ? selectedWorklog!.id : null, formData);
-        showSuccessToast(result);
+        if (isEditMode) {
+          showSuccessToast(result.message);
+          refreshWorklogData(result.worklog);
+        } else {
+          showSuccessToast(result);
+          refreshWorklogData();
+        }
         handleModalClose();
-        refreshWorklogData();
       } catch (error: any) {
         if (error.response?.data.isError) {
           showErrorToast(error.response?.data.message);

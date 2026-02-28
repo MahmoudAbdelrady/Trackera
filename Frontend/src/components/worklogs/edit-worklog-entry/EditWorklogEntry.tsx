@@ -1,5 +1,5 @@
 import type { Dayjs } from "dayjs";
-import type { WorklogEntry } from "../../../shared/types";
+import type { WorklogEntry, UpdateWorklogDetailResponse } from "../../../shared/types";
 import { useState } from "react";
 import WorklogModal from "../modals/worklog-modal/WorklogModal";
 import { useFormik } from "formik";
@@ -22,8 +22,8 @@ interface EditWorklogEntryProps {
   taskEntriesSize: number;
   setIsOpen: (isOpen: boolean) => void;
   jiraLinked: boolean;
-  refetchData: () => void;
-  fetchEntries: () => void;
+  onBeforeSync: () => void;
+  onUpdateSuccess: (data: UpdateWorklogDetailResponse, oldTaskName: string, taskNameChanged?: boolean) => void;
   onCloseEntries: () => void;
 }
 
@@ -44,8 +44,8 @@ const EditWorklogEntry = (props: EditWorklogEntryProps) => {
     taskEntriesSize,
     setIsOpen,
     jiraLinked,
-    refetchData,
-    fetchEntries,
+    onBeforeSync,
+    onUpdateSuccess,
     onCloseEntries,
   } = props;
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -62,6 +62,9 @@ const EditWorklogEntry = (props: EditWorklogEntryProps) => {
     validationSchema: editWorklogEntry,
     onSubmit: async (values) => {
       setIsLoading(true);
+      if (values.syncToJira) {
+        onBeforeSync();
+      }
       try {
         const result = await worklogApis.updateWorklogDetail(worklogId, {
           taskName: taskName,
@@ -76,12 +79,10 @@ const EditWorklogEntry = (props: EditWorklogEntryProps) => {
             description: values.description,
           },
         });
-        showSuccessToast(result);
-        refetchData();
+        showSuccessToast(result.message);
+        onUpdateSuccess(result, taskName, taskName !== values.taskName);
         if (taskName !== values.taskName && taskEntriesSize === 1) {
           onCloseEntries();
-        } else {
-          fetchEntries();
         }
         setIsOpen(false);
       } catch (error: unknown) {

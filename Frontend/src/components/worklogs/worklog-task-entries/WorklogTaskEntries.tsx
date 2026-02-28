@@ -1,5 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { WORKLOG_STATUS, type WorklogEntry, type WorklogTask } from "../../../shared/types";
+import {
+  WORKLOG_STATUS,
+  type WorklogEntry,
+  type WorklogTask,
+  type UpdateWorklogDetailResponse,
+} from "../../../shared/types";
 import TrackeraTable from "../../trackera-table/TrackeraTable";
 import WorkLogModal from "../modals/worklog-modal/WorklogModal";
 import { createWorklogEntryColumns, DeleteWarning } from "../../";
@@ -19,6 +24,8 @@ interface WorklogTaskEntriesProps {
   setWorklogEntries: (entries: WorklogEntry[]) => void;
   skipInitialFetch: boolean;
   refetchData: () => void;
+  onBeforeSync: () => void;
+  onUpdateDetailSuccess: (data: UpdateWorklogDetailResponse, oldTaskName: string) => void;
   jiraSyncSSE: JiraSyncSSEReturn;
   onCloseHandler: () => void;
 }
@@ -32,6 +39,8 @@ const WorklogTaskEntries = (props: WorklogTaskEntriesProps) => {
     setWorklogEntries,
     skipInitialFetch,
     refetchData,
+    onBeforeSync,
+    onUpdateDetailSuccess,
     jiraSyncSSE,
     onCloseHandler,
   } = props;
@@ -65,7 +74,7 @@ const WorklogTaskEntries = (props: WorklogTaskEntriesProps) => {
           setEntryModalState({ type: "delete", entry: record });
         },
       }),
-    [worklogId, worklogEntries, loggedUserData?.jiraLinked, jiraSyncSSE]
+    [worklogId, worklogEntries, loggedUserData?.jiraLinked, jiraSyncSSE],
   );
 
   const fetchEntries = useCallback(async () => {
@@ -133,8 +142,17 @@ const WorklogTaskEntries = (props: WorklogTaskEntriesProps) => {
           taskEntriesSize={worklogEntries.length}
           setIsOpen={clearEntryModalFields}
           jiraLinked={loggedUserData?.jiraLinked ?? false}
-          refetchData={refetchData}
-          fetchEntries={fetchEntries}
+          onBeforeSync={onBeforeSync}
+          onUpdateSuccess={(data, originTaskName, taskNameChanged) => {
+            onUpdateDetailSuccess(data, originTaskName);
+            if (data.entry) {
+              if (taskNameChanged) {
+                setWorklogEntries(worklogEntries.filter((e) => e.id !== data.entry!.id));
+              } else {
+                setWorklogEntries(worklogEntries.map((e) => (e.id === data.entry!.id ? data.entry! : e)));
+              }
+            }
+          }}
           onCloseEntries={onCloseHandler}
         />
       )}

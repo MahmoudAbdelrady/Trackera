@@ -15,6 +15,7 @@ import {
   type WorklogSelection,
   type WorklogStatusType,
   type WorklogTask,
+  type UpdateWorklogDetailResponse,
   JIRA_SYNC_EVENT,
   WORKLOG_STATUS,
 } from "../../shared/types";
@@ -207,6 +208,13 @@ const WorklogDetails = () => {
     fetchWorklogTasks();
   };
 
+  const handleUpdateDetailSuccess = (data: UpdateWorklogDetailResponse, oldTaskName: string) => {
+    setWorklogInfo(data.worklogInfo);
+    setWorklogTasks((prev) =>
+      prev.map((t) => (t.taskName === oldTaskName ? { ...data.task, id: data.task.taskName } : t))
+    );
+  };
+
   const clearTaskModalFields = () => {
     setTaskModalState({ type: null, task: null });
     setSelectedTask(null);
@@ -220,7 +228,8 @@ const WorklogDetails = () => {
           worklogTask={selectedTask!}
           setIsOpen={() => clearTaskModalFields()}
           jiraLinked={loggedUserData?.jiraLinked ?? false}
-          refetchData={refetchData}
+          onBeforeSync={() => jiraSyncSSE.startListening()}
+          onUpdateSuccess={handleUpdateDetailSuccess}
         />
       )}
 
@@ -233,6 +242,8 @@ const WorklogDetails = () => {
           setWorklogEntries={handleSetWorklogEntries}
           skipInitialFetch={entriesTaskRef.current === selectedTask?.taskName && worklogEntries.length > 0}
           refetchData={refetchData}
+          onBeforeSync={() => jiraSyncSSE.startListening()}
+          onUpdateDetailSuccess={handleUpdateDetailSuccess}
           jiraSyncSSE={jiraSyncSSE}
           onCloseHandler={() => {
             setSelectedTask(null);
