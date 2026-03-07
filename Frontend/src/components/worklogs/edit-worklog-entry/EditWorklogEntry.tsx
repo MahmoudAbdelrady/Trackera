@@ -23,7 +23,7 @@ interface EditWorklogEntryProps {
   setIsOpen: (isOpen: boolean) => void;
   jiraLinked: boolean;
   onBeforeSync: () => void;
-  onUpdateSuccess: (data: UpdateWorklogDetailResponse, oldTaskName: string, taskNameChanged?: boolean) => void;
+  onUpdateSuccess: (data: UpdateWorklogDetailResponse) => void;
   onCloseEntries: () => void;
 }
 
@@ -80,8 +80,8 @@ const EditWorklogEntry = (props: EditWorklogEntryProps) => {
           },
         });
         showSuccessToast(result.message);
-        onUpdateSuccess(result, taskName, taskName !== values.taskName);
-        if (taskName !== values.taskName && taskEntriesSize === 1) {
+        onUpdateSuccess(result);
+        if (result.taskChanged && taskEntriesSize === 1) {
           onCloseEntries();
         }
         setIsOpen(false);

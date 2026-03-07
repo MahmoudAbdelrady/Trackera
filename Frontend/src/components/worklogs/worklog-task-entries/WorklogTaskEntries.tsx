@@ -22,10 +22,9 @@ interface WorklogTaskEntriesProps {
   selectedTask: WorklogTask;
   worklogEntries: WorklogEntry[];
   setWorklogEntries: (entries: WorklogEntry[]) => void;
-  skipInitialFetch: boolean;
   refetchData: () => void;
   onBeforeSync: () => void;
-  onUpdateDetailSuccess: (data: UpdateWorklogDetailResponse, oldTaskName: string) => void;
+  onUpdateDetailSuccess: (data: UpdateWorklogDetailResponse) => void;
   jiraSyncSSE: JiraSyncSSEReturn;
   onCloseHandler: () => void;
 }
@@ -37,7 +36,6 @@ const WorklogTaskEntries = (props: WorklogTaskEntriesProps) => {
     selectedTask,
     worklogEntries,
     setWorklogEntries,
-    skipInitialFetch,
     refetchData,
     onBeforeSync,
     onUpdateDetailSuccess,
@@ -80,18 +78,16 @@ const WorklogTaskEntries = (props: WorklogTaskEntriesProps) => {
   const fetchEntries = useCallback(async () => {
     setIsFetchingEntries(true);
     try {
-      const result = await worklogApis.getWorklogTaskEntries(worklogId!, selectedTask!.taskName);
+      const result = await worklogApis.getWorklogTaskEntries(worklogId, selectedTask.taskName);
       setWorklogEntries(result);
     } catch (error: any) {
       showErrorToast(error);
     }
     setIsFetchingEntries(false);
-  }, [worklogId, selectedTask.taskName]);
+  }, [worklogId, selectedTask.taskName, setWorklogEntries]);
 
   useEffect(() => {
-    if (!skipInitialFetch) {
-      fetchEntries();
-    }
+    fetchEntries();
   }, []);
 
   useEffect(() => {
@@ -143,10 +139,13 @@ const WorklogTaskEntries = (props: WorklogTaskEntriesProps) => {
           setIsOpen={clearEntryModalFields}
           jiraLinked={loggedUserData?.jiraLinked ?? false}
           onBeforeSync={onBeforeSync}
-          onUpdateSuccess={(data, originTaskName, taskNameChanged) => {
-            onUpdateDetailSuccess(data, originTaskName);
+          onUpdateSuccess={(data) => {
+            onUpdateDetailSuccess(data);
+            if (data.currentTask.isDeleted) {
+              onCloseHandler();
+            }
             if (data.entry) {
-              if (taskNameChanged) {
+              if (data.entry.taskChanged) {
                 setWorklogEntries(worklogEntries.filter((e) => e.id !== data.entry!.id));
               } else {
                 setWorklogEntries(worklogEntries.map((e) => (e.id === data.entry!.id ? data.entry! : e)));

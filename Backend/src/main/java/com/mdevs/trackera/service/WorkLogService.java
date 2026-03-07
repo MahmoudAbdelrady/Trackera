@@ -220,6 +220,7 @@ public class WorkLogService {
         List<WorkLogDetail> workLogDetails = new ArrayList<>();
         WorkLogDetail workLogDetail = null;
         WorkLogSyncPayloadDTO workLogSyncPayloadDTO = new WorkLogSyncPayloadDTO(workLog.getUser().getId(), workLog.getUuid());
+        boolean taskChanged;
 
         if (detailPayloadDTO.getIsTask()) {
             workLogDetails = workLogDetailRepository.findByWorkLogAndTaskName(workLog, detailPayloadDTO.getTaskName());
@@ -228,8 +229,13 @@ public class WorkLogService {
             }
 
             oldTaskName = detailPayloadDTO.getTaskName();
+            taskChanged = !oldTaskName.equals(detailPayloadDTO.getNewData().getName());
+
             workLogDetails.forEach(detail -> {
                 detail.setTaskName(detailPayloadDTO.getNewData().getName());
+                if(taskChanged && !StringUtils.isEmpty(detail.getSyncError())) {
+                    detail.setSyncError(null);
+                }
                 if (detail.getStatus().equals(WorkLogStatus.SYNCED)) {
                     detailsToUnsync.add(detail);
                 }
@@ -243,6 +249,8 @@ public class WorkLogService {
             }
 
             oldTaskName = workLogDetail.getTaskName();
+            taskChanged = !oldTaskName.equals(detailPayloadDTO.getNewData().getName());
+
             WorkLogDetailNewDataDTO detailNewData = detailPayloadDTO.getNewData();
             workLogDetail.setTaskName(StringUtils.isEmpty(detailNewData.getName()) ? workLogDetail.getTaskName() : detailNewData.getName());
             workLogDetail.setStartTime(detailNewData.getStartTime());
@@ -251,6 +259,9 @@ public class WorkLogService {
             workLogDetail.setDescription(detailNewData.getDescription());
             if (workLogDetail.getStatus().equals(WorkLogStatus.SYNCED)) {
                 detailsToUnsync.add(workLogDetail);
+            }
+            if(taskChanged && !StringUtils.isEmpty(workLogDetail.getSyncError())) {
+                workLogDetail.setSyncError(null);
             }
 
             workLogDetailRepository.save(workLogDetail);
@@ -300,14 +311,16 @@ public class WorkLogService {
             backgroundJobService.enqueueJob(WorkLogSyncJobHandler.class, JsonUtil.convertObjectToJsonString(workLogSyncPayloadDTO));
         }
 
-        UpdateWorkLogDetailResponseDTO response = new UpdateWorkLogDetailResponseDTO();
-        response.setMessage((detailPayloadDTO.getIsTask() ? "Task" : "Entry") + " updated successfully");
+        UpdateWorkLogDetailResponseDTO response = new UpdateWorkLogDetailResponseDTO((detailPayloadDTO.getIsTask() ? "Task" : "Entry") + " updated successfully");
         response.setWorklogInfo(buildWorkLogInfoDTO(workLog));
-        if (detailPayloadDTO.getIsTask()) {
-            response.setTask(buildSingleWorkLogTaskDTO(workLog, detailPayloadDTO.getNewData().getName()));
-        } else {
-            response.setTask(buildSingleWorkLogTaskDTO(workLog, detailPayloadDTO.getTaskName()));
-            response.setEntry(buildWorkLogEntryDTO(workLogDetail));
+        response.setCurrentTask(buildSingleWorkLogTaskDTO(workLog, oldTaskName));
+        if (taskChanged) {
+            response.setNewTask(buildSingleWorkLogTaskDTO(workLog, detailPayloadDTO.getNewData().getName()));
+        }
+        if (!detailPayloadDTO.getIsTask()) {
+            WorkLogEntryDTO workLogEntryDTO = buildWorkLogEntryDTO(workLogDetail);
+            workLogEntryDTO.setTaskChanged(taskChanged);
+            response.setEntry(workLogEntryDTO);
         }
         return response;
     }
@@ -699,16 +712,8 @@ public class WorkLogService {
     }
 
     private List<WorkLogTaskDTO> buildWorkLogTaskDTOs(WorkLog workLog) {
-        List<Map<String, Object>> workLogDetailGroups = workLogDetailRepository.getGroupedWorkLogDetailsByWorkLog(workLog);
-        return workLogDetailGroups.stream().map(worklogGroup -> {
-            WorkLogTaskDTO workLogTaskDTO = new WorkLogTaskDTO(worklogGroup.get("taskName").toString());
-            Integer totalMinutes = Integer.parseInt(worklogGroup.get("totalMinutes").toString());
-            workLogTaskDTO.setTotalHours(DurationFormatter.formatDuration(totalMinutes, false));
-            workLogTaskDTO.setTotalMinutes(totalMinutes);
-            workLogTaskDTO.setStatus(WorkLogStatus.valueOf(worklogGroup.get("status").toString()));
-            workLogTaskDTO.setHasError(Boolean.parseBoolean(worklogGroup.get("hasError").toString()));
-            return workLogTaskDTO;
-        }).toList();
+        List<Map<String, Object>> workLogDetailGroups = workLogDetailRepository.getGroupedWorkLogDetailsByWorkLog(workLog, null);
+        return workLogDetailGroups.stream().map(this::mapGroupedWorkLogDetailToTaskDTO).toList();
     }
 
     private List<WorkLogEntryDTO> buildWorkLogEntryDTOs(WorkLog workLog, String taskName) {
@@ -717,10 +722,12 @@ public class WorkLogService {
     }
 
     private WorkLogTaskDTO buildSingleWorkLogTaskDTO(WorkLog workLog, String taskName) {
-        return buildWorkLogTaskDTOs(workLog).stream()
-                .filter(dto -> dto.getTaskName().equals(taskName))
-                .findFirst()
-                .orElse(null);
+        WorkLogTaskDTO workLogTaskDTO = workLogDetailRepository.getGroupedWorkLogDetailsByWorkLog(workLog, taskName).stream().findFirst().map(this::mapGroupedWorkLogDetailToTaskDTO).orElse(null);
+        if (workLogTaskDTO == null) {
+            workLogTaskDTO = new WorkLogTaskDTO(taskName);
+            workLogTaskDTO.setIsDeleted(true);
+        }
+        return workLogTaskDTO;
     }
 
     private WorkLogEntryDTO buildWorkLogEntryDTO(WorkLogDetail workLogDetail) {
@@ -733,6 +740,16 @@ public class WorkLogService {
         workLogEntryDTO.setStatus(workLogDetail.getStatus());
         workLogEntryDTO.setSyncError(workLogDetail.getSyncError());
         return workLogEntryDTO;
+    }
+
+    private WorkLogTaskDTO mapGroupedWorkLogDetailToTaskDTO(Map<String, Object> worklogGroup) {
+        WorkLogTaskDTO workLogTaskDTO = new WorkLogTaskDTO(worklogGroup.get("taskName").toString());
+        Integer totalMinutes = Integer.parseInt(worklogGroup.get("totalMinutes").toString());
+        workLogTaskDTO.setTotalHours(DurationFormatter.formatDuration(totalMinutes, false));
+        workLogTaskDTO.setTotalMinutes(totalMinutes);
+        workLogTaskDTO.setStatus(WorkLogStatus.valueOf(worklogGroup.get("status").toString()));
+        workLogTaskDTO.setHasError(Boolean.parseBoolean(worklogGroup.get("hasError").toString()));
+        return workLogTaskDTO;
     }
     //</editor-fold>
 }

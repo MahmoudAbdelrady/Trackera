@@ -19,7 +19,7 @@ import {
   JIRA_SYNC_EVENT,
   WORKLOG_STATUS,
 } from "../../shared/types";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { showSuccessToast, showErrorToast } from "../../utils/toast-handler/showToast";
 import { userQueries } from "../../state/queries";
@@ -54,20 +54,11 @@ const WorklogDetails = () => {
   const [isDeletingTask, setIsDeletingTask] = useState<boolean>(false);
   const selectedWorklogTasks = useMemo(
     () => worklogTasks.filter((task) => selectedTaskNames.includes(task.taskName)),
-    [worklogTasks, selectedTaskNames]
+    [worklogTasks, selectedTaskNames],
   );
 
   // worklog entries
   const [worklogEntries, setWorklogEntries] = useState<WorklogEntry[]>([]);
-  const entriesTaskRef = useRef<string | null>(null);
-
-  const handleSetWorklogEntries = useCallback(
-    (entries: WorklogEntry[]) => {
-      setWorklogEntries(entries);
-      entriesTaskRef.current = selectedTask?.taskName ?? null;
-    },
-    [selectedTask?.taskName]
-  );
 
   // sse subscription
   const hasInProgress = useMemo(() => {
@@ -166,8 +157,8 @@ const WorklogDetails = () => {
           prevEntries.map((entry) =>
             event.entryIds?.includes(entry.id) && event.logId === worklogId
               ? { ...entry, status: event.status, syncError: event.syncError }
-              : entry
-          )
+              : entry,
+          ),
         );
       }
 
@@ -200,7 +191,7 @@ const WorklogDetails = () => {
           setSelectedTask(record);
         },
       }),
-    [loggedUserData?.jiraLinked, worklogId, worklogTasks, jiraSyncSSE]
+    [loggedUserData?.jiraLinked, worklogId, worklogTasks, jiraSyncSSE],
   );
 
   const refetchData = () => {
@@ -208,11 +199,25 @@ const WorklogDetails = () => {
     fetchWorklogTasks();
   };
 
-  const handleUpdateDetailSuccess = (data: UpdateWorklogDetailResponse, oldTaskName: string) => {
+  const handleUpdateDetailSuccess = (data: UpdateWorklogDetailResponse) => {
     setWorklogInfo(data.worklogInfo);
-    setWorklogTasks((prev) =>
-      prev.map((t) => (t.taskName === oldTaskName ? { ...data.task, id: data.task.taskName } : t))
-    );
+    setWorklogTasks((prev) => {
+      let updated = prev;
+      if (data.currentTask.isDeleted) {
+        updated = updated.filter((t) => t.taskName !== data.currentTask.taskName);
+      } else {
+        updated = updated.map((t) => (t.taskName === data.currentTask.taskName ? { ...data.currentTask } : t));
+      }
+      if (data.newTask) {
+        const newTaskExists = updated.some((t) => t.taskName === data.newTask.taskName);
+        if (newTaskExists) {
+          updated = updated.map((t) => (t.taskName === data.newTask.taskName ? { ...data.newTask } : t));
+        } else {
+          updated = [...updated, { ...data.newTask }];
+        }
+      }
+      return updated;
+    });
   };
 
   const clearTaskModalFields = () => {
@@ -239,8 +244,7 @@ const WorklogDetails = () => {
           worklogId={worklogId!}
           selectedTask={selectedTask!}
           worklogEntries={worklogEntries}
-          setWorklogEntries={handleSetWorklogEntries}
-          skipInitialFetch={entriesTaskRef.current === selectedTask?.taskName && worklogEntries.length > 0}
+          setWorklogEntries={setWorklogEntries}
           refetchData={refetchData}
           onBeforeSync={() => jiraSyncSSE.startListening()}
           onUpdateDetailSuccess={handleUpdateDetailSuccess}

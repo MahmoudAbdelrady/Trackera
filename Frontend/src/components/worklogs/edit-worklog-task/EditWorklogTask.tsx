@@ -17,7 +17,7 @@ interface EditWorklogTaskProps {
   setIsOpen: (isOpen: boolean) => void;
   jiraLinked: boolean;
   onBeforeSync: () => void;
-  onUpdateSuccess: (data: UpdateWorklogDetailResponse, oldTaskName: string) => void;
+  onUpdateSuccess: (data: UpdateWorklogDetailResponse) => void;
 }
 
 interface EditWorklogTaskFormValues {
@@ -47,7 +47,7 @@ const EditWorklogTask = (props: EditWorklogTaskProps) => {
           },
         });
         showSuccessToast(result.message);
-        onUpdateSuccess(result, worklogTask.taskName);
+        onUpdateSuccess(result);
         setIsOpen(false);
       } catch (error: unknown) {
         showErrorToast(error);

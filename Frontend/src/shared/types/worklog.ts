@@ -51,6 +51,7 @@ interface WorklogTask {
   totalMinutes: number;
   status: WorklogStatusType;
   hasError: boolean;
+  isDeleted?: boolean;
 }
 
 interface WorklogEntry {
@@ -61,6 +62,7 @@ interface WorklogEntry {
   description: string;
   status: WorklogStatusType;
   syncError?: string;
+  taskChanged?: boolean;
 }
 
 interface WorklogDetailNewDataPayload {
@@ -119,7 +121,8 @@ type JiraSyncEventProps = {
 interface UpdateWorklogDetailResponse {
   message: string;
   worklogInfo: Worklog;
-  task: WorklogTask;
+  currentTask: WorklogTask;
+  newTask: WorklogTask;
   entry?: WorklogEntry;
 }
 

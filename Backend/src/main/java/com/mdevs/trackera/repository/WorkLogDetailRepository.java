@@ -26,8 +26,8 @@ public interface WorkLogDetailRepository extends BaseRepository<WorkLogDetail> {
             "     WHEN SUM(CASE WHEN wld.status = 'SYNCED' THEN 1 ELSE 0 END) = 0 THEN 'NOT_SYNCED' " +
             "     ELSE 'PARTIALLY' END AS status," +
             "CASE WHEN SUM(CASE WHEN wld.syncError IS NOT NULL THEN 1 ELSE 0 END) > 0 THEN true ELSE false END AS hasError) " +
-            "FROM WorkLogDetail wld WHERE wld.workLog = :workLog GROUP BY wld.taskName")
-    List<Map<String, Object>> getGroupedWorkLogDetailsByWorkLog(WorkLog workLog);
+            "FROM WorkLogDetail wld WHERE wld.workLog = :workLog AND (:taskName IS NULL OR wld.taskName = :taskName) GROUP BY wld.taskName")
+    List<Map<String, Object>> getGroupedWorkLogDetailsByWorkLog(@Param("workLog") WorkLog workLog, @Param("taskName") String taskName);
 
     boolean existsByWorkLog(WorkLog workLog);
 
