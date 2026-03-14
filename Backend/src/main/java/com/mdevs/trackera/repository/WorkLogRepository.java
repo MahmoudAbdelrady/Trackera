@@ -21,8 +21,11 @@ public interface WorkLogRepository extends BaseRepository<WorkLog> {
 
     WorkLog findByUserAndUuid(User user, String uuid);
 
+    WorkLog findByUuid(String uuid);
+
     @Query("SELECT CASE WHEN SUM(CASE WHEN wld.status = 'SYNC_IN_PROGRESS' THEN 1 ELSE 0 END) > 0 THEN 'SYNC_IN_PROGRESS' " +
             "WHEN SUM(CASE WHEN wld.status = 'UNSYNC_IN_PROGRESS' THEN 1 ELSE 0 END) > 0 THEN 'UNSYNC_IN_PROGRESS' " +
+            "WHEN SUM(CASE WHEN wld.status = 'IN_QUEUE' THEN 1 ELSE 0 END) > 0 THEN 'IN_QUEUE' " +
             "WHEN SUM(CASE WHEN wld.status = 'NOT_SYNCED' THEN 1 ELSE 0 END) = 0 THEN 'SYNCED' " +
             "WHEN SUM(CASE WHEN wld.status = 'SYNCED' THEN 1 ELSE 0 END) = 0 THEN 'NOT_SYNCED' " +
             "ELSE 'PARTIALLY' END " +

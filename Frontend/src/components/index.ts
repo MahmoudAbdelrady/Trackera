@@ -31,6 +31,7 @@ import PolicyItem from "./privacy-policy/policy-item/PolicyItem";
 import EmptyState from "./empty-state/EmptyState";
 import DeleteWarning from "./worklogs/delete-warning/DeleteWarning";
 import AvatarWithFallback from "./avatar-with-fallback/AvatarWithFallback";
+import EditWorklogTask from "./worklogs/edit-worklog-task/EditWorklogTask";
 
 // types
 import type { AuthResultFields } from "./auth/auth.types";
@@ -73,6 +74,7 @@ export {
   EmptyState,
   DeleteWarning,
   AvatarWithFallback,
+  EditWorklogTask,
 };
 
 export { worklogEvaluationMetadata, statusMetadata };

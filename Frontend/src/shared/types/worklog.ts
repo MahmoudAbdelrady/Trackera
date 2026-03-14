@@ -9,6 +9,7 @@ const WORKLOG_STATUS = {
   SYNCED: "SYNCED",
   PARTIALLY: "PARTIALLY",
   NOT_SYNCED: "NOT_SYNCED",
+  IN_QUEUE: "IN_QUEUE",
   SYNC_IN_PROGRESS: "SYNC_IN_PROGRESS",
   UNSYNC_IN_PROGRESS: "UNSYNC_IN_PROGRESS",
 } as const;
@@ -50,6 +51,7 @@ interface WorklogTask {
   totalMinutes: number;
   status: WorklogStatusType;
   hasError: boolean;
+  isDeleted?: boolean;
 }
 
 interface WorklogEntry {
@@ -60,6 +62,23 @@ interface WorklogEntry {
   description: string;
   status: WorklogStatusType;
   syncError?: string;
+  taskChanged?: boolean;
+}
+
+interface WorklogDetailNewDataPayload {
+  name: string;
+  startTime?: string;
+  endTime?: string;
+  duration?: string;
+  description?: string;
+}
+
+interface UpdateWorkLogDetailPayloadDTO {
+  taskName?: string;
+  entryId?: string;
+  isTask: boolean;
+  syncToJira: boolean;
+  newData: WorklogDetailNewDataPayload;
 }
 
 interface WorklogSummaryCard {
@@ -99,6 +118,14 @@ type JiraSyncEventProps = {
   syncError?: string;
 };
 
+interface UpdateWorklogDetailResponse {
+  message: string;
+  worklogInfo: Worklog;
+  currentTask: WorklogTask;
+  newTask: WorklogTask;
+  entry?: WorklogEntry;
+}
+
 export type {
   SyncPayload,
   WorklogEvaluationType,
@@ -106,6 +133,8 @@ export type {
   Worklog,
   WorklogTask,
   WorklogEntry,
+  UpdateWorkLogDetailPayloadDTO,
+  UpdateWorklogDetailResponse,
   WorklogSelection,
   WorklogError,
   WorkLogSearchFilter,

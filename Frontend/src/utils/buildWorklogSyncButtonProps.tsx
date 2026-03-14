@@ -28,7 +28,10 @@ function buildSyncButtonProps<T extends SyncableItem>({
   const hasSynced = selectedItems.some((e) => e.status === WORKLOG_STATUS.SYNCED);
   const hasNotSynced = selectedItems.some((e) => e.status === WORKLOG_STATUS.NOT_SYNCED);
   const hasInProgress = selectedItems.some(
-    (e) => e.status === WORKLOG_STATUS.SYNC_IN_PROGRESS || e.status === WORKLOG_STATUS.UNSYNC_IN_PROGRESS,
+    (e) =>
+      e.status === WORKLOG_STATUS.IN_QUEUE ||
+      e.status === WORKLOG_STATUS.SYNC_IN_PROGRESS ||
+      e.status === WORKLOG_STATUS.UNSYNC_IN_PROGRESS,
   );
 
   const syncedItems = selectedItems.filter((e) => e.status === WORKLOG_STATUS.SYNCED);
@@ -36,7 +39,9 @@ function buildSyncButtonProps<T extends SyncableItem>({
   const toIds = (arr: T[]) => arr.map(extractIdentifier);
 
   const createPayload = (items: T[], sync: boolean): SyncPayload =>
-    isEntry ? { worklogId: worklogId!, entryIds: toIds(items), sync } : { worklogId: worklogId!, taskNames: toIds(items), sync };
+    isEntry
+      ? { worklogId: worklogId!, entryIds: toIds(items), sync }
+      : { worklogId: worklogId!, taskNames: toIds(items), sync };
 
   let actions: TableActionButtonProps[] = [];
 
@@ -49,7 +54,9 @@ function buildSyncButtonProps<T extends SyncableItem>({
   }
 
   if (hasInProgress || jiraSyncSSE.isRequestingSync) {
-    return [{ label: "Actions Unavailable", icon: <CalendarOff />, disabled: true, loading: jiraSyncSSE.isRequestingSync }];
+    return [
+      { label: "Actions Unavailable", icon: <CalendarOff />, disabled: true, loading: jiraSyncSSE.isRequestingSync },
+    ];
   }
 
   if (hasSynced && hasNotSynced) {

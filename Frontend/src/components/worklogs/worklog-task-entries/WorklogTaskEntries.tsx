@@ -1,5 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { WORKLOG_STATUS, type WorklogEntry, type WorklogTask } from "../../../shared/types";
+import {
+  WORKLOG_STATUS,
+  type WorklogEntry,
+  type WorklogTask,
+  type UpdateWorklogDetailResponse,
+} from "../../../shared/types";
 import TrackeraTable from "../../trackera-table/TrackeraTable";
 import WorkLogModal from "../modals/worklog-modal/WorklogModal";
 import { createWorklogEntryColumns, DeleteWarning } from "../../";
@@ -9,6 +14,7 @@ import { showErrorToast } from "../../../utils/toast-handler/showToast";
 import { useNavigate } from "react-router-dom";
 import type { UserInfo } from "../../../shared/types";
 import type { JiraSyncSSEReturn } from "../../../shared/hooks/useJiraSyncSSE";
+import EditWorklogEntry from "../edit-worklog-entry/EditWorklogEntry";
 
 interface WorklogTaskEntriesProps {
   loggedUserData: UserInfo;
@@ -17,6 +23,8 @@ interface WorklogTaskEntriesProps {
   worklogEntries: WorklogEntry[];
   setWorklogEntries: (entries: WorklogEntry[]) => void;
   refetchData: () => void;
+  onBeforeSync: () => void;
+  onUpdateDetailSuccess: (data: UpdateWorklogDetailResponse) => void;
   jiraSyncSSE: JiraSyncSSEReturn;
   onCloseHandler: () => void;
 }
@@ -29,6 +37,8 @@ const WorklogTaskEntries = (props: WorklogTaskEntriesProps) => {
     worklogEntries,
     setWorklogEntries,
     refetchData,
+    onBeforeSync,
+    onUpdateDetailSuccess,
     jiraSyncSSE,
     onCloseHandler,
   } = props;
@@ -36,9 +46,15 @@ const WorklogTaskEntries = (props: WorklogTaskEntriesProps) => {
 
   const [isFetchingEntries, setIsFetchingEntries] = useState<boolean>(false);
   const [selectedWorklogEntries, setSelectedWorklogEntries] = useState<WorklogEntry[]>([]);
-  const [isDeletingEntry, setIsDeletingEntry] = useState<boolean>(false);
   const [selectedEntry, setSelectedEntry] = useState<WorklogEntry | null>(null);
-  const [deleteEntryVisible, setDeleteEntryVisible] = useState<boolean>(false);
+  const [entryModalState, setEntryModalState] = useState<{
+    type: "edit" | "delete" | null;
+    entry: WorklogEntry | null;
+  }>({
+    type: null,
+    entry: null,
+  });
+  const [isDeletingEntry, setIsDeletingEntry] = useState<boolean>(false);
 
   const worklogEntryColumns = useMemo(
     () =>
@@ -47,9 +63,13 @@ const WorklogTaskEntries = (props: WorklogTaskEntriesProps) => {
         worklogEntries: worklogEntries,
         jiraLinked: loggedUserData?.jiraLinked,
         jiraSyncSSE: jiraSyncSSE,
-        onDelete: (record) => {
-          setDeleteEntryVisible(true);
+        onEdit: (record) => {
           setSelectedEntry(record);
+          setEntryModalState({ type: "edit", entry: record });
+        },
+        onDelete: (record) => {
+          setSelectedEntry(record);
+          setEntryModalState({ type: "delete", entry: record });
         },
       }),
     [worklogId, worklogEntries, loggedUserData?.jiraLinked, jiraSyncSSE],
@@ -58,13 +78,13 @@ const WorklogTaskEntries = (props: WorklogTaskEntriesProps) => {
   const fetchEntries = useCallback(async () => {
     setIsFetchingEntries(true);
     try {
-      const result = await worklogApis.getWorklogTaskEntries(worklogId!, selectedTask!.taskName);
+      const result = await worklogApis.getWorklogTaskEntries(worklogId, selectedTask.taskName);
       setWorklogEntries(result);
     } catch (error: any) {
       showErrorToast(error);
     }
     setIsFetchingEntries(false);
-  }, [worklogId, selectedTask.taskName]);
+  }, [worklogId, selectedTask.taskName, setWorklogEntries]);
 
   useEffect(() => {
     fetchEntries();
@@ -80,8 +100,8 @@ const WorklogTaskEntries = (props: WorklogTaskEntriesProps) => {
     }
   }, [worklogEntries]);
 
-  const clearDeleteEntryModalFields = () => {
-    setDeleteEntryVisible(false);
+  const clearEntryModalFields = () => {
+    setEntryModalState({ type: null, entry: null });
     setSelectedEntry(null);
   };
 
@@ -105,14 +125,40 @@ const WorklogTaskEntries = (props: WorklogTaskEntriesProps) => {
     }
 
     setIsDeletingEntry(false);
-    clearDeleteEntryModalFields();
+    clearEntryModalFields();
   };
 
   return (
     <>
-      {deleteEntryVisible && (
+      {entryModalState.type === "edit" && (
+        <EditWorklogEntry
+          worklogId={worklogId}
+          taskName={selectedTask.taskName}
+          worklogEntry={entryModalState.entry!}
+          taskEntriesSize={worklogEntries.length}
+          setIsOpen={clearEntryModalFields}
+          jiraLinked={loggedUserData?.jiraLinked ?? false}
+          onBeforeSync={onBeforeSync}
+          onUpdateSuccess={(data) => {
+            onUpdateDetailSuccess(data);
+            if (data.currentTask.isDeleted) {
+              onCloseHandler();
+            }
+            if (data.entry) {
+              if (data.entry.taskChanged) {
+                setWorklogEntries(worklogEntries.filter((e) => e.id !== data.entry!.id));
+              } else {
+                setWorklogEntries(worklogEntries.map((e) => (e.id === data.entry!.id ? data.entry! : e)));
+              }
+            }
+          }}
+          onCloseEntries={onCloseHandler}
+        />
+      )}
+
+      {entryModalState.type === "delete" && (
         <WorkLogModal
-          title={`Delete ${selectedTask?.taskName} Entry`}
+          title={`Delete ${selectedTask.taskName} Entry`}
           properties={{
             open: true,
             centered: true,
@@ -123,7 +169,7 @@ const WorklogTaskEntries = (props: WorklogTaskEntriesProps) => {
             onOk: handleDeleteWorkLogEntry,
             okButtonProps: { loading: isDeletingEntry, disabled: isDeletingEntry, danger: true },
             cancelButtonProps: { disabled: isDeletingEntry },
-            onCancel: clearDeleteEntryModalFields,
+            onCancel: clearEntryModalFields,
           }}
         >
           <DeleteWarning
@@ -163,6 +209,7 @@ const WorklogTaskEntries = (props: WorklogTaskEntriesProps) => {
               getCheckboxProps: (record) => ({
                 disabled:
                   !loggedUserData?.jiraLinked ||
+                  record.status === WORKLOG_STATUS.IN_QUEUE ||
                   record.status === WORKLOG_STATUS.SYNC_IN_PROGRESS ||
                   record.status === WORKLOG_STATUS.UNSYNC_IN_PROGRESS,
               }),

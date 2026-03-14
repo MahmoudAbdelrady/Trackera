@@ -5,6 +5,7 @@ import {
   createWorklogTaskColumns,
   WorklogTaskEntries,
   DeleteWarning,
+  EditWorklogTask,
 } from "../../components";
 import classes from "./scss/worklog-details.module.css";
 import { Empty, Skeleton } from "antd";
@@ -14,12 +15,13 @@ import {
   type WorklogSelection,
   type WorklogStatusType,
   type WorklogTask,
+  type UpdateWorklogDetailResponse,
   JIRA_SYNC_EVENT,
   WORKLOG_STATUS,
 } from "../../shared/types";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { showErrorToast, showSuccessToast } from "../../utils/toast-handler/showToast";
+import { showSuccessToast, showErrorToast } from "../../utils/toast-handler/showToast";
 import { userQueries } from "../../state/queries";
 import buildSyncButtonProps from "../../utils/buildWorklogSyncButtonProps";
 import { useJiraSyncSSE } from "../../shared/hooks";
@@ -41,7 +43,10 @@ const WorklogDetails = () => {
   const [worklogTasks, setWorklogTasks] = useState<WorklogTask[]>([]);
   const [selectedTask, setSelectedTask] = useState<WorklogTask | null>(null);
   const [selectedTaskNames, setSelectedTaskNames] = useState<string[]>([]);
-  const [taskModalState, setTaskModalState] = useState<{ type: "view" | "delete" | null; task: WorklogTask | null }>({
+  const [taskModalState, setTaskModalState] = useState<{
+    type: "edit" | "view" | "delete" | null;
+    task: WorklogTask | null;
+  }>({
     type: null,
     task: null,
   });
@@ -58,6 +63,7 @@ const WorklogDetails = () => {
   // sse subscription
   const hasInProgress = useMemo(() => {
     const inProgressStatuses: WorklogStatusType[] = [
+      WORKLOG_STATUS.IN_QUEUE,
       WORKLOG_STATUS.SYNC_IN_PROGRESS,
       WORKLOG_STATUS.UNSYNC_IN_PROGRESS,
     ];
@@ -114,8 +120,7 @@ const WorklogDetails = () => {
       if (result.isLast) {
         navigate("/");
       } else {
-        fetchWorklogTasks();
-        fetchWorklogInfo();
+        refetchData();
         setSelectedTaskNames([]);
       }
     } catch (error: any) {
@@ -123,7 +128,7 @@ const WorklogDetails = () => {
     }
 
     setIsDeletingTask(false);
-    clearDeleteTaskModalFields();
+    clearTaskModalFields();
   };
 
   const handleWorkLogDeletion = async (selection: WorklogSelection) => {
@@ -177,6 +182,10 @@ const WorklogDetails = () => {
           setSelectedTask(record);
           setTaskModalState({ type: "view", task: record });
         },
+        onEdit: (record) => {
+          setSelectedTask(record);
+          setTaskModalState({ type: "edit", task: record });
+        },
         onDelete: (record) => {
           setTaskModalState({ type: "delete", task: record });
           setSelectedTask(record);
@@ -185,13 +194,59 @@ const WorklogDetails = () => {
     [loggedUserData?.jiraLinked, worklogId, worklogTasks, jiraSyncSSE],
   );
 
-  const clearDeleteTaskModalFields = () => {
+  const refetchData = () => {
+    fetchWorklogInfo();
+    fetchWorklogTasks();
+  };
+
+  const handleUpdateDetailSuccess = (data: UpdateWorklogDetailResponse) => {
+    setWorklogInfo(data.worklogInfo);
+    setWorklogTasks((prev) => {
+      let updated = prev;
+      if (data.currentTask.isDeleted && data.newTask) {
+        const newTaskExists = updated.some((t) => t.taskName === data.newTask.taskName);
+        if (newTaskExists) {
+          updated = updated
+            .filter((t) => t.taskName !== data.currentTask.taskName)
+            .map((t) => (t.taskName === data.newTask.taskName ? { ...data.newTask } : t));
+        } else {
+          updated = updated.map((t) => (t.taskName === data.currentTask.taskName ? { ...data.newTask } : t));
+        }
+      } else if (data.currentTask.isDeleted) {
+        updated = updated.filter((t) => t.taskName !== data.currentTask.taskName);
+      } else {
+        updated = updated.map((t) => (t.taskName === data.currentTask.taskName ? { ...data.currentTask } : t));
+        if (data.newTask) {
+          const newTaskExists = updated.some((t) => t.taskName === data.newTask.taskName);
+          if (newTaskExists) {
+            updated = updated.map((t) => (t.taskName === data.newTask.taskName ? { ...data.newTask } : t));
+          } else {
+            updated = [...updated, { ...data.newTask }];
+          }
+        }
+      }
+      return updated;
+    });
+  };
+
+  const clearTaskModalFields = () => {
     setTaskModalState({ type: null, task: null });
     setSelectedTask(null);
   };
 
   return (
     <>
+      {taskModalState.type === "edit" && (
+        <EditWorklogTask
+          worklogId={worklogId!}
+          worklogTask={selectedTask!}
+          setIsOpen={() => clearTaskModalFields()}
+          jiraLinked={loggedUserData?.jiraLinked ?? false}
+          onBeforeSync={() => jiraSyncSSE.startListening()}
+          onUpdateSuccess={handleUpdateDetailSuccess}
+        />
+      )}
+
       {taskModalState.type === "view" && (
         <WorklogTaskEntries
           loggedUserData={loggedUserData!}
@@ -199,10 +254,9 @@ const WorklogDetails = () => {
           selectedTask={selectedTask!}
           worklogEntries={worklogEntries}
           setWorklogEntries={setWorklogEntries}
-          refetchData={() => {
-            fetchWorklogInfo();
-            fetchWorklogTasks();
-          }}
+          refetchData={refetchData}
+          onBeforeSync={() => jiraSyncSSE.startListening()}
+          onUpdateDetailSuccess={handleUpdateDetailSuccess}
           jiraSyncSSE={jiraSyncSSE}
           onCloseHandler={() => {
             setSelectedTask(null);
@@ -213,7 +267,7 @@ const WorklogDetails = () => {
 
       {taskModalState.type === "delete" && (
         <WorklogModal
-          title={`Delete ${selectedTask?.taskName} Task Log`}
+          title={`Delete ${selectedTask!.taskName} Task Log`}
           properties={{
             open: true,
             centered: true,
@@ -224,7 +278,7 @@ const WorklogDetails = () => {
             onOk: handleDeleteWorkLogTask,
             okButtonProps: { loading: isDeletingTask, disabled: isDeletingTask, danger: true },
             cancelButtonProps: { disabled: isDeletingTask },
-            onCancel: clearDeleteTaskModalFields,
+            onCancel: clearTaskModalFields,
           }}
         >
           <DeleteWarning
@@ -263,6 +317,7 @@ const WorklogDetails = () => {
                       getCheckboxProps: (record) => ({
                         disabled:
                           !loggedUserData?.jiraLinked ||
+                          record.status === WORKLOG_STATUS.IN_QUEUE ||
                           record.status === WORKLOG_STATUS.SYNC_IN_PROGRESS ||
                           record.status === WORKLOG_STATUS.UNSYNC_IN_PROGRESS,
                       }),

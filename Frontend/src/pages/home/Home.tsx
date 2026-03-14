@@ -40,7 +40,9 @@ const Home = () => {
     () =>
       worklogsResponse?.content.some(
         (worklog) =>
-          worklog.status === WORKLOG_STATUS.SYNC_IN_PROGRESS || worklog.status === WORKLOG_STATUS.UNSYNC_IN_PROGRESS,
+          worklog.status === WORKLOG_STATUS.IN_QUEUE ||
+          worklog.status === WORKLOG_STATUS.SYNC_IN_PROGRESS ||
+          worklog.status === WORKLOG_STATUS.UNSYNC_IN_PROGRESS,
       ) ?? false,
     [worklogsResponse?.content],
   );
@@ -126,8 +128,19 @@ const Home = () => {
       {manageWorklogVisible && (
         <ManageWorklogModal
           setIsOpen={setManageWorklogVisible}
-          refreshWorklogData={() => {
-            fetchWorklogs();
+          onBeforeSync={() => jiraSyncSSE.startListening()}
+          refreshWorklogData={(updatedWorklog?: Worklog) => {
+            if (updatedWorklog) {
+              setWorklogsResponse((prev) => {
+                if (!prev) return prev;
+                return {
+                  ...prev,
+                  content: prev.content.map((w) => (w.id === updatedWorklog.id ? updatedWorklog : w)),
+                };
+              });
+            } else {
+              fetchWorklogs();
+            }
             fetchWorklogSummary();
           }}
           selectedWorklog={selectedWorklog}

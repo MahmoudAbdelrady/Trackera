@@ -26,6 +26,7 @@ const WorklogActionButtons = (props: ActionButtonsProps) => {
   const { record, jiraLinked, viewLink, syncParams, jiraSyncSSE, onEdit, onView, onDelete } = props;
 
   const isSynced = record.status === WORKLOG_STATUS.SYNCED;
+  const isInQueue = record.status === WORKLOG_STATUS.IN_QUEUE;
   const isSyncing = record.status === WORKLOG_STATUS.SYNC_IN_PROGRESS;
   const isUnsyncing = record.status === WORKLOG_STATUS.UNSYNC_IN_PROGRESS;
 
@@ -43,7 +44,7 @@ const WorklogActionButtons = (props: ActionButtonsProps) => {
   };
 
   const isRequestingSyncForThisRecord = jiraSyncSSE.isRequestingSync && isSyncingCurrentRecord();
-  const syncInProgress = isSyncing || isUnsyncing || isRequestingSyncForThisRecord;
+  const syncInProgress = isInQueue || isSyncing || isUnsyncing || isRequestingSyncForThisRecord;
   const isDisabled = !jiraLinked || syncInProgress;
 
   const getTooltipTitle = () => {
@@ -75,7 +76,13 @@ const WorklogActionButtons = (props: ActionButtonsProps) => {
 
       {onEdit && (
         <Tooltip title="Edit">
-          <SquarePen onClick={onEdit} className={`${classes.log_action_btn} ${classes.edit}`} />
+          <Button
+            type="text"
+            icon={<SquarePen />}
+            onClick={onEdit}
+            className={`${classes.log_action_btn} ${classes.edit} ${syncInProgress && classes.disabled}`}
+            disabled={syncInProgress}
+          />
         </Tooltip>
       )}
 
