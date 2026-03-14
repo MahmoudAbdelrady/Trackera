@@ -13,6 +13,7 @@ import Tooltip from "antd/es/tooltip";
 import { Form, Switch, TimePicker } from "antd";
 import classes from "./scss/edit-worklog-entry.module.css";
 import { worklogApis } from "../../../state/api";
+import { TIME_12H_FORMAT } from "../../../shared/constants";
 import { showErrorToast, showSuccessToast } from "../../../utils/toast-handler/showToast";
 
 interface EditWorklogEntryProps {
@@ -53,8 +54,8 @@ const EditWorklogEntry = (props: EditWorklogEntryProps) => {
   const editWorklogEntryFormik = useFormik<EditWorklogEntryFormValues>({
     initialValues: {
       taskName: taskName,
-      startTime: dayjs(worklogEntry.fromTime, "h:mm A"),
-      endTime: dayjs(worklogEntry.toTime, "h:mm A"),
+      startTime: dayjs(worklogEntry.fromTime, TIME_12H_FORMAT),
+      endTime: dayjs(worklogEntry.toTime, TIME_12H_FORMAT),
       duration: worklogEntry.duration,
       description: worklogEntry.description,
       syncToJira: false,
@@ -73,8 +74,8 @@ const EditWorklogEntry = (props: EditWorklogEntryProps) => {
           syncToJira: values.syncToJira,
           newData: {
             name: values.taskName,
-            startTime: values.startTime?.format("h:mm A"),
-            endTime: values.endTime?.format("h:mm A"),
+            startTime: values.startTime?.format(TIME_12H_FORMAT),
+            endTime: values.endTime?.format(TIME_12H_FORMAT),
             duration: values.duration,
             description: values.description,
           },
@@ -152,7 +153,7 @@ const EditWorklogEntry = (props: EditWorklogEntryProps) => {
           >
             <span className={classes.label}>Start time:</span>
             <TimePicker
-              format="h:mm A"
+              format={TIME_12H_FORMAT}
               name="startTime"
               value={editWorklogEntryFormik.values.startTime}
               placeholder="Select start time"
@@ -173,7 +174,7 @@ const EditWorklogEntry = (props: EditWorklogEntryProps) => {
           >
             <span className={classes.label}>End time:</span>
             <TimePicker
-              format="h:mm A"
+              format={TIME_12H_FORMAT}
               name="endTime"
               value={editWorklogEntryFormik.values.endTime}
               placeholder="Select end time"
