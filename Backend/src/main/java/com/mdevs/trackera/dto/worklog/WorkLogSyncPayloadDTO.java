@@ -46,4 +46,8 @@ public class WorkLogSyncPayloadDTO {
     public boolean hasWork() {
         return !getDetailsToSync().isEmpty() || !getDetailsToUnsync().isEmpty() || !getDetailsToReSync().isEmpty();
     }
+
+    public boolean isWorkLogDeletion() {
+        return getDetailsToUnsync().stream().anyMatch(d -> d.getDetailId() == null);
+    }
 }

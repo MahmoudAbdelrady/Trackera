@@ -51,6 +51,12 @@ public class BackgroundJobService {
     }
 
     @Transactional
+    public void updateJobPayload(BackgroundJob job, String payload) {
+        job.setPayload(payload);
+        backgroundJobRepository.save(job);
+    }
+
+    @Transactional
     public long deleteFinishedJobs(long maxId, int pageSize) {
         List<Long> finishedJobsIds = backgroundJobRepository
                 .findByStatusInAndIdAfterOrderById(List.of(BackgroundJobStatus.COMPLETED, BackgroundJobStatus.FAILED), maxId, Pageable.ofSize(pageSize));

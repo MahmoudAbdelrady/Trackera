@@ -322,6 +322,24 @@ public class WorkLogService {
     //</editor-fold>
 
     //<editor-fold desc="Jira Synchronization">
+    public WorkLogDetail findWorkLogDetailById(Long id) {
+        return workLogDetailRepository.findByIdWithWorkLog(id);
+    }
+
+    public WorkLogStatus calculateTaskStatus(String workLogUuid, String taskName) {
+        return workLogDetailRepository.calculateWorkLogTaskStatus(workLogUuid, taskName);
+    }
+
+    @Transactional
+    public String updateDetailAfterSync(Long detailId, WorkLogStatus status, String jiraId, String syncError) {
+        WorkLogDetail detail = workLogDetailRepository.findOne(detailId);
+        detail.setStatus(status);
+        detail.setJiraId(jiraId);
+        detail.setSyncError(syncError);
+        workLogDetailRepository.save(detail);
+        return detail.getUuid();
+    }
+
     @Transactional
     public void performJiraSync(String uuid, WorkLogSelectionDTO workLogSelectionDTO, WorklogSyncOperation syncOperation) {
         oAuthConnectionService.validateAndGetConnection(AppConfig.getAuthenticatedCurrentUser(), OAuthProvider.JIRA);
@@ -332,6 +350,44 @@ public class WorkLogService {
         workLogRepository.save(workLog);
         handleJiraSyncing(workLog, workLogDetails, syncOperation);
         handleWorkLogSyncNotifications(AppConfig.getAuthenticatedCurrentUser(), workLog, workLogDetails, WorkLogStatus.IN_QUEUE);
+    }
+
+    @Transactional
+    public WorkLog recalculateAndSaveWorkLogStatus(String workLogUuid) {
+        WorkLog workLog = workLogRepository.findByUuid(workLogUuid);
+        workLog.setStatus(workLogRepository.calculateWorkLogStatus(workLog));
+        workLogRepository.save(workLog);
+        return workLog;
+    }
+
+    @Transactional
+    public void handleFailedDetailSync(User user, List<Long> detailIds, WorkLogStatus status, String errorMessage) {
+        List<WorkLogDetail> workLogDetails = workLogDetailRepository.findAllById(detailIds);
+        for (WorkLogDetail workLogDetail : workLogDetails) {
+            workLogDetail.setStatus(status);
+            workLogDetail.setSyncError(errorMessage);
+        }
+        workLogDetailRepository.saveAll(workLogDetails);
+
+        String workLogUuid = workLogDetails.getFirst().getWorkLog().getUuid();
+        List<String> taskNames = workLogDetails.stream().map(WorkLogDetail::getTaskName).distinct().collect(Collectors.toList());
+        List<String> detailUuids = workLogDetails.stream().map(WorkLogDetail::getUuid).distinct().collect(Collectors.toList());
+        sendSyncNotification(user, workLogUuid, WorkLogSyncMessageType.ALL, taskNames, detailUuids, status, errorMessage);
+    }
+
+    @Transactional
+    public void markDetailsForSyncOperation(User user, String workLogUuid, String taskName, List<Long> detailIds, WorklogSyncOperation syncOperation) {
+        if (detailIds.isEmpty())
+            return;
+
+        WorkLogStatus workLogStatus = syncOperation.equals(WorklogSyncOperation.UNSYNC) ? WorkLogStatus.UNSYNC_IN_PROGRESS : WorkLogStatus.SYNC_IN_PROGRESS;
+        List<WorkLogDetail> workLogDetails = workLogDetailRepository.findAllById(detailIds);
+        workLogDetails.forEach(detail -> detail.setStatus(workLogStatus));
+        workLogDetailRepository.saveAll(workLogDetails);
+        recalculateAndSaveWorkLogStatus(workLogUuid);
+
+        List<String> detailUuids = workLogDetails.stream().map(WorkLogDetail::getUuid).toList();
+        sendSyncNotification(user, workLogUuid, WorkLogSyncMessageType.ALL, List.of(taskName), detailUuids, workLogStatus, null);
     }
     //</editor-fold>
 
@@ -595,11 +651,16 @@ public class WorkLogService {
     }
 
     private void handleWorkLogSyncNotifications(User syncUser, WorkLog workLog, List<WorkLogDetail> workLogDetails, WorkLogStatus status) {
-        Set<String> taskNames = workLogDetails.stream().map(WorkLogDetail::getTaskName).collect(Collectors.toSet());
-        Set<String> detailIds = workLogDetails.stream().map(WorkLogDetail::getUuid).collect(Collectors.toSet());
+        List<String> taskNames = new ArrayList<>(workLogDetails.stream().map(WorkLogDetail::getTaskName).collect(Collectors.toSet()));
+        List<String> detailIds = new ArrayList<>(workLogDetails.stream().map(WorkLogDetail::getUuid).collect(Collectors.toSet()));
+        sendSyncNotification(syncUser, workLog.getUuid(), WorkLogSyncMessageType.ALL, taskNames, detailIds, status, null);
+    }
 
-        WorkLogSyncMessageDTO syncMessageDTO = new WorkLogSyncMessageDTO(WorkLogSyncMessageType.ALL, workLog.getUuid(), new ArrayList<>(taskNames), new ArrayList<>(detailIds), status, null);
-        notificationService.sendNotification(new NotificationDTO(syncUser.getUuid(), WORKLOG_SYNC_STATUS_EVENT_NAME, syncMessageDTO));
+    public void sendSyncNotification(User user, String workLogUuid, WorkLogSyncMessageType type,
+                                     List<String> taskNames, List<String> entryIds,
+                                     WorkLogStatus status, String error) {
+        WorkLogSyncMessageDTO msg = new WorkLogSyncMessageDTO(type, workLogUuid, taskNames, entryIds, status, error);
+        notificationService.sendNotification(new NotificationDTO(user.getUuid(), WORKLOG_SYNC_STATUS_EVENT_NAME, msg));
     }
 
     private void handleUpdateMetaData(ManageWorkLogDTO manageWorkLogDTO, WorkLog workLog) {
