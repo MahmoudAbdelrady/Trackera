@@ -108,20 +108,20 @@ public class WorkLogSyncJobHandler implements BackgroundJobHandler {
         while (iterator.hasNext()) {
             Map.Entry<String, List<WorkLogDetailSyncRequestDTO>> entry = iterator.next();
             String taskName = entry.getKey();
+            boolean taskHasError = false;
             selfRef.markDetailsForStartingSyncOperation(syncUser, workLogUuid, taskName, entry.getValue().stream().map(WorkLogDetailSyncRequestDTO::getDetailId).filter(Objects::nonNull).toList(), syncOperation);
             for (WorkLogDetailSyncRequestDTO detail : entry.getValue()) {
                 try {
-                    boolean hasError;
                     if (syncOperation.equals(WorklogSyncOperation.RESYNC)) {
                         WorkLogDetailSyncRequestDTO unsyncDto = new WorkLogDetailSyncRequestDTO(detail.getDetailId(), detail.getOldTaskName(), detail.getJiraId());
                         selfRef.unSyncWorkLogDetailFromJira(syncUser, workLogUuid, unsyncDto, true);
-                        hasError = selfRef.syncWorkLogDetailToJira(syncUser, workLogUuid, detail);
+                        taskHasError = selfRef.syncWorkLogDetailToJira(syncUser, workLogUuid, detail);
                     } else if (syncOperation.equals(WorklogSyncOperation.UNSYNC)) {
-                        hasError = selfRef.unSyncWorkLogDetailFromJira(syncUser, workLogUuid, detail, false);
+                        taskHasError = selfRef.unSyncWorkLogDetailFromJira(syncUser, workLogUuid, detail, false);
                     } else {
-                        hasError = selfRef.syncWorkLogDetailToJira(syncUser, workLogUuid, detail);
+                        taskHasError = selfRef.syncWorkLogDetailToJira(syncUser, workLogUuid, detail);
                     }
-                    if (hasError) {
+                    if (taskHasError) {
                         resultDTO.setHasSoftError(true);
                     }
                 } catch (Exception e) {
@@ -138,7 +138,7 @@ public class WorkLogSyncJobHandler implements BackgroundJobHandler {
                 break;
             }
             if (!isDeleteOperation) {
-                handleTasksCountAfterSyncOp(workLogSyncPayloadDTO, syncUser, workLogUuid, taskName, syncOperation, resultDTO.isHasSoftError());
+                handleTasksCountAfterSyncOp(workLogSyncPayloadDTO, syncUser, workLogUuid, taskName, syncOperation, taskHasError);
             }
             iterator.remove();
         }
