@@ -203,17 +203,26 @@ const WorklogDetails = () => {
     setWorklogInfo(data.worklogInfo);
     setWorklogTasks((prev) => {
       let updated = prev;
-      if (data.currentTask.isDeleted) {
+      if (data.currentTask.isDeleted && data.newTask) {
+        const newTaskExists = updated.some((t) => t.taskName === data.newTask.taskName);
+        if (newTaskExists) {
+          updated = updated
+            .filter((t) => t.taskName !== data.currentTask.taskName)
+            .map((t) => (t.taskName === data.newTask.taskName ? { ...data.newTask } : t));
+        } else {
+          updated = updated.map((t) => (t.taskName === data.currentTask.taskName ? { ...data.newTask } : t));
+        }
+      } else if (data.currentTask.isDeleted) {
         updated = updated.filter((t) => t.taskName !== data.currentTask.taskName);
       } else {
         updated = updated.map((t) => (t.taskName === data.currentTask.taskName ? { ...data.currentTask } : t));
-      }
-      if (data.newTask) {
-        const newTaskExists = updated.some((t) => t.taskName === data.newTask.taskName);
-        if (newTaskExists) {
-          updated = updated.map((t) => (t.taskName === data.newTask.taskName ? { ...data.newTask } : t));
-        } else {
-          updated = [...updated, { ...data.newTask }];
+        if (data.newTask) {
+          const newTaskExists = updated.some((t) => t.taskName === data.newTask.taskName);
+          if (newTaskExists) {
+            updated = updated.map((t) => (t.taskName === data.newTask.taskName ? { ...data.newTask } : t));
+          } else {
+            updated = [...updated, { ...data.newTask }];
+          }
         }
       }
       return updated;
