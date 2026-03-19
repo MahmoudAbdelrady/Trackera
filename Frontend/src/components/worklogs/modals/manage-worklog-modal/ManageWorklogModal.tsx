@@ -190,7 +190,7 @@ const ManageWorklogModal = (props: ManageWorklogModalProps) => {
             validateStatus={getFormikFieldStatus(manageWorklogFormik, "logDate")}
             help={getFormikFieldError(manageWorklogFormik, "logDate") as string}
           >
-            <span className={classes.label}>Log date:</span>
+            <span className={`${classes.label} ${classes.required}`}>Log date:</span>
             <DatePicker
               name="logDate"
               value={manageWorklogFormik.values.logDate}
@@ -231,7 +231,7 @@ const ManageWorklogModal = (props: ManageWorklogModalProps) => {
                 validateStatus={getFormikFieldStatus(manageWorklogFormik, "logFile")}
                 help={getFormikFieldError(manageWorklogFormik, "logFile")}
               >
-                <span className={classes.label}>Upload log file:</span>
+                <span className={`${classes.label} ${classes.required}`}>Upload log file:</span>
                 <Dragger
                   className={classes.upload_box}
                   showUploadList={true}

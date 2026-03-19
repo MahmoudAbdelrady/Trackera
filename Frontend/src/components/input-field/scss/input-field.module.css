@@ -8,16 +8,21 @@
 }
 .input_group .input_label {
   font-size: 14px;
-  position: relative;
   margin-bottom: 5px;
 }
-.input_group .input_label::after {
+.input_group .input_label.required {
+  position: relative;
+}
+.input_group .input_label.required::after {
   content: "*";
   color: #dc2626;
   position: absolute;
   right: -10px;
   top: -5px;
   font-size: 15px;
+}
+.input_group .input_label.required {
+  margin-right: 15px;
 }
 .input_group .input_field {
   padding: 10px 12px;

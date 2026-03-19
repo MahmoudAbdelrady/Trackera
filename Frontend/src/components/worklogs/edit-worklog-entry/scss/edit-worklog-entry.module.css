@@ -15,4 +15,18 @@
 }
 .edit_worklog_entry_form .form_group .label {
   margin-right: 10px;
+}
+.edit_worklog_entry_form .form_group .label.required {
+  position: relative;
+}
+.edit_worklog_entry_form .form_group .label.required::after {
+  content: "*";
+  color: #dc2626;
+  position: absolute;
+  right: -10px;
+  top: -5px;
+  font-size: 15px;
+}
+.edit_worklog_entry_form .form_group .label.required {
+  margin-right: 15px;
 }/*# sourceMappingURL=edit-worklog-entry.module.css.map */

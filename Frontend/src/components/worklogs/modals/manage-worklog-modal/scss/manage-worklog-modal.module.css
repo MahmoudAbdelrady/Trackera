@@ -36,6 +36,20 @@
 .worklog_form .form_group .label {
   display: inline-flex;
 }
+.worklog_form .form_group .label.required {
+  position: relative;
+}
+.worklog_form .form_group .label.required::after {
+  content: "*";
+  color: #dc2626;
+  position: absolute;
+  right: -10px;
+  top: -5px;
+  font-size: 15px;
+}
+.worklog_form .form_group .label.required {
+  margin-right: 15px;
+}
 .worklog_form .form_group .upload_box {
   width: 100%;
 }

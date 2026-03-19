@@ -150,7 +150,7 @@ const EditWorklogEntry = (props: EditWorklogEntryProps) => {
             validateStatus={getFormikFieldStatus(editWorklogEntryFormik, "startTime")}
             help={getFormikFieldError(editWorklogEntryFormik, "startTime") as string}
           >
-            <span className={classes.label}>Start time:</span>
+            <span className={`${classes.label} ${classes.required}`}>Start time:</span>
             <TimePicker
               format={TIME_12H_FORMAT}
               name="startTime"
@@ -171,7 +171,7 @@ const EditWorklogEntry = (props: EditWorklogEntryProps) => {
             validateStatus={getFormikFieldStatus(editWorklogEntryFormik, "endTime")}
             help={getFormikFieldError(editWorklogEntryFormik, "endTime") as string}
           >
-            <span className={classes.label}>End time:</span>
+            <span className={`${classes.label} ${classes.required}`}>End time:</span>
             <TimePicker
               format={TIME_12H_FORMAT}
               name="endTime"
@@ -194,6 +194,7 @@ const EditWorklogEntry = (props: EditWorklogEntryProps) => {
             type="text"
             {...getFormikFieldProps(editWorklogEntryFormik, "duration", isLoading)}
             disabled={true}
+            required={false}
             value={editWorklogEntryFormik.values.duration}
           />
         </div>
