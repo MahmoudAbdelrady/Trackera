@@ -71,11 +71,6 @@ jobs:
           ignore-unfixed: true
           exit-code: 1
           format: table
-          output: backend-critical-results.txt
-
-      - name: Display backend critical scan results
-        if: always() && steps.backend_critical_scan.outcome != 'skipped'
-        run: cat backend-critical-results.txt
 
       - name: Fail if backend critical vulnerabilities found
         if: steps.backend_critical_scan.outcome == 'failure'
@@ -150,11 +145,6 @@ jobs:
           ignore-unfixed: true
           exit-code: 1
           format: table
-          output: frontend-critical-results.txt
-
-      - name: Display frontend critical scan results
-        if: always() && steps.frontend_critical_scan.outcome != 'skipped'
-        run: cat frontend-critical-results.txt
 
       - name: Fail if frontend critical vulnerabilities found
         if: steps.frontend_critical_scan.outcome == 'failure'
