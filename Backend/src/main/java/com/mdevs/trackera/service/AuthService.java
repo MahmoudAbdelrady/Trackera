@@ -105,7 +105,7 @@ public class AuthService {
 
             User loggedUser = AppConfig.getAuthenticatedCurrentUser();
             userInvalidTokenService.create(loggedUser, accessToken, accessTokenClaims.getExpiration(), true);
-            if (!StringUtils.isEmpty(refreshToken)) {
+            if (StringUtils.isNotEmpty(refreshToken)) {
                 Claims refreshTokenClaims = jwtUtil.getTokenPayload(refreshToken, false);
                 userInvalidTokenService.create(loggedUser, refreshToken, refreshTokenClaims.getExpiration(), false);
             }
@@ -267,7 +267,7 @@ public class AuthService {
                 clear ? 0 : CookieHelper.getTokenCookieMaxAge(true)
         ));
 
-        if (!StringUtils.isEmpty(refreshToken) || clear) {
+        if (StringUtils.isNotEmpty(refreshToken) || clear) {
             response.addCookie(CookieHelper.create(
                     CookieHelper.REFRESH_TOKEN_COOKIE_NAME,
                     refreshToken,
@@ -277,7 +277,7 @@ public class AuthService {
             ));
         }
 
-        if (!StringUtils.isEmpty(csrfToken) || clear) {
+        if (StringUtils.isNotEmpty(csrfToken) || clear) {
             response.addCookie(CookieHelper.create(
                     CookieHelper.CSRF_COOKIE_NAME,
                     csrfToken,

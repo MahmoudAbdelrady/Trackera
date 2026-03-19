@@ -151,7 +151,7 @@ public class JiraService {
         requestBody.put("started", JIRA_DATE_FORMATTER.format(LocalDateTime.of(workLogDetail.getWorkLog().getWorkDate(), workLogDetail.getStartTime()).atZone(timezoneOptionDTO != null ? ZoneId.of(timezoneOptionDTO.id()) : ZoneId.systemDefault())));
         requestBody.put("timeSpentSeconds", workLogDetail.getDuration() * 60);
 
-        boolean isUpdate = !StringUtils.isEmpty(workLogDetail.getJiraId());
+        boolean isUpdate = StringUtils.isNotEmpty(workLogDetail.getJiraId());
         String apiUrl = getApiUrl(validateAndGetUserJiraPrimaryProject(user)) + "/issue/" + workLogDetail.getTaskName() + "/worklog" + (isUpdate ? ("/" + workLogDetail.getJiraId()) : "");
         OAuthConnection oAuthConnection = oAuthConnectionService.getOrRefresh(user, OAuthProvider.JIRA);
         String accessToken = oAuthConnectionService.getAccessToken(oAuthConnection);

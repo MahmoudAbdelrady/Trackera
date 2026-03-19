@@ -65,7 +65,7 @@ public class WorkLogSyncJobHandler implements BackgroundJobHandler {
 
         backgroundJobService.updateJobPayload(job, JsonUtil.convertObjectToJsonString(payload));
 
-        if (!StringUtils.isEmpty(resultDTO.getHardError())) {
+        if (StringUtils.isNotEmpty(resultDTO.getHardError())) {
             throw new RuntimeException(resultDTO.getHardError());
         }
     }
@@ -98,7 +98,7 @@ public class WorkLogSyncJobHandler implements BackgroundJobHandler {
                     break;
                 }
             }
-            if (!StringUtils.isEmpty(resultDTO.getHardError())) {
+            if (StringUtils.isNotEmpty(resultDTO.getHardError())) {
                 break;
             }
             if (!payload.isWorkLogDeletion()) {

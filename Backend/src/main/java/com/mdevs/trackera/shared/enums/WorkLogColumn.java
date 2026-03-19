@@ -12,8 +12,7 @@ public enum WorkLogColumn implements BaseEnum {
     TASK_NAME("Task Name", 0, String.class),
     FROM_HOUR("From Hour", 1, LocalTime.class),
     TO_HOUR("To Hour", 2, LocalTime.class),
-    DURATION("Duration", 3, String.class),
-    DESCRIPTION("Description", 4, String.class);
+    DESCRIPTION("Description", 3, String.class);
 
     private final String label;
 

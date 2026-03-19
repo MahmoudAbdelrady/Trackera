@@ -69,7 +69,6 @@ interface WorklogDetailNewDataPayload {
   name: string;
   startTime?: string;
   endTime?: string;
-  duration?: string;
   description?: string;
 }
 

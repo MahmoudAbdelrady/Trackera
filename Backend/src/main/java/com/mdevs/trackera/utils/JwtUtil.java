@@ -29,7 +29,7 @@ public class JwtUtil {
 
     public String getToken(HttpServletRequest request, boolean isAccessToken) {
         String token = CookieHelper.extractCookieValue(request, isAccessToken ? CookieHelper.ACCESS_TOKEN_COOKIE_NAME : CookieHelper.REFRESH_TOKEN_COOKIE_NAME);
-        return !StringUtils.isEmpty(token) ? token : null;
+        return StringUtils.isNotEmpty(token) ? token : null;
     }
 
     public String generateToken(String userUuid, boolean isAccessToken) {

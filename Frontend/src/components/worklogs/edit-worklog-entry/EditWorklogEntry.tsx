@@ -76,7 +76,6 @@ const EditWorklogEntry = (props: EditWorklogEntryProps) => {
             name: values.taskName,
             startTime: values.startTime?.format(TIME_12H_FORMAT),
             endTime: values.endTime?.format(TIME_12H_FORMAT),
-            duration: values.duration,
             description: values.description,
           },
         });

@@ -17,7 +17,5 @@ public class WorkLogDetailNewDataDTO {
     @JsonFormat(pattern = "h:mm a")
     private LocalTime endTime;
 
-    private String duration;
-
     private String description;
 }
