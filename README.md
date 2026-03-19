@@ -3,6 +3,7 @@
 Trackera is a web-based worklog tracking and task management tool designed to help teams and individuals monitor tasks, track time, and improve productivity. It integrates with Jira, supports Excel worklog uploads, and offers a modern UI.
 
 📦 **Current Version:** 1.5
+
 🌐 **Live App:** <a href="https://trackera.mdevs.cloud" target="_blank">https://trackera.mdevs.cloud</a>
 
 ---
@@ -154,7 +155,9 @@ See [FRONTEND.md](docs/FRONTEND.md) for:
 ---
 
 ## API
+
 API documentation is available via Swagger UI for interactive API documentation at:
+
 - Production: <a href="https://trackera.mdevs.cloud/api/app-docs/swagger-ui.html" target="_blank">https://trackera.mdevs.cloud/api/app-docs/swagger-ui.html</a>
 - Local: <a href="http://localhost:8080/app-docs/swagger-ui.html" target="_blank">http://localhost:8080/app-docs/swagger-ui.html</a>
 
