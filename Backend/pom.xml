@@ -28,6 +28,7 @@
 	</scm>
 	<properties>
 		<java.version>25</java.version>
+		<jackson-bom.version>2.21.1</jackson-bom.version>
 	</properties>
 	<dependencies>
 		<dependency>
