@@ -218,6 +218,7 @@ public class WorkLogService {
         WorkLogSyncPayloadDTO syncPayload = new WorkLogSyncPayloadDTO(workLog.getUser().getId(), workLog.getUuid());
         prepareSyncPayload(syncPayload, payload, result);
 
+        workLog.setTotalMinutes(workLogDetailRepository.sumDurationByWorkLog(workLog));
         workLog.setStatus(workLogRepository.calculateWorkLogStatus(workLog));
         workLogRepository.save(workLog);
 
