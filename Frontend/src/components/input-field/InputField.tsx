@@ -8,14 +8,15 @@ interface InputFieldProps {
   name: string;
   placeholder?: string;
   value?: string;
-  onChange?: (event: React.ChangeEvent<HTMLInputElement>) => void;
-  onBlur?: (event: React.FocusEvent<HTMLInputElement>) => void;
+  onChange?: (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
+  onBlur?: (event: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
   error?: string;
   disabled?: boolean;
+  required?: boolean;
 }
 
 const InputField = (props: InputFieldProps) => {
-  const { label, icon, type, name, placeholder, value, onChange, onBlur, error, disabled } = props;
+  const { label, icon, type, name, placeholder, value, onChange, onBlur, error, disabled, required = true } = props;
 
   const fieldProps = {
     prefix: <div className={classes.input_icon}>{icon}</div>,
@@ -35,7 +36,7 @@ const InputField = (props: InputFieldProps) => {
 
   return (
     <div className={classes.input_group}>
-      {label && <div className={classes.input_label}>{label}</div>}
+      {label && <div className={`${classes.input_label} ${required ? classes.required : ""}`}>{label}</div>}
 
       <Form.Item
         style={{ marginBottom: 0, width: "100%" }}
@@ -49,6 +50,8 @@ const InputField = (props: InputFieldProps) => {
             onCopy={handlePreventPasswordCopyPaste}
             onPaste={handlePreventPasswordCopyPaste}
           />
+        ) : type === "textarea" ? (
+          <Input.TextArea {...fieldProps} prefix={undefined} rows={5} />
         ) : (
           <Input {...fieldProps} />
         )}

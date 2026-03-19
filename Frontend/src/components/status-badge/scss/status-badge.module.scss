@@ -25,6 +25,10 @@
     background-color: $orangeColorLight;
     color: $orangeColor;
   }
+  &.info {
+    background-color: $cyanColorLight;
+    color: $cyanColor;
+  }
   &.danger {
     background-color: $redColorLight;
     color: $darkRedColor;

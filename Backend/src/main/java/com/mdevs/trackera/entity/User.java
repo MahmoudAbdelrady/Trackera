@@ -56,7 +56,7 @@ public class User extends BaseEntity implements UserDetails {
     }
 
     public boolean isPasswordSet() {
-        return !StringUtils.isEmpty(password);
+        return StringUtils.isNotEmpty(password);
     }
 
     public boolean isEmailLinked(UserEmail email) {

@@ -7,15 +7,10 @@
   width: 100%;
   .input_label {
     font-size: 14px;
-    position: relative;
     margin-bottom: 5px;
-    &::after {
-      content: "*";
-      color: $redColor;
-      position: absolute;
-      right: -10px;
-      top: -5px;
-      font-size: 15px;
+    &.required {
+      @include required-asterisk;
+      margin-right: 15px;
     }
   }
   .input_field {

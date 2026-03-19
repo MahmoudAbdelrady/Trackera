@@ -28,6 +28,10 @@
     }
     .label {
       display: inline-flex;
+      &.required {
+        @include required-asterisk;
+        margin-right: 15px;
+      }
     }
     .upload_box {
       width: 100%;

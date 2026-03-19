@@ -83,6 +83,19 @@
   flex-direction: column;
 }
 
+// required field asterisk
+@mixin required-asterisk {
+  position: relative;
+  &::after {
+    content: "*";
+    color: $redColor;
+    position: absolute;
+    right: -10px;
+    top: -5px;
+    font-size: 15px;
+  }
+}
+
 // functions
 @function scale-color($color, $lightness) {
   @return color.scale($color: $color, $lightness: $lightness);

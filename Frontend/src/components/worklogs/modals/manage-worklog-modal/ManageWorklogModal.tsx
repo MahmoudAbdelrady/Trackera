@@ -14,7 +14,8 @@ import classes from "./scss/manage-worklog-modal.module.css";
 
 interface ManageWorklogModalProps {
   setIsOpen: (isOpen: boolean) => void;
-  refreshWorklogData: () => void;
+  refreshWorklogData: (updatedWorklog?: Worklog) => void;
+  onBeforeSync?: () => void;
   selectedWorklog?: Worklog;
   setSelectedWorklog?: (worklog: Worklog | undefined) => void;
   jiraLinked: boolean;
@@ -30,7 +31,7 @@ interface ManageWorklogFormValues {
 }
 
 const ManageWorklogModal = (props: ManageWorklogModalProps) => {
-  const { jiraLinked, selectedWorklog, setIsOpen, setSelectedWorklog, refreshWorklogData } = props;
+  const { jiraLinked, selectedWorklog, setIsOpen, setSelectedWorklog, refreshWorklogData, onBeforeSync } = props;
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [fileList, setFileList] = useState<UploadFile[]>([]);
   const [worklogFileErrors, setWorklogFileErrors] = useState<WorklogError[]>([]);
@@ -57,12 +58,20 @@ const ManageWorklogModal = (props: ManageWorklogModalProps) => {
     enableReinitialize: true,
     onSubmit: async (values) => {
       setIsLoading(true);
+      if (values.syncToJira) {
+        onBeforeSync?.();
+      }
       try {
         const formData = getFormData(values, isEditMode);
         const result = await worklogApis.updateWorklog(isEditMode ? selectedWorklog!.id : null, formData);
-        showSuccessToast(result);
+        if (isEditMode) {
+          showSuccessToast(result.message);
+          refreshWorklogData(result.worklog);
+        } else {
+          showSuccessToast(result);
+          refreshWorklogData();
+        }
         handleModalClose();
-        refreshWorklogData();
       } catch (error: any) {
         if (error.response?.data.isError) {
           showErrorToast(error.response?.data.message);
@@ -77,8 +86,7 @@ const ManageWorklogModal = (props: ManageWorklogModalProps) => {
   });
 
   const handleFileUpload = (file: File | null) => {
-    manageWorklogFormik.setFieldValue("logFile", file);
-    manageWorklogFormik.setFieldTouched("logFile", true, false);
+    manageWorklogFormik.setFieldValue("logFile", file, true);
   };
 
   const handleFileDrop = (event: React.DragEvent<HTMLDivElement>) => {
@@ -111,7 +119,7 @@ const ManageWorklogModal = (props: ManageWorklogModalProps) => {
       "worklogInfo",
       new Blob([JSON.stringify(worklogValues)], {
         type: "application/json",
-      })
+      }),
     );
     return formData;
   };
@@ -181,7 +189,7 @@ const ManageWorklogModal = (props: ManageWorklogModalProps) => {
             validateStatus={getFormikFieldStatus(manageWorklogFormik, "logDate")}
             help={getFormikFieldError(manageWorklogFormik, "logDate") as string}
           >
-            <span className={classes.label}>Log date:</span>
+            <span className={`${classes.label} ${classes.required}`}>Log date:</span>
             <DatePicker
               name="logDate"
               value={manageWorklogFormik.values.logDate}
@@ -222,7 +230,7 @@ const ManageWorklogModal = (props: ManageWorklogModalProps) => {
                 validateStatus={getFormikFieldStatus(manageWorklogFormik, "logFile")}
                 help={getFormikFieldError(manageWorklogFormik, "logFile")}
               >
-                <span className={classes.label}>Upload log file:</span>
+                <span className={`${classes.label} ${classes.required}`}>Upload log file:</span>
                 <Dragger
                   className={classes.upload_box}
                   showUploadList={true}

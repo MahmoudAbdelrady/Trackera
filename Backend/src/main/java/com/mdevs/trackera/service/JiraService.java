@@ -18,7 +18,6 @@ import com.mdevs.trackera.shared.enums.OAuthProvider;
 import com.mdevs.trackera.shared.DurationFormatter;
 import com.mdevs.trackera.shared.exceptions.types.JiraException;
 import com.mdevs.trackera.shared.exceptions.types.NotFoundException;
-import com.mdevs.trackera.utils.DateTimeUtil;
 import com.mdevs.trackera.utils.JsonUtil;
 import com.mdevs.trackera.utils.HttpUtil;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +30,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
 
 import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -67,7 +67,7 @@ public class JiraService {
         oAuthConnectionService.validateAndGetConnection(currentUser, OAuthProvider.JIRA);
 
         String cacheKey = USER_JIRA_TASKS_CACHE_KEY_PREFIX + currentUser.getId();
-        LocalDateTime now = LocalDateTime.now();
+        Instant now = Instant.now();
 
         Map<String, Object> cachedData = cacheService.get(cacheKey, Map.class);
         boolean shouldFetch = shouldFetchTasks(cachedData, now, forceUpdate);
@@ -116,11 +116,11 @@ public class JiraService {
         }
     }
 
-    private Map<String, Object> fetchAndCacheTasks(User user, String cacheKey, LocalDateTime now) {
+    private Map<String, Object> fetchAndCacheTasks(User user, String cacheKey, Instant now) {
         List<JiraTaskDTO> jiraTasks = getTasksFromJira(user);
         List<JiraTaskDTO> currentTasks = jiraTasks.stream().filter(task -> !task.isResolved()).toList();
         List<JiraTaskDTO> overestimatedTasks = jiraTasks.stream().filter(task -> task.timeTracking().evaluation() == JiraTaskEvaluation.OVERESTIMATED).toList();
-        String lastUpdated = DateTimeUtil.getSimpleDateTimeFormatter().format(now);
+        String lastUpdated = now.toString();
 
         Map<String, Object> allTasks = new HashMap<>();
         allTasks.put("currentTasks", Map.of("total", currentTasks.size(), "data", currentTasks));
@@ -135,11 +135,11 @@ public class JiraService {
         return result;
     }
 
-    private boolean shouldFetchTasks(Map<String, Object> cachedData, LocalDateTime now, boolean forceUpdate) {
+    private boolean shouldFetchTasks(Map<String, Object> cachedData, Instant now, boolean forceUpdate) {
         if (cachedData == null || forceUpdate) return true;
 
-        LocalDateTime lastUpdated = LocalDateTime.parse(cachedData.get("lastUpdated").toString(), DateTimeUtil.getSimpleDateTimeFormatter());
-        return lastUpdated.isBefore(now.minusHours(JIRA_TASKS_FETCH_HOURS_DURATION));
+        Instant lastUpdated = Instant.parse(cachedData.get("lastUpdated").toString());
+        return lastUpdated.isBefore(now.minus(Duration.ofHours(JIRA_TASKS_FETCH_HOURS_DURATION)));
     }
     //</editor-fold>
 
@@ -151,7 +151,7 @@ public class JiraService {
         requestBody.put("started", JIRA_DATE_FORMATTER.format(LocalDateTime.of(workLogDetail.getWorkLog().getWorkDate(), workLogDetail.getStartTime()).atZone(timezoneOptionDTO != null ? ZoneId.of(timezoneOptionDTO.id()) : ZoneId.systemDefault())));
         requestBody.put("timeSpentSeconds", workLogDetail.getDuration() * 60);
 
-        boolean isUpdate = !StringUtils.isEmpty(workLogDetail.getJiraId());
+        boolean isUpdate = StringUtils.isNotEmpty(workLogDetail.getJiraId());
         String apiUrl = getApiUrl(validateAndGetUserJiraPrimaryProject(user)) + "/issue/" + workLogDetail.getTaskName() + "/worklog" + (isUpdate ? ("/" + workLogDetail.getJiraId()) : "");
         OAuthConnection oAuthConnection = oAuthConnectionService.getOrRefresh(user, OAuthProvider.JIRA);
         String accessToken = oAuthConnectionService.getAccessToken(oAuthConnection);

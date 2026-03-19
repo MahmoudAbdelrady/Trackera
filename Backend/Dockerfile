@@ -21,7 +21,7 @@ COPY src src
 RUN ./mvnw clean package -DskipTests
 
 # Run stage
-FROM amazoncorretto:25-alpine
+FROM eclipse-temurin:25-jre-alpine
 
 WORKDIR /app
 

@@ -2,6 +2,7 @@ package com.mdevs.trackera.controller;
 
 import com.mdevs.trackera.dto.worklog.*;
 import com.mdevs.trackera.service.WorkLogService;
+import com.mdevs.trackera.shared.enums.WorklogSyncOperation;
 import com.mdevs.trackera.shared.annotations.RateLimited;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -40,7 +41,7 @@ public class WorkLogController {
     @PutMapping("/{uuid}")
     public ResponseEntity<?> updateWorkLog(@PathVariable String uuid, @RequestPart(name = "worklogInfo") @Valid ManageWorkLogDTO manageWorkLogDTO, @RequestPart(required = false) MultipartFile file) {
         Map<String, Object> result = workLogService.updateWorkLog(uuid, manageWorkLogDTO, file);
-        return result.containsKey("isError") ? new ResponseEntity<>(result, HttpStatus.BAD_REQUEST) : new ResponseEntity<>(result.get("message"), HttpStatus.OK);
+        return new ResponseEntity<>(result, result.containsKey("isError") ? HttpStatus.BAD_REQUEST : HttpStatus.OK);
     }
 
     @DeleteMapping("/{uuid}")
@@ -63,10 +64,15 @@ public class WorkLogController {
         return new ResponseEntity<>(workLogService.getWorkLogTaskEntries(uuid, taskName), HttpStatus.OK);
     }
 
+    @PutMapping("/{uuid}/details")
+    public ResponseEntity<UpdateWorkLogDetailResponseDTO> updateWorkLogDetail(@PathVariable String uuid, @RequestBody @Valid UpdateWorkLogDetailPayloadDTO payload) {
+        return new ResponseEntity<>(workLogService.updateWorkLogDetail(uuid, payload), HttpStatus.OK);
+    }
+
     @RateLimited(permitsPerMinute = 60)
     @PostMapping("/{uuid}/sync")
-    public ResponseEntity<String> syncWorkLog(@PathVariable String uuid, @RequestBody(required = false) WorkLogSelectionDTO workLogSelectionDTO, @RequestParam(required = false, defaultValue = "true") boolean sync) {
-        workLogService.performJiraSync(uuid, workLogSelectionDTO, sync);
-        return new ResponseEntity<>((sync ? "Sync" : "Unsync") + " request initiated successfully", HttpStatus.OK);
+    public ResponseEntity<String> syncWorkLog(@PathVariable String uuid, @RequestBody(required = false) WorkLogSelectionDTO workLogSelectionDTO, @RequestParam(required = false, defaultValue = "SYNC") WorklogSyncOperation operation) {
+        workLogService.performJiraSync(uuid, workLogSelectionDTO, operation);
+        return new ResponseEntity<>(operation.getLabel() + " request initiated successfully", HttpStatus.OK);
     }
 }

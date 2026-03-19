@@ -14,22 +14,40 @@ import java.util.List;
 public class WorkLogSyncPayloadDTO {
     private Long userId;
 
-    private Long workLogId;
+    private String workLogUuid;
 
     private List<WorkLogDetailSyncRequestDTO> detailsToSync;
 
     private List<WorkLogDetailSyncRequestDTO> detailsToUnsync;
 
+    private List<WorkLogDetailSyncRequestDTO> detailsToReSync;
+
     public WorkLogSyncPayloadDTO(Long userId) {
         this.userId = userId;
     }
 
-    public WorkLogSyncPayloadDTO(Long userId, Long workLogId) {
+    public WorkLogSyncPayloadDTO(Long userId, String workLogUuid) {
         this.userId = userId;
-        this.workLogId = workLogId;
+        this.workLogUuid = workLogUuid;
+    }
+
+    public List<WorkLogDetailSyncRequestDTO> getDetailsToSync() {
+        return detailsToSync != null ? detailsToSync : List.of();
+    }
+
+    public List<WorkLogDetailSyncRequestDTO> getDetailsToUnsync() {
+        return detailsToUnsync != null ? detailsToUnsync : List.of();
+    }
+
+    public List<WorkLogDetailSyncRequestDTO> getDetailsToReSync() {
+        return detailsToReSync != null ? detailsToReSync : List.of();
     }
 
     public boolean hasWork() {
-        return (detailsToSync != null && !detailsToSync.isEmpty()) || (detailsToUnsync != null && !detailsToUnsync.isEmpty());
+        return !getDetailsToSync().isEmpty() || !getDetailsToUnsync().isEmpty() || !getDetailsToReSync().isEmpty();
+    }
+
+    public boolean isWorkLogDeletion() {
+        return getDetailsToUnsync().stream().anyMatch(d -> d.getDetailId() == null);
     }
 }

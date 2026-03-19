@@ -62,7 +62,7 @@ public class SecurityTokenService {
         }
 
         SecurityToken securityToken = new SecurityToken(builder.getUser(), builder.getType());
-        if (!StringUtils.isEmpty(builder.getAdditionalInfo())) {
+        if (StringUtils.isNotEmpty(builder.getAdditionalInfo())) {
             securityToken.setAdditionalInfo(builder.getAdditionalInfo());
         }
         securityTokenRepository.save(securityToken);

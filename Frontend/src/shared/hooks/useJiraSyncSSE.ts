@@ -6,6 +6,8 @@ import { useSSEContext } from "./useSSEContext";
 
 export interface JiraSyncSSEReturn {
   triggerSync: (payload: SyncPayload) => void;
+  startListening: () => void;
+  stopListening: () => void;
   isRequestingSync: boolean;
   activeSyncPayload: SyncPayload | null;
 }
@@ -76,6 +78,17 @@ export const useJiraSyncSSE = ({ hasInProgress, onStatusEvent }: JiraSyncSSEOpti
     forceConnect();
   };
 
+  const startListening = () => {
+    setSseAck(false);
+    setWantsSSE(true);
+    forceConnect();
+  };
+
+  const stopListening = () => {
+    setWantsSSE(false);
+    allowDisconnect();
+  };
+
   const fireSync = async (payload: SyncPayload) => {
     setSyncRequested(true);
     try {
@@ -90,6 +103,8 @@ export const useJiraSyncSSE = ({ hasInProgress, onStatusEvent }: JiraSyncSSEOpti
 
   return {
     triggerSync,
+    startListening,
+    stopListening,
     isRequestingSync: isConnecting || syncRequested,
     activeSyncPayload: isConnecting || syncRequested ? pendingSyncPayload : null,
   };

@@ -94,7 +94,6 @@ public class FileHandler {
                 columns.put(WorkLogColumn.TASK_NAME, getCellValueAsString(row.getCell(WorkLogColumn.TASK_NAME.getIndex())));
                 columns.put(WorkLogColumn.FROM_HOUR, getCellValueAsString(row.getCell(WorkLogColumn.FROM_HOUR.getIndex())));
                 columns.put(WorkLogColumn.TO_HOUR, getCellValueAsString(row.getCell(WorkLogColumn.TO_HOUR.getIndex())));
-                columns.put(WorkLogColumn.DURATION, getCellValueAsString(row.getCell(WorkLogColumn.DURATION.getIndex())));
                 columns.put(WorkLogColumn.DESCRIPTION, getCellValueAsString(row.getCell(WorkLogColumn.DESCRIPTION.getIndex())));
 
                 rows.add(columns);
@@ -128,7 +127,6 @@ public class FileHandler {
                 columns.put(WorkLogColumn.TASK_NAME, getAndNormalizeCsvCell(record, WorkLogColumn.TASK_NAME.getIndex()));
                 columns.put(WorkLogColumn.FROM_HOUR, getAndNormalizeCsvCell(record, WorkLogColumn.FROM_HOUR.getIndex()));
                 columns.put(WorkLogColumn.TO_HOUR, getAndNormalizeCsvCell(record, WorkLogColumn.TO_HOUR.getIndex()));
-                columns.put(WorkLogColumn.DURATION, getAndNormalizeCsvCell(record, WorkLogColumn.DURATION.getIndex()));
                 columns.put(WorkLogColumn.DESCRIPTION, getAndNormalizeCsvCell(record, WorkLogColumn.DESCRIPTION.getIndex()));
 
                 rows.add(columns);
