@@ -86,8 +86,7 @@ const ManageWorklogModal = (props: ManageWorklogModalProps) => {
   });
 
   const handleFileUpload = (file: File | null) => {
-    manageWorklogFormik.setFieldValue("logFile", file);
-    manageWorklogFormik.setFieldTouched("logFile", true, false);
+    manageWorklogFormik.setFieldValue("logFile", file, true);
   };
 
   const handleFileDrop = (event: React.DragEvent<HTMLDivElement>) => {
@@ -120,7 +119,7 @@ const ManageWorklogModal = (props: ManageWorklogModalProps) => {
       "worklogInfo",
       new Blob([JSON.stringify(worklogValues)], {
         type: "application/json",
-      })
+      }),
     );
     return formData;
   };
