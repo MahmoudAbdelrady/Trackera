@@ -190,7 +190,7 @@ public class WorkLogService {
         if (!detailsToSync.isEmpty()) {
             workLog.setStatus(WorkLogStatus.IN_QUEUE);
             markDetailsForSync(new ArrayList<>(detailsToSync));
-            List<WorkLogDetailSyncRequestDTO> detailSyncRequests = detailsToSync.stream().map(detail -> new WorkLogDetailSyncRequestDTO(detail.getId(), detail.getTaskName(), null)).toList();
+            List<WorkLogDetailSyncRequestDTO> detailSyncRequests = detailsToSync.stream().map(detail -> new WorkLogDetailSyncRequestDTO(detail.getId(), detail.getTaskName(), detail.getJiraId())).toList();
             workLogSyncPayloadDTO.setDetailsToSync(detailSyncRequests);
 
             WorkLogSyncMessageDTO syncMessageDTO = new WorkLogSyncMessageDTO(WorkLogSyncMessageType.WORKLOG, workLog.getUuid(), null, null, workLog.getStatus(), null);
@@ -732,7 +732,7 @@ public class WorkLogService {
             }
             if (!syncOnlyDetails.isEmpty()) {
                 syncPayload.setDetailsToSync(syncOnlyDetails.stream()
-                        .map(detail -> new WorkLogDetailSyncRequestDTO(detail.getId(), detail.getTaskName(), null))
+                        .map(detail -> new WorkLogDetailSyncRequestDTO(detail.getId(), detail.getTaskName(), detail.getJiraId()))
                         .toList());
             }
         } else if (!result.getDetailsToUnsync().isEmpty()) {
