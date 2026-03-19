@@ -9,6 +9,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { userQueries } from "../../state/queries";
 import { jiraApis } from "../../state/api";
 import { AppLayout } from "../../layouts";
+import dayjs from "dayjs";
 
 type JiraTaskEvaluationType = "ON_TIME" | "OVERESTIMATED";
 
@@ -192,7 +193,7 @@ const JiraTasks = () => {
             <Button icon={<RefreshCw />} onClick={() => fetchJiraTasks(true)}>
               Refresh
             </Button>
-            {lastUpdated && <div className={classes.last_refresh}>Last Updated: {lastUpdated}</div>}
+            {lastUpdated && <div className={classes.last_refresh}>Last Updated: {dayjs(lastUpdated).format("YYYY-MM-DD hh:mm:ss A")}</div>}
           </div>
           <div className={classes.jira_tasks_container}>
             <Tabs defaultActiveKey="1" items={items} />

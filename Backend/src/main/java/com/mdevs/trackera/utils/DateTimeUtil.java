@@ -16,7 +16,6 @@ public final class DateTimeUtil {
 
     private static final DateTimeFormatter DATE_TIME_12H_FORMATTER = DateTimeFormatter.ofPattern("h:mm a");
     private static final DateTimeFormatter COMPACTED_DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd");
-    private static final DateTimeFormatter SIMPLE_DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     private DateTimeUtil() {}
 
@@ -26,10 +25,6 @@ public final class DateTimeUtil {
 
     public static DateTimeFormatter getCompactedDateFormatter() {
         return COMPACTED_DATE_FORMATTER;
-    }
-
-    public static DateTimeFormatter getSimpleDateTimeFormatter() {
-        return SIMPLE_DATE_TIME_FORMATTER;
     }
 
     public static LocalDateTime convertDateToLocalDateTime(Date date) {
