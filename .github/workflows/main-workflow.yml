@@ -62,13 +62,24 @@ jobs:
 
       # Blocking scan
       - name: Backend security scan (critical)
+        id: backend_critical_scan
         uses: aquasecurity/trivy-action@0.33.1
+        continue-on-error: true
         with:
           image-ref: ${{ steps.tags.outputs.scan_tag }}
           severity: HIGH,CRITICAL
           ignore-unfixed: true
           exit-code: 1
           format: table
+          output: backend-critical-results.txt
+
+      - name: Display backend critical scan results
+        if: always() && steps.backend_critical_scan.outcome != 'skipped'
+        run: cat backend-critical-results.txt
+
+      - name: Fail if backend critical vulnerabilities found
+        if: steps.backend_critical_scan.outcome == 'failure'
+        run: exit 1
 
       - name: Push backend image
         uses: docker/build-push-action@v6
@@ -130,13 +141,24 @@ jobs:
 
       # Blocking scan
       - name: Frontend security scan (critical)
+        id: frontend_critical_scan
         uses: aquasecurity/trivy-action@0.33.1
+        continue-on-error: true
         with:
           image-ref: ${{ steps.tags.outputs.scan_tag }}
           severity: HIGH,CRITICAL
           ignore-unfixed: true
           exit-code: 1
           format: table
+          output: frontend-critical-results.txt
+
+      - name: Display frontend critical scan results
+        if: always() && steps.frontend_critical_scan.outcome != 'skipped'
+        run: cat frontend-critical-results.txt
+
+      - name: Fail if frontend critical vulnerabilities found
+        if: steps.frontend_critical_scan.outcome == 'failure'
+        run: exit 1
 
       - name: Push frontend image
         uses: docker/build-push-action@v6
