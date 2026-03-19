@@ -2,6 +2,7 @@
 
 Trackera is a web-based worklog tracking and task management tool designed to help teams and individuals monitor tasks, track time, and improve productivity. It integrates with Jira, supports Excel worklog uploads, and offers a modern UI.
 
+📦 **Current Version:** 1.5
 🌐 **Live App:** <a href="https://trackera.mdevs.cloud" target="_blank">https://trackera.mdevs.cloud</a>
 
 ---
