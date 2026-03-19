@@ -40,12 +40,11 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.text.DecimalFormat;
 import java.time.DayOfWeek;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.*;
 import java.util.function.Function;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -69,8 +68,6 @@ public class WorkLogService {
 
     @PersistenceContext
     private EntityManager entityManager;
-
-    private static final Pattern DURATION_PATTERN = Pattern.compile("(?:(\\d+)h)?\\s*(?:(\\d+)m)?");
 
     public static final String WORKLOG_SYNC_STATUS_EVENT_NAME = "worklog-sync-status";
 
@@ -221,6 +218,7 @@ public class WorkLogService {
         WorkLogSyncPayloadDTO syncPayload = new WorkLogSyncPayloadDTO(workLog.getUser().getId(), workLog.getUuid());
         prepareSyncPayload(syncPayload, payload, result);
 
+        workLog.setTotalMinutes(workLogDetailRepository.sumDurationByWorkLog(workLog));
         workLog.setStatus(workLogRepository.calculateWorkLogStatus(workLog));
         workLogRepository.save(workLog);
 
@@ -256,10 +254,6 @@ public class WorkLogService {
 
             if (detailNewDataDTO.getEndTime() == null) {
                 throw new BusinessException("WorkLog new end time is required");
-            }
-
-            if (StringUtils.isEmpty(detailNewDataDTO.getDuration())) {
-                throw new BusinessException("WorkLog new duration is required");
             }
 
             if (StringUtils.isEmpty(detailNewDataDTO.getDescription())) {
@@ -349,7 +343,7 @@ public class WorkLogService {
         workLog.setStatus(WorkLogStatus.IN_QUEUE);
         workLogRepository.save(workLog);
         handleJiraSyncing(workLog, workLogDetails, syncOperation);
-        handleWorkLogSyncNotifications(AppConfig.getAuthenticatedCurrentUser(), workLog, workLogDetails, WorkLogStatus.IN_QUEUE);
+        handleWorkLogSyncNotifications(AppConfig.getAuthenticatedCurrentUser(), workLog, workLogDetails);
     }
 
     @Transactional
@@ -475,7 +469,6 @@ public class WorkLogService {
         String taskName = validateAndGetCell(row, WorkLogColumn.TASK_NAME, rowErrorMessages);
         LocalTime fromHour = validateAndGetCell(row, WorkLogColumn.FROM_HOUR, rowErrorMessages);
         LocalTime toHour = validateAndGetCell(row, WorkLogColumn.TO_HOUR, rowErrorMessages);
-        Integer taskLogDuration = validateAndGetCell(row, WorkLogColumn.DURATION, this::parseDuration, rowErrorMessages);
         String taskDescription = validateAndGetCell(row, WorkLogColumn.DESCRIPTION, rowErrorMessages);
 
         if (rowErrorMessages.length() > 0) {
@@ -486,7 +479,7 @@ public class WorkLogService {
             return null;
         }
 
-        int taskLogDurationValue = taskLogDuration != null ? taskLogDuration : 0;
+        int taskLogDurationValue = calculateDuration(fromHour, toHour);
 
         WorkLogDetail workLogDetail = new WorkLogDetail();
         workLogDetail.setTaskName(taskName);
@@ -535,22 +528,12 @@ public class WorkLogService {
         }
     }
 
-    private int parseDuration(String duration) {
-        Matcher matcher = DURATION_PATTERN.matcher(duration);
-        int hours = 0, minutes = 0;
-
-        if (matcher.matches()) {
-            if (matcher.group(1) != null) {
-                hours = Integer.parseInt(matcher.group(1));
-            }
-            if (matcher.group(2) != null) {
-                minutes = Integer.parseInt(matcher.group(2));
-            }
-        } else {
-            throw new BusinessException("[" + WorkLogColumn.DURATION.getLabel() + "] Invalid format: '" + duration + "'. Expected format is 'Xh Ym' (e.g., '2h 30m')");
+    private int calculateDuration(LocalTime fromHour, LocalTime toHour) {
+        int diffMinutes = (int) Duration.between(fromHour, toHour).toMinutes();
+        if (diffMinutes < 0) {
+            diffMinutes += 24 * 60;
         }
-
-        return (hours * 60) + minutes;
+        return diffMinutes;
     }
 
     private WorkLog saveWorkLog(ManageWorkLogDTO manageWorkLogDTO, int totalMinutes) {
@@ -559,7 +542,7 @@ public class WorkLogService {
             workLog.setUser(AppConfig.getAuthenticatedCurrentUser());
             workLog.setTotalMinutes(totalMinutes);
             workLog.setWorkDate(manageWorkLogDTO.getLogDate());
-            if (!StringUtils.isEmpty(manageWorkLogDTO.getLogName())) {
+            if (StringUtils.isNotEmpty(manageWorkLogDTO.getLogName())) {
                 workLog.setName(manageWorkLogDTO.getLogName());
             } else {
                 DayOfWeek dayOfWeek = manageWorkLogDTO.getLogDate().getDayOfWeek();
@@ -650,10 +633,10 @@ public class WorkLogService {
         workLogDetailRepository.saveAll(workLogDetails);
     }
 
-    private void handleWorkLogSyncNotifications(User syncUser, WorkLog workLog, List<WorkLogDetail> workLogDetails, WorkLogStatus status) {
-        List<String> taskNames = new ArrayList<>(workLogDetails.stream().map(WorkLogDetail::getTaskName).collect(Collectors.toSet()));
-        List<String> detailIds = new ArrayList<>(workLogDetails.stream().map(WorkLogDetail::getUuid).collect(Collectors.toSet()));
-        sendSyncNotification(syncUser, workLog.getUuid(), WorkLogSyncMessageType.ALL, taskNames, detailIds, status, null);
+    private void handleWorkLogSyncNotifications(User syncUser, WorkLog workLog, List<WorkLogDetail> workLogDetails) {
+        List<String> taskNames = workLogDetails.stream().map(WorkLogDetail::getTaskName).distinct().collect(Collectors.toList());
+        List<String> detailIds = workLogDetails.stream().map(WorkLogDetail::getUuid).distinct().collect(Collectors.toList());
+        sendSyncNotification(syncUser, workLog.getUuid(), WorkLogSyncMessageType.ALL, taskNames, detailIds, WorkLogStatus.IN_QUEUE, null);
     }
 
     public void sendSyncNotification(User user, String workLogUuid, WorkLogSyncMessageType type,
@@ -664,7 +647,7 @@ public class WorkLogService {
     }
 
     private void handleUpdateMetaData(ManageWorkLogDTO manageWorkLogDTO, WorkLog workLog) {
-        if (!StringUtils.isEmpty(manageWorkLogDTO.getLogName())) {
+        if (StringUtils.isNotEmpty(manageWorkLogDTO.getLogName())) {
             workLog.setName(manageWorkLogDTO.getLogName());
         }
         workLog.setWorkDate(manageWorkLogDTO.getLogDate());
@@ -683,7 +666,7 @@ public class WorkLogService {
 
         workLogDetails.forEach(detail -> {
             detail.setTaskName(payload.getNewData().getName());
-            if(taskChanged && !StringUtils.isEmpty(detail.getSyncError())) {
+            if(taskChanged && StringUtils.isNotEmpty(detail.getSyncError())) {
                 detail.setSyncError(null);
             }
             if (detail.getStatus().equals(WorkLogStatus.SYNCED)) {
@@ -709,12 +692,12 @@ public class WorkLogService {
         workLogDetail.setTaskName(StringUtils.isEmpty(detailNewData.getName()) ? workLogDetail.getTaskName() : detailNewData.getName());
         workLogDetail.setStartTime(detailNewData.getStartTime());
         workLogDetail.setEndTime(detailNewData.getEndTime());
-        workLogDetail.setDuration(parseDuration(detailNewData.getDuration()));
+        workLogDetail.setDuration(calculateDuration(detailNewData.getStartTime(), detailNewData.getEndTime()));
         workLogDetail.setDescription(detailNewData.getDescription());
         if (workLogDetail.getStatus().equals(WorkLogStatus.SYNCED)) {
             detailsToUnsync.add(workLogDetail);
         }
-        if(taskChanged && !StringUtils.isEmpty(workLogDetail.getSyncError())) {
+        if(taskChanged && StringUtils.isNotEmpty(workLogDetail.getSyncError())) {
             workLogDetail.setSyncError(null);
         }
 

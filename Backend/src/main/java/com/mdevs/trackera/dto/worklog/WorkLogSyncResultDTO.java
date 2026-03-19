@@ -16,6 +16,6 @@ public class WorkLogSyncResultDTO {
     private String hardError;
 
     public boolean hasError() {
-        return !StringUtils.isEmpty(hardError) || hasSoftError;
+        return StringUtils.isNotEmpty(hardError) || hasSoftError;
     }
 }

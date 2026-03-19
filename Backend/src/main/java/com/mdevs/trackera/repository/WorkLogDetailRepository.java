@@ -65,6 +65,9 @@ public interface WorkLogDetailRepository extends BaseRepository<WorkLogDetail> {
             "GROUP BY wld.taskName")
     WorkLogStatus calculateWorkLogTaskStatus(@Param("workLogUuid") String workLogUuid, @Param("taskName") String taskName);
 
+    @Query("SELECT COALESCE(SUM(wld.duration), 0) FROM WorkLogDetail wld WHERE wld.workLog = :workLog")
+    int sumDurationByWorkLog(@Param("workLog") WorkLog workLog);
+
     @Modifying
     @Query("DELETE FROM WorkLogDetail wld WHERE wld.workLog.id IN :workLogsIds")
     void deleteByWorkLogIn(List<Long> workLogsIds);
