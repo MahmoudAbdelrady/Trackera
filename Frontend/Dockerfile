@@ -14,7 +14,7 @@ ARG TRACKERA_MAX_FILE_SIZE
 ENV VITE_TRACKERA_BACKEND_URL=$TRACKERA_BACKEND_URL
 ENV VITE_TRACKERA_MAX_FILE_SIZE=$TRACKERA_MAX_FILE_SIZE
 
-COPY package.json pnpm-lock.yaml ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 RUN pnpm install --frozen-lockfile
 
 COPY . .
