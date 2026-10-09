@@ -73,10 +73,10 @@ public class WorkLogService {
 
     //<editor-fold desc="Search & Retrieval">
     public Page<WorkLogInfoDTO> searchAllWorkLogs(WorkLogSearchFilterDTO searchFilterDTO, Pageable pageable) {
-        Map<String, Object> queryParameters = new HashMap<>();
-        String searchQuery = buildSearchQuery(searchFilterDTO, queryParameters);
+        WorkLogQueryBuilder queryBuilder = buildSearchQuery(searchFilterDTO);
+        Map<String, Object> queryParameters = queryBuilder.getParameters();
 
-        TypedQuery<WorkLog> typedQuery = entityManager.createQuery(searchQuery, WorkLog.class);
+        TypedQuery<WorkLog> typedQuery = entityManager.createQuery(queryBuilder.getQuery(), WorkLog.class);
         queryParameters.forEach(typedQuery::setParameter);
         typedQuery.setFirstResult(pageable.getPageNumber() * pageable.getPageSize());
         typedQuery.setMaxResults(pageable.getPageSize());
@@ -92,8 +92,7 @@ public class WorkLogService {
         List<String> logsWithErrors = workLogDetailRepository.findWorkLogUuidsWithSyncErrors(workLogs.stream().map(WorkLog::getId).collect(Collectors.toList()));
         workLogInfoDTOList.stream().filter(worklogInfo -> logsWithErrors.contains(worklogInfo.getId())).forEach(worklogInfo -> worklogInfo.setHasError(true));
 
-        String countQueryStr = searchQuery.replaceFirst("SELECT wl FROM WorkLog wl", "SELECT COUNT(wl) FROM WorkLog wl");
-        TypedQuery<Long> countQuery = entityManager.createQuery(countQueryStr, Long.class);
+        TypedQuery<Long> countQuery = entityManager.createQuery(queryBuilder.getCountQuery(), Long.class);
         queryParameters.forEach(countQuery::setParameter);
         Long totalRecords = countQuery.getSingleResult();
 
@@ -386,7 +385,7 @@ public class WorkLogService {
     //</editor-fold>
 
     //<editor-fold desc="Internal Methods & Validations">
-    private String buildSearchQuery(WorkLogSearchFilterDTO searchFilterDTO, Map<String, Object> queryParameters) {
+    private WorkLogQueryBuilder buildSearchQuery(WorkLogSearchFilterDTO searchFilterDTO) {
         WorkLogQueryBuilder workLogQueryBuilder = new WorkLogQueryBuilder(AppConfig.getAuthenticatedCurrentUser().getId());
         if (searchFilterDTO != null) {
             searchFilterDTO.validate();
@@ -398,8 +397,7 @@ public class WorkLogService {
                     .withStatus(searchFilterDTO.getStatus());
         }
 
-        queryParameters.putAll(workLogQueryBuilder.getParameters());
-        return workLogQueryBuilder.getQuery();
+        return workLogQueryBuilder;
     }
 
     private void validateWorkLog(ManageWorkLogDTO manageWorkLogDTO, Long existingWorkLogId) {

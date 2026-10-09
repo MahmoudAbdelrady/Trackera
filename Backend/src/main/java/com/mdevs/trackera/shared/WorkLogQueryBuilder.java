@@ -82,7 +82,10 @@ public class WorkLogQueryBuilder {
     }
 
     public String getQuery() {
-        query.append(" ORDER BY wl.workDate DESC");
-        return query.toString();
+        return query + " ORDER BY wl.workDate DESC";
+    }
+
+    public String getCountQuery() {
+        return query.toString().replaceFirst("SELECT wl FROM", "SELECT COUNT(wl) FROM");
     }
 }
