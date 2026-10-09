@@ -21,6 +21,6 @@ public class UserPreference extends BaseEntity {
     @Enumerated(EnumType.STRING)
     private UserPreferenceOption option;
 
-    @Column(columnDefinition = "LONGTEXT")
+    @Column(columnDefinition = "TEXT")
     private String value;
 }

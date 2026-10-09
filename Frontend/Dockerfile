@@ -23,6 +23,9 @@ RUN pnpm run build
 # Production stage
 FROM nginx:1.29-alpine
 
+# Changes per CI run so the cached upgrade layer is rebuilt
+ARG APK_CACHE_BUST
+
 # Update packages
 RUN apk update && apk upgrade --no-cache
 

@@ -24,10 +24,10 @@ public class OAuthConnection extends BaseEntity {
     @ManyToOne(optional = false)
     private UserEmail accountEmail;
 
-    @Column(nullable = false, columnDefinition = "LONGTEXT")
+    @Column(nullable = false, columnDefinition = "TEXT")
     private String accessToken;
 
-    @Column(nullable = false, columnDefinition = "LONGTEXT")
+    @Column(nullable = false, columnDefinition = "TEXT")
     private String refreshToken;
 
     @Column(nullable = false, columnDefinition = "TIMESTAMP(0)")
