@@ -5,6 +5,7 @@ import com.mdevs.trackera.dto.auth.OAuthUserInfoDTO;
 import com.mdevs.trackera.dto.auth.OAuthRequestDTO;
 import com.mdevs.trackera.dto.jira.JiraProjectDTO;
 import com.mdevs.trackera.entity.User;
+import com.mdevs.trackera.service.JiraApiClient;
 import com.mdevs.trackera.service.JiraService;
 import com.mdevs.trackera.shared.enums.OAuthProvider;
 import com.mdevs.trackera.oauth.OAuthServiceProvider;
@@ -102,7 +103,7 @@ public class JiraOAuthServiceProvider extends OAuthServiceProvider {
     }
 
     private JiraProjectDTO fetchJiraPrimaryProject(HttpEntity<Void> entity) {
-        JiraProjectDTO[] projects = HttpUtil.get("https://api.atlassian.com/oauth/token/accessible-resources", entity, JiraProjectDTO[].class);
+        JiraProjectDTO[] projects = HttpUtil.get(JiraApiClient.JIRA_ACCESSIBLE_RESOURCES_URL, entity, JiraProjectDTO[].class);
         if (projects == null || projects.length == 0) {
             throw new SecurityException("Failed to fetch Jira primary project");
         }
@@ -110,7 +111,7 @@ public class JiraOAuthServiceProvider extends OAuthServiceProvider {
     }
 
     private Map<String, Object> fetchJiraUserInfo(JiraProjectDTO jiraProjectDTO, HttpEntity<Void> entity) {
-        String url = JiraService.getApiUrl(jiraProjectDTO) + "/myself";
+        String url = JiraApiClient.getApiUrl(jiraProjectDTO) + "/myself";
         Map<String, Object> userJiraInfo = HttpUtil.get(url, entity, Map.class);
         if (userJiraInfo == null || userJiraInfo.isEmpty() || !userJiraInfo.containsKey("accountId")) {
             throw new SecurityException("Failed to fetch user info from Jira");

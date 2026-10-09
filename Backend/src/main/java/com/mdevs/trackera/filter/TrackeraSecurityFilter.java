@@ -1,10 +1,10 @@
 package com.mdevs.trackera.filter;
 
 import com.mdevs.trackera.shared.annotations.PublicAPI;
-import io.micrometer.common.lang.NonNull;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.NonNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.web.filter.OncePerRequestFilter;
