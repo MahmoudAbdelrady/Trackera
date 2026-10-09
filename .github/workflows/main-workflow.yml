@@ -102,8 +102,8 @@ jobs:
             TRACKERA_MAX_FILE_SIZE=${{ vars.MAX_FILE_SIZE }}
           load: true
           push: false
-          cache-from: type=gha,scope=${{ matrix.name }}
-          cache-to: type=gha,scope=${{ matrix.name }},mode=max
+          cache-from: type=gha,scope=deploy-${{ matrix.name }}
+          cache-to: type=gha,scope=deploy-${{ matrix.name }},mode=max
 
       - name: Scan image
         uses: aquasecurity/trivy-action@v0.36.0
@@ -135,7 +135,7 @@ jobs:
             TRACKERA_BACKEND_URL=${{ vars.BACKEND_URL }}
             TRACKERA_MAX_FILE_SIZE=${{ vars.MAX_FILE_SIZE }}
           push: true
-          cache-from: type=gha,scope=${{ matrix.name }}
+          cache-from: type=gha,scope=deploy-${{ matrix.name }}
 
       - name: Mark as pushed
         id: pushed
