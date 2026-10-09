@@ -40,6 +40,7 @@ jobs:
               - 'Frontend/**'
               - '.github/workflows/pr-build-check.yml'
               - '!Frontend/Dockerfile'
+              - '!Frontend/.dockerignore'
               - '!Frontend/nginx.conf'
               - '!Frontend/**/*.md'
 

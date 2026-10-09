@@ -1,6 +1,5 @@
 package com.mdevs.trackera.service;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.mdevs.trackera.config.general.AppConfig;
 import com.mdevs.trackera.dto.jira.JiraProjectDTO;
 import com.mdevs.trackera.dto.jira.JiraTaskDTO;
@@ -16,18 +15,13 @@ import com.mdevs.trackera.shared.enums.JiraTaskEvaluation;
 import com.mdevs.trackera.shared.exceptions.types.BusinessException;
 import com.mdevs.trackera.shared.enums.OAuthProvider;
 import com.mdevs.trackera.shared.DurationFormatter;
-import com.mdevs.trackera.shared.exceptions.types.JiraException;
 import com.mdevs.trackera.shared.exceptions.types.NotFoundException;
-import com.mdevs.trackera.utils.JsonUtil;
 import com.mdevs.trackera.utils.HttpUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.http.*;
-import org.springframework.retry.annotation.Backoff;
-import org.springframework.retry.annotation.Retryable;
+import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.HttpClientErrorException;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -47,7 +41,7 @@ public class JiraService {
 
     private final CacheService cacheService;
 
-    public static final String JIRA_API_BASE_URL = "https://api.atlassian.com/ex/jira/{cloudId}/rest/api/3";
+    private final JiraApiClient jiraApiClient;
 
     public static final String USER_JIRA_TASKS_CACHE_KEY_PREFIX = "userJiraTasks:";
 
@@ -88,7 +82,7 @@ public class JiraService {
         }
 
         String accessToken = oAuthConnectionService.getAccessToken(connection);
-        resources = Arrays.asList(callJiraApi("https://api.atlassian.com/oauth/token/accessible-resources", HttpMethod.GET, HttpUtil.createBearerAuthEntity(accessToken), connection, JiraProjectDTO[].class));
+        resources = Arrays.asList(jiraApiClient.callJiraApi(JiraApiClient.JIRA_ACCESSIBLE_RESOURCES_URL, HttpMethod.GET, HttpUtil.createBearerAuthEntity(accessToken), connection, JiraProjectDTO[].class));
         cacheService.set(cacheKey, resources, Duration.ofMinutes(JIRA_SITES_FETCH_MINUTES_DURATION));
 
         return resources;
@@ -99,10 +93,6 @@ public class JiraService {
                 .filter(site -> site.getId().equals(siteId))
                 .findFirst()
                 .orElseThrow(() -> new NotFoundException("Site not found"));
-    }
-
-    public static String getApiUrl(JiraProjectDTO projectDTO) {
-        return JIRA_API_BASE_URL.replace("{cloudId}", projectDTO.getId());
     }
     //</editor-fold>
 
@@ -152,19 +142,19 @@ public class JiraService {
         requestBody.put("timeSpentSeconds", workLogDetail.getDuration() * 60);
 
         boolean isUpdate = StringUtils.isNotEmpty(workLogDetail.getJiraId());
-        String apiUrl = getApiUrl(validateAndGetUserJiraPrimaryProject(user)) + "/issue/" + workLogDetail.getTaskName() + "/worklog" + (isUpdate ? ("/" + workLogDetail.getJiraId()) : "");
+        String apiUrl = JiraApiClient.getApiUrl(validateAndGetUserJiraPrimaryProject(user)) + "/issue/" + workLogDetail.getTaskName() + "/worklog" + (isUpdate ? ("/" + workLogDetail.getJiraId()) : "");
         OAuthConnection oAuthConnection = oAuthConnectionService.getOrRefresh(user, OAuthProvider.JIRA);
         String accessToken = oAuthConnectionService.getAccessToken(oAuthConnection);
-        Map<String, Object> response = callJiraApi(apiUrl, isUpdate ? HttpMethod.PUT : HttpMethod.POST, HttpUtil.createBearerAuthEntity(accessToken, requestBody), oAuthConnection, Map.class);
+        Map<String, Object> response = jiraApiClient.callJiraApi(apiUrl, isUpdate ? HttpMethod.PUT : HttpMethod.POST, HttpUtil.createBearerAuthEntity(accessToken, requestBody), oAuthConnection, Map.class);
 
         return response.get("id").toString();
     }
 
     public void deleteWorkLog(User user, WorkLogDetailSyncRequestDTO detailSyncRequestDTO) {
-        String apiUrl = getApiUrl(validateAndGetUserJiraPrimaryProject(user)) + "/issue/" + detailSyncRequestDTO.getTaskName() + "/worklog/" + detailSyncRequestDTO.getJiraId();
+        String apiUrl = JiraApiClient.getApiUrl(validateAndGetUserJiraPrimaryProject(user)) + "/issue/" + detailSyncRequestDTO.getTaskName() + "/worklog/" + detailSyncRequestDTO.getJiraId();
         OAuthConnection oAuthConnection = oAuthConnectionService.getOrRefresh(user, OAuthProvider.JIRA);
         String accessToken = oAuthConnectionService.getAccessToken(oAuthConnection);
-        callJiraApi(apiUrl, HttpMethod.DELETE, HttpUtil.createBearerAuthEntity(accessToken), oAuthConnection, Void.class);
+        jiraApiClient.callJiraApi(apiUrl, HttpMethod.DELETE, HttpUtil.createBearerAuthEntity(accessToken), oAuthConnection, Void.class);
     }
 
     private List<JiraTaskDTO> getTasksFromJira(User user) {
@@ -174,13 +164,13 @@ public class JiraService {
 
         String accessToken = oAuthConnectionService.getAccessToken(oAuthConnection);
         Map<String, Object> jiraResponse;
-        String url = getApiUrl(userJiraPrimaryProject) + "/search/jql?jql=" + getJiraTasksSearchCondition() + "&fields=key,summary,status,timetracking,project,resolution";
+        String url = JiraApiClient.getApiUrl(userJiraPrimaryProject) + "/search/jql?jql=" + getJiraTasksSearchCondition() + "&fields=key,summary,status,timetracking,project,resolution";
         String nextPageToken = null;
         boolean isLast;
 
         do {
             String pagedUrl = url + (nextPageToken != null ? "&nextPageToken=" + nextPageToken : "");
-            jiraResponse = callJiraApi(pagedUrl, HttpMethod.GET, HttpUtil.createBearerAuthEntity(accessToken), oAuthConnection, Map.class);
+            jiraResponse = jiraApiClient.callJiraApi(pagedUrl, HttpMethod.GET, HttpUtil.createBearerAuthEntity(accessToken), oAuthConnection, Map.class);
             processJiraResponseTasks(jiraResponse, userJiraPrimaryProject, jiraTasks);
             isLast = (boolean) jiraResponse.get("isLast");
             nextPageToken = (String) jiraResponse.get("nextPageToken");
@@ -266,57 +256,6 @@ public class JiraService {
     private String getJiraTasksSearchCondition() {
         String maxDate = String.valueOf(LocalDate.now().minusMonths(3).withDayOfMonth(1));
         return "assignee=currentUser() AND (statusCategory != done OR (statusCategory = done AND statusCategoryChangedDate >= '" + maxDate + "' AND timespent > 0)) ORDER BY created DESC";
-    }
-
-    @Retryable(retryFor = Exception.class, backoff = @Backoff(delay = 1000, multiplier = 3))
-    private <T> T callJiraApi(String url, HttpMethod method, HttpEntity<?> entity, OAuthConnection oAuthConnection, Class<T> responseType) {
-        try {
-            ResponseEntity<T> response = HttpUtil.exchange(url, method, entity, responseType);
-
-            if (response.getStatusCode() == HttpStatus.UNAUTHORIZED) {
-                oAuthConnection = oAuthConnectionService.getOrRefresh(oAuthConnection);
-
-                HttpHeaders newHeaders = new HttpHeaders();
-                newHeaders.putAll(entity.getHeaders());
-                newHeaders.setBearerAuth(oAuthConnectionService.getAccessToken(oAuthConnection));
-                entity = new HttpEntity<>(newHeaders);
-
-                response = HttpUtil.exchange(url, method, entity, responseType);
-            }
-
-            if (!response.getStatusCode().is2xxSuccessful()) {
-                throw new RuntimeException("Jira API request failed with status: " + response.getStatusCode());
-            }
-
-            return response.getBody();
-        } catch (HttpClientErrorException exception) {
-            log.error("Error while calling Jira API with url: {}", url, exception);
-            extractErrorAndThrow(exception);
-            return null; // Unreachable, but required for compilation
-        }
-    }
-
-    private void extractErrorAndThrow(HttpClientErrorException e) {
-        String responseBody = e.getResponseBodyAsString();
-
-        JsonNode root;
-        try {
-            root = JsonUtil.convertJsonStringToTree(responseBody);
-        } catch (Exception parseErr) {
-            throw new JiraException("Jira API Error: " + responseBody, e.getStatusCode().value());
-        }
-
-        // 1. handle "errorMessages" list
-        if (root.has("errorMessages") && root.get("errorMessages").isArray() && !root.get("errorMessages").isEmpty()) {
-            List<String> errors = new ArrayList<>();
-            root.get("errorMessages").forEach(msg -> errors.add(msg.asText()));
-
-            String message = String.join(" | ", errors);
-            throw new JiraException(message, e.getStatusCode().value());
-        }
-
-        // 3. fallback unknown Jira error
-        throw new JiraException("Jira API Error: " + responseBody, e.getStatusCode().value());
     }
 
     private Object createJiraCommentObject(String comment) {

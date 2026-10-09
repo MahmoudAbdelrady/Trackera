@@ -59,7 +59,7 @@ public class TrackeraExceptionHandler {
 
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     public ResponseEntity<?> handleMaxSizeException(MaxUploadSizeExceededException exception) {
-        return ExceptionResponseMaker.makeResponse("File size exceeds the allowed limit of 5MB", HttpStatus.PAYLOAD_TOO_LARGE);
+        return ExceptionResponseMaker.makeResponse("File size exceeds the allowed limit of 5MB", HttpStatus.CONTENT_TOO_LARGE);
     }
 
     @ExceptionHandler(JiraException.class)
