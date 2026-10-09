@@ -1,0 +1,144 @@
+name: Image Scan
+
+on:
+  workflow_dispatch:
+    inputs:
+      backend:
+        description: Scan backend
+        type: boolean
+        required: false
+        default: false
+      frontend:
+        description: Scan frontend
+        type: boolean
+        required: false
+        default: false
+      nginx:
+        description: Scan nginx
+        type: boolean
+        required: false
+        default: false
+      severity:
+        description: Severities to report
+        type: choice
+        required: true
+        default: HIGH,CRITICAL
+        options:
+          - CRITICAL
+          - HIGH,CRITICAL
+          - MEDIUM,HIGH,CRITICAL
+          - UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL
+      ignore-unfixed:
+        description: Ignore vulnerabilities with no available fix
+        type: boolean
+        required: false
+        default: true
+
+run-name: Image Scan - ${{ github.ref_name }}
+
+concurrency:
+  group: image-scan-${{ github.ref_name }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  setup:
+    name: Select images
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.select.outputs.matrix }}
+      empty: ${{ steps.select.outputs.empty }}
+    steps:
+      - name: Build matrix
+        id: select
+        env:
+          BACKEND: ${{ inputs.backend }}
+          FRONTEND: ${{ inputs.frontend }}
+          NGINX: ${{ inputs.nginx }}
+        run: |
+          images=()
+          if [[ "$BACKEND" == "true" ]]; then
+            images+=('{"name":"backend","context":"Backend"}')
+          fi
+          if [[ "$FRONTEND" == "true" ]]; then
+            images+=('{"name":"frontend","context":"Frontend"}')
+          fi
+          if [[ "$NGINX" == "true" ]]; then
+            images+=('{"name":"nginx","context":"Nginx"}')
+          fi
+
+          matrix="$(IFS=,; echo "[${images[*]}]")"
+          echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
+          echo "empty=${#images[@]}" >> "$GITHUB_OUTPUT"
+
+          echo "Selected ${#images[@]} image(s): $matrix"
+
+      - name: Fail if nothing selected
+        if: steps.select.outputs.empty == '0'
+        run: |
+          echo "::error::No images selected. Tick at least one of backend / frontend / nginx."
+          exit 1
+
+  scan:
+    name: Scan ${{ matrix.name }}
+    needs: setup
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.setup.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: docker/setup-buildx-action@v4
+
+      - name: Build image
+        uses: docker/build-push-action@v7
+        with:
+          context: ${{ matrix.context }}
+          tags: trackera-${{ matrix.name }}:scan
+          build-args: APK_CACHE_BUST=${{ github.run_id }}
+          load: true
+          push: false
+          cache-from: type=gha,scope=scan-${{ matrix.name }}
+          cache-to: type=gha,scope=scan-${{ matrix.name }},mode=max
+
+      - name: Scan image
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: image
+          image-ref: trackera-${{ matrix.name }}:scan
+          scanners: vuln
+          severity: ${{ inputs.severity }}
+          ignore-unfixed: ${{ inputs.ignore-unfixed }}
+          exit-code: 0
+          format: table
+          output: trivy-${{ matrix.name }}.txt
+        env:
+          TRIVY_DB_REPOSITORY: public.ecr.aws/aquasecurity/trivy-db:2
+
+      - name: Summarise
+        if: always()
+        env:
+          IMAGE: ${{ matrix.name }}
+          BRANCH: ${{ github.ref_name }}
+          SEVERITY: ${{ inputs.severity }}
+        run: |
+          report="trivy-${IMAGE}.txt"
+          {
+            echo "## ${IMAGE}"
+            echo
+            echo "Branch \`${BRANCH}\` · severities \`${SEVERITY}\`"
+            echo
+            if [[ ! -s "$report" ]]; then
+              echo "No vulnerabilities found."
+            else
+              echo '```'
+              cat "$report"
+              echo '```'
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"

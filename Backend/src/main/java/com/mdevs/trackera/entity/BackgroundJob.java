@@ -24,7 +24,7 @@ public class BackgroundJob extends BaseEntity {
     @Enumerated(EnumType.STRING)
     private BackgroundJobStatus status;
 
-    @Column(nullable = false, columnDefinition = "LONGTEXT")
+    @Column(nullable = false, columnDefinition = "TEXT")
     private String payload;
 
     @Column(nullable = false)
@@ -33,6 +33,6 @@ public class BackgroundJob extends BaseEntity {
 
     private String failureReason;
 
-    @Column(columnDefinition = "LONGTEXT")
+    @Column(columnDefinition = "TEXT")
     private String failureStackTrace;
 }

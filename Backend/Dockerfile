@@ -20,6 +20,8 @@ RUN ./mvnw clean package -DskipTests
 # Run stage
 FROM eclipse-temurin:25-jre-alpine
 
+# Changes per CI run so the cached upgrade layer is rebuilt
+ARG APK_CACHE_BUST
 RUN apk update && apk upgrade --no-cache
 
 WORKDIR /app

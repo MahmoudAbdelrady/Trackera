@@ -1,67 +1,108 @@
-name: PR Build Check
+name: PR Build
 
 on:
   pull_request:
-    branches:
-      - main
-      - dev
+    branches: [main, dev]
+
+concurrency:
+  group: pr-build-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
 
 jobs:
-  build-backend:
-    name: Build Backend (Spring Boot)
+  changes:
+    name: Detect changes
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+      frontend: ${{ steps.filter.outputs.frontend }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
 
+      - uses: dorny/paths-filter@v4
+        id: filter
+        with:
+          predicate-quantifier: some-with-excludes
+          filters: |
+            backend:
+              - 'Backend/**'
+              - '.github/workflows/pr-build-check.yml'
+              - '!Backend/Dockerfile'
+              - '!Backend/**/*.md'
+            frontend:
+              - 'Frontend/**'
+              - '.github/workflows/pr-build-check.yml'
+              - '!Frontend/Dockerfile'
+              - '!Frontend/nginx.conf'
+              - '!Frontend/**/*.md'
+
+  backend:
+    name: Build backend
+    needs: changes
+    if: needs.changes.outputs.backend == 'true'
+    runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: ./Backend
-
+        working-directory: Backend
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
-
-      - name: Set up JDK
-        uses: actions/setup-java@v5
+      - uses: actions/checkout@v7
         with:
+          persist-credentials: false
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: corretto
           java-version: "25"
-          distribution: "corretto"
+          cache: maven
+          cache-dependency-path: Backend/pom.xml
 
-      - name: Cache Maven dependencies
-        uses: actions/cache@v5
-        with:
-          path: ~/.m2/repository
-          key: maven-${{ hashFiles('./Backend/pom.xml') }}
-          restore-keys: |
-            maven-
+      - name: Package
+        run: ./mvnw -B -ntp clean package -DskipTests
 
-      - name: Build backend
-        run: ./mvnw clean package -DskipTests -B -ntp
-
-  build-frontend:
-    name: Build Frontend (Vite)
+  frontend:
+    name: Build frontend
+    needs: changes
+    if: needs.changes.outputs.frontend == 'true'
     runs-on: ubuntu-latest
-
     defaults:
       run:
-        working-directory: ./Frontend
-
+        working-directory: Frontend
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
+      - uses: actions/checkout@v7
         with:
-          version: latest
+          persist-credentials: false
 
-      - name: Set up Node.js with pnpm
-        uses: actions/setup-node@v6
+      - name: Enable corepack
+        run: |
+          corepack enable
+          corepack install -g "$(node -p 'require("./package.json").packageManager')"
+
+      - uses: actions/setup-node@v7
         with:
-          node-version: "24"
-          cache: "pnpm"
-          cache-dependency-path: ./Frontend/pnpm-lock.yaml
+          node-version: "24.21.0"
+          cache: pnpm
+          cache-dependency-path: Frontend/pnpm-lock.yaml
 
-      - name: Install dependencies
+      - name: Install
         run: pnpm install --frozen-lockfile
 
-      - name: Build frontend
+      - name: Build
         run: pnpm run build
+
+  pr-build:
+    name: PR build
+    needs: [backend, frontend]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check results
+        run: |
+          [[ "${{ needs.backend.result }}"  =~ ^(success|skipped)$ ]] || exit 1
+          [[ "${{ needs.frontend.result }}" =~ ^(success|skipped)$ ]] || exit 1

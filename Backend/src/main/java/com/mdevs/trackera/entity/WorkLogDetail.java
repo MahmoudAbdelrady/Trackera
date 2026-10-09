@@ -29,7 +29,7 @@ public class WorkLogDetail extends BaseEntity {
     @Column(nullable = false)
     private Integer duration;
 
-    @Column(nullable = false, columnDefinition = "LONGTEXT")
+    @Column(nullable = false, columnDefinition = "TEXT")
     private String description;
 
     @Column(nullable = false)
@@ -41,6 +41,6 @@ public class WorkLogDetail extends BaseEntity {
 
     private String jiraId;
 
-    @Column(columnDefinition = "LONGTEXT")
+    @Column(columnDefinition = "TEXT")
     private String syncError;
 }
